@@ -1,0 +1,55 @@
+:root {
+  /* ── Claude.ai brand color scale (terra cotta / warm orange) ── */
+  --color-brand-25:  rgb(255 250 247);
+  --color-brand-50:  rgb(255 244 237);
+  --color-brand-100: rgb(255 231 213);
+  --color-brand-200: rgb(255 207 175);
+  --color-brand-300: rgb(255 176 132);
+  --color-brand-400: rgb(240 140  96);
+  --color-brand-500: rgb(218 119  86);   /* Claude main orange */
+  --color-brand-600: rgb(196  95  60);   /* primary interactive */
+  --color-brand-700: rgb(163  73  40);
+  --color-brand-800: rgb(122  52  26);
+  --color-brand-900: rgb( 82  33  13);
+  --color-brand-950: rgb( 48  17   4);
+
+  /* Utility aliases — keeps Untitled UI semantic tokens pointing at the new scale */
+  --color-utility-brand-50:      var(--color-brand-50);
+  --color-utility-brand-50_alt:  var(--color-brand-50);
+  --color-utility-brand-100:     var(--color-brand-100);
+  --color-utility-brand-200:     var(--color-brand-200);
+  --color-utility-brand-300:     var(--color-brand-300);
+  --color-utility-brand-400:     var(--color-brand-400);
+  --color-utility-brand-500:     var(--color-brand-500);
+  --color-utility-brand-600:     var(--color-brand-600);
+  --color-utility-brand-700:     var(--color-brand-700);
+  --color-utility-brand-800:     var(--color-brand-800);
+  --color-utility-brand-900:     var(--color-brand-900);
+
+  /* ── Warm off-white backgrounds (Claude.ai feel) ── */
+  --color-bg-primary:          rgb(250 249 247);   /* main canvas */
+  --color-bg-secondary:        rgb(242 240 235);   /* cards, sidebar */
+  --color-bg-tertiary:         rgb(232 229 222);
+  --color-bg-quaternary:       rgb(220 216 208);
+
+  /* ── CourtPlay component tokens (used in custom components) ── */
+  --color-primary:             rgb(196  95  60);   /* matches brand-600 */
+  --color-primary-hover:       rgb(163  73  40);
+  --color-primary-light:       rgb(255 231 213);
+  --color-text-primary:        rgb( 26  26  24);
+  --color-text-secondary:      rgb( 91  87  81);
+  --color-text-tertiary:       rgb(148 143 135);
+  --color-background:          rgb(250 249 247);
+  --color-background-secondary:rgb(242 240 235);
+  --color-border:              rgb(225 221 213);
+  --color-amber:               rgb(245 158  11);
+  --color-red:                 rgb(239  68  68);
+
+  /* ── Keep hover/active states light in all modes ── */
+  --color-bg-primary_hover:    rgb(235 232 226);
+  --color-bg-active:           rgb(235 232 226);
+  --radius-md:    8px;
+  --radius-lg:    12px;
+  --radius-pill:  9999px;
+  --font-sans:    'Inter', sans-serif;
+}
