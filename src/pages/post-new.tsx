@@ -27,6 +27,24 @@ const FORMATS = [
     { id: "other", label: "Other event" },
 ];
 
+// Play type supersedes `format` for sub_need posts; drives the feed card title.
+const PLAY_TYPES = [
+    { id: "doubles", label: "Doubles" },
+    { id: "point_play", label: "Point play" },
+    { id: "clinic", label: "Clinic" },
+    { id: "round_robin", label: "Round robin" },
+    { id: "lesson", label: "Lesson" },
+    { id: "other", label: "Other" },
+];
+
+const DURATIONS = [
+    { id: "1", label: "1 hr" },
+    { id: "1.5", label: "1.5 hrs" },
+    { id: "2", label: "2 hrs" },
+    { id: "2.5", label: "2.5 hrs" },
+    { id: "3", label: "3 hrs" },
+];
+
 const SKILL_LEVELS = [
     { id: "2.5", label: "2.5" },
     { id: "3.0", label: "3.0" },
@@ -59,7 +77,8 @@ export function PostNew() {
     const [rateLimitHit, setRateLimitHit] = useState(false);
 
     // sub_need fields
-    const [format, setFormat] = useState("");
+    const [playType, setPlayType] = useState("");
+    const [duration, setDuration] = useState<number | null>(null);
     const [totalPlayers, setTotalPlayers] = useState(4);
     const [gameDate, setGameDate] = useState<DateValue | null>(null);
     const [multiDateMode, setMultiDateMode] = useState(false);
@@ -107,7 +126,8 @@ export function PostNew() {
             setSeriesId(post.series_id);
             setExistingClaims((claims ?? []).length > 0);
             if (post.post_type === "sub_need") {
-                setFormat(post.format ?? "");
+                setPlayType(post.play_type ?? "");
+                setDuration(post.duration != null ? Number(post.duration) : null);
                 setTotalPlayers(post.total_players ?? 4);
                 setGameDate(post.game_date ? parseDate(post.game_date) : null);
                 setGameTime(post.game_time ? post.game_time.slice(0, 5) : "09:00");
@@ -155,7 +175,7 @@ export function PostNew() {
         : [];
 
     const validateSubNeed = () =>
-        format && gameDate && gameTime && skillLevel && (courtId || customCourt.trim()) && cost !== null;
+        playType && gameDate && gameTime && skillLevel && (courtId || customCourt.trim()) && cost !== null;
 
     const validateRegularGame = () => rgSkillLevel;
 
@@ -189,7 +209,8 @@ export function PostNew() {
                 if (isEditing && editPostId) {
                     await supabase.from("posts").update({
                         ...(existingClaims ? {} : {
-                            format,
+                            play_type: playType,
+                            duration,
                             total_players: totalPlayers,
                             game_date: gameDate?.toString(),
                             game_time: gameTime,
@@ -247,7 +268,8 @@ export function PostNew() {
                         datesToInsert.map((d) => ({
                             author_id: user.id,
                             post_type: "sub_need",
-                            format,
+                            play_type: playType,
+                            duration,
                             total_players: totalPlayers,
                             game_date: d.toString(),
                             game_time: gameTime,
@@ -373,12 +395,24 @@ export function PostNew() {
                 {postType === "sub_need" && (
                     <div className="flex flex-col gap-5">
                         <Select
-                            label="Format"
-                            placeholder="Select format"
-                            items={FORMATS}
-                            selectedKey={format || null}
-                            onSelectionChange={(k) => setFormat(k as string)}
+                            label="Play type"
+                            placeholder="Select play type"
+                            items={PLAY_TYPES}
+                            selectedKey={playType || null}
+                            onSelectionChange={(k) => setPlayType(k as string)}
                             isRequired
+                            isDisabled={lockedField}
+                            tooltip={lockedField ? lockedTitle : undefined}
+                        >
+                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
+                        </Select>
+
+                        <Select
+                            label="Duration (optional)"
+                            placeholder="Select duration"
+                            items={DURATIONS}
+                            selectedKey={duration != null ? String(duration) : null}
+                            onSelectionChange={(k) => setDuration(k != null ? Number(k) : null)}
                             isDisabled={lockedField}
                             tooltip={lockedField ? lockedTitle : undefined}
                         >

@@ -88,9 +88,9 @@ describe("PostNew — sub need form (rendering)", () => {
         setupDefaultMocks();
     });
 
-    it("renders the Format dropdown label", async () => {
+    it("renders the Play type dropdown label", async () => {
         renderPostNew();
-        await waitFor(() => expect(screen.getByText("Format")).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText("Play type")).toBeInTheDocument());
     });
 
     it("renders the Game date field label", async () => {
@@ -225,13 +225,13 @@ describe("PostNew — sub need submit button state", () => {
         await waitFor(() => expect(screen.getByRole("button", { name: /^Post$/i })).toBeDisabled());
     });
 
-    it("submit button becomes enabled after selecting format, skill level, court, and cost", async () => {
+    it("submit button becomes enabled after selecting play type, skill level, court, and cost", async () => {
         const user = userEvent.setup();
         renderPostNew();
 
-        // Select format
-        const formatTrigger = await waitFor(() => screen.getByRole("button", { name: /Format/i }));
-        await user.click(formatTrigger);
+        // Select play type
+        const playTypeTrigger = await waitFor(() => screen.getByRole("button", { name: /Play type/i }));
+        await user.click(playTypeTrigger);
         await waitFor(() => screen.getAllByText("Point play").length > 0);
         await user.click(screen.getAllByText("Point play")[0]);
 

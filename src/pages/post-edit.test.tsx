@@ -62,7 +62,8 @@ const EXISTING_SUB_NEED = {
     id: EDIT_POST_ID,
     post_type: "sub_need",
     author_id: "test-user-id",
-    format: "point_play",
+    play_type: "point_play",
+    duration: 2,
     total_players: 4,
     game_date: "2026-05-01",
     game_time: "09:00",
@@ -292,7 +293,8 @@ describe("PostNew — edit mode save submission", () => {
             unknown
         >;
         // Locked fields must NOT be in the update payload
-        expect(updateArg.format).toBeUndefined();
+        expect(updateArg.play_type).toBeUndefined();
+        expect(updateArg.duration).toBeUndefined();
         expect(updateArg.skill_level).toBeUndefined();
         expect(updateArg.court_id).toBeUndefined();
         // Cost and notes CAN be in the update payload
