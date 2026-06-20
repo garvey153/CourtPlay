@@ -28,7 +28,7 @@ const rpc = vi.mocked(supabase.rpc);
 const activeSubNeed = {
     id: "aaaaaaaa-0000-0000-0000-000000000001",
     author_id: "author-1", author_type: "player", post_type: "sub_need",
-    format: "point_play", total_players: 4, game_date: "2026-04-10", game_time: "09:00",
+    format: "point_play", play_type: "point_play", duration: 2, total_players: 4, game_date: "2026-04-10", game_time: "09:00",
     skill_level: "3.5", location: "Longshore Club", court_id: null, custom_court: null,
     pro_name: null, cost: 25, original_cost: null, spots_total: 4, spots_available: 3,
     series_id: null, notes: null, status: "active", view_count: 10, expires_at: null,
@@ -79,7 +79,7 @@ describe("PostDetail", () => {
     it("renders preview for unauthenticated user viewing active sub_need", async () => {
         rpc.mockResolvedValueOnce({ data: activeSubNeed, error: null } as never);
         renderWithRoute(activeSubNeed.id);
-        expect(await screen.findByText("Point play")).toBeInTheDocument();
+        expect(await screen.findByText("Point Play")).toBeInTheDocument();
         expect(screen.getByText("Sign in to claim this spot")).toBeInTheDocument();
         // Poster name should not be visible in preview
         expect(screen.queryByText("Jane")).not.toBeInTheDocument();

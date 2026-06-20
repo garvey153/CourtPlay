@@ -27,13 +27,14 @@ function formatTime(timeStr: string): string {
     return `${h12}:${m} ${ampm}`;
 }
 
-const FORMAT_LABELS: Record<string, string> = {
-    point_play: "Point play",
-    clinic: "Clinic",
-    lesson: "Lesson",
-    round_robin: "Round robin",
-    other: "Other",
-};
+/** Title-case a snake_case play type, matching the feed card / claim sheet. */
+function formatPlayType(playType: string | null): string {
+    if (!playType) return "";
+    return playType
+        .split("_")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+}
 
 export function PostDetail() {
     const { id } = useParams<{ id: string }>();
@@ -84,7 +85,7 @@ export function PostDetail() {
             return () => { document.title = "CourtPlay"; };
         }
 
-        const formatLabel = FORMAT_LABELS[post.format ?? ""] ?? "Tennis";
+        const formatLabel = formatPlayType(post.play_type ?? post.format) || "Tennis";
         const dateStr = post.game_date ? formatDate(post.game_date) : "";
         const timeStr = post.game_time ? formatTime(post.game_time) : "";
         const location = post.location ?? post.custom_court ?? "";
@@ -192,7 +193,7 @@ export function PostDetail() {
     }
 
     // Unauthenticated — show preview + sign-up CTA
-    const formatLabel = FORMAT_LABELS[post.format ?? ""] ?? "Tennis";
+    const formatLabel = formatPlayType(post.play_type ?? post.format) || "Tennis";
     const redirectUrl = `/post/${post.id}`;
 
     return (
