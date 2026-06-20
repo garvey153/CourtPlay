@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render as rtlRender, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { SubCard } from "@/components/app/sub-card";
+import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import type { FeedPost } from "@/types/feed";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,8 +37,8 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
 
 describe("claim self prevention", () => {
     it("poster cannot claim their own post", () => {
-        render(<SubCard post={makePost()} currentUserId="user-1" />);
-        expect(screen.queryByText("Claim spot")).not.toBeInTheDocument();
-        expect(screen.getByText("Your post")).toBeInTheDocument();
+        render(<ClaimDetailSheet post={makePost()} currentUserId="user-1" onClose={vi.fn()} />);
+        expect(screen.queryByText(/Claim for/)).not.toBeInTheDocument();
+        expect(screen.getByText("This is your post.")).toBeInTheDocument();
     });
 });

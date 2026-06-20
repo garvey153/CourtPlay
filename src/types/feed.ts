@@ -4,6 +4,8 @@ export interface FeedPost {
     author_type: "player" | "pro" | "club";
     post_type: "sub_need" | "regular_game";
     format: string | null;
+    play_type: string | null;
+    duration: number | null;
     total_players: number | null;
     game_date: string | null;
     game_time: string | null;

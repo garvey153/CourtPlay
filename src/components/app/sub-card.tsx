@@ -1,23 +1,34 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
-import { DotsVertical, Share07 } from "@untitledui/icons";
-import { Badge } from "@/components/base/badges/badges";
-import { Button } from "@/components/base/buttons/button";
-import { supabase } from "@/lib/supabase";
-import { useShare } from "@/hooks/use-share";
+import { memo, useEffect, useRef } from "react";
+import { Avatar } from "@/components/base/avatar/avatar";
 import { cx } from "@/utils/cx";
-import { ClaimModal } from "./claim-modal";
-import { ReportModal } from "./report-modal";
-import { ShareModal } from "./share-modal";
 import type { FeedPost } from "@/types/feed";
 
-const FORMAT_CONFIG: Record<string, { label: string; color: "brand" | "blue" | "purple" | "success" | "gray" | "indigo" }> = {
-    point_play: { label: "Point play", color: "brand" },
-    clinic: { label: "Clinic", color: "blue" },
-    lesson: { label: "Lesson", color: "indigo" },
-    round_robin: { label: "Round robin", color: "success" },
-    other: { label: "Other", color: "gray" },
+type CardKind = "open" | "approved" | "claimed" | "pending" | "expired";
+
+interface KindConfig {
+    bar: string;
+    label: string;
+    badgeBg: string;
+    badgeFg: string;
+    dot: string | null; // null = solid badge, no dot
+    dim: boolean;
+}
+
+const KIND_CONFIG: Record<CardKind, KindConfig> = {
+    open: { bar: "bg-brand-500", label: "Open", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", dot: "bg-brand-500", dim: false },
+    approved: { bar: "bg-brand-500", label: "Approved", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", dot: "bg-brand-500", dim: false },
+    claimed: { bar: "bg-neutral-400", label: "Claimed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: true },
+    pending: { bar: "bg-neutral-400", label: "Pending", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: false },
+    expired: { bar: "bg-red-500", label: "Expired", badgeBg: "bg-red-500", badgeFg: "text-white", dot: null, dim: true },
 };
+
+function getCardKind(post: FeedPost): CardKind {
+    if (post.status === "expired") return "expired";
+    if (post.user_claim_status === "approved") return "approved";
+    if (post.user_claim_status === "pending") return "pending";
+    if (post.spots_available <= 0) return "claimed";
+    return "open";
+}
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -29,76 +40,49 @@ function timeAgo(dateStr: string): string {
     return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function formatDate(dateStr: string): string {
-    const d = new Date(dateStr + "T12:00:00");
-    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+/** "Sat 9:00am" — weekday + start time, matching the GameCard title. */
+function formatWhen(gameDate: string | null, gameTime: string | null): string {
+    const parts: string[] = [];
+    if (gameDate) {
+        const d = new Date(gameDate + "T12:00:00");
+        parts.push(d.toLocaleDateString("en-US", { weekday: "short" }));
+    }
+    if (gameTime) {
+        const [h, m] = gameTime.split(":");
+        const hour = parseInt(h, 10);
+        const ampm = hour >= 12 ? "pm" : "am";
+        const h12 = hour % 12 || 12;
+        parts.push(`${h12}:${m}${ampm}`);
+    }
+    return parts.join(" ");
 }
 
-function formatTime(timeStr: string): string {
-    const [h, m] = timeStr.split(":");
-    const hour = parseInt(h, 10);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const h12 = hour % 12 || 12;
-    return `${h12}:${m} ${ampm}`;
+function formatPlayType(playType: string | null): string {
+    if (!playType) return "";
+    return playType
+        .split("_")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
 }
 
-function getTimePressure(
-    gameDate: string | null,
-    gameTime: string | null,
-): { label: string; color: "success" | "warning" | "error" } | null {
-    if (!gameDate || !gameTime) return null;
-    const gameDateTime = new Date(`${gameDate}T${gameTime}`);
-    const hoursUntil = (gameDateTime.getTime() - Date.now()) / 3600000;
-    if (hoursUntil <= 0 || hoursUntil >= 24) return null;
-    const label = `Game in ${Math.floor(hoursUntil)}h`;
-    if (hoursUntil > 12) return { label, color: "success" };
-    if (hoursUntil > 4) return { label, color: "warning" };
-    return { label, color: "error" };
+function formatDuration(duration: number | null): string | null {
+    if (duration == null) return null;
+    return duration === 1 ? "1 hr" : `${duration} hrs`;
 }
 
 interface SubCardProps {
     post: FeedPost;
     currentUserId?: string | null;
     onViewed?: (postId: string) => void;
-    onRefresh?: () => void;
+    /** Tapping the card opens the claim-detail bottom sheet. */
+    onOpenDetail?: (post: FeedPost) => void;
 }
 
-export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, onRefresh }: SubCardProps) {
-    const cardRef = useRef<HTMLDivElement>(null);
+export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, onOpenDetail }: SubCardProps) {
+    const cardRef = useRef<HTMLButtonElement>(null);
     const didTrack = useRef(false);
 
-    const [showClaimModal, setShowClaimModal] = useState(false);
-    const [showMenu, setShowMenu] = useState(false);
-    const [showReportModal, setShowReportModal] = useState(false);
-    const [claimStatus, setClaimStatus] = useState(post.user_claim_status);
-    const [notifyMeState, setNotifyMeState] = useState<"idle" | "loading" | "done">(
-        post.user_notify_me ? "done" : "idle",
-    );
-    const menuRef = useRef<HTMLDivElement>(null);
-
-    const { shareData, handleShare, closeShareModal } = useShare();
-
-    // Sync claim status if feed refreshes
-    useEffect(() => {
-        setClaimStatus(post.user_claim_status);
-    }, [post.user_claim_status]);
-
-    useEffect(() => {
-        setNotifyMeState(post.user_notify_me ? "done" : "idle");
-    }, [post.user_notify_me]);
-
-    // Close menu on click outside
-    useEffect(() => {
-        if (!showMenu) return;
-        const handler = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-                setShowMenu(false);
-            }
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, [showMenu]);
-
+    // Track a view once the card is half-visible (used for price-drop notifications).
     useEffect(() => {
         const el = cardRef.current;
         if (!el || didTrack.current || currentUserId === post.author_id) return;
@@ -116,244 +100,86 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
         return () => observer.disconnect();
     }, [post.id, post.author_id, currentUserId, onViewed]);
 
-    const handleClaimSuccess = useCallback((claimId: string) => {
-        setShowClaimModal(false);
-        setClaimStatus("pending");
-        onRefresh?.();
-        void claimId; // will be used in Phase 7 for notifications
-    }, [onRefresh]);
+    const kind = getCardKind(post);
+    const config = KIND_CONFIG[kind];
 
-    const handleNotifyMe = useCallback(async () => {
-        if (notifyMeState !== "idle") return;
-        setNotifyMeState("loading");
-        await supabase.rpc("add_notify_me", { p_post_id: post.id });
-        setNotifyMeState("done");
-    }, [post.id, notifyMeState]);
+    const playType = formatPlayType(post.play_type);
+    const title = [playType, "Tennis"].filter(Boolean).join(" ");
+    const when = formatWhen(post.game_date, post.game_time);
 
-    const formatConfig = FORMAT_CONFIG[post.format ?? ""] ?? FORMAT_CONFIG.other;
-    const timePressure = getTimePressure(post.game_date, post.game_time);
-    const spotsAvailable = post.spots_available;
-    const isAllFilled = spotsAvailable === 0;
-    const isLowAvailability = spotsAvailable === 1 && !isAllFilled;
-    const isDiscounted = post.original_cost != null && post.cost != null && post.original_cost > post.cost;
-    const isOwnPost = currentUserId === post.author_id;
+    const court = post.location ?? post.custom_court;
+    const subtitle = [court, post.skill_level ? `NTRP ${post.skill_level}` : null, formatDuration(post.duration)]
+        .filter(Boolean)
+        .join(" · ");
 
-    // Claim button / status logic
-    const activeClaim = claimStatus === "pending" || claimStatus === "approved";
-    const showClaimButton = !isOwnPost && !activeClaim && !isAllFilled;
-    const showNotifyMe = !isOwnPost && !activeClaim && isAllFilled;
+    const primaryText = config.dim ? "text-tertiary" : "text-primary";
 
     return (
-        <>
-            <div ref={cardRef} className="rounded-xl border border-secondary bg-primary p-4 shadow-xs">
-                {/* Row 1: badges + time ago + menu */}
-                <div className="flex items-center gap-1.5">
-                    <Badge color={formatConfig.color} size="sm" type="pill-color">
-                        {formatConfig.label}
-                    </Badge>
-                    {post.is_friend && (
-                        <Badge color="success" size="sm" type="pill-color">
-                            Friend
-                        </Badge>
-                    )}
-                    {claimStatus === "pending" && (
-                        <Badge color="warning" size="sm" type="pill-color">
-                            Pending
-                        </Badge>
-                    )}
-                    {claimStatus === "approved" && (
-                        <Badge color="success" size="sm" type="pill-color">
-                            Approved
-                        </Badge>
-                    )}
-                    <span className="ml-auto shrink-0 text-xs text-tertiary">{timeAgo(post.created_at)}</span>
-                    {currentUserId && currentUserId !== post.author_id && (
-                        <div className="relative" ref={menuRef}>
-                            <button
-                                className="rounded p-0.5 text-quaternary hover:text-tertiary"
-                                aria-label="More options"
-                                onClick={() => setShowMenu(!showMenu)}
-                            >
-                                <DotsVertical className="size-4" />
-                            </button>
-                            {showMenu && (
-                                <div className="absolute right-0 top-full z-10 mt-1 w-44 rounded-lg border border-secondary bg-primary py-1 shadow-lg">
-                                    <button
-                                        className="w-full px-4 py-2 text-left text-sm text-error-primary hover:bg-secondary"
-                                        onClick={() => {
-                                            setShowMenu(false);
-                                            setShowReportModal(true);
-                                        }}
-                                    >
-                                        Report this post
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+        <button
+            ref={cardRef}
+            type="button"
+            onClick={() => onOpenDetail?.(post)}
+            className="flex w-full overflow-hidden rounded text-left"
+        >
+            {/* Left status accent bar */}
+            <span className={cx("w-1 shrink-0 self-stretch", config.bar)} aria-hidden="true" />
 
-                {/* Row 2: date + time */}
-                <p className="mt-3 text-base font-semibold text-primary">
-                    {post.game_date ? formatDate(post.game_date) : "Date TBD"}
-                    {post.game_time && (
-                        <span className="font-normal text-secondary"> · {formatTime(post.game_time)}</span>
-                    )}
-                </p>
-
-                {/* Row 3: skill + player count */}
-                <div className="mt-1 flex items-center gap-1.5 text-sm text-secondary">
-                    {post.skill_level && <span>{post.skill_level} NTRP</span>}
-                    {post.skill_level && post.total_players && <span className="text-tertiary">·</span>}
-                    {post.total_players && <span>{post.total_players} players</span>}
-                </div>
-
-                {/* Row 4: location */}
-                {(post.location || post.custom_court) && (
-                    <p className="mt-1 text-sm text-tertiary">
-                        {post.location ?? post.custom_court}
-                    </p>
-                )}
-
-                <hr className="my-3 border-secondary" />
-
-                {/* Row 5: poster + cost */}
-                <div className="flex items-center gap-2">
-                    {post.photo_url ? (
-                        <img
-                            src={post.photo_url}
-                            alt=""
-                            referrerPolicy="no-referrer"
-                            className="size-7 shrink-0 rounded-full object-cover"
-                        />
-                    ) : (
-                        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-tertiary text-xs font-semibold text-secondary">
-                            {post.first_name.charAt(0).toUpperCase()}
-                        </div>
-                    )}
-                    <Link to={`/profile/${post.author_id}`} className="text-sm text-secondary hover:underline">
-                        {post.first_name}
-                    </Link>
-
-                    <div className="ml-auto shrink-0 text-right">
-                        {isDiscounted ? (
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-sm text-tertiary line-through">
-                                    ${post.original_cost!.toFixed(2)}
-                                </span>
-                                <span className="text-sm font-semibold text-success-primary">
-                                    ${post.cost!.toFixed(2)}
-                                </span>
-                            </div>
-                        ) : post.cost != null ? (
-                            <span className="text-sm font-semibold text-primary">${post.cost.toFixed(2)}</span>
-                        ) : (
-                            <span className="text-sm text-tertiary">Free</span>
-                        )}
+            {/* Card body */}
+            <div className="flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4 transition duration-100 ease-linear hover:bg-secondary_hover">
+                {/* Top row: title/subtitle + status badge */}
+                <div className="flex w-full items-start gap-3">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <p className={cx("text-md font-semibold", primaryText)}>
+                            {title}
+                            {when && ` · ${when}`}
+                        </p>
+                        {subtitle && <p className={cx("text-xs", config.dim ? "text-tertiary" : "text-secondary")}>{subtitle}</p>}
                     </div>
-                </div>
 
-                {/* Row 6: spots + time pressure */}
-                <div className="mt-2.5 flex items-center justify-between">
+                    {/* Status badge */}
                     <span
                         className={cx(
-                            "text-sm font-medium",
-                            isAllFilled && "text-tertiary",
-                            isLowAvailability && "text-warning-primary",
-                            !isAllFilled && !isLowAvailability && "text-secondary",
+                            "inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold",
+                            config.badgeBg,
+                            config.badgeFg,
                         )}
                     >
-                        {isAllFilled
-                            ? "All spots filled"
-                            : `${spotsAvailable}/${post.spots_total} spots available`}
+                        {config.dot && <span className={cx("size-1.5 rounded-full", config.dot)} aria-hidden="true" />}
+                        {config.label}
                     </span>
-                    {timePressure && (
-                        <span
-                            className={cx(
-                                "text-xs font-semibold",
-                                timePressure.color === "success" && "text-success-primary",
-                                timePressure.color === "warning" && "text-warning-primary",
-                                timePressure.color === "error" && "text-error-primary",
-                            )}
-                        >
-                            {timePressure.label}
-                        </span>
-                    )}
                 </div>
 
-                {/* Row 7: actions */}
-                <div className="mt-3 flex items-center gap-2">
-                    {showNotifyMe ? (
-                        notifyMeState === "done" ? (
-                            <span className="text-sm text-success-primary">
-                                We'll notify you if a spot opens up.
+                {/* Poster row: avatar + name/time (+ friend) + price */}
+                <div className="flex w-full items-center justify-between pt-1">
+                    <div className="flex min-w-0 items-center gap-2">
+                        <Avatar
+                            size="xs"
+                            src={post.photo_url}
+                            alt={post.first_name}
+                            initials={post.first_name.charAt(0).toUpperCase()}
+                            className="shrink-0 bg-white p-px shadow-xs"
+                        />
+                        <span className="truncate text-xs text-tertiary">
+                            {post.first_name} · {timeAgo(post.created_at)}
+                        </span>
+                        {post.is_friend && (
+                            <span className="shrink-0 rounded-lg bg-blue-900 px-2 py-0.5 text-xs font-semibold text-blue-400">
+                                Friend
                             </span>
-                        ) : (
-                            <button
-                                className="text-sm text-brand-secondary underline underline-offset-2 disabled:opacity-50"
-                                onClick={handleNotifyMe}
-                                disabled={notifyMeState === "loading"}
-                            >
-                                Notify me if this opens up
-                            </button>
-                        )
-                    ) : showClaimButton ? (
-                        <Button
-                            color="primary"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => setShowClaimModal(true)}
-                        >
-                            Claim spot
-                        </Button>
-                    ) : activeClaim ? (
-                        <span className="text-sm text-tertiary">
-                            {claimStatus === "pending"
-                                ? "Awaiting poster approval"
-                                : "Spot approved — check My Activity for details"}
-                        </span>
-                    ) : isOwnPost ? (
-                        <span className="text-sm text-tertiary">Your post</span>
-                    ) : null}
-
-                    <button
-                        className="ml-auto rounded p-1.5 text-quaternary hover:text-tertiary"
-                        aria-label="Share"
-                        onClick={() => handleShare(post)}
-                    >
-                        <Share07 className="size-4" />
-                    </button>
+                        )}
+                    </div>
+                    <span className={cx("shrink-0 text-sm font-semibold", primaryText)}>
+                        {post.cost != null ? `$${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Free"}
+                    </span>
                 </div>
 
-                {/* View count */}
-                <p className="mt-1.5 text-right text-xs text-quaternary">
-                    {post.view_count} {post.view_count === 1 ? "view" : "views"}
-                </p>
+                {/* Notes speech-bubble (only when the poster added a note) */}
+                {post.notes && (
+                    <div className="w-full rounded-lg rounded-tl-none border border-neutral-600 px-3 py-2.5">
+                        <p className="text-sm text-secondary">“{post.notes}”</p>
+                    </div>
+                )}
             </div>
-
-            {showClaimModal && (
-                <ClaimModal
-                    post={post}
-                    onClose={() => setShowClaimModal(false)}
-                    onSuccess={handleClaimSuccess}
-                />
-            )}
-
-            {shareData && (
-                <ShareModal
-                    url={shareData.url}
-                    text={shareData.text}
-                    onClose={closeShareModal}
-                />
-            )}
-
-            {showReportModal && (
-                <ReportModal
-                    targetType="post"
-                    targetId={post.id}
-                    onClose={() => setShowReportModal(false)}
-                />
-            )}
-        </>
+        </button>
     );
 });

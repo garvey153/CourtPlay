@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render as rtlRender, screen } from "@testing-library/react";
+import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { SubCard } from "@/components/app/sub-card";
 import type { FeedPost } from "@/types/feed";
@@ -26,6 +26,8 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
         post_type: "sub_need",
         status: "active",
         format: "point_play",
+        play_type: "doubles",
+        duration: 2,
         total_players: 4,
         game_date: "2026-05-10",
         game_time: "09:00",
@@ -49,6 +51,9 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
         last_name: "Doe",
         photo_url: null,
         is_friend: false,
+        user_claim_status: null,
+        user_claim_id: null,
+        user_notify_me: false,
         ...overrides,
     };
 }
@@ -59,27 +64,56 @@ beforeEach(() => {
 });
 
 describe("SubCard", () => {
-    it("renders all required fields", () => {
+    it("renders title from play type, sport, and start time", () => {
         render(<SubCard post={makePost()} />);
-        expect(screen.getByText("Point play")).toBeInTheDocument();
-        // Date formatted
-        expect(screen.getByText(/May/i)).toBeInTheDocument();
-        // Time
-        expect(screen.getByText(/9:00 AM/i)).toBeInTheDocument();
-        // Skill level
-        expect(screen.getByText(/4\.0 NTRP/i)).toBeInTheDocument();
-        // Total players
-        expect(screen.getByText(/4 players/i)).toBeInTheDocument();
-        // Location
-        expect(screen.getByText("Longshore Club")).toBeInTheDocument();
-        // Poster name
-        expect(screen.getByText("Jane")).toBeInTheDocument();
-        // Spots indicator
-        expect(screen.getByText(/2\/4 spots available/i)).toBeInTheDocument();
-        // Cost
-        expect(screen.getByText("$25.00")).toBeInTheDocument();
-        // View count
-        expect(screen.getByText(/7 views/i)).toBeInTheDocument();
+        // "Doubles Tennis · {weekday} 9:00am"
+        expect(screen.getByText(/Doubles Tennis · .* 9:00am/i)).toBeInTheDocument();
+    });
+
+    it("renders subtitle from court, skill, and duration", () => {
+        render(<SubCard post={makePost()} />);
+        expect(screen.getByText("Longshore Club · NTRP 4.0 · 2 hrs")).toBeInTheDocument();
+    });
+
+    it("omits duration from subtitle when not set", () => {
+        render(<SubCard post={makePost({ duration: null })} />);
+        expect(screen.getByText("Longshore Club · NTRP 4.0")).toBeInTheDocument();
+    });
+
+    it("renders poster name and price", () => {
+        render(<SubCard post={makePost()} />);
+        expect(screen.getByText(/Jane ·/)).toBeInTheDocument();
+        expect(screen.getByText("$25")).toBeInTheDocument();
+    });
+
+    it("shows Free when cost is null", () => {
+        render(<SubCard post={makePost({ cost: null })} />);
+        expect(screen.getByText("Free")).toBeInTheDocument();
+    });
+
+    it("shows Open badge for an active post with spots available", () => {
+        render(<SubCard post={makePost()} />);
+        expect(screen.getByText("Open")).toBeInTheDocument();
+    });
+
+    it("shows Claimed badge when all spots are filled", () => {
+        render(<SubCard post={makePost({ spots_available: 0 })} />);
+        expect(screen.getByText("Claimed")).toBeInTheDocument();
+    });
+
+    it("shows Expired badge for an expired post", () => {
+        render(<SubCard post={makePost({ status: "expired" })} />);
+        expect(screen.getByText("Expired")).toBeInTheDocument();
+    });
+
+    it("shows Pending badge when the viewer's claim is pending", () => {
+        render(<SubCard post={makePost({ user_claim_status: "pending" })} />);
+        expect(screen.getByText("Pending")).toBeInTheDocument();
+    });
+
+    it("shows Approved badge when the viewer's claim is approved", () => {
+        render(<SubCard post={makePost({ user_claim_status: "approved" })} />);
+        expect(screen.getByText("Approved")).toBeInTheDocument();
     });
 
     it("shows Friend badge when is_friend is true", () => {
@@ -92,84 +126,23 @@ describe("SubCard", () => {
         expect(screen.queryByText("Friend")).not.toBeInTheDocument();
     });
 
-    it("shows discount treatment when original_cost exists", () => {
-        render(<SubCard post={makePost({ cost: 20, original_cost: 40 })} />);
-        const strikethrough = screen.getByText("$40.00");
-        expect(strikethrough).toBeInTheDocument();
-        expect(strikethrough).toHaveClass("line-through");
-        expect(screen.getByText("$20.00")).toBeInTheDocument();
+    it("renders the notes bubble only when notes are present", () => {
+        const { rerender } = render(<SubCard post={makePost({ notes: null })} />);
+        expect(screen.queryByText(/“.*”/)).not.toBeInTheDocument();
+
+        rerender(
+            <MemoryRouter>
+                <SubCard post={makePost({ notes: "Bring your own balls" })} />
+            </MemoryRouter>,
+        );
+        expect(screen.getByText("“Bring your own balls”")).toBeInTheDocument();
     });
 
-    it("does not show discount treatment when original_cost is null", () => {
-        render(<SubCard post={makePost({ cost: 40, original_cost: null })} />);
-        expect(screen.getByText("$40.00")).toBeInTheDocument();
-        expect(screen.queryByText(/line-through/)).not.toBeInTheDocument();
-        // Only one price shown — verify no element has line-through class
-        const prices = screen.getAllByText(/\$40\.00/);
-        prices.forEach((el) => expect(el).not.toHaveClass("line-through"));
-    });
-
-    it("shows amber spots indicator when 1 spot remaining", () => {
-        render(<SubCard post={makePost({ spots_total: 4, spots_available: 1 })} />);
-        const spotsEl = screen.getByText(/1\/4 spots available/i);
-        expect(spotsEl).toBeInTheDocument();
-        expect(spotsEl).toHaveClass("text-warning-primary");
-    });
-
-    it("shows time pressure label green for games >12h away today", () => {
-        // Use UTC date + UTC-based time to be timezone-safe
-        const nowMs = Date.now();
-        const todayUTC = new Date(nowMs).toISOString().slice(0, 10);
-        // Pick a future time 14h from now expressed as HH:MM in local timezone
-        const futureDate = new Date(nowMs + 14 * 3600 * 1000);
-        const gameTime = `${String(futureDate.getHours()).padStart(2, "0")}:${String(futureDate.getMinutes()).padStart(2, "0")}`;
-        // Only run this test when adding 14h stays within the same UTC date
-        // (otherwise the component returns null for non-today dates — test is skipped)
-        const futureDateUTC = futureDate.toISOString().slice(0, 10);
-        if (futureDateUTC !== todayUTC) return; // skip if date rolled over
-        render(<SubCard post={makePost({ game_date: todayUTC, game_time: gameTime })} />);
-        const label = screen.queryByText(/Game in \d+h/i);
-        if (label) expect(label).toHaveClass("text-success-primary");
-    });
-
-    it("shows time pressure label amber for games 4–12h away today", () => {
-        const nowMs = Date.now();
-        const todayUTC = new Date(nowMs).toISOString().slice(0, 10);
-        const futureDate = new Date(nowMs + 8 * 3600 * 1000);
-        const gameTime = `${String(futureDate.getHours()).padStart(2, "0")}:${String(futureDate.getMinutes()).padStart(2, "0")}`;
-        const futureDateUTC = futureDate.toISOString().slice(0, 10);
-        if (futureDateUTC !== todayUTC) return;
-        render(<SubCard post={makePost({ game_date: todayUTC, game_time: gameTime })} />);
-        const label = screen.queryByText(/Game in \d+h/i);
-        if (label) expect(label).toHaveClass("text-warning-primary");
-    });
-
-    it("shows time pressure label red for games <4h away today", () => {
-        const nowMs = Date.now();
-        const todayUTC = new Date(nowMs).toISOString().slice(0, 10);
-        const futureDate = new Date(nowMs + 2 * 3600 * 1000);
-        const gameTime = `${String(futureDate.getHours()).padStart(2, "0")}:${String(futureDate.getMinutes()).padStart(2, "0")}`;
-        const futureDateUTC = futureDate.toISOString().slice(0, 10);
-        if (futureDateUTC !== todayUTC) return;
-        render(<SubCard post={makePost({ game_date: todayUTC, game_time: gameTime })} />);
-        const label = screen.queryByText(/Game in \d+h/i);
-        if (label) expect(label).toHaveClass("text-error-primary");
-    });
-
-    it("does not show time pressure label for games more than 24h away", () => {
-        const tomorrow = new Date(Date.now() + 48 * 3600 * 1000);
-        const tomorrowStr = tomorrow.toISOString().slice(0, 10);
-        render(<SubCard post={makePost({ game_date: tomorrowStr, game_time: "09:00" })} />);
-        expect(screen.queryByText(/Game in \d+h/i)).not.toBeInTheDocument();
-    });
-
-    it("shows Notify me link when all spots are filled", () => {
-        render(<SubCard post={makePost({ spots_available: 0 })} />);
-        expect(screen.getByText(/Notify me if this opens up/i)).toBeInTheDocument();
-    });
-
-    it("does not show Notify me link when spots are available", () => {
-        render(<SubCard post={makePost({ spots_available: 2 })} />);
-        expect(screen.queryByText(/Notify me/i)).not.toBeInTheDocument();
+    it("calls onOpenDetail with the post when tapped", () => {
+        const onOpenDetail = vi.fn();
+        render(<SubCard post={makePost()} onOpenDetail={onOpenDetail} />);
+        fireEvent.click(screen.getByRole("button"));
+        expect(onOpenDetail).toHaveBeenCalledTimes(1);
+        expect(onOpenDetail).toHaveBeenCalledWith(expect.objectContaining({ id: "post-1" }));
     });
 });

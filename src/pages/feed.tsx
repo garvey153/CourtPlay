@@ -4,6 +4,7 @@ import { GroupCard } from "@/components/app/group-card";
 import { FeedFilters } from "@/components/app/feed-filters";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { SubCard } from "@/components/app/sub-card";
+import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { WelcomeCard } from "@/components/app/welcome-card";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -47,6 +48,7 @@ export function Feed() {
         courtId: null,
     });
     const [filtersOpen, setFiltersOpen] = useState(false);
+    const [detailPost, setDetailPost] = useState<FeedPost | null>(null);
     const [welcomeDismissed, setWelcomeDismissed] = useState(
         () => localStorage.getItem(WELCOME_KEY) === "1",
     );
@@ -202,7 +204,7 @@ export function Feed() {
                                         post={post}
                                         currentUserId={user?.id}
                                         onViewed={handleViewed}
-                                        onRefresh={fetchPosts}
+                                        onOpenDetail={setDetailPost}
                                     />
                                 </li>
                             ) : (
@@ -219,6 +221,18 @@ export function Feed() {
                     </ul>
                 )}
             </div>
+
+            {detailPost && (
+                <ClaimDetailSheet
+                    post={detailPost}
+                    currentUserId={user?.id}
+                    onClose={() => setDetailPost(null)}
+                    onClaimed={() => {
+                        setDetailPost(null);
+                        fetchPosts();
+                    }}
+                />
+            )}
         </AppLayout>
     );
 }

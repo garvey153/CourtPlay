@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { PostDetail } from "@/pages/post-detail";
 import { supabase } from "@/lib/supabase";
@@ -62,9 +63,9 @@ describe("PostDetail", () => {
         mockUseProfile.mockReturnValue({ profile: { skill_level: "3.5", headline: "test" }, loading: false });
         rpc.mockResolvedValueOnce({ data: activeSubNeed, error: null } as never);
         renderWithRoute(activeSubNeed.id);
-        expect(await screen.findByText("Point play")).toBeInTheDocument();
-        expect(screen.getByText("3.5 NTRP")).toBeInTheDocument();
-        expect(screen.getByText("Longshore Club")).toBeInTheDocument();
+        expect(await screen.findByText(/Tennis/)).toBeInTheDocument();
+        expect(screen.getByText(/Longshore Club/)).toBeInTheDocument();
+        expect(screen.getByText(/NTRP 3\.5/)).toBeInTheDocument();
     });
 
     it("renders GroupCard for authenticated user viewing regular_game", async () => {
@@ -133,19 +134,25 @@ describe("PostDetail", () => {
         expect(screen.getByText("Retry")).toBeInTheDocument();
     });
 
-    it("shows Claim button for authenticated user on post with spots", async () => {
+    it("opens claim sheet with Claim button when the post has spots", async () => {
+        const user = userEvent.setup();
         mockUseAuth.mockReturnValue({ user: { id: "user-b" }, loading: false, session: {}, signOut: vi.fn() });
         mockUseProfile.mockReturnValue({ profile: { skill_level: "3.5" }, loading: false });
         rpc.mockResolvedValueOnce({ data: activeSubNeed, error: null } as never);
         renderWithRoute(activeSubNeed.id);
-        expect(await screen.findByText("Claim spot")).toBeInTheDocument();
+        const card = await screen.findByText(/Tennis/);
+        await user.click(card.closest("button")!);
+        expect(await screen.findByText(/Claim for/)).toBeInTheDocument();
     });
 
-    it("shows Notify Me for authenticated user on full post", async () => {
+    it("opens claim sheet with Notify Me on a full post", async () => {
+        const user = userEvent.setup();
         mockUseAuth.mockReturnValue({ user: { id: "user-b" }, loading: false, session: {}, signOut: vi.fn() });
         mockUseProfile.mockReturnValue({ profile: { skill_level: "3.5" }, loading: false });
         rpc.mockResolvedValueOnce({ data: fullPost, error: null } as never);
         renderWithRoute(fullPost.id);
-        expect(await screen.findByText("Notify me if this opens up")).toBeInTheDocument();
+        const card = await screen.findByText(/Tennis/);
+        await user.click(card.closest("button")!);
+        expect(await screen.findByText("Notify me if a spot opens")).toBeInTheDocument();
     });
 });

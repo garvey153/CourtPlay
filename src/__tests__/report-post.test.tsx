@@ -44,7 +44,7 @@ vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 import { ReportModal } from "@/components/app/report-modal";
-import { SubCard } from "@/components/app/sub-card";
+import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 
 function renderModal(props: Partial<Parameters<typeof ReportModal>[0]> = {}) {
     const defaultProps = {
@@ -243,16 +243,17 @@ describe("ReportModal — post reporting", () => {
         });
     });
 
-    it("self-report prevented — menu not shown on own posts", () => {
+    it("self-report prevented — Report option not shown on own posts", () => {
         render(
             <MemoryRouter>
-                <SubCard
+                <ClaimDetailSheet
                     post={makePost({ author_id: "user-b" })}
                     currentUserId="user-b"
+                    onClose={vi.fn()}
                 />
             </MemoryRouter>,
         );
-        expect(screen.queryByLabelText("More options")).not.toBeInTheDocument();
+        expect(screen.queryByText("Report this post")).not.toBeInTheDocument();
     });
 
     it("modal dismissable by clicking outside", async () => {
@@ -281,32 +282,27 @@ describe("ReportModal — post reporting", () => {
         });
     });
 
-    it("three-dot menu on SubCard contains Report this post", async () => {
-        const user = userEvent.setup();
+    it("claim-detail sheet offers Report this post for other users' posts", () => {
         render(
             <MemoryRouter>
-                <SubCard
+                <ClaimDetailSheet
                     post={makePost({ author_id: "author-1" })}
                     currentUserId="user-b"
+                    onClose={vi.fn()}
                 />
             </MemoryRouter>,
         );
-
-        const moreBtn = screen.getByLabelText("More options");
-        await user.click(moreBtn);
 
         expect(screen.getByText("Report this post")).toBeInTheDocument();
     });
 
-    it("three-dot menu NOT shown to unauthenticated users", () => {
+    it("Report option NOT shown to unauthenticated users", () => {
         render(
             <MemoryRouter>
-                <SubCard
-                    post={makePost({ author_id: "author-1" })}
-                />
+                <ClaimDetailSheet post={makePost({ author_id: "author-1" })} onClose={vi.fn()} />
             </MemoryRouter>,
         );
 
-        expect(screen.queryByLabelText("More options")).not.toBeInTheDocument();
+        expect(screen.queryByText("Report this post")).not.toBeInTheDocument();
     });
 });

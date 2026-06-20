@@ -4,6 +4,7 @@ import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { SubCard } from "@/components/app/sub-card";
+import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { GroupCard } from "@/components/app/group-card";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -43,6 +44,7 @@ export function PostDetail() {
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [claimOpen, setClaimOpen] = useState(false);
 
     const fetchPost = useCallback(async () => {
         if (!id || !UUID_RE.test(id)) {
@@ -163,7 +165,7 @@ export function PostDetail() {
             <AppLayout>
                 <div className="px-4 py-4">
                     {post.post_type === "sub_need" ? (
-                        <SubCard post={post} currentUserId={user.id} />
+                        <SubCard post={post} currentUserId={user.id} onOpenDetail={() => setClaimOpen(true)} />
                     ) : (
                         <GroupCard
                             post={post}
@@ -176,6 +178,15 @@ export function PostDetail() {
                         <PushPrompt variant="post_viewed" />
                     )}
                 </div>
+
+                {claimOpen && (
+                    <ClaimDetailSheet
+                        post={post}
+                        currentUserId={user.id}
+                        onClose={() => setClaimOpen(false)}
+                        onClaimed={() => setClaimOpen(false)}
+                    />
+                )}
             </AppLayout>
         );
     }
