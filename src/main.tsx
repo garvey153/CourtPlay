@@ -24,7 +24,7 @@ import { Terms } from "@/pages/terms";
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
-        <ThemeProvider>
+        <ThemeProvider defaultTheme="dark">
             <BrowserRouter>
                 <RouteProvider>
                 <ProfileProvider>

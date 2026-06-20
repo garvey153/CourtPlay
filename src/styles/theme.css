@@ -121,17 +121,76 @@
     --color-alpha-white: rgb(255 255 255);
     --color-alpha-black: rgb(0 0 0);
 
-    --color-brand-50: rgb(249 245 255);
-    --color-brand-100: rgb(244 235 255);
-    --color-brand-200: rgb(233 215 254);
-    --color-brand-300: rgb(214 187 251);
-    --color-brand-400: rgb(182 146 246);
-    --color-brand-500: rgb(158 119 237);
-    --color-brand-600: rgb(127 86 217);
-    --color-brand-700: rgb(105 65 198);
-    --color-brand-800: rgb(83 56 158);
-    --color-brand-900: rgb(66 48 125);
-    --color-brand-950: rgb(44 28 95);
+    /* CourtPlay brand (green) — from Figma _Primitives/brand */
+    --color-brand-25: rgb(238 249 241);
+    --color-brand-50: rgb(225 244 230);
+    --color-brand-100: rgb(205 237 213);
+    --color-brand-200: rgb(177 227 190);
+    --color-brand-300: rgb(143 215 164);
+    --color-brand-400: rgb(101 201 136);
+    --color-brand-500: rgb(26 179 99);
+    --color-brand-600: rgb(17 140 74);
+    --color-brand-700: rgb(0 104 47);
+    --color-brand-800: rgb(0 64 11);
+    --color-brand-900: rgb(0 40 0);
+    --color-brand-950: rgb(0 26 0);
+
+    /* CourtPlay neutral (green-tinted gray) — from Figma _Primitives/gray.
+       Overrides Tailwind's default neutral so dark surfaces read green-black. */
+    --color-neutral-25: rgb(243 247 245);
+    --color-neutral-50: rgb(214 225 218);
+    --color-neutral-100: rgb(187 203 193);
+    --color-neutral-200: rgb(162 181 170);
+    --color-neutral-300: rgb(140 160 149);
+    --color-neutral-400: rgb(117 137 125);
+    --color-neutral-500: rgb(97 115 103);
+    --color-neutral-600: rgb(77 95 83);
+    --color-neutral-700: rgb(57 76 63);
+    --color-neutral-800: rgb(38 56 44);
+    --color-neutral-900: rgb(23 38 28);
+    --color-neutral-950: rgb(8 24 14);
+
+    /* CourtPlay blue (accent / "Regular play") — from Figma _Primitives/blue */
+    --color-blue-25: rgb(239 246 255);
+    --color-blue-50: rgb(219 234 254);
+    --color-blue-100: rgb(191 219 254);
+    --color-blue-200: rgb(147 197 253);
+    --color-blue-300: rgb(108 181 252);
+    --color-blue-400: rgb(96 165 250);
+    --color-blue-500: rgb(59 130 246);
+    --color-blue-600: rgb(37 99 235);
+    --color-blue-700: rgb(29 78 216);
+    --color-blue-800: rgb(30 64 175);
+    --color-blue-900: rgb(15 45 107);
+    --color-blue-950: rgb(10 30 74);
+
+    /* CourtPlay error (red) — from Figma _Primitives/error */
+    --color-red-25: rgb(255 251 250);
+    --color-red-50: rgb(254 243 242);
+    --color-red-100: rgb(254 228 226);
+    --color-red-200: rgb(254 205 202);
+    --color-red-300: rgb(253 162 155);
+    --color-red-400: rgb(249 112 102);
+    --color-red-500: rgb(240 68 56);
+    --color-red-600: rgb(217 45 32);
+    --color-red-700: rgb(180 35 24);
+    --color-red-800: rgb(145 32 24);
+    --color-red-900: rgb(122 39 26);
+    --color-red-950: rgb(85 22 12);
+
+    /* CourtPlay warning (amber) — from Figma _Primitives/warning */
+    --color-yellow-25: rgb(255 252 245);
+    --color-yellow-50: rgb(255 250 235);
+    --color-yellow-100: rgb(254 240 199);
+    --color-yellow-200: rgb(254 223 137);
+    --color-yellow-300: rgb(254 200 75);
+    --color-yellow-400: rgb(253 176 34);
+    --color-yellow-500: rgb(247 144 9);
+    --color-yellow-600: rgb(220 104 3);
+    --color-yellow-700: rgb(181 71 8);
+    --color-yellow-800: rgb(147 55 13);
+    --color-yellow-900: rgb(122 46 14);
+    --color-yellow-950: rgb(78 29 9);
 
     /* LIGHT MODE VARIABLES */
 
@@ -652,14 +711,14 @@
         --color-utility-amber-600: var(--color-amber-400);
         --color-utility-amber-700: var(--color-amber-300);
 
-        --color-text-primary: var(--color-neutral-50);
+        --color-text-primary: var(--color-white);
         --color-text-tertiary: var(--color-neutral-400);
         --color-text-error-primary: var(--color-red-400);
         --color-text-warning-primary: var(--color-yellow-400);
         --color-text-success-primary: var(--color-green-400);
         --color-text-white: var(--color-white);
-        --color-text-secondary: var(--color-neutral-300);
-        --color-text-secondary_hover: var(--color-neutral-200);
+        --color-text-secondary: var(--color-neutral-200);
+        --color-text-secondary_hover: var(--color-neutral-100);
         --color-text-tertiary_hover: var(--color-neutral-300);
         --color-text-brand-secondary: var(--color-neutral-300);
         --color-text-placeholder: var(--color-neutral-500);
