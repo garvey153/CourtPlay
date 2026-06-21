@@ -30,6 +30,8 @@ interface MyPost {
     id: string;
     post_type: string;
     format: string | null;
+    play_type: string | null;
+    duration: number | null;
     game_date: string | null;
     game_time: string | null;
     location: string | null;
@@ -55,6 +57,8 @@ interface MyClaim {
     post_type: string;
     post_status: string;
     format: string | null;
+    play_type: string | null;
+    duration: number | null;
     game_date: string | null;
     game_time: string | null;
     location: string | null;
@@ -83,15 +87,24 @@ function formatTime(timeStr: string): string {
     return `${h12}:${m} ${ampm}`;
 }
 
-function postLabel(format: string | null): string {
+// sub_need posts store their type in `play_type`; regular_game posts use
+// `format`. Prefer play_type, fall back to format, then a generic label.
+function postLabel(playType: string | null, format: string | null): string {
     const labels: Record<string, string> = {
+        doubles: "Doubles",
         point_play: "Point play",
         clinic: "Clinic",
         lesson: "Lesson",
         round_robin: "Round robin",
         other: "Other",
     };
-    return format ? (labels[format] ?? format) : "Sub needed";
+    const value = playType ?? format;
+    return value ? (labels[value] ?? value) : "Sub needed";
+}
+
+function formatDuration(duration: number | null): string | null {
+    if (duration == null) return null;
+    return duration === 1 ? "1 hr" : `${duration} hrs`;
 }
 
 function claimStatusBadge(status: ClaimStatus) {
@@ -555,7 +568,7 @@ export function Activity() {
                     <div>
                         <div className="flex items-center gap-1.5">
                             <Badge color="brand" size="sm" type="pill-color">
-                                {postLabel(post.format)}
+                                {postLabel(post.play_type, post.format)}
                             </Badge>
                             {postState !== "active" && (
                                 <Badge color={stateBadge.color} size="sm" type="pill-color">
@@ -567,8 +580,12 @@ export function Activity() {
                             {dateDisplay}
                             {timeDisplay && <span className="font-normal text-secondary"> · {timeDisplay}</span>}
                         </p>
-                        {(post.location || post.custom_court) && (
-                            <p className="text-xs text-tertiary">{post.location ?? post.custom_court}</p>
+                        {(post.location || post.custom_court || post.duration != null) && (
+                            <p className="text-xs text-tertiary">
+                                {[post.location ?? post.custom_court, formatDuration(post.duration)]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                            </p>
                         )}
                     </div>
                     <div className="shrink-0 text-right">
@@ -896,14 +913,18 @@ export function Activity() {
                 <div className="flex items-start justify-between gap-2">
                     <div>
                         <Badge color="brand" size="sm" type="pill-color">
-                            {postLabel(claim.format)}
+                            {postLabel(claim.play_type, claim.format)}
                         </Badge>
                         <p className="mt-1.5 text-sm font-semibold text-primary">
                             {dateDisplay}
                             {timeDisplay && <span className="font-normal text-secondary"> · {timeDisplay}</span>}
                         </p>
-                        {(claim.location || claim.custom_court) && (
-                            <p className="text-xs text-tertiary">{claim.location ?? claim.custom_court}</p>
+                        {(claim.location || claim.custom_court || claim.duration != null) && (
+                            <p className="text-xs text-tertiary">
+                                {[claim.location ?? claim.custom_court, formatDuration(claim.duration)]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                            </p>
                         )}
                         {claim.cost != null && (
                             <p className="mt-0.5 text-xs font-semibold text-primary">${claim.cost.toFixed(2)}</p>
