@@ -73,7 +73,7 @@ describe("PostDetail", () => {
         mockUseProfile.mockReturnValue({ profile: { skill_level: "3.5" }, loading: false });
         rpc.mockResolvedValueOnce({ data: regularGame, error: null } as never);
         renderWithRoute(regularGame.id);
-        expect(await screen.findByText("Regular game")).toBeInTheDocument();
+        expect(await screen.findByText(/Tennis, Regular Play/)).toBeInTheDocument();
     });
 
     it("renders preview for unauthenticated user viewing active sub_need", async () => {
