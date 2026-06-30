@@ -1,4 +1,4 @@
-import { FilterLines, X } from "@untitledui/icons";
+import { X } from "@untitledui/icons";
 import { cx } from "@/utils/cx";
 import type { FilterState } from "@/types/feed";
 
@@ -24,7 +24,7 @@ interface FeedFiltersProps {
     onToggle: () => void;
 }
 
-function activeCount(f: FilterState): number {
+export function activeCount(f: FilterState): number {
     return (
         f.skillLevels.length +
         f.formats.length +
@@ -78,41 +78,35 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
     const clearAll = () =>
         onChange({ skillLevels: [], formats: [], dateFrom: null, dateTo: null, courtId: null });
 
+    // The trigger lives in the header (TopNav); this renders only the panel.
+    if (!isOpen) return null;
+
     return (
-        <div className="border-b border-secondary bg-primary">
-            {/* Filter bar */}
-            <div className="flex items-center gap-2 px-4 py-2">
-                <button
-                    onClick={onToggle}
-                    className={cx(
-                        "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition duration-100 ease-linear",
-                        isOpen || count > 0
-                            ? "border-brand bg-brand-secondary text-brand-primary"
-                            : "border-secondary bg-primary text-secondary hover:bg-secondary",
-                    )}
-                >
-                    <FilterLines className="size-4" />
-                    Filters
+        <div className="border-b border-secondary bg-secondary">
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-4 pt-3">
+                <p className="text-sm font-semibold text-primary">Filters</p>
+                <div className="flex items-center gap-3">
                     {count > 0 && (
-                        <span className="flex size-4 items-center justify-center rounded-full bg-brand-solid text-xs text-white">
-                            {count}
-                        </span>
+                        <button
+                            onClick={clearAll}
+                            className="text-sm font-medium text-tertiary hover:text-secondary"
+                        >
+                            Clear all
+                        </button>
                     )}
-                </button>
-                {count > 0 && (
                     <button
-                        onClick={clearAll}
-                        className="flex items-center gap-1 text-sm text-tertiary hover:text-secondary"
+                        onClick={onToggle}
+                        aria-label="Close"
+                        className="-mr-1 rounded p-1 text-quaternary hover:text-tertiary"
                     >
-                        <X className="size-3.5" />
-                        Clear
+                        <X className="size-5" />
                     </button>
-                )}
+                </div>
             </div>
 
-            {/* Expanded panel */}
-            {isOpen && (
-                <div className="flex flex-col gap-4 px-4 pb-4">
+            {/* Controls */}
+            <div className="flex flex-col gap-4 px-4 pb-4 pt-3">
                     {/* Skill level */}
                     <div>
                         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-tertiary">
@@ -194,7 +188,6 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                         </div>
                     )}
                 </div>
-            )}
         </div>
     );
 }

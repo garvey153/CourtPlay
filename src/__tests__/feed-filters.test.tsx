@@ -89,13 +89,17 @@ function FiltersWrapper({
     };
 
     return (
-        <FeedFilters
-            filters={filters}
-            onChange={handleChange}
-            courts={mockCourts}
-            isOpen={isOpen}
-            onToggle={() => setIsOpen((v) => !v)}
-        />
+        <>
+            {/* The real trigger lives in the header (TopNav); simulate it here. */}
+            <button onClick={() => setIsOpen((v) => !v)}>Filters</button>
+            <FeedFilters
+                filters={filters}
+                onChange={handleChange}
+                courts={mockCourts}
+                isOpen={isOpen}
+                onToggle={() => setIsOpen((v) => !v)}
+            />
+        </>
     );
 }
 

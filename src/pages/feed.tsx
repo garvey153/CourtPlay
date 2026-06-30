@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { GroupCard } from "@/components/app/group-card";
-import { FeedFilters } from "@/components/app/feed-filters";
+import { FeedFilters, activeCount } from "@/components/app/feed-filters";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { SubCard } from "@/components/app/sub-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
@@ -143,7 +143,7 @@ export function Feed() {
     const showWelcome = !welcomeDismissed && !loading && filteredPosts.length < 3;
 
     return (
-        <AppLayout>
+        <AppLayout onOpenFilters={handleToggleFilters} filtersActive={activeCount(filters) > 0}>
             <FeedFilters
                 filters={filters}
                 onChange={setFilters}
