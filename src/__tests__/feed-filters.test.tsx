@@ -204,6 +204,20 @@ describe("FeedFilters UI", () => {
         expect(screen.getByRole("checkbox", { name: "4.0" })).toHaveAttribute("aria-checked", "false");
     });
 
+    it("Apply is disabled until an option is selected", async () => {
+        const user = userEvent.setup();
+        render(<FiltersWrapper />);
+
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        await user.click(screen.getByRole("button", { name: /All play types/i }));
+
+        const apply = screen.getByRole("button", { name: /^Apply$/i });
+        expect(apply).toBeDisabled();
+
+        await user.click(screen.getByRole("checkbox", { name: "Point play" }));
+        expect(screen.getByRole("button", { name: /^Apply$/i })).toBeEnabled();
+    });
+
     it("Show results applies the draft selections", async () => {
         const user = userEvent.setup();
         const onChange = vi.fn();

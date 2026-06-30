@@ -125,6 +125,18 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
     const dateSummary =
         draft.dateFrom || draft.dateTo ? `${draft.dateFrom ?? "Any"} – ${draft.dateTo ?? "Any"}` : "Any dates";
 
+    // The detail-view Apply button is disabled until the category has a selection.
+    const categoryHasSelection =
+        view === "play"
+            ? draft.formats.length > 0
+            : view === "skill"
+              ? draft.skillLevels.length > 0
+              : view === "location"
+                ? draft.courtIds.length > 0
+                : view === "date"
+                  ? !!(draft.dateFrom || draft.dateTo)
+                  : true;
+
     const filteredCourts = locQuery
         ? courts.filter((c) => c.name.toLowerCase().includes(locQuery.toLowerCase()))
         : courts;
@@ -314,7 +326,8 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                             <button
                                 type="button"
                                 onClick={view === "base" ? showResults : () => setView("base")}
-                                className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600"
+                                disabled={view !== "base" && !categoryHasSelection}
+                                className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {view === "base" ? "Show results" : "Apply"}
                             </button>
