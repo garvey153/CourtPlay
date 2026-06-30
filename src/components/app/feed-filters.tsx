@@ -77,7 +77,7 @@ function CheckRow({ label, checked, onClick }: { label: string; checked: boolean
             >
                 {checked && <Check className="size-3 text-white" strokeWidth={3} aria-hidden="true" />}
             </span>
-            <span className="text-sm text-secondary">{label}</span>
+            <span className="min-w-0 truncate text-sm text-secondary">{label}</span>
         </button>
     );
 }
@@ -226,9 +226,9 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                         </div>
 
                         {/* Body */}
-                        <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-5 pt-6">
+                        <div className="flex min-h-0 flex-1 flex-col px-5 pt-6">
                             {view === "base" && (
-                                <div className="flex flex-col gap-6">
+                                <div className="flex flex-1 flex-col gap-6 overflow-y-auto">
                                     <CategoryRow
                                         label="All play types"
                                         summary={summarize(playLabels, "All play types")}
@@ -255,35 +255,40 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                             )}
 
                             {view === "play" && (
-                                <CheckGroup>
-                                    {PLAY_TYPES.map((p) => (
-                                        <CheckRow
-                                            key={p.id}
-                                            label={p.label}
-                                            checked={draft.formats.includes(p.id)}
-                                            onClick={() => toggleArray("formats", p.id)}
-                                        />
-                                    ))}
-                                </CheckGroup>
+                                <div className="flex-1 overflow-y-auto">
+                                    <CheckGroup>
+                                        {PLAY_TYPES.map((p) => (
+                                            <CheckRow
+                                                key={p.id}
+                                                label={p.label}
+                                                checked={draft.formats.includes(p.id)}
+                                                onClick={() => toggleArray("formats", p.id)}
+                                            />
+                                        ))}
+                                    </CheckGroup>
+                                </div>
                             )}
 
                             {view === "skill" && (
-                                <CheckGroup>
-                                    {SKILL_LEVELS.map((s) => (
-                                        <CheckRow
-                                            key={s.id}
-                                            label={s.label}
-                                            checked={draft.skillLevels.includes(s.id)}
-                                            onClick={() => toggleArray("skillLevels", s.id)}
-                                        />
-                                    ))}
-                                </CheckGroup>
+                                <div className="flex-1 overflow-y-auto">
+                                    <CheckGroup>
+                                        {SKILL_LEVELS.map((s) => (
+                                            <CheckRow
+                                                key={s.id}
+                                                label={s.label}
+                                                checked={draft.skillLevels.includes(s.id)}
+                                                onClick={() => toggleArray("skillLevels", s.id)}
+                                            />
+                                        ))}
+                                    </CheckGroup>
+                                </div>
                             )}
 
                             {view === "location" && (
                                 <>
-                                    <div className="flex h-9 items-center gap-2 rounded-lg border border-neutral-600 bg-tertiary px-3">
-                                        <SearchLg className="size-4 shrink-0 text-tertiary" aria-hidden="true" />
+                                    {/* Search — pinned above the scrolling list */}
+                                    <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-neutral-600 bg-tertiary px-3">
+                                        <SearchLg className="size-5 shrink-0 text-tertiary" aria-hidden="true" />
                                         <input
                                             value={locQuery}
                                             onChange={(e) => setLocQuery(e.target.value)}
@@ -291,29 +296,29 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                                             className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
                                         />
                                     </div>
-                                    <p className="px-1 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-tertiary">
-                                        Nearby courts
-                                    </p>
-                                    {filteredCourts.length > 0 && (
-                                        <CheckGroup>
-                                            {filteredCourts.map((c) => (
-                                                <CheckRow
-                                                    key={c.id}
-                                                    label={c.name}
-                                                    checked={draft.courtIds.includes(c.id)}
-                                                    onClick={() => toggleArray("courtIds", c.id)}
-                                                />
-                                            ))}
-                                        </CheckGroup>
-                                    )}
-                                    {filteredCourts.length === 0 && (
-                                        <p className="px-1 py-2 text-sm text-tertiary">No courts match “{locQuery}”.</p>
-                                    )}
+                                    <p className="mb-2 mt-4 shrink-0 text-sm font-medium text-secondary">Nearby courts</p>
+                                    {/* Court list — scrolls vertically when it overflows */}
+                                    <div className="min-h-0 flex-1 overflow-y-auto">
+                                        {filteredCourts.length > 0 ? (
+                                            <CheckGroup>
+                                                {filteredCourts.map((c) => (
+                                                    <CheckRow
+                                                        key={c.id}
+                                                        label={c.name}
+                                                        checked={draft.courtIds.includes(c.id)}
+                                                        onClick={() => toggleArray("courtIds", c.id)}
+                                                    />
+                                                ))}
+                                            </CheckGroup>
+                                        ) : (
+                                            <p className="px-1 py-2 text-sm text-tertiary">No courts match “{locQuery}”.</p>
+                                        )}
+                                    </div>
                                 </>
                             )}
 
                             {view === "date" && (
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
                                     <label className="flex flex-col gap-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-tertiary">From</span>
                                         <input
