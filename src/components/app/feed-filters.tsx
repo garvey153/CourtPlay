@@ -224,7 +224,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                         {/* Body */}
                         <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-5 pt-6">
                             {view === "base" && (
-                                <>
+                                <div className="flex flex-col gap-6">
                                     <CategoryRow
                                         label="All play types"
                                         summary={summarize(playLabels, "All play types")}
@@ -247,7 +247,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                                         summary={dateSummary}
                                         onClick={() => setView("date")}
                                     />
-                                </>
+                                </div>
                             )}
 
                             {view === "play" && (
