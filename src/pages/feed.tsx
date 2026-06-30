@@ -23,7 +23,8 @@ interface Court {
 function applyFilters(posts: FeedPost[], f: FilterState): FeedPost[] {
     return posts.filter((p) => {
         if (f.skillLevels.length > 0 && !f.skillLevels.includes(p.skill_level ?? "")) return false;
-        if (f.formats.length > 0 && !f.formats.includes(p.format ?? "")) return false;
+        // sub_need posts store their type in play_type; regular_game in format.
+        if (f.formats.length > 0 && !f.formats.includes(p.play_type ?? p.format ?? "")) return false;
         if (f.dateFrom && p.game_date && p.game_date < f.dateFrom) return false;
         if (f.dateTo && p.game_date && p.game_date > f.dateTo) return false;
         if (f.courtId && p.court_id !== f.courtId) return false;

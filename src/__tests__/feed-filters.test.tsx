@@ -61,7 +61,7 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
 function applyFilters(posts: FeedPost[], f: FilterState): FeedPost[] {
     return posts.filter((p) => {
         if (f.skillLevels.length > 0 && !f.skillLevels.includes(p.skill_level ?? "")) return false;
-        if (f.formats.length > 0 && !f.formats.includes(p.format ?? "")) return false;
+        if (f.formats.length > 0 && !f.formats.includes(p.play_type ?? p.format ?? "")) return false;
         if (f.dateFrom && p.game_date && p.game_date < f.dateFrom) return false;
         if (f.dateTo && p.game_date && p.game_date > f.dateTo) return false;
         if (f.courtId && p.court_id !== f.courtId) return false;
@@ -130,15 +130,25 @@ describe("applyFilters — skill level", () => {
     });
 });
 
-describe("applyFilters — format", () => {
-    it("format filter works correctly", () => {
+describe("applyFilters — format / play type", () => {
+    it("format filter works correctly for regular_game posts", () => {
         const posts = [
-            makePost({ id: "pp", format: "point_play" }),
-            makePost({ id: "cl", format: "clinic" }),
+            makePost({ id: "pp", format: "point_play", play_type: null }),
+            makePost({ id: "cl", format: "clinic", play_type: null }),
         ];
         const result = applyFilters(posts, { ...defaultFilters, formats: ["point_play"] });
         expect(result).toHaveLength(1);
         expect(result[0].id).toBe("pp");
+    });
+
+    it("play_type filter works for sub_need posts (format is null)", () => {
+        const posts = [
+            makePost({ id: "d", format: null, play_type: "doubles" }),
+            makePost({ id: "c", format: null, play_type: "clinic" }),
+        ];
+        const result = applyFilters(posts, { ...defaultFilters, formats: ["doubles"] });
+        expect(result).toHaveLength(1);
+        expect(result[0].id).toBe("d");
     });
 });
 
@@ -167,25 +177,22 @@ describe("applyFilters — empty state", () => {
 // ---------------------------------------------------------------------------
 
 describe("FeedFilters UI", () => {
-    it("Clear filters resets all selections", async () => {
+    it("Clear all resets every selection", async () => {
         const user = userEvent.setup();
         const onChange = vi.fn();
 
         render(<FiltersWrapper onChange={onChange} />);
 
-        // Open filters panel
-        const filtersBtn = screen.getByRole("button", { name: /Filters/i });
-        await user.click(filtersBtn);
+        // Open the sheet (the trigger lives in the header)
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
 
-        // Select a skill level chip
-        const chip35 = screen.getByRole("button", { name: "3.5" });
-        await user.click(chip35);
+        // Expand the skill-level category, then select a chip
+        await user.click(screen.getByRole("button", { name: /All skill levels/i }));
+        await user.click(screen.getByRole("button", { name: "3.5" }));
 
-        // Now a "Clear" button should appear
-        const clearBtn = screen.getByRole("button", { name: /Clear/i });
-        await user.click(clearBtn);
+        // Clear all resets the filters
+        await user.click(screen.getByRole("button", { name: /Clear all/i }));
 
-        // The last onChange call should have empty filters
         const lastCall = onChange.mock.calls.at(-1)?.[0] as FilterState;
         expect(lastCall.skillLevels).toHaveLength(0);
         expect(lastCall.formats).toHaveLength(0);
@@ -198,17 +205,29 @@ describe("FeedFilters UI", () => {
 
         render(<FiltersWrapper onChange={onChange} />);
 
-        // Open filters panel
-        await user.click(screen.getByRole("button", { name: /Filters/i }));
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        await user.click(screen.getByRole("button", { name: /All skill levels/i }));
 
-        // Select 4.0
+        // Select 4.0 (only the chip matches before selection)
         await user.click(screen.getByRole("button", { name: "4.0" }));
-        const afterSelect = onChange.mock.calls.at(-1)?.[0] as FilterState;
-        expect(afterSelect.skillLevels).toContain("4.0");
+        expect((onChange.mock.calls.at(-1)?.[0] as FilterState).skillLevels).toContain("4.0");
 
-        // Deselect 4.0
-        await user.click(screen.getByRole("button", { name: "4.0" }));
-        const afterDeselect = onChange.mock.calls.at(-1)?.[0] as FilterState;
-        expect(afterDeselect.skillLevels).not.toContain("4.0");
+        // After selecting, the row summary also reads "4.0"; the chip is the last match
+        const matches = screen.getAllByRole("button", { name: "4.0" });
+        await user.click(matches[matches.length - 1]);
+        expect((onChange.mock.calls.at(-1)?.[0] as FilterState).skillLevels).not.toContain("4.0");
+    });
+
+    it("play type chip selects on the formats field", async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+
+        render(<FiltersWrapper onChange={onChange} />);
+
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        await user.click(screen.getByRole("button", { name: /All play types/i }));
+        await user.click(screen.getByRole("button", { name: "Doubles" }));
+
+        expect((onChange.mock.calls.at(-1)?.[0] as FilterState).formats).toContain("doubles");
     });
 });
