@@ -98,7 +98,9 @@ export const Avatar = ({
 
     const renderMainContent = () => {
         if (canShowImage) {
-            return <img data-avatar-img className="size-full object-cover" src={src} alt={alt} onError={() => setIsFailed(true)} />;
+            // referrerPolicy="no-referrer" is required for Google OAuth profile
+            // photos, which 403 when a Referer header is sent.
+            return <img data-avatar-img referrerPolicy="no-referrer" className="size-full object-cover" src={src} alt={alt} onError={() => setIsFailed(true)} />;
         }
 
         if (initials) {
