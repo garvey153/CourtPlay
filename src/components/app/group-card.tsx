@@ -1,11 +1,7 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef } from "react";
 import { Link } from "react-router";
-import { DotsVertical, Share07 } from "@untitledui/icons";
-import { Badge } from "@/components/base/badges/badges";
-import { useShare } from "@/hooks/use-share";
+import { Avatar } from "@/components/base/avatar/avatar";
 import { cx } from "@/utils/cx";
-import { ReportModal } from "./report-modal";
-import { ShareModal } from "./share-modal";
 import type { FeedPost } from "@/types/feed";
 
 function timeAgo(dateStr: string): string {
@@ -26,25 +22,9 @@ interface GroupCardProps {
     onViewed?: (postId: string) => void;
 }
 
-export const GroupCard = memo(function GroupCard({ post, profileComplete, currentUserId, onViewed }: GroupCardProps) {
+export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed }: GroupCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
-    const menuRef = useRef<HTMLDivElement>(null);
     const didTrack = useRef(false);
-    const { shareData, handleShare, closeShareModal } = useShare();
-    const [showMenu, setShowMenu] = useState(false);
-    const [showReportModal, setShowReportModal] = useState(false);
-
-    // Close menu on click outside
-    useEffect(() => {
-        if (!showMenu) return;
-        const handler = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-                setShowMenu(false);
-            }
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, [showMenu]);
 
     useEffect(() => {
         const el = cardRef.current;
@@ -64,138 +44,70 @@ export const GroupCard = memo(function GroupCard({ post, profileComplete, curren
         return () => observer.disconnect();
     }, [post.id, post.author_id, currentUserId, onViewed]);
 
+    // Pro/club authors get the "featured" gradient accent bar; players get solid blue.
+    const isFeatured = post.author_type === "pro" || post.author_type === "club";
+
+    const title = ["Tennis, Regular Play", post.skill_level ? `NTRP ${post.skill_level}` : null]
+        .filter(Boolean)
+        .join(" · ");
+    const schedule = [post.preferred_days?.join(", "), post.preferred_times?.join(" / ")]
+        .filter(Boolean)
+        .join(" · ");
+
     return (
-        <>
-        <div ref={cardRef} className="rounded-xl border border-secondary bg-primary p-4 shadow-xs">
-            {/* Row 1: label + time ago + menu */}
-            <div className="flex items-center gap-1.5">
-                <Badge color="gray" size="sm" type="pill-color">
-                    Regular game
-                </Badge>
-                {post.is_friend && (
-                    <Badge color="success" size="sm" type="pill-color">
-                        Friend
-                    </Badge>
+        <div ref={cardRef} className="flex w-full overflow-hidden rounded text-left">
+            {/* Left accent bar — blue for regular play, gradient when featured (pro/club) */}
+            <span
+                className={cx(
+                    "w-1 shrink-0 self-stretch",
+                    isFeatured ? "bg-gradient-to-b from-brand-500 to-blue-400" : "bg-blue-500",
                 )}
-                <span className="ml-auto shrink-0 text-xs text-tertiary">{timeAgo(post.created_at)}</span>
-                {currentUserId && currentUserId !== post.author_id && (
-                    <div className="relative" ref={menuRef}>
-                        <button
-                            className="rounded p-0.5 text-quaternary hover:text-tertiary"
-                            aria-label="More options"
-                            onClick={() => setShowMenu(!showMenu)}
-                        >
-                            <DotsVertical className="size-4" />
-                        </button>
-                        {showMenu && (
-                            <div className="absolute right-0 top-full z-10 mt-1 w-44 rounded-lg border border-secondary bg-primary py-1 shadow-lg">
-                                <button
-                                    className="w-full px-4 py-2 text-left text-sm text-error-primary hover:bg-secondary"
-                                    onClick={() => {
-                                        setShowMenu(false);
-                                        setShowReportModal(true);
-                                    }}
-                                >
-                                    Report this post
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
+                aria-hidden="true"
+            />
 
-            {/* Skill level */}
-            {post.skill_level && (
-                <p className="mt-3 text-base font-semibold text-primary">{post.skill_level} NTRP</p>
-            )}
-
-            {/* Preferred days + times */}
-            {((post.preferred_days?.length ?? 0) > 0 || (post.preferred_times?.length ?? 0) > 0) && (
-                <p className="mt-1 text-sm text-secondary">
-                    {[post.preferred_days?.join(", "), post.preferred_times?.join(" / ")]
-                        .filter(Boolean)
-                        .join(" · ")}
-                </p>
-            )}
-
-            {/* Preferred courts / location */}
-            {post.location && (
-                <p className="mt-1 text-sm text-tertiary">{post.location}</p>
-            )}
-
-            {/* Format interest chips */}
-            {post.format && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                    <Badge color="gray" size="sm" type="color">
-                        {post.format.replace(/_/g, " ")}
-                    </Badge>
-                </div>
-            )}
-
-            {/* Notes */}
-            {post.notes && (
-                <p className="mt-3 text-sm italic text-secondary">"{post.notes}"</p>
-            )}
-
-            <hr className="my-3 border-secondary" />
-
-            {/* Poster */}
-            <div className="flex items-center gap-2">
-                {post.photo_url ? (
-                    <img
+            {/* Card body */}
+            <div className="flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4">
+                {/* Poster row: avatar + name/time (+ friend) */}
+                <div className="flex min-w-0 items-center gap-2 pt-1">
+                    <Avatar
+                        size="xs"
                         src={post.photo_url}
-                        alt=""
-                        referrerPolicy="no-referrer"
-                        className="size-7 shrink-0 rounded-full object-cover"
+                        alt={post.first_name}
+                        initials={post.first_name.charAt(0).toUpperCase()}
+                        className="shrink-0 bg-white p-px shadow-xs"
                     />
-                ) : (
-                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-tertiary text-xs font-semibold text-secondary">
-                        {post.first_name.charAt(0).toUpperCase()}
+                    <span className="truncate text-xs text-tertiary">
+                        <Link
+                            to={`/profile/${post.author_id}`}
+                            className="font-medium text-tertiary hover:text-secondary hover:underline"
+                        >
+                            {post.first_name}
+                            {post.last_name ? ` ${post.last_name.charAt(0).toUpperCase()}.` : ""}
+                        </Link>
+                        {" · "}
+                        {timeAgo(post.created_at)}
+                    </span>
+                    {post.is_friend && (
+                        <span className="shrink-0 rounded-lg bg-blue-900 px-2 py-0.5 text-xs font-semibold text-blue-400">
+                            Friend
+                        </span>
+                    )}
+                </div>
+
+                {/* Title + supporting info */}
+                <div className="flex min-w-0 flex-col gap-1">
+                    <p className="text-md font-semibold text-primary">{title}</p>
+                    {post.location && <p className="text-xs text-secondary">{post.location}</p>}
+                    {schedule && <p className="text-xs text-tertiary">{schedule}</p>}
+                </div>
+
+                {/* Notes speech-bubble (only when the poster added a note) */}
+                {post.notes && (
+                    <div className="w-full rounded-lg rounded-tl-none border border-neutral-600 px-3 py-2.5">
+                        <p className="text-sm text-secondary">“{post.notes}”</p>
                     </div>
                 )}
-                <Link to={`/profile/${post.author_id}`} className="text-sm font-medium text-primary hover:underline">
-                    {post.first_name} {post.last_name}
-                </Link>
-                <button
-                    className="ml-auto rounded p-1.5 text-quaternary hover:text-tertiary"
-                    aria-label="Share"
-                    onClick={() => handleShare(post)}
-                >
-                    <Share07 className="size-4" />
-                </button>
             </div>
-
-            {/* Contact info — gated behind complete profile */}
-            {profileComplete ? (
-                <div className={cx("mt-2 flex flex-col gap-0.5 text-sm text-secondary")}>
-                    <span>{post.author_id}</span>
-                    {/* Phone/email shown post-Phase 4 when claim is approved */}
-                    <span className="text-xs text-tertiary">
-                        Contact details shared after connecting
-                    </span>
-                </div>
-            ) : (
-                <p className="mt-2 text-xs text-tertiary">
-                    Complete your profile to see contact details.
-                </p>
-            )}
         </div>
-
-        {shareData && (
-            <ShareModal
-                url={shareData.url}
-                text={shareData.text}
-                onClose={closeShareModal}
-            />
-        )}
-
-        {showReportModal && (
-            <ReportModal
-                targetType="post"
-                targetId={post.id}
-                onClose={() => setShowReportModal(false)}
-            />
-        )}
-        </>
     );
 });
