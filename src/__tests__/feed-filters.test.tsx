@@ -14,7 +14,7 @@ const defaultFilters: FilterState = {
     formats: [],
     dateFrom: null,
     dateTo: null,
-    courtId: null,
+    courtIds: [],
 };
 
 const mockCourts = [
@@ -64,7 +64,7 @@ function applyFilters(posts: FeedPost[], f: FilterState): FeedPost[] {
         if (f.formats.length > 0 && !f.formats.includes(p.play_type ?? p.format ?? "")) return false;
         if (f.dateFrom && p.game_date && p.game_date < f.dateFrom) return false;
         if (f.dateTo && p.game_date && p.game_date > f.dateTo) return false;
-        if (f.courtId && p.court_id !== f.courtId) return false;
+        if (f.courtIds.length > 0 && !f.courtIds.includes(p.court_id ?? "")) return false;
         return true;
     });
 }
@@ -158,7 +158,7 @@ describe("applyFilters — location", () => {
             makePost({ id: "c1", court_id: "court-1" }),
             makePost({ id: "c2", court_id: "court-2" }),
         ];
-        const result = applyFilters(posts, { ...defaultFilters, courtId: "court-1" });
+        const result = applyFilters(posts, { ...defaultFilters, courtIds: ["court-1"] });
         expect(result).toHaveLength(1);
         expect(result[0].id).toBe("c1");
     });
@@ -177,57 +177,63 @@ describe("applyFilters — empty state", () => {
 // ---------------------------------------------------------------------------
 
 describe("FeedFilters UI", () => {
-    it("Clear all resets every selection", async () => {
+    it("drills into a category to reveal its checkbox options", async () => {
         const user = userEvent.setup();
-        const onChange = vi.fn();
+        render(<FiltersWrapper />);
 
-        render(<FiltersWrapper onChange={onChange} />);
-
-        // Open the sheet (the trigger lives in the header)
         await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        // Base view shows category rows, not checkboxes
+        expect(screen.queryByRole("checkbox", { name: "4.0" })).not.toBeInTheDocument();
 
-        // Expand the skill-level category, then select a chip
         await user.click(screen.getByRole("button", { name: /All skill levels/i }));
-        await user.click(screen.getByRole("button", { name: "3.5" }));
-
-        // Clear all resets the filters
-        await user.click(screen.getByRole("button", { name: /Clear all/i }));
-
-        const lastCall = onChange.mock.calls.at(-1)?.[0] as FilterState;
-        expect(lastCall.skillLevels).toHaveLength(0);
-        expect(lastCall.formats).toHaveLength(0);
-        expect(lastCall.courtId).toBeNull();
+        expect(screen.getByRole("checkbox", { name: "4.0" })).toBeInTheDocument();
     });
 
-    it("skill level chip toggles on and off", async () => {
+    it("checkbox toggles its checked state", async () => {
         const user = userEvent.setup();
-        const onChange = vi.fn();
-
-        render(<FiltersWrapper onChange={onChange} />);
+        render(<FiltersWrapper />);
 
         await user.click(screen.getByRole("button", { name: /^Filters$/i }));
         await user.click(screen.getByRole("button", { name: /All skill levels/i }));
 
-        // Select 4.0 (only the chip matches before selection)
-        await user.click(screen.getByRole("button", { name: "4.0" }));
-        expect((onChange.mock.calls.at(-1)?.[0] as FilterState).skillLevels).toContain("4.0");
-
-        // After selecting, the row summary also reads "4.0"; the chip is the last match
-        const matches = screen.getAllByRole("button", { name: "4.0" });
-        await user.click(matches[matches.length - 1]);
-        expect((onChange.mock.calls.at(-1)?.[0] as FilterState).skillLevels).not.toContain("4.0");
+        const cb = screen.getByRole("checkbox", { name: "4.0" });
+        expect(cb).toHaveAttribute("aria-checked", "false");
+        await user.click(cb);
+        expect(screen.getByRole("checkbox", { name: "4.0" })).toHaveAttribute("aria-checked", "true");
+        await user.click(screen.getByRole("checkbox", { name: "4.0" }));
+        expect(screen.getByRole("checkbox", { name: "4.0" })).toHaveAttribute("aria-checked", "false");
     });
 
-    it("play type chip selects on the formats field", async () => {
+    it("Show results applies the draft selections", async () => {
         const user = userEvent.setup();
         const onChange = vi.fn();
-
         render(<FiltersWrapper onChange={onChange} />);
 
         await user.click(screen.getByRole("button", { name: /^Filters$/i }));
         await user.click(screen.getByRole("button", { name: /All play types/i }));
-        await user.click(screen.getByRole("button", { name: "Doubles" }));
+        await user.click(screen.getByRole("checkbox", { name: "Point play" }));
+        await user.click(screen.getByRole("button", { name: /^Apply$/i })); // back to base
+        await user.click(screen.getByRole("button", { name: /Show results/i }));
 
-        expect((onChange.mock.calls.at(-1)?.[0] as FilterState).formats).toContain("doubles");
+        const lastCall = onChange.mock.calls.at(-1)?.[0] as FilterState;
+        expect(lastCall.formats).toContain("point_play");
+    });
+
+    it("Clear all then Show results resets every selection", async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<FiltersWrapper onChange={onChange} />);
+
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        await user.click(screen.getByRole("button", { name: /All skill levels/i }));
+        await user.click(screen.getByRole("checkbox", { name: "3.5" }));
+        await user.click(screen.getByRole("button", { name: /^Apply$/i }));
+        await user.click(screen.getByRole("button", { name: /Clear all/i }));
+        await user.click(screen.getByRole("button", { name: /Show results/i }));
+
+        const lastCall = onChange.mock.calls.at(-1)?.[0] as FilterState;
+        expect(lastCall.skillLevels).toHaveLength(0);
+        expect(lastCall.formats).toHaveLength(0);
+        expect(lastCall.courtIds).toHaveLength(0);
     });
 });

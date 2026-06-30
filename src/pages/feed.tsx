@@ -27,7 +27,7 @@ function applyFilters(posts: FeedPost[], f: FilterState): FeedPost[] {
         if (f.formats.length > 0 && !f.formats.includes(p.play_type ?? p.format ?? "")) return false;
         if (f.dateFrom && p.game_date && p.game_date < f.dateFrom) return false;
         if (f.dateTo && p.game_date && p.game_date > f.dateTo) return false;
-        if (f.courtId && p.court_id !== f.courtId) return false;
+        if (f.courtIds.length > 0 && !f.courtIds.includes(p.court_id ?? "")) return false;
         return true;
     });
 }
@@ -46,7 +46,7 @@ export function Feed() {
         formats: [],
         dateFrom: null,
         dateTo: null,
-        courtId: null,
+        courtIds: [],
     });
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [detailPost, setDetailPost] = useState<FeedPost | null>(null);
