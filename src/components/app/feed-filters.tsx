@@ -4,7 +4,18 @@ import { Check, ChevronLeft, ChevronRight, SearchLg, X } from "@untitledui/icons
 import { cx } from "@/utils/cx";
 import type { FilterState } from "@/types/feed";
 
-const SKILL_LEVELS = ["2.5", "3.0", "3.5", "4.0", "4.5", "5.0"];
+// Descriptive NTRP language per the design. `id` is the value matched against
+// post.skill_level (posts currently range 2.5–5.0).
+const SKILL_LEVELS = [
+    { id: "1.5", label: "NTRP 1.0 to 1.5 (New Player)" },
+    { id: "2.0", label: "NTRP 2.0 (Beginner)" },
+    { id: "2.5", label: "NTRP 2.5 (Advanced Beginner)" },
+    { id: "3.0", label: "NTRP 3.0 (Lower-Intermediate)" },
+    { id: "3.5", label: "NTRP 3.5 (Intermediate)" },
+    { id: "4.0", label: "NTRP 4.0 (Intermediate-Advanced)" },
+    { id: "4.5", label: "NTRP 4.5 (Advanced)" },
+    { id: "5.0", label: "NTRP 5.0 to 7.0 (Pro)" },
+];
 
 // Play type supersedes the old `format` field for sub_need posts.
 const PLAY_TYPES = [
@@ -256,10 +267,10 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                                 <CheckGroup>
                                     {SKILL_LEVELS.map((s) => (
                                         <CheckRow
-                                            key={s}
-                                            label={s}
-                                            checked={draft.skillLevels.includes(s)}
-                                            onClick={() => toggleArray("skillLevels", s)}
+                                            key={s.id}
+                                            label={s.label}
+                                            checked={draft.skillLevels.includes(s.id)}
+                                            onClick={() => toggleArray("skillLevels", s.id)}
                                         />
                                     ))}
                                 </CheckGroup>

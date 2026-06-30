@@ -183,10 +183,10 @@ describe("FeedFilters UI", () => {
 
         await user.click(screen.getByRole("button", { name: /^Filters$/i }));
         // Base view shows category rows, not checkboxes
-        expect(screen.queryByRole("checkbox", { name: "4.0" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("checkbox", { name: /NTRP 4\.0/ })).not.toBeInTheDocument();
 
         await user.click(screen.getByRole("button", { name: /All skill levels/i }));
-        expect(screen.getByRole("checkbox", { name: "4.0" })).toBeInTheDocument();
+        expect(screen.getByRole("checkbox", { name: /NTRP 4\.0/ })).toBeInTheDocument();
     });
 
     it("checkbox toggles its checked state", async () => {
@@ -196,12 +196,12 @@ describe("FeedFilters UI", () => {
         await user.click(screen.getByRole("button", { name: /^Filters$/i }));
         await user.click(screen.getByRole("button", { name: /All skill levels/i }));
 
-        const cb = screen.getByRole("checkbox", { name: "4.0" });
+        const cb = screen.getByRole("checkbox", { name: /NTRP 4\.0/ });
         expect(cb).toHaveAttribute("aria-checked", "false");
         await user.click(cb);
-        expect(screen.getByRole("checkbox", { name: "4.0" })).toHaveAttribute("aria-checked", "true");
-        await user.click(screen.getByRole("checkbox", { name: "4.0" }));
-        expect(screen.getByRole("checkbox", { name: "4.0" })).toHaveAttribute("aria-checked", "false");
+        expect(screen.getByRole("checkbox", { name: /NTRP 4\.0/ })).toHaveAttribute("aria-checked", "true");
+        await user.click(screen.getByRole("checkbox", { name: /NTRP 4\.0/ }));
+        expect(screen.getByRole("checkbox", { name: /NTRP 4\.0/ })).toHaveAttribute("aria-checked", "false");
     });
 
     it("Apply is disabled until an option is selected", async () => {
@@ -240,7 +240,7 @@ describe("FeedFilters UI", () => {
 
         await user.click(screen.getByRole("button", { name: /^Filters$/i }));
         await user.click(screen.getByRole("button", { name: /All skill levels/i }));
-        await user.click(screen.getByRole("checkbox", { name: "3.5" }));
+        await user.click(screen.getByRole("checkbox", { name: /NTRP 3\.5/ }));
         await user.click(screen.getByRole("button", { name: /^Apply$/i }));
         await user.click(screen.getByRole("button", { name: /Clear all/i }));
         await user.click(screen.getByRole("button", { name: /Show results/i }));
