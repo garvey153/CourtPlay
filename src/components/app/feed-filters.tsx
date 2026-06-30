@@ -56,12 +56,12 @@ function CheckRow({ label, checked, onClick }: { label: string; checked: boolean
             role="checkbox"
             aria-checked={checked}
             onClick={onClick}
-            className="flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 text-left transition duration-100 ease-linear hover:brightness-110"
+            className="flex h-9 w-full items-center gap-2 bg-tertiary px-3 text-left transition duration-100 ease-linear hover:brightness-110"
         >
             <span
                 className={cx(
                     "flex size-4 shrink-0 items-center justify-center rounded",
-                    checked ? "bg-brand-500" : "border border-secondary",
+                    checked ? "bg-brand-500" : "border border-neutral-200",
                 )}
             >
                 {checked && <Check className="size-3 text-white" strokeWidth={3} aria-hidden="true" />}
@@ -69,6 +69,11 @@ function CheckRow({ label, checked, onClick }: { label: string; checked: boolean
             <span className="text-sm text-secondary">{label}</span>
         </button>
     );
+}
+
+/** Wraps checkbox rows so only the outer corners round and 4px gaps show between. */
+function CheckGroup({ children }: { children: React.ReactNode }) {
+    return <div className="flex flex-col gap-1 overflow-hidden rounded-lg">{children}</div>;
 }
 
 export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: FeedFiltersProps) {
@@ -222,25 +227,31 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                                 </>
                             )}
 
-                            {view === "play" &&
-                                PLAY_TYPES.map((p) => (
-                                    <CheckRow
-                                        key={p.id}
-                                        label={p.label}
-                                        checked={draft.formats.includes(p.id)}
-                                        onClick={() => toggleArray("formats", p.id)}
-                                    />
-                                ))}
+                            {view === "play" && (
+                                <CheckGroup>
+                                    {PLAY_TYPES.map((p) => (
+                                        <CheckRow
+                                            key={p.id}
+                                            label={p.label}
+                                            checked={draft.formats.includes(p.id)}
+                                            onClick={() => toggleArray("formats", p.id)}
+                                        />
+                                    ))}
+                                </CheckGroup>
+                            )}
 
-                            {view === "skill" &&
-                                SKILL_LEVELS.map((s) => (
-                                    <CheckRow
-                                        key={s}
-                                        label={s}
-                                        checked={draft.skillLevels.includes(s)}
-                                        onClick={() => toggleArray("skillLevels", s)}
-                                    />
-                                ))}
+                            {view === "skill" && (
+                                <CheckGroup>
+                                    {SKILL_LEVELS.map((s) => (
+                                        <CheckRow
+                                            key={s}
+                                            label={s}
+                                            checked={draft.skillLevels.includes(s)}
+                                            onClick={() => toggleArray("skillLevels", s)}
+                                        />
+                                    ))}
+                                </CheckGroup>
+                            )}
 
                             {view === "location" && (
                                 <>
@@ -256,14 +267,18 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                                     <p className="px-1 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-tertiary">
                                         Nearby courts
                                     </p>
-                                    {filteredCourts.map((c) => (
-                                        <CheckRow
-                                            key={c.id}
-                                            label={c.name}
-                                            checked={draft.courtIds.includes(c.id)}
-                                            onClick={() => toggleArray("courtIds", c.id)}
-                                        />
-                                    ))}
+                                    {filteredCourts.length > 0 && (
+                                        <CheckGroup>
+                                            {filteredCourts.map((c) => (
+                                                <CheckRow
+                                                    key={c.id}
+                                                    label={c.name}
+                                                    checked={draft.courtIds.includes(c.id)}
+                                                    onClick={() => toggleArray("courtIds", c.id)}
+                                                />
+                                            ))}
+                                        </CheckGroup>
+                                    )}
                                     {filteredCourts.length === 0 && (
                                         <p className="px-1 py-2 text-sm text-tertiary">No courts match “{locQuery}”.</p>
                                     )}
