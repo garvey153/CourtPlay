@@ -218,6 +218,20 @@ describe("FeedFilters UI", () => {
         expect(screen.getByRole("button", { name: /^Apply$/i })).toBeEnabled();
     });
 
+    it("Show results is disabled until a filter is applied", async () => {
+        const user = userEvent.setup();
+        render(<FiltersWrapper />);
+
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        expect(screen.getByRole("button", { name: /Show results/i })).toBeDisabled();
+
+        await user.click(screen.getByRole("button", { name: /All play types/i }));
+        await user.click(screen.getByRole("checkbox", { name: "Point play" }));
+        await user.click(screen.getByRole("button", { name: /^Apply$/i }));
+
+        expect(screen.getByRole("button", { name: /Show results/i })).toBeEnabled();
+    });
+
     it("Show results applies the draft selections", async () => {
         const user = userEvent.setup();
         const onChange = vi.fn();
@@ -233,21 +247,17 @@ describe("FeedFilters UI", () => {
         expect(lastCall.formats).toContain("point_play");
     });
 
-    it("Clear all then Show results resets every selection", async () => {
+    it("Clear all empties the draft (Show results becomes disabled)", async () => {
         const user = userEvent.setup();
-        const onChange = vi.fn();
-        render(<FiltersWrapper onChange={onChange} />);
+        render(<FiltersWrapper />);
 
         await user.click(screen.getByRole("button", { name: /^Filters$/i }));
         await user.click(screen.getByRole("button", { name: /All skill levels/i }));
         await user.click(screen.getByRole("checkbox", { name: /NTRP 3\.5/ }));
         await user.click(screen.getByRole("button", { name: /^Apply$/i }));
-        await user.click(screen.getByRole("button", { name: /Clear all/i }));
-        await user.click(screen.getByRole("button", { name: /Show results/i }));
+        expect(screen.getByRole("button", { name: /Show results/i })).toBeEnabled();
 
-        const lastCall = onChange.mock.calls.at(-1)?.[0] as FilterState;
-        expect(lastCall.skillLevels).toHaveLength(0);
-        expect(lastCall.formats).toHaveLength(0);
-        expect(lastCall.courtIds).toHaveLength(0);
+        await user.click(screen.getByRole("button", { name: /Clear all/i }));
+        expect(screen.getByRole("button", { name: /Show results/i })).toBeDisabled();
     });
 });

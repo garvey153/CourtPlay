@@ -337,7 +337,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                             <button
                                 type="button"
                                 onClick={view === "base" ? showResults : () => setView("base")}
-                                disabled={view !== "base" && !categoryHasSelection}
+                                disabled={view === "base" ? activeCount(draft) === 0 : !categoryHasSelection}
                                 className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {view === "base" ? "Show results" : "Apply"}
