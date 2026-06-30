@@ -23,7 +23,7 @@ export function TopNav({ onOpenFilters, filtersActive }: TopNavProps) {
                         type="button"
                         onClick={onOpenFilters}
                         aria-label="Filter posts"
-                        className="relative rounded-lg p-1.5 text-secondary transition duration-100 ease-linear hover:text-primary"
+                        className="relative rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
                     >
                         <FilterLines className="size-6" aria-hidden="true" />
                         {filtersActive && (
