@@ -1,6 +1,5 @@
 import { useLocation, useNavigate } from "react-router";
 import { FilterLines } from "@untitledui/icons";
-import { Button } from "@/components/base/buttons/button";
 
 interface TopNavProps {
     /** When provided (feed only), shows a filter icon that opens the feed filters. */
@@ -33,9 +32,13 @@ export function TopNav({ onOpenFilters, filtersActive }: TopNavProps) {
                     </button>
                 )}
                 {showPostCta && (
-                    <Button color="primary" size="sm" onClick={() => navigate("/post/new")}>
+                    <button
+                        type="button"
+                        onClick={() => navigate("/post/new")}
+                        className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600"
+                    >
                         Post
-                    </Button>
+                    </button>
                 )}
             </div>
         </header>

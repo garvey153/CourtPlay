@@ -152,7 +152,7 @@ export function Feed() {
                 onToggle={handleToggleFilters}
             />
 
-            <div className="flex flex-col gap-3 px-4 py-4">
+            <div className="flex flex-col gap-3 px-5 pb-4 pt-2">
                 {showWelcome && (
                     <WelcomeCard
                         onDismiss={handleDismissWelcome}
