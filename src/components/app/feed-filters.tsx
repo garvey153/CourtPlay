@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ChevronLeft, ChevronRight, SearchLg, X } from "@untitledui/icons";
+import { Check, ChevronLeft, ChevronRight, SearchSm, X } from "@untitledui/icons";
 import { cx } from "@/utils/cx";
 import type { FilterState } from "@/types/feed";
 
@@ -287,8 +287,8 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                             {view === "location" && (
                                 <>
                                     {/* Search — pinned above the scrolling list */}
-                                    <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-neutral-600 bg-tertiary px-3">
-                                        <SearchLg className="size-5 shrink-0 text-tertiary" aria-hidden="true" />
+                                    <div className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-neutral-600 bg-tertiary px-3 shadow-xs">
+                                        <SearchSm className="size-6 shrink-0 text-neutral-600" aria-hidden="true" />
                                         <input
                                             value={locQuery}
                                             onChange={(e) => setLocQuery(e.target.value)}
