@@ -120,7 +120,11 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
         onChange(draft);
         onToggle();
     };
-    const clearAll = () => setDraft(EMPTY);
+    // Clear all wipes any applied filters and closes the sheet (feed shows all posts).
+    const clearAll = () => {
+        onChange(EMPTY);
+        onToggle();
+    };
 
     const resetCategory = () => {
         if (view === "play") setDraft((d) => ({ ...d, formats: [] }));

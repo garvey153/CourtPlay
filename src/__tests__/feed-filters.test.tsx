@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { FeedFilters } from "@/components/app/feed-filters";
@@ -247,17 +247,26 @@ describe("FeedFilters UI", () => {
         expect(lastCall.formats).toContain("point_play");
     });
 
-    it("Clear all empties the draft (Show results becomes disabled)", async () => {
+    it("Clear all applies empty filters and closes the sheet", async () => {
         const user = userEvent.setup();
-        render(<FiltersWrapper />);
+        const onChange = vi.fn();
+        render(<FiltersWrapper onChange={onChange} />);
 
         await user.click(screen.getByRole("button", { name: /^Filters$/i }));
         await user.click(screen.getByRole("button", { name: /All skill levels/i }));
         await user.click(screen.getByRole("checkbox", { name: /NTRP 3\.5/ }));
         await user.click(screen.getByRole("button", { name: /^Apply$/i }));
-        expect(screen.getByRole("button", { name: /Show results/i })).toBeEnabled();
-
         await user.click(screen.getByRole("button", { name: /Clear all/i }));
-        expect(screen.getByRole("button", { name: /Show results/i })).toBeDisabled();
+
+        // Clear all applies an empty filter set...
+        const lastCall = onChange.mock.calls.at(-1)?.[0] as FilterState;
+        expect(lastCall.skillLevels).toHaveLength(0);
+        expect(lastCall.formats).toHaveLength(0);
+        expect(lastCall.courtIds).toHaveLength(0);
+        expect(lastCall.dateFrom).toBeNull();
+        expect(lastCall.dateTo).toBeNull();
+
+        // ...and closes the sheet.
+        await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     });
 });
