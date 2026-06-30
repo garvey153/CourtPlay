@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
+import { render as rtlRender, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { GroupCard } from "@/components/app/group-card";
 import type { FeedPost } from "@/types/feed";
@@ -84,18 +84,9 @@ describe("GroupCard", () => {
         expect(screen.getByText("Friend")).toBeInTheDocument();
     });
 
-    it("offers share and report from the menu on other people's posts", () => {
+    it("renders no actions menu (clean Regular Play card)", () => {
         render(<GroupCard post={makePost()} profileComplete={false} currentUserId="viewer-1" />);
-        const menuButton = screen.getByRole("button", { name: /More options/i });
-        // Actions are hidden until the menu is opened
-        expect(screen.queryByText(/Share this post/i)).not.toBeInTheDocument();
-        fireEvent.click(menuButton);
-        expect(screen.getByText(/Share this post/i)).toBeInTheDocument();
-        expect(screen.getByText(/Report this post/i)).toBeInTheDocument();
-    });
-
-    it("hides the options menu on the viewer's own post", () => {
-        render(<GroupCard post={makePost()} profileComplete={false} currentUserId="author-2" />);
         expect(screen.queryByRole("button", { name: /More options/i })).not.toBeInTheDocument();
+        expect(screen.queryByText(/Report this post/i)).not.toBeInTheDocument();
     });
 });
