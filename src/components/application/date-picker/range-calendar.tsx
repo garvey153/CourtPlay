@@ -129,9 +129,9 @@ export const RangeCalendar = ({ presets, visibleDuration, showOutOfRangeDates = 
 
                     {!isDesktop && (
                         <div className="flex items-center gap-2 md:hidden">
-                            <InputDateBase slot="start" size="sm" className="flex-1" />
-                            <div className="text-md text-quaternary">–</div>
-                            <InputDateBase slot="end" size="sm" className="flex-1" />
+                            <InputDateBase slot="start" size="sm" className="flex-1" wrapperClassName="bg-secondary ring-neutral-600" />
+                            <div className="text-md text-tertiary">–</div>
+                            <InputDateBase slot="end" size="sm" className="flex-1" wrapperClassName="bg-secondary ring-neutral-600" />
                         </div>
                     )}
 

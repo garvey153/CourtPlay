@@ -230,7 +230,11 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                     <div className="absolute inset-0 bg-black/60" onClick={onToggle} aria-hidden="true" />
 
                     <motion.div
-                        className="relative flex h-[520px] max-h-[88dvh] w-full max-w-md flex-col rounded-t-2xl bg-secondary shadow-xl sm:rounded-2xl"
+                        className={cx(
+                            "relative flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-2xl bg-secondary shadow-xl sm:rounded-2xl",
+                            // The date view sizes to fit the full calendar (no scroll); other views use a fixed height.
+                            view !== "date" && "h-[520px]",
+                        )}
                         initial={{ y: "100%" }}
                         animate={{ y: 0 }}
                         exit={{ y: "100%" }}
@@ -353,14 +357,14 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                             )}
 
                             {view === "date" && (
-                                <div className="flex-1 overflow-y-auto">
+                                <div className="rounded-lg bg-tertiary shadow-xl">
                                     <AriaDateRangePicker
                                         aria-label="Date range"
                                         shouldCloseOnSelect={false}
                                         value={dateRange}
                                         onChange={handleRangeChange}
                                     >
-                                        <RangeCalendar presets={datePresets} />
+                                        <RangeCalendar presets={datePresets} showOutOfRangeDates />
                                     </AriaDateRangePicker>
                                 </div>
                             )}
