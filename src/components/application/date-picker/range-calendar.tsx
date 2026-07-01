@@ -78,6 +78,7 @@ const MobilePresetButton = ({ value, children, ...props }: HTMLAttributes<HTMLBu
             slot={null}
             size="sm"
             color="link-color"
+            className="text-brand-500! hover:text-brand-600!"
             onClick={() => {
                 context?.setValue(value);
                 context?.setFocusedDate(value.start as CalendarDate);

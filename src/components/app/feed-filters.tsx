@@ -99,21 +99,20 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
 
     const datePresets = useMemo(() => {
         const now = today(getLocalTimeZone());
+        const nextMonthStart = startOfMonth(now).add({ months: 1 });
+        const nextYearStart = startOfMonth(now.set({ month: 1 }).add({ years: 1 }));
         return {
-            lastWeek: {
-                label: "Last week",
-                value: { start: startOfWeek(now, locale).subtract({ weeks: 1 }), end: endOfWeek(now, locale).subtract({ weeks: 1 }) },
+            nextWeek: {
+                label: "Next week",
+                value: { start: startOfWeek(now, locale).add({ weeks: 1 }), end: endOfWeek(now, locale).add({ weeks: 1 }) },
             },
-            lastMonth: {
-                label: "Last month",
-                value: { start: startOfMonth(now).subtract({ months: 1 }), end: endOfMonth(now).subtract({ months: 1 }) },
+            nextMonth: {
+                label: "Next month",
+                value: { start: nextMonthStart, end: endOfMonth(nextMonthStart) },
             },
-            lastYear: {
-                label: "Last year",
-                value: {
-                    start: startOfMonth(now.set({ month: 1 }).subtract({ years: 1 })),
-                    end: endOfMonth(now.set({ month: 12 }).subtract({ years: 1 })),
-                },
+            nextYear: {
+                label: "Next year",
+                value: { start: nextYearStart, end: endOfMonth(nextYearStart.set({ month: 12 })) },
             },
         };
     }, [locale]);
