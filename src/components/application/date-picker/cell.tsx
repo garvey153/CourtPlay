@@ -21,6 +21,10 @@ export const CalendarCell = ({ date, isHighlighted, showOutOfRangeDates = false,
 
     const isTodayDate = isToday(date, getLocalTimeZone());
 
+    // Cap the range at month boundaries so a cross-month range rounds on each month's edge.
+    const isFirstDayOfMonth = date.day === 1;
+    const isLastDayOfMonth = date.day === new Date(date.year, date.month, 0).getDate();
+
     return (
         <AriaCalendarCell
             {...props}
@@ -35,12 +39,15 @@ export const CalendarCell = ({ date, isHighlighted, showOutOfRangeDates = false,
                 )
             }
         >
-            {({ isDisabled, isFocusVisible, isSelectionStart, isSelectionEnd, isSelected, formattedDate }) => {
+            {({ isDisabled, isFocusVisible, isSelectionStart, isSelectionEnd, isSelected, isOutsideMonth, formattedDate }) => {
                 const markedAsSelected = isSelectionStart || isSelectionEnd || (isSelected && !isDisabled && !isRangeCalendar);
                 const isSingleSelection = isSelectionStart && isSelectionEnd;
                 // The range bar sits behind the circle: right half on the start day, left half on the
                 // end day, and the full column for days in between — so it never spills past the end circles.
-                const showRangeBar = isSelected && isRangeCalendar && !isSingleSelection;
+                // Skip out-of-month days so a cross-month range caps at each month's edge.
+                const showRangeBar = isSelected && isRangeCalendar && !isSingleSelection && !isOutsideMonth;
+                const leftCap = isSelectionStart || isFirstDayOfMonth || dayOfWeek === 0;
+                const rightCap = isSelectionEnd || isLastDayOfMonth || dayOfWeek === 6;
 
                 return (
                     <>
@@ -49,9 +56,9 @@ export const CalendarCell = ({ date, isHighlighted, showOutOfRangeDates = false,
                                 className={cx(
                                     "absolute inset-y-0 bg-neutral-600",
                                     // Cap the segment at the centered 40px circle (calc(50%-20px) aligns on
-                                    // Su/Sa too); fill to the column edge on the side that connects onward.
-                                    isSelectionStart || dayOfWeek === 0 ? "left-[calc(50%-20px)] rounded-l-full" : "left-0",
-                                    isSelectionEnd || dayOfWeek === 6 ? "right-[calc(50%-20px)] rounded-r-full" : "right-0",
+                                    // Su/Sa and month edges too); fill to the column edge on the connecting side.
+                                    leftCap ? "left-[calc(50%-20px)] rounded-l-full" : "left-0",
+                                    rightCap ? "right-[calc(50%-20px)] rounded-r-full" : "right-0",
                                 )}
                             />
                         )}
