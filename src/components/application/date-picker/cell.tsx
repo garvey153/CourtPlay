@@ -48,10 +48,10 @@ export const CalendarCell = ({ date, isHighlighted, showOutOfRangeDates = false,
                             <div
                                 className={cx(
                                     "absolute inset-y-0 bg-neutral-600",
-                                    isSelectionStart ? "left-1/2 right-0" : isSelectionEnd ? "left-0 right-1/2" : "inset-x-0",
-                                    // Round the range segment at week edges (row wraps).
-                                    dayOfWeek === 0 && "rounded-l-full",
-                                    dayOfWeek === 6 && "rounded-r-full",
+                                    // Cap the segment at the centered 40px circle (calc(50%-20px) aligns on
+                                    // Su/Sa too); fill to the column edge on the side that connects onward.
+                                    isSelectionStart || dayOfWeek === 0 ? "left-[calc(50%-20px)] rounded-l-full" : "left-0",
+                                    isSelectionEnd || dayOfWeek === 6 ? "right-[calc(50%-20px)] rounded-r-full" : "right-0",
                                 )}
                             />
                         )}
