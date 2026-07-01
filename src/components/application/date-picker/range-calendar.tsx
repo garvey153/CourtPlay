@@ -80,6 +80,9 @@ const MobilePresetButton = ({ value, children, ...props }: HTMLAttributes<HTMLBu
             color="link-color"
             className="text-brand-500! hover:text-brand-600!"
             onClick={() => {
+                // Cancel any in-progress (anchored) selection so the preset range replaces it
+                // instead of leaving the calendar mid-selection.
+                context?.setAnchorDate(null);
                 context?.setValue(value);
                 context?.setFocusedDate(value.start as CalendarDate);
             }}
