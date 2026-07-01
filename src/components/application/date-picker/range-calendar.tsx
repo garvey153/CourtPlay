@@ -145,11 +145,11 @@ export const RangeCalendar = ({ presets, visibleDuration, showOutOfRangeDates = 
                         </div>
                     )}
 
-                    <AriaCalendarGrid weekdayStyle="short" className="w-max">
+                    <AriaCalendarGrid weekdayStyle="short" className="w-full table-fixed">
                         <AriaCalendarGridHeader>
                             {(day) => (
                                 <AriaCalendarHeaderCell className="border-b-4 border-transparent p-0">
-                                    <div className="flex size-10 items-center justify-center text-sm font-medium text-secondary">{day.slice(0, 2)}</div>
+                                    <div className="mx-auto flex size-10 items-center justify-center text-sm font-medium text-secondary">{day.slice(0, 2)}</div>
                                 </AriaCalendarHeaderCell>
                             )}
                         </AriaCalendarGridHeader>
@@ -173,7 +173,7 @@ export const RangeCalendar = ({ presets, visibleDuration, showOutOfRangeDates = 
                             <AriaCalendarGridHeader>
                                 {(day) => (
                                     <AriaCalendarHeaderCell className="border-b-4 border-transparent p-0">
-                                        <div className="flex size-10 items-center justify-center text-sm font-medium text-secondary">{day.slice(0, 2)}</div>
+                                        <div className="mx-auto flex size-10 items-center justify-center text-sm font-medium text-secondary">{day.slice(0, 2)}</div>
                                     </AriaCalendarHeaderCell>
                                 )}
                             </AriaCalendarGridHeader>

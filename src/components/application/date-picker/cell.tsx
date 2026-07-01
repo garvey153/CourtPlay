@@ -44,11 +44,13 @@ export const CalendarCell = ({ date, isHighlighted, showOutOfRangeDates = false,
                 const isRoundedRight = isSelectionEnd || dayOfWeek === 6;
 
                 return cx(
-                    "relative size-10 focus:outline-hidden",
+                    // Full-width column carries the range background; the day circle is centered inside.
+                    "relative h-10 w-full focus:outline-hidden",
                     isRoundedLeft && "rounded-l-full",
                     isRoundedRight && "rounded-r-full",
-                    isInRange && isDisabled && "bg-active",
-                    isSelected && isRangeCalendar && "bg-active",
+                    // Range background — neutral-600 (#4d5f53) so it's visible on the bg-tertiary card.
+                    isInRange && isDisabled && "bg-neutral-600",
+                    isSelected && isRangeCalendar && "bg-neutral-600",
                     isDisabled ? "pointer-events-none" : "cursor-pointer",
                     isFocusVisible ? "z-10" : "z-0",
                     isOutsideMonth && "opacity-50",
@@ -59,14 +61,14 @@ export const CalendarCell = ({ date, isHighlighted, showOutOfRangeDates = false,
                         isSelected &&
                         isBeforeEnd &&
                         isRangeCalendar &&
-                        "after:absolute after:inset-0 after:translate-x-full after:bg-gradient-to-l after:from-transparent after:to-bg-active in-[[role=gridcell]:last-child]:after:hidden",
+                        "after:absolute after:inset-0 after:translate-x-full after:bg-gradient-to-l after:from-transparent after:to-neutral-600 in-[[role=gridcell]:last-child]:after:hidden",
 
                     // Show gradient on first day of month if it's within the selected range.
                     isFirstDayOfMonth &&
                         isSelected &&
                         isAfterStart &&
                         isRangeCalendar &&
-                        "after:absolute after:inset-0 after:-translate-x-full after:bg-gradient-to-r after:from-transparent after:to-bg-active in-[[role=gridcell]:first-child]:after:hidden",
+                        "after:absolute after:inset-0 after:-translate-x-full after:bg-gradient-to-r after:from-transparent after:to-neutral-600 in-[[role=gridcell]:first-child]:after:hidden",
                 );
             }}
         >
@@ -76,7 +78,7 @@ export const CalendarCell = ({ date, isHighlighted, showOutOfRangeDates = false,
                 return (
                     <div
                         className={cx(
-                            "relative flex size-full items-center justify-center rounded-full text-sm text-secondary hover:text-secondary_hover",
+                            "relative mx-auto flex size-10 items-center justify-center rounded-full text-sm text-secondary hover:text-secondary_hover",
                             // Disabled state.
                             isDisabled && "text-secondary/50",
                             // Focus ring, visible while the cell has keyboard focus.
@@ -86,7 +88,7 @@ export const CalendarCell = ({ date, isHighlighted, showOutOfRangeDates = false,
                             markedAsSelected && "bg-brand-solid font-medium text-white hover:bg-brand-solid_hover hover:text-white",
                             // Hover state for non-selected cells.
                             !isSelected && !isDisabled ? "hover:bg-primary_hover hover:font-medium!" : "",
-                            !isSelected && isTodayDate ? "bg-active font-medium hover:bg-secondary_hover" : "",
+                            !isSelected && isTodayDate ? "bg-blue-600 font-medium text-white" : "",
                         )}
                     >
                         {formattedDate}
