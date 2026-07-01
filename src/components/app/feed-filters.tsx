@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { endOfMonth, endOfWeek, getLocalTimeZone, parseDate, startOfMonth, startOfWeek, today } from "@internationalized/date";
+import { DateRangePicker as AriaDateRangePicker, useLocale } from "react-aria-components";
+import type { DateValue } from "react-aria-components";
 import { Check, ChevronLeft, ChevronRight, SearchSm, X } from "@untitledui/icons";
+import { RangeCalendar } from "@/components/application/date-picker/range-calendar";
 import { cx } from "@/utils/cx";
 import type { FilterState } from "@/types/feed";
 
@@ -91,6 +95,37 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
     const [view, setView] = useState<View>("base");
     const [draft, setDraft] = useState<FilterState>(filters);
     const [locQuery, setLocQuery] = useState("");
+    const { locale } = useLocale();
+
+    const datePresets = useMemo(() => {
+        const now = today(getLocalTimeZone());
+        return {
+            lastWeek: {
+                label: "Last week",
+                value: { start: startOfWeek(now, locale).subtract({ weeks: 1 }), end: endOfWeek(now, locale).subtract({ weeks: 1 }) },
+            },
+            lastMonth: {
+                label: "Last month",
+                value: { start: startOfMonth(now).subtract({ months: 1 }), end: endOfMonth(now).subtract({ months: 1 }) },
+            },
+            lastYear: {
+                label: "Last year",
+                value: {
+                    start: startOfMonth(now.set({ month: 1 }).subtract({ years: 1 })),
+                    end: endOfMonth(now.set({ month: 12 }).subtract({ years: 1 })),
+                },
+            },
+        };
+    }, [locale]);
+
+    const dateRange =
+        draft.dateFrom && draft.dateTo ? { start: parseDate(draft.dateFrom), end: parseDate(draft.dateTo) } : null;
+    const handleRangeChange = (r: { start: DateValue; end: DateValue } | null) =>
+        setDraft((d) => ({
+            ...d,
+            dateFrom: r?.start ? r.start.toString() : null,
+            dateTo: r?.end ? r.end.toString() : null,
+        }));
 
     // Re-sync the draft each time the sheet opens; reset to the base view.
     useEffect(() => {
@@ -318,25 +353,15 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                             )}
 
                             {view === "date" && (
-                                <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
-                                    <label className="flex flex-col gap-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-tertiary">From</span>
-                                        <input
-                                            type="date"
-                                            value={draft.dateFrom ?? ""}
-                                            onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value || null }))}
-                                            className="rounded-lg border border-neutral-600 bg-tertiary px-3 py-2 text-sm text-primary outline-none focus:ring-2 focus:ring-brand"
-                                        />
-                                    </label>
-                                    <label className="flex flex-col gap-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-tertiary">To</span>
-                                        <input
-                                            type="date"
-                                            value={draft.dateTo ?? ""}
-                                            onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value || null }))}
-                                            className="rounded-lg border border-neutral-600 bg-tertiary px-3 py-2 text-sm text-primary outline-none focus:ring-2 focus:ring-brand"
-                                        />
-                                    </label>
+                                <div className="flex-1 overflow-y-auto">
+                                    <AriaDateRangePicker
+                                        aria-label="Date range"
+                                        shouldCloseOnSelect={false}
+                                        value={dateRange}
+                                        onChange={handleRangeChange}
+                                    >
+                                        <RangeCalendar presets={datePresets} />
+                                    </AriaDateRangePicker>
                                 </div>
                             )}
                         </div>
