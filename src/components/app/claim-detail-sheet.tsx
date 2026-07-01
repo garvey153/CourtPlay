@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X as XClose } from "@untitledui/icons";
+import { XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Button } from "@/components/base/buttons/button";
 import { sendNotification } from "@/lib/notifications";

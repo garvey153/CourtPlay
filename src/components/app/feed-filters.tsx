@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { endOfMonth, endOfWeek, getLocalTimeZone, parseDate, startOfMonth, startOfWeek, today } from "@internationalized/date";
 import { DateRangePicker as AriaDateRangePicker, useLocale } from "react-aria-components";
 import type { DateValue } from "react-aria-components";
-import { Check, ChevronLeft, ChevronRight, SearchSm, X } from "@untitledui/icons";
+import { Check, ChevronLeft, ChevronRight, SearchSm, XClose } from "@untitledui/icons";
 import { RangeCalendar } from "@/components/application/date-picker/range-calendar";
 import { cx } from "@/utils/cx";
 import type { FilterState } from "@/types/feed";
@@ -260,7 +260,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                                 aria-label="Close"
                                 className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-lg text-quaternary hover:text-tertiary"
                             >
-                                <X className="size-5" />
+                                <XClose className="size-5" />
                             </button>
                         </div>
 
