@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
-import { Button } from "@/components/base/buttons/button";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useShare } from "@/hooks/use-share";
@@ -61,6 +61,18 @@ function formatDuration(duration: number | null): string | null {
     return duration === 1 ? "1 hr" : `${duration} hrs`;
 }
 
+// Bottom-sheet button styles, kept in sync with the feed filters sheet (brand
+// primary with dark on-brand text; tertiary secondary) so all sheets match.
+const PRIMARY_BTN =
+    "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
+const SECONDARY_BTN =
+    "rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary";
+
+/** Spinner tuned for the brand button (dark strokes on green). */
+const ButtonSpinner = () => (
+    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
+);
+
 interface ClaimDetailSheetProps {
     post: FeedPost;
     currentUserId?: string | null;
@@ -75,16 +87,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
     const [error, setError] = useState<string | null>(null);
     const [notifyState, setNotifyState] = useState<"idle" | "loading" | "done">(post.user_notify_me ? "done" : "idle");
     const [showReport, setShowReport] = useState(false);
-    const overlayRef = useRef<HTMLDivElement>(null);
     const { shareData, handleShare, closeShareModal } = useShare();
-
-    useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (e.target === overlayRef.current) onClose();
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, [onClose]);
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
@@ -138,6 +141,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
 
     const playType = formatPlayType(post.play_type);
     const title = [playType, "Tennis"].filter(Boolean).join(" ");
+    const posterName = post.last_name ? `${post.first_name} ${post.last_name}.` : post.first_name;
     const when = formatWhen(post.game_date, post.game_time);
     const court = post.location ?? post.custom_court;
     const subtitle = [court, post.skill_level ? `NTRP ${post.skill_level}` : null, formatDuration(post.duration)]
@@ -147,17 +151,23 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
 
     return (
         <div
-            ref={overlayRef}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-overlay sm:items-center"
+            className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
             role="dialog"
             aria-modal="true"
             aria-labelledby="claim-sheet-title"
         >
-            <div className="flex w-full max-w-md flex-col gap-4 rounded-t-2xl bg-primary p-5 shadow-xl sm:rounded-2xl">
+            <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
+
+            <motion.div
+                className="relative flex w-full max-w-md flex-col gap-4 rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ type: "spring", damping: 38, stiffness: 420 }}
+            >
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 flex-col gap-1">
-                        <h2 id="claim-sheet-title" className="text-lg font-semibold text-primary">
+                        <h2 id="claim-sheet-title" className="text-md font-semibold text-primary">
                             {title}
                             {when && ` · ${when}`}
                         </h2>
@@ -167,7 +177,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                         type="button"
                         onClick={onClose}
                         aria-label="Close"
-                        className="-mr-1 shrink-0 rounded p-1 text-quaternary hover:text-tertiary"
+                        className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
                     >
                         <XClose className="size-5" />
                     </button>
@@ -180,16 +190,16 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                         src={post.photo_url}
                         alt={post.first_name}
                         initials={post.first_name.charAt(0).toUpperCase()}
-                        className="shrink-0 bg-white p-px shadow-xs"
+                        className="shrink-0"
                     />
                     <span className="text-xs text-tertiary">
-                        {post.first_name} · {timeAgo(post.created_at)}
+                        {posterName} · {timeAgo(post.created_at)}
                     </span>
                 </div>
 
                 {/* Notes */}
                 {post.notes && (
-                    <div className="w-full rounded-lg rounded-tl-none border border-neutral-600 px-3 py-2.5">
+                    <div className="w-full rounded-lg border border-neutral-600 px-3 py-2.5">
                         <p className="text-sm text-secondary">“{post.notes}”</p>
                     </div>
                 )}
@@ -212,7 +222,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                 )}
 
                 {/* Primary action */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
                     {isOwnPost ? (
                         <p className="text-center text-sm text-tertiary">This is your post.</p>
                     ) : activeClaim ? (
@@ -227,32 +237,29 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                         notifyState === "done" ? (
                             <p className="text-center text-sm text-success-primary">We'll notify you if a spot opens up.</p>
                         ) : (
-                            <Button
-                                color="primary"
-                                size="lg"
+                            <button
+                                type="button"
                                 onClick={handleNotifyMe}
-                                isLoading={notifyState === "loading"}
-                                showTextWhileLoading
+                                disabled={notifyState === "loading"}
+                                className={PRIMARY_BTN}
                             >
-                                Notify me if a spot opens
-                            </Button>
+                                {notifyState === "loading" ? <ButtonSpinner /> : "Notify me if a spot opens"}
+                            </button>
                         )
                     ) : (
-                        <Button
-                            color="primary"
-                            size="lg"
+                        <button
+                            type="button"
                             onClick={handleClaim}
-                            isLoading={loading}
-                            showTextWhileLoading
-                            isDisabled={!!conflict}
+                            disabled={loading || !!conflict}
+                            className={PRIMARY_BTN}
                         >
-                            {costLabel}
-                        </Button>
+                            {loading ? <ButtonSpinner /> : costLabel}
+                        </button>
                     )}
 
-                    <Button color="secondary" size="lg" onClick={() => handleShare(post)}>
+                    <button type="button" onClick={() => handleShare(post)} className={SECONDARY_BTN}>
                         Share with a friend
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Report — only for other people's posts */}
@@ -265,7 +272,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                         Report this post
                     </button>
                 )}
-            </div>
+            </motion.div>
 
             {shareData && <ShareModal url={shareData.url} text={shareData.text} onClose={closeShareModal} />}
             {showReport && <ReportModal targetType="post" targetId={post.id} onClose={() => setShowReport(false)} />}
