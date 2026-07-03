@@ -230,9 +230,11 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
 
                     <motion.div
                         className={cx(
-                            "relative flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-2xl bg-secondary shadow-xl sm:rounded-2xl",
-                            // The date view sizes to fit the full calendar (no scroll); other views use a fixed height.
-                            view !== "date" && "h-[520px]",
+                            "relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary shadow-xl sm:rounded-2xl",
+                            // Every sheet sizes to its content (32px above the action button). Locations can
+                            // be long, so on mobile it fills down from 60px below the screen top and scrolls
+                            // its list; on desktop it reverts to content height capped at 92dvh.
+                            view === "location" ? "h-[calc(100dvh-60px)] sm:h-auto sm:max-h-[92dvh]" : "max-h-[92dvh]",
                         )}
                         initial={{ y: "100%" }}
                         animate={{ y: 0 }}
@@ -266,7 +268,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                         {/* Body */}
                         <div className="flex min-h-0 flex-1 flex-col px-5 pt-6">
                             {view === "base" && (
-                                <div className="flex flex-1 flex-col gap-6 overflow-y-auto">
+                                <div className="flex flex-col gap-6">
                                     <CategoryRow
                                         label="All play types"
                                         summary={summarize(playLabels, "All play types")}
@@ -293,7 +295,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                             )}
 
                             {view === "play" && (
-                                <div className="flex-1 overflow-y-auto">
+                                <div>
                                     <CheckGroup>
                                         {PLAY_TYPES.map((p) => (
                                             <CheckRow
@@ -308,7 +310,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                             )}
 
                             {view === "skill" && (
-                                <div className="flex-1 overflow-y-auto">
+                                <div>
                                     <CheckGroup>
                                         {SKILL_LEVELS.map((s) => (
                                             <CheckRow
@@ -368,7 +370,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                         </div>
 
                         {/* Actions */}
-                        <div className="flex shrink-0 flex-col gap-3 px-5 pb-8 pt-4">
+                        <div className="flex shrink-0 flex-col gap-3 px-5 pb-8 pt-8">
                             <button
                                 type="button"
                                 onClick={view === "base" ? showResults : () => setView("base")}
