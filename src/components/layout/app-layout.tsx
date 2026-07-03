@@ -13,10 +13,13 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, onOpenFilters, filtersActive }: AppLayoutProps) {
     return (
-        <div className="flex min-h-dvh flex-col bg-primary">
+        // Fixed-height app shell: the header and bottom nav stay put while only
+        // <main> scrolls. overscroll-contain stops the browser's native pull-to-
+        // refresh so the feed can own that gesture.
+        <div className="flex h-dvh flex-col overflow-hidden bg-primary">
             <TopNav onOpenFilters={onOpenFilters} filtersActive={filtersActive} />
             <IosInstallPrompt />
-            <main className="flex-1 pb-20">{children}</main>
+            <main className="flex-1 overflow-y-auto overscroll-y-contain pb-20">{children}</main>
             <BottomNav />
         </div>
     );

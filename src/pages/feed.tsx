@@ -5,6 +5,7 @@ import { FeedFilters, activeCount } from "@/components/app/feed-filters";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { SubCard } from "@/components/app/sub-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
+import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { WelcomeCard } from "@/components/app/welcome-card";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -153,6 +154,7 @@ export function Feed() {
                 onToggle={handleToggleFilters}
             />
 
+            <PullToRefresh onRefresh={fetchPosts}>
             <div className="flex flex-col gap-3 px-5 pb-4">
                 {showWelcome && (
                     <WelcomeCard
@@ -222,6 +224,7 @@ export function Feed() {
                     </ul>
                 )}
             </div>
+            </PullToRefresh>
 
             {detailPost && (
                 <ClaimDetailSheet
