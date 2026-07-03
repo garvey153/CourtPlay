@@ -74,7 +74,7 @@ export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed
                         src={post.photo_url}
                         alt={post.first_name}
                         initials={post.first_name.charAt(0).toUpperCase()}
-                        className="shrink-0 bg-white p-px shadow-xs"
+                        className="shrink-0"
                     />
                     <span className="truncate text-xs text-tertiary">
                         <Link
