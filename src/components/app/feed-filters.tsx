@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { endOfMonth, endOfWeek, getLocalTimeZone, parseDate, startOfMonth, startOfWeek, today } from "@internationalized/date";
-import { DateRangePicker as AriaDateRangePicker, useLocale } from "react-aria-components";
+import { useLocale } from "react-aria-components";
 import type { DateValue } from "react-aria-components";
 import { Check, ChevronLeft, ChevronRight, SearchSm, XClose } from "@untitledui/icons";
 import { RangeCalendar } from "@/components/application/date-picker/range-calendar";
@@ -357,14 +357,12 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
 
                             {view === "date" && (
                                 <div className="rounded-lg bg-tertiary shadow-xl">
-                                    <AriaDateRangePicker
-                                        aria-label="Date range"
-                                        shouldCloseOnSelect={false}
+                                    <RangeCalendar
                                         value={dateRange}
                                         onChange={handleRangeChange}
-                                    >
-                                        <RangeCalendar presets={datePresets} showOutOfRangeDates />
-                                    </AriaDateRangePicker>
+                                        presets={datePresets}
+                                        showOutOfRangeDates
+                                    />
                                 </div>
                             )}
                         </div>

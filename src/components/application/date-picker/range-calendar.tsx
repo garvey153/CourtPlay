@@ -1,5 +1,5 @@
 import type { HTMLAttributes, PropsWithChildren } from "react";
-import { Fragment, useContext, useState } from "react";
+import { Fragment, useContext, useEffect, useState } from "react";
 import type { CalendarDate } from "@internationalized/date";
 import { ChevronLeft, ChevronRight } from "@untitledui/icons";
 import { useDateFormatter } from "react-aria";
@@ -9,12 +9,14 @@ import {
     CalendarGridBody as AriaCalendarGridBody,
     CalendarGridHeader as AriaCalendarGridHeader,
     CalendarHeaderCell as AriaCalendarHeaderCell,
+    DateField as AriaDateField,
     RangeCalendar as AriaRangeCalendar,
     RangeCalendarContext,
     RangeCalendarStateContext,
     useSlottedContext,
 } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
+import { InputDateBase } from "@/components/base/input/input-date";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { cx } from "@/utils/cx";
 import { CalendarCell } from "./cell";
@@ -26,26 +28,65 @@ export const RangeCalendarContextProvider = ({ children }: PropsWithChildren) =>
     return <RangeCalendarContext.Provider value={{ value, onChange, focusedValue, onFocusChange }}>{children}</RangeCalendarContext.Provider>;
 };
 
-/** The two range date fields. Reads calendar state so the start shows as soon as
- *  the first date is picked (anchorDate), before the range is completed. */
+// Segment styling: tight spacing, "/" primary when filled and placeholder while empty.
+const DATE_FIELD_SEGMENTS = "[&_[data-type]]:px-0 [&_[data-type=literal]]:text-primary has-[[data-placeholder]]:[&_[data-type=literal]]:text-placeholder";
+
+/** The two range date fields — editable (type-to-edit) and wired to the calendar state so
+ *  the start shows as soon as the first date is picked (anchorDate), before the range completes. */
 const RangeDateFields = () => {
     const state = useContext(RangeCalendarStateContext);
-    const formatter = useDateFormatter({ month: "numeric", day: "numeric", year: "numeric", timeZone: state?.timeZone });
+
+    // Each field is buffered in local state and synced FROM the calendar via effects keyed on
+    // the (stable) date string. Deriving the controlled value live from `state` instead makes a
+    // commit to one field re-render the other and steal focus mid-type; buffering avoids that.
+    const [start, setStart] = useState<DateValue | null>(null);
+    const [end, setEnd] = useState<DateValue | null>(null);
 
     // While selecting, anchorDate holds the first-picked date; value fills in once complete.
-    const startValue = state?.anchorDate ?? state?.value?.start ?? null;
-    const endValue = state?.anchorDate ? null : state?.value?.end ?? null;
-    const format = (d: DateValue | null) => (d && state ? formatter.format(d.toDate(state.timeZone)) : "MM/DD/YYYY");
+    // End reads value.end directly (never keyed off anchorDate) so it doesn't blip to null on commit.
+    const calStart = state?.anchorDate ?? state?.value?.start ?? null;
+    const calEnd = state?.value?.end ?? null;
+    const calStartKey = calStart?.toString() ?? "";
+    const calEndKey = calEnd?.toString() ?? "";
+
+    useEffect(() => setStart(calStart), [calStartKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => setEnd(calEnd), [calEndKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    if (!state) return null;
+
+    const commitStart = (d: DateValue | null) => {
+        setStart(d);
+        if (!d) return;
+        // Complete the range if a valid end already exists; otherwise anchor the start on the calendar.
+        if (end && d.compare(end) <= 0) {
+            state.setValue({ start: d, end });
+            state.setAnchorDate(null);
+        } else {
+            state.setAnchorDate(d as CalendarDate);
+            state.setFocusedDate(d as CalendarDate);
+        }
+    };
+    const commitEnd = (d: DateValue | null) => {
+        setEnd(d);
+        if (!d) return;
+        // Only complete the range when a valid start exists. With no start yet, keep the typed end
+        // locally and leave the calendar untouched — anchoring here would mirror into the start field.
+        if (start && d.compare(start) >= 0) {
+            state.setValue({ start, end: d });
+            state.setAnchorDate(null);
+            state.setFocusedDate(d as CalendarDate);
+        }
+    };
 
     return (
         <div className="flex items-center gap-2 md:hidden">
-            <div className="flex h-9 flex-1 items-center rounded-lg border border-neutral-600 bg-secondary px-3 shadow-xs">
-                <span className={cx("text-sm", startValue ? "text-primary" : "text-placeholder")}>{format(startValue)}</span>
-            </div>
+            <AriaDateField aria-label="Start date" value={start} onChange={commitStart} className="flex-1">
+                <InputDateBase size="sm" wrapperClassName="bg-secondary ring-neutral-600" className={DATE_FIELD_SEGMENTS} />
+            </AriaDateField>
             <div className="text-md text-tertiary">–</div>
-            <div className="flex h-9 flex-1 items-center rounded-lg border border-neutral-600 bg-secondary px-3 shadow-xs">
-                <span className={cx("text-sm", endValue ? "text-primary" : "text-placeholder")}>{format(endValue)}</span>
-            </div>
+            <AriaDateField aria-label="End date" value={end} onChange={commitEnd} className="flex-1">
+                <InputDateBase size="sm" wrapperClassName="bg-secondary ring-neutral-600" className={DATE_FIELD_SEGMENTS} />
+            </AriaDateField>
         </div>
     );
 };
