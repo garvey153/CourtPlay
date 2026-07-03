@@ -15,7 +15,6 @@ import {
     useSlottedContext,
 } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
-import { InputDateBase } from "@/components/base/input/input-date";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { cx } from "@/utils/cx";
 import { CalendarCell } from "./cell";
@@ -25,6 +24,30 @@ export const RangeCalendarContextProvider = ({ children }: PropsWithChildren) =>
     const [focusedValue, onFocusChange] = useState<DateValue | undefined>();
 
     return <RangeCalendarContext.Provider value={{ value, onChange, focusedValue, onFocusChange }}>{children}</RangeCalendarContext.Provider>;
+};
+
+/** The two range date fields. Reads calendar state so the start shows as soon as
+ *  the first date is picked (anchorDate), before the range is completed. */
+const RangeDateFields = () => {
+    const state = useContext(RangeCalendarStateContext);
+    const formatter = useDateFormatter({ month: "numeric", day: "numeric", year: "numeric", timeZone: state?.timeZone });
+
+    // While selecting, anchorDate holds the first-picked date; value fills in once complete.
+    const startValue = state?.anchorDate ?? state?.value?.start ?? null;
+    const endValue = state?.anchorDate ? null : state?.value?.end ?? null;
+    const format = (d: DateValue | null) => (d && state ? formatter.format(d.toDate(state.timeZone)) : "MM/DD/YYYY");
+
+    return (
+        <div className="flex items-center gap-2 md:hidden">
+            <div className="flex h-9 flex-1 items-center rounded-lg border border-neutral-600 bg-secondary px-3 shadow-xs">
+                <span className={cx("text-sm", startValue ? "text-primary" : "text-placeholder")}>{format(startValue)}</span>
+            </div>
+            <div className="text-md text-tertiary">–</div>
+            <div className="flex h-9 flex-1 items-center rounded-lg border border-neutral-600 bg-secondary px-3 shadow-xs">
+                <span className={cx("text-sm", endValue ? "text-primary" : "text-placeholder")}>{format(endValue)}</span>
+            </div>
+        </div>
+    );
 };
 
 const RangeCalendarTitle = ({ part }: { part: "start" | "end" }) => {
@@ -131,13 +154,7 @@ export const RangeCalendar = ({ presets, visibleDuration, showOutOfRangeDates = 
                         {visibleDurationMonths === 1 && <Button slot="next" iconLeading={ChevronRight} size="sm" color="tertiary" className="size-8 *:data-icon:text-tertiary!" />}
                     </header>
 
-                    {!isDesktop && (
-                        <div className="flex items-center gap-2 md:hidden">
-                            <InputDateBase slot="start" size="sm" className="flex-1 [&_[data-type]]:px-0 [&_[data-type=literal]]:text-primary has-[[data-placeholder]]:[&_[data-type=literal]]:text-placeholder" wrapperClassName="bg-secondary ring-neutral-600" />
-                            <div className="text-md text-tertiary">–</div>
-                            <InputDateBase slot="end" size="sm" className="flex-1 [&_[data-type]]:px-0 [&_[data-type=literal]]:text-primary has-[[data-placeholder]]:[&_[data-type=literal]]:text-placeholder" wrapperClassName="bg-secondary ring-neutral-600" />
-                        </div>
-                    )}
+                    {!isDesktop && <RangeDateFields />}
 
                     {(showPresetsOnDesktop || !isDesktop) && presets && (
                         <div className="mt-1 flex justify-between gap-3 px-2">
