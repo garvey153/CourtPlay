@@ -157,7 +157,7 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
                             src={post.photo_url}
                             alt={post.first_name}
                             initials={post.first_name.charAt(0).toUpperCase()}
-                            className="shrink-0"
+                            className="shrink-0 bg-white p-px shadow-xs"
                         />
                         <span className="truncate text-xs text-tertiary">
                             {post.first_name} · {timeAgo(post.created_at)}

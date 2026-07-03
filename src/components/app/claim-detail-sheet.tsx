@@ -190,7 +190,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                         src={post.photo_url}
                         alt={post.first_name}
                         initials={post.first_name.charAt(0).toUpperCase()}
-                        className="shrink-0"
+                        className="shrink-0 bg-white p-px shadow-xs"
                     />
                     <span className="text-xs text-tertiary">
                         {posterName} · {timeAgo(post.created_at)}
