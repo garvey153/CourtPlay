@@ -133,19 +133,13 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onConnected }: 
                 animate={{ y: 0 }}
                 transition={{ type: "spring", damping: 38, stiffness: 420 }}
             >
-                {/* Poster row + close */}
+                {/* Header: title + location + close (title-first, matching the claim sheet) */}
                 <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <Avatar
-                            size="xs"
-                            src={post.photo_url}
-                            alt={post.first_name}
-                            initials={post.first_name.charAt(0).toUpperCase()}
-                            className="shrink-0 bg-white p-px shadow-xs"
-                        />
-                        <span className="truncate text-xs text-tertiary">
-                            {posterName} · {timeAgo(post.created_at)}
-                        </span>
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <h2 id="group-sheet-title" className="text-md font-semibold text-primary">
+                            {title}
+                        </h2>
+                        {location && <p className="text-sm text-secondary">{location}</p>}
                     </div>
                     <button
                         type="button"
@@ -157,12 +151,18 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onConnected }: 
                     </button>
                 </div>
 
-                {/* Title + location */}
-                <div className="flex min-w-0 flex-col gap-1">
-                    <h2 id="group-sheet-title" className="text-md font-semibold text-primary">
-                        {title}
-                    </h2>
-                    {location && <p className="text-sm text-secondary">{location}</p>}
+                {/* Poster */}
+                <div className="flex items-center gap-2">
+                    <Avatar
+                        size="xs"
+                        src={post.photo_url}
+                        alt={post.first_name}
+                        initials={post.first_name.charAt(0).toUpperCase()}
+                        className="shrink-0 bg-white p-px shadow-xs"
+                    />
+                    <span className="text-xs text-tertiary">
+                        {posterName} · {timeAgo(post.created_at)}
+                    </span>
                 </div>
 
                 {/* Notes */}

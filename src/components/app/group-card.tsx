@@ -71,8 +71,15 @@ export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed
                 aria-hidden="true"
             />
 
-            {/* Card body */}
-            <div className="flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4">
+            {/* Card body — title-first layout, matching the green (sub) card */}
+            <div className="flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4 transition duration-100 ease-linear hover:bg-secondary_hover">
+                {/* Title + supporting info */}
+                <div className="flex min-w-0 flex-col gap-1">
+                    <p className="text-md font-semibold text-primary">{title}</p>
+                    {post.location && <p className="text-xs text-secondary">{post.location}</p>}
+                    {schedule && <p className="text-xs text-tertiary">{schedule}</p>}
+                </div>
+
                 {/* Poster row: avatar + name/time (+ friend) */}
                 <div className="flex min-w-0 items-center gap-2 pt-1">
                     <Avatar
@@ -95,13 +102,6 @@ export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed
                             Friend
                         </span>
                     )}
-                </div>
-
-                {/* Title + supporting info */}
-                <div className="flex min-w-0 flex-col gap-1">
-                    <p className="text-md font-semibold text-primary">{title}</p>
-                    {post.location && <p className="text-xs text-secondary">{post.location}</p>}
-                    {schedule && <p className="text-xs text-tertiary">{schedule}</p>}
                 </div>
 
                 {/* Notes speech-bubble (only when the poster added a note) */}
