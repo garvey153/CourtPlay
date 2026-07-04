@@ -152,16 +152,15 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange }
         setCancelling(true);
         setError(null);
         const { error: rpcError } = await supabase.rpc("unclaim", { p_claim_id: claimId });
-        setCancelling(false);
         if (rpcError) {
+            setCancelling(false);
             setError("Something went wrong. Please try again.");
             return;
         }
-        // Back to the claimable state (sheet stays open).
-        setClaimStatus(null);
-        setClaimId(null);
+        // Cancel succeeded — refresh the feed and close the sheet.
         onClaimChange?.();
-    }, [claimId, onClaimChange]);
+        onClose();
+    }, [claimId, onClaimChange, onClose]);
 
     const playType = formatPlayType(post.play_type);
     const title = [playType, "Tennis"].filter(Boolean).join(" ");
