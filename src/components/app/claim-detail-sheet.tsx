@@ -193,6 +193,12 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange }
         </button>
     );
 
+    // States with a helper line already get 32px from its baseline to the button (mb-[11px]).
+    // States without one (full/expired/own) need a matching gap above the button group.
+    const claimableHelper = !isOwnPost && !activeClaim && !isFull && !isExpired;
+    const pendingHelper = activeClaim && !claimApproved && !!currentUserId;
+    const hasHelper = claimableHelper || pendingHelper;
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
@@ -297,7 +303,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange }
                 )}
 
                 {/* Primary action */}
-                <div className="flex flex-col gap-3">
+                <div className={`flex flex-col gap-3${hasHelper ? "" : " mt-4"}`}>
                     {isOwnPost ? (
                         <>
                             <p className="text-center text-sm text-tertiary">This is your post.</p>
