@@ -234,10 +234,7 @@ export function Feed() {
                         post={detailPost}
                         currentUserId={user?.id}
                         onClose={() => setDetailPost(null)}
-                        onClaimed={() => {
-                            setDetailPost(null);
-                            fetchPosts();
-                        }}
+                        onClaimChange={fetchPosts}
                     />
                 ) : (
                     <GroupDetailSheet

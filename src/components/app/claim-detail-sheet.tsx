@@ -5,7 +5,6 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useShare } from "@/hooks/use-share";
-import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
 import { ShareModal } from "./share-modal";
 import { ReportModal } from "./report-modal";
@@ -78,16 +77,21 @@ interface ClaimDetailSheetProps {
     post: FeedPost;
     currentUserId?: string | null;
     onClose: () => void;
-    /** Called after a successful claim so the feed can refresh. */
-    onClaimed?: (claimId: string) => void;
+    /** Called after the claim state changes (claim or cancel) so the feed can refresh. */
+    onClaimChange?: () => void;
 }
 
-export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: ClaimDetailSheetProps) {
+export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange }: ClaimDetailSheetProps) {
     const [loading, setLoading] = useState(false);
     const [conflict, setConflict] = useState<{ date: string; time: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [notifyState, setNotifyState] = useState<"idle" | "loading" | "done">(post.user_notify_me ? "done" : "idle");
     const [showReport, setShowReport] = useState(false);
+    // Claim status is tracked locally so the sheet can transition in place
+    // (claimable → pending) without closing after the user claims.
+    const [claimStatus, setClaimStatus] = useState(post.user_claim_status);
+    const [claimId, setClaimId] = useState(post.user_claim_id);
+    const [cancelling, setCancelling] = useState(false);
     const { shareData, handleShare, closeShareModal } = useShare();
 
     useEffect(() => {
@@ -99,7 +103,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
     }, [onClose]);
 
     const isOwnPost = currentUserId === post.author_id;
-    const activeClaim = post.user_claim_status === "pending" || post.user_claim_status === "approved";
+    const activeClaim = claimStatus === "pending" || claimStatus === "approved";
     const isFull = post.spots_available <= 0;
     const isExpired = post.status === "expired";
 
@@ -130,8 +134,11 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
             post_id: post.id,
             claim_id: data.claim_id as string,
         });
-        onClaimed?.(data.claim_id as string);
-    }, [post.id, post.author_id, onClaimed]);
+        // Transition the sheet to the pending state in place (keep it open).
+        setClaimId(data.claim_id as string);
+        setClaimStatus("pending");
+        onClaimChange?.();
+    }, [post.id, post.author_id, onClaimChange]);
 
     const handleNotifyMe = useCallback(async () => {
         if (notifyState !== "idle") return;
@@ -139,6 +146,22 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
         await supabase.rpc("add_notify_me", { p_post_id: post.id });
         setNotifyState("done");
     }, [post.id, notifyState]);
+
+    const handleCancel = useCallback(async () => {
+        if (!claimId) return;
+        setCancelling(true);
+        setError(null);
+        const { error: rpcError } = await supabase.rpc("unclaim", { p_claim_id: claimId });
+        setCancelling(false);
+        if (rpcError) {
+            setError("Something went wrong. Please try again.");
+            return;
+        }
+        // Back to the claimable state (sheet stays open).
+        setClaimStatus(null);
+        setClaimId(null);
+        onClaimChange?.();
+    }, [claimId, onClaimChange]);
 
     const playType = formatPlayType(post.play_type);
     const title = [playType, "Tennis"].filter(Boolean).join(" ");
@@ -151,7 +174,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
     const costLabel = post.cost != null ? `Claim for $${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Claim spot";
 
     // Claim-status banner shown to the claiming user (pending → approved).
-    const claimApproved = post.user_claim_status === "approved";
+    const claimApproved = claimStatus === "approved";
     const claimStatusMessage = claimApproved ? "Your claim has been approved!" : "Your claim is pending approval";
 
     const titleHeader = (
@@ -162,6 +185,12 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
             </h2>
             {subtitle && <p className="text-sm text-secondary">{subtitle}</p>}
         </div>
+    );
+
+    const shareButton = (
+        <button type="button" onClick={() => handleShare(post)} className={SECONDARY_BTN}>
+            Share with a friend
+        </button>
     );
 
     return (
@@ -182,9 +211,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                 {/* Header — claim-status banner once claimed, otherwise the title. */}
                 <div className="flex items-start justify-between gap-3">
                     {activeClaim ? (
-                        <p className={cx("text-sm font-semibold", claimApproved ? "text-brand-500" : "text-secondary")}>
-                            {claimStatusMessage}
-                        </p>
+                        <p className="text-sm font-semibold text-brand-500">{claimStatusMessage}</p>
                     ) : (
                         titleHeader
                     )}
@@ -255,39 +282,81 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                     </p>
                 )}
 
+                {/* Pending-claim helper — same style/placement, with the inline report link. */}
+                {activeClaim && !claimApproved && currentUserId && (
+                    <p className="mb-[11px] text-xs text-tertiary">
+                        * Have a problem?{" "}
+                        <button
+                            type="button"
+                            onClick={() => setShowReport(true)}
+                            className="text-tertiary underline underline-offset-2 transition duration-100 ease-linear hover:text-secondary"
+                        >
+                            Report issue
+                        </button>
+                    </p>
+                )}
+
                 {/* Primary action */}
                 <div className="flex flex-col gap-3">
                     {isOwnPost ? (
-                        <p className="text-center text-sm text-tertiary">This is your post.</p>
-                    ) : activeClaim ? null : isExpired ? (
-                        <p className="text-center text-sm text-tertiary">This post has expired.</p>
-                    ) : isFull ? (
-                        notifyState === "done" ? (
-                            <p className="text-center text-sm text-success-primary">We'll notify you if a spot opens up.</p>
+                        <>
+                            <p className="text-center text-sm text-tertiary">This is your post.</p>
+                            {shareButton}
+                        </>
+                    ) : activeClaim ? (
+                        claimApproved ? (
+                            shareButton
                         ) : (
                             <button
                                 type="button"
-                                onClick={handleNotifyMe}
-                                disabled={notifyState === "loading"}
-                                className={PRIMARY_BTN}
+                                onClick={handleCancel}
+                                disabled={cancelling}
+                                className={`${SECONDARY_BTN} flex items-center justify-center`}
                             >
-                                {notifyState === "loading" ? <ButtonSpinner /> : "Notify me if a spot opens"}
+                                {cancelling ? (
+                                    <span
+                                        className="size-5 animate-spin rounded-full border-2 border-secondary border-t-transparent"
+                                        aria-hidden="true"
+                                    />
+                                ) : (
+                                    "Cancel claim"
+                                )}
                             </button>
                         )
+                    ) : isExpired ? (
+                        <>
+                            <p className="text-center text-sm text-tertiary">This post has expired.</p>
+                            {shareButton}
+                        </>
+                    ) : isFull ? (
+                        <>
+                            {notifyState === "done" ? (
+                                <p className="text-center text-sm text-success-primary">We'll notify you if a spot opens up.</p>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleNotifyMe}
+                                    disabled={notifyState === "loading"}
+                                    className={PRIMARY_BTN}
+                                >
+                                    {notifyState === "loading" ? <ButtonSpinner /> : "Notify me if a spot opens"}
+                                </button>
+                            )}
+                            {shareButton}
+                        </>
                     ) : (
-                        <button
-                            type="button"
-                            onClick={handleClaim}
-                            disabled={loading || !!conflict}
-                            className={PRIMARY_BTN}
-                        >
-                            {loading ? <ButtonSpinner /> : costLabel}
-                        </button>
+                        <>
+                            <button
+                                type="button"
+                                onClick={handleClaim}
+                                disabled={loading || !!conflict}
+                                className={PRIMARY_BTN}
+                            >
+                                {loading ? <ButtonSpinner /> : costLabel}
+                            </button>
+                            {shareButton}
+                        </>
                     )}
-
-                    <button type="button" onClick={() => handleShare(post)} className={SECONDARY_BTN}>
-                        Share with a friend
-                    </button>
                 </div>
 
             </motion.div>
