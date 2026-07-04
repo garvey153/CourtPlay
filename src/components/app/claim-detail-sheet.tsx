@@ -214,10 +214,25 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                 )}
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                {/* Helper text — only when a claim is possible */}
+                {/* Helper text — only when a claim is possible. The "Report claim" link
+                    lives inline here (same style/placement) and replaces the old
+                    standalone "Report this post" link. */}
                 {!isOwnPost && !activeClaim && !isFull && !isExpired && (
                     <p className="text-xs text-tertiary">
                         * Your claim will be sent to {post.first_name} for approval. You'll be notified once approved.
+                        {currentUserId && (
+                            <>
+                                {" "}
+                                Have an issue?{" "}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowReport(true)}
+                                    className="text-tertiary underline underline-offset-2 transition duration-100 ease-linear hover:text-secondary"
+                                >
+                                    Report claim
+                                </button>
+                            </>
+                        )}
                     </p>
                 )}
 
@@ -262,16 +277,6 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                     </button>
                 </div>
 
-                {/* Report — only for other people's posts */}
-                {currentUserId && !isOwnPost && (
-                    <button
-                        type="button"
-                        onClick={() => setShowReport(true)}
-                        className="text-center text-xs text-tertiary hover:text-secondary"
-                    >
-                        Report this post
-                    </button>
-                )}
             </motion.div>
 
             {shareData && <ShareModal url={shareData.url} text={shareData.text} onClose={closeShareModal} />}

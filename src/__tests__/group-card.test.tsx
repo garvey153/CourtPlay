@@ -87,6 +87,6 @@ describe("GroupCard", () => {
     it("renders no actions menu (clean Regular Play card)", () => {
         render(<GroupCard post={makePost()} profileComplete={false} currentUserId="viewer-1" />);
         expect(screen.queryByRole("button", { name: /More options/i })).not.toBeInTheDocument();
-        expect(screen.queryByText(/Report this post/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Report claim/i)).not.toBeInTheDocument();
     });
 });

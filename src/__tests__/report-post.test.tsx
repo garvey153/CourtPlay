@@ -253,7 +253,7 @@ describe("ReportModal — post reporting", () => {
                 />
             </MemoryRouter>,
         );
-        expect(screen.queryByText("Report this post")).not.toBeInTheDocument();
+        expect(screen.queryByText("Report claim")).not.toBeInTheDocument();
     });
 
     it("modal dismissable by clicking outside", async () => {
@@ -282,7 +282,7 @@ describe("ReportModal — post reporting", () => {
         });
     });
 
-    it("claim-detail sheet offers Report this post for other users' posts", () => {
+    it("claim-detail sheet offers Report claim for other users' posts", () => {
         render(
             <MemoryRouter>
                 <ClaimDetailSheet
@@ -293,7 +293,7 @@ describe("ReportModal — post reporting", () => {
             </MemoryRouter>,
         );
 
-        expect(screen.getByText("Report this post")).toBeInTheDocument();
+        expect(screen.getByText("Report claim")).toBeInTheDocument();
     });
 
     it("Report option NOT shown to unauthenticated users", () => {
@@ -303,6 +303,6 @@ describe("ReportModal — post reporting", () => {
             </MemoryRouter>,
         );
 
-        expect(screen.queryByText("Report this post")).not.toBeInTheDocument();
+        expect(screen.queryByText("Report claim")).not.toBeInTheDocument();
     });
 });
