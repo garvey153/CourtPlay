@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { SubCard } from "@/components/app/sub-card";
+import { SubCard, type CardKind } from "@/components/app/sub-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
 import { ContactModal, type ContactInfo } from "@/components/app/contact-modal";
@@ -12,8 +12,8 @@ import { supabase } from "@/lib/supabase";
 import { REJECTION_REASONS } from "@/types/claims";
 import type { ClaimRow, MyClaim, MyPost } from "@/types/activity";
 import type { FeedPost } from "@/types/feed";
-import { deriveClaimState, derivePostState, type ClaimDisplayState } from "@/utils/activity-states";
-import { claimKind, claimToFeedPost, postKind, postToFeedPost } from "@/utils/activity-feed-map";
+import { derivePostState } from "@/utils/activity-states";
+import { claimToFeedPost, postKind, postToFeedPost } from "@/utils/activity-feed-map";
 import { cx } from "@/utils/cx";
 
 // ── Main component ─────────────────────────────────────────────────────────
@@ -177,19 +177,43 @@ export function Activity() {
         });
     }, []);
 
-    // Claims-tab card tap: pending → claimer sheet; approved → contact/Venmo.
-    const handleClaimTap = useCallback(
-        (claim: MyClaim, state: ClaimDisplayState) => {
-            if (state === "pending") setClaimSheet(claimToFeedPost(claim));
-            else if (state === "approved" || state === "completed") showPosterContact(claim);
-        },
-        [showPosterContact],
-    );
-
     // ── Render ────────────────────────────────────────────────────────────────
 
+    // Past the game's date/time (time optional → treat as end of day).
+    const isPast = (date: string | null, time: string | null) =>
+        !!date && new Date(`${date}T${time ?? "23:59"}:00`).getTime() < Date.now();
+
     const renderClaims = () => {
-        if (myClaims.length === 0) {
+        // Three sections only: Pending (awaiting approval), Approved, Declined.
+        // Backed-out/cancelled claims are hidden; approved + declined drop once the
+        // event time has passed. Pending stays until resolved.
+        const allSections: Array<{
+            label: string;
+            kind: CardKind;
+            claims: MyClaim[];
+            onTap?: (claim: MyClaim) => void;
+        }> = [
+            {
+                label: "Pending",
+                kind: "pending",
+                claims: myClaims.filter((c) => c.status === "pending"),
+                onTap: (claim) => setClaimSheet(claimToFeedPost(claim)),
+            },
+            {
+                label: "Approved",
+                kind: "approved",
+                claims: myClaims.filter((c) => c.status === "approved" && !isPast(c.game_date, c.game_time)),
+                onTap: (claim) => showPosterContact(claim),
+            },
+            {
+                label: "Declined",
+                kind: "rejected",
+                claims: myClaims.filter((c) => c.status === "rejected" && !isPast(c.game_date, c.game_time)),
+            },
+        ];
+        const sections = allSections.filter((s) => s.claims.length > 0);
+
+        if (sections.length === 0) {
             return (
                 <EmptyState
                     title="No claims yet"
@@ -199,40 +223,26 @@ export function Activity() {
                 />
             );
         }
-        const sections: Array<{ label: string; state: ClaimDisplayState }> = [
-            { label: "Pending", state: "pending" },
-            { label: "Approved", state: "approved" },
-            { label: "Completed", state: "completed" },
-            { label: "Rejected", state: "rejected" },
-            { label: "Backed out", state: "backed_out" },
-            { label: "Cancelled", state: "cancelled" },
-        ];
-        const byState = (s: ClaimDisplayState) => myClaims.filter((c) => deriveClaimState(c) === s);
-        const active = sections.filter((s) => byState(s.state).length > 0);
 
         return (
             <div className="flex flex-col gap-5">
-                {active.map((section) => {
-                    const claims = byState(section.state);
-                    const interactive = section.state === "pending" || section.state === "approved" || section.state === "completed";
-                    return (
-                        <div key={section.state}>
-                            <p className="mb-2 text-xs font-medium text-tertiary">{section.label}</p>
-                            <ul className="flex flex-col gap-3">
-                                {claims.map((claim) => (
-                                    <li key={claim.id}>
-                                        <SubCard
-                                            post={claimToFeedPost(claim)}
-                                            currentUserId={user?.id}
-                                            kindOverride={claimKind(section.state)}
-                                            onOpenDetail={interactive ? () => handleClaimTap(claim, section.state) : undefined}
-                                        />
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    );
-                })}
+                {sections.map((section) => (
+                    <div key={section.label}>
+                        <p className="mb-2 text-xs font-medium text-tertiary">{section.label}</p>
+                        <ul className="flex flex-col gap-3">
+                            {section.claims.map((claim) => (
+                                <li key={claim.id}>
+                                    <SubCard
+                                        post={claimToFeedPost(claim)}
+                                        currentUserId={user?.id}
+                                        kindOverride={section.kind}
+                                        onOpenDetail={section.onTap ? () => section.onTap!(claim) : undefined}
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ))}
             </div>
         );
     };
@@ -279,7 +289,7 @@ export function Activity() {
                         type="button"
                         onClick={() => setTab(t.id)}
                         className={cx(
-                            "rounded-full px-3.5 py-2 text-sm font-semibold transition duration-100 ease-linear",
+                            "rounded-full px-3.5 py-1 text-xs font-semibold transition duration-100 ease-linear",
                             tab === t.id ? "bg-brand-500 text-neutral-950" : "bg-tertiary text-secondary hover:text-primary",
                         )}
                     >

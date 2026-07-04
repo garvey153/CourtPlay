@@ -33,7 +33,7 @@ const KIND_CONFIG: Record<CardKind, KindConfig> = {
     filled: { bar: "bg-neutral-400", label: "Filled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: true },
     completed: { bar: "bg-neutral-400", label: "Completed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
     cancelled: { bar: "bg-neutral-400", label: "Cancelled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
-    rejected: { bar: "bg-red-500", label: "Rejected", badgeBg: "bg-red-500", badgeFg: "text-white", dot: null, dim: true },
+    rejected: { bar: "bg-red-500", label: "Declined", badgeBg: "bg-red-500", badgeFg: "text-white", dot: null, dim: true },
     backed_out: { bar: "bg-neutral-400", label: "Backed out", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
 };
 
