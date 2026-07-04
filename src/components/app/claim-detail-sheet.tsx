@@ -81,9 +81,11 @@ interface ClaimDetailSheetProps {
     onClaimChange?: () => void;
     /** Called after a claim is cancelled (feed shows the "reopened" banner + closes). */
     onCancelled?: (post: FeedPost) => void;
+    /** Poster contact, shown once the claim is approved (Activity → Claimed → Approved). */
+    contact?: { venmoHandle: string | null; phone: string | null };
 }
 
-export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, onCancelled }: ClaimDetailSheetProps) {
+export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, onCancelled, contact }: ClaimDetailSheetProps) {
     const [loading, setLoading] = useState(false);
     const [conflict, setConflict] = useState<{ date: string; time: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -179,6 +181,11 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
     // Claim-status banner shown to the claiming user (pending → approved).
     const claimApproved = claimStatus === "approved";
     const claimStatusMessage = claimApproved ? "Your claim has been approved!" : "Your claim is pending approval";
+    const showContact = claimApproved && !!contact && (!!contact.venmoHandle || !!contact.phone);
+    const venmoHref =
+        contact?.venmoHandle && post.cost != null
+            ? `https://venmo.com/${encodeURIComponent(contact.venmoHandle)}?txn=pay&amount=${post.cost.toFixed(2)}&note=${encodeURIComponent(`CourtPlay - ${court ?? "Tennis"}`)}`
+            : null;
 
     const titleHeader = (
         <div className="flex min-w-0 flex-col gap-1">
@@ -257,6 +264,26 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                     </div>
                 )}
 
+                {/* Poster contact — revealed once approved */}
+                {showContact && (
+                    <div className="flex flex-col gap-1.5 text-sm">
+                        {contact!.phone && (
+                            <div className="flex items-center justify-between">
+                                <span className="text-tertiary">Phone</span>
+                                <a href={`tel:${contact!.phone}`} className="font-medium text-brand-500 underline underline-offset-2">
+                                    {contact!.phone}
+                                </a>
+                            </div>
+                        )}
+                        {contact!.venmoHandle && (
+                            <div className="flex items-center justify-between">
+                                <span className="text-tertiary">Venmo</span>
+                                <span className="font-medium text-primary">@{contact!.venmoHandle}</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Conflict / error */}
                 {conflict && (
                     <div className="rounded-lg bg-warning-primary p-3 text-sm text-primary">
@@ -314,7 +341,14 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                         </>
                     ) : activeClaim ? (
                         claimApproved ? (
-                            shareButton
+                            <>
+                                {venmoHref && (
+                                    <a href={venmoHref} target="_blank" rel="noopener noreferrer" className={PRIMARY_BTN}>
+                                        Pay ${post.cost! % 1 === 0 ? post.cost : post.cost!.toFixed(2)} via Venmo
+                                    </a>
+                                )}
+                                {shareButton}
+                            </>
                         ) : (
                             <button
                                 type="button"

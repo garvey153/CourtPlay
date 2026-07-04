@@ -33,7 +33,8 @@ export function Activity() {
 
     // Overlays
     const [contactModal, setContactModal] = useState<ContactInfo | null>(null);
-    const [claimSheet, setClaimSheet] = useState<FeedPost | null>(null); // claimer view (pending claim)
+    // Claimer's detail sheet; contact is attached once the claim is approved.
+    const [claimSheet, setClaimSheet] = useState<{ post: FeedPost; contact?: { venmoHandle: string | null; phone: string | null } } | null>(null);
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null); // creator view
 
     const me =
@@ -162,21 +163,6 @@ export function Activity() {
         });
     }, []);
 
-    const showPosterContact = useCallback((claim: MyClaim) => {
-        setContactModal({
-            role: "poster",
-            viewerRole: "claimer",
-            firstName: claim.poster_first_name,
-            lastName: claim.poster_last_name,
-            phone: claim.poster_phone,
-            venmoHandle: claim.poster_venmo_handle,
-            gameDate: claim.game_date,
-            gameTime: claim.game_time,
-            location: claim.location ?? claim.custom_court,
-            cost: claim.cost,
-        });
-    }, []);
-
     // ── Render ────────────────────────────────────────────────────────────────
 
     // Past the game's date/time (time optional → treat as end of day).
@@ -197,13 +183,17 @@ export function Activity() {
                 label: "Pending",
                 kind: "pending",
                 claims: myClaims.filter((c) => c.status === "pending"),
-                onTap: (claim) => setClaimSheet(claimToFeedPost(claim)),
+                onTap: (claim) => setClaimSheet({ post: claimToFeedPost(claim) }),
             },
             {
                 label: "Approved",
                 kind: "approved",
                 claims: myClaims.filter((c) => c.status === "approved" && !isPast(c.game_date, c.game_time)),
-                onTap: (claim) => showPosterContact(claim),
+                onTap: (claim) =>
+                    setClaimSheet({
+                        post: claimToFeedPost(claim),
+                        contact: { venmoHandle: claim.poster_venmo_handle, phone: claim.poster_phone },
+                    }),
             },
             {
                 label: "Declined",
@@ -337,7 +327,8 @@ export function Activity() {
 
             {claimSheet && (
                 <ClaimDetailSheet
-                    post={claimSheet}
+                    post={claimSheet.post}
+                    contact={claimSheet.contact}
                     currentUserId={user?.id}
                     onClose={() => setClaimSheet(null)}
                     onClaimChange={fetchData}
