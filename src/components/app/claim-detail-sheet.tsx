@@ -199,7 +199,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
 
                 {/* Notes */}
                 {post.notes && (
-                    <div className="w-full rounded-lg border border-neutral-600 px-3 py-2.5">
+                    <div className="w-full rounded-lg rounded-tl-none border border-neutral-600 px-3 py-2.5">
                         <p className="text-sm text-secondary">“{post.notes}”</p>
                     </div>
                 )}
@@ -218,7 +218,9 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                     lives inline here (same style/placement) and replaces the old
                     standalone "Report this post" link. */}
                 {!isOwnPost && !activeClaim && !isFull && !isExpired && (
-                    <p className="text-xs text-tertiary">
+                    // mb-[11px] + the gap-4 (16px) below puts 32px from the text baseline to the
+                    // button top (the last line's baseline sits ~5px above the box bottom).
+                    <p className="mb-[11px] text-xs text-tertiary">
                         * Your claim will be sent to {post.first_name} for approval. You'll be notified once approved.
                         {currentUserId && (
                             <>
