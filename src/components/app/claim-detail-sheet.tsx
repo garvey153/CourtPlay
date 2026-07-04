@@ -266,21 +266,9 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
 
                 {/* Poster contact — revealed once approved */}
                 {showContact && (
-                    <div className="flex flex-col gap-1.5 text-sm">
-                        {contact!.phone && (
-                            <div className="flex items-center justify-between">
-                                <span className="text-tertiary">Phone</span>
-                                <a href={`tel:${contact!.phone}`} className="font-medium text-brand-500 underline underline-offset-2">
-                                    {contact!.phone}
-                                </a>
-                            </div>
-                        )}
-                        {contact!.venmoHandle && (
-                            <div className="flex items-center justify-between">
-                                <span className="text-tertiary">Venmo</span>
-                                <span className="font-medium text-primary">@{contact!.venmoHandle}</span>
-                            </div>
-                        )}
+                    <div className="flex flex-col gap-0.5 text-sm text-tertiary">
+                        {contact!.phone && <p>Phone: {contact!.phone}</p>}
+                        {contact!.venmoHandle && <p>Venmo: @{contact!.venmoHandle}</p>}
                     </div>
                 )}
 
@@ -340,16 +328,12 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                             {shareButton}
                         </>
                     ) : activeClaim ? (
-                        claimApproved ? (
-                            <>
-                                {venmoHref && (
-                                    <a href={venmoHref} target="_blank" rel="noopener noreferrer" className={PRIMARY_BTN}>
-                                        Pay ${post.cost! % 1 === 0 ? post.cost : post.cost!.toFixed(2)} via Venmo
-                                    </a>
-                                )}
-                                {shareButton}
-                            </>
-                        ) : (
+                        <>
+                            {claimApproved && venmoHref && (
+                                <a href={venmoHref} target="_blank" rel="noopener noreferrer" className={PRIMARY_BTN}>
+                                    Pay ${post.cost! % 1 === 0 ? post.cost : post.cost!.toFixed(2)} with Venmo
+                                </a>
+                            )}
                             <button
                                 type="button"
                                 onClick={handleCancel}
@@ -365,7 +349,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                                     "Cancel claim"
                                 )}
                             </button>
-                        )
+                        </>
                     ) : isExpired ? (
                         <>
                             <p className="text-center text-sm text-tertiary">This post has expired.</p>
