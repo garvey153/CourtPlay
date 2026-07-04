@@ -4,6 +4,7 @@ import { GroupCard } from "@/components/app/group-card";
 import { FeedFilters, activeCount } from "@/components/app/feed-filters";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { SubCard } from "@/components/app/sub-card";
+import { ClaimCancelledBanner } from "@/components/app/claim-cancelled-banner";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
@@ -52,6 +53,8 @@ export function Feed() {
     });
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [detailPost, setDetailPost] = useState<FeedPost | null>(null);
+    // Set after a claim is cancelled — drives the "spot reopened" banner at the top of the feed.
+    const [cancelledPost, setCancelledPost] = useState<FeedPost | null>(null);
     const [welcomeDismissed, setWelcomeDismissed] = useState(
         () => localStorage.getItem(WELCOME_KEY) === "1",
     );
@@ -157,6 +160,26 @@ export function Feed() {
 
             <PullToRefresh onRefresh={fetchPosts}>
             <div className="flex flex-col gap-3 px-5 pb-4">
+                {cancelledPost && (
+                    <ClaimCancelledBanner
+                        post={cancelledPost}
+                        onDismiss={() => setCancelledPost(null)}
+                        onUndo={() => {
+                            // Reopen the sheet in the open (claimable) state so the user can claim again.
+                            const fresh = posts.find((p) => p.id === cancelledPost.id);
+                            setDetailPost(
+                                fresh ?? {
+                                    ...cancelledPost,
+                                    user_claim_status: null,
+                                    user_claim_id: null,
+                                    spots_available: Math.max(1, cancelledPost.spots_available),
+                                },
+                            );
+                            setCancelledPost(null);
+                        }}
+                    />
+                )}
+
                 {showWelcome && (
                     <WelcomeCard
                         onDismiss={handleDismissWelcome}
@@ -235,6 +258,11 @@ export function Feed() {
                         currentUserId={user?.id}
                         onClose={() => setDetailPost(null)}
                         onClaimChange={fetchPosts}
+                        onCancelled={(p) => {
+                            setDetailPost(null);
+                            setCancelledPost(p);
+                            document.querySelector("main")?.scrollTo({ top: 0 });
+                        }}
                     />
                 ) : (
                     <GroupDetailSheet

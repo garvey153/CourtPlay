@@ -79,9 +79,11 @@ interface ClaimDetailSheetProps {
     onClose: () => void;
     /** Called after the claim state changes (claim or cancel) so the feed can refresh. */
     onClaimChange?: () => void;
+    /** Called after a claim is cancelled (feed shows the "reopened" banner + closes). */
+    onCancelled?: (post: FeedPost) => void;
 }
 
-export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange }: ClaimDetailSheetProps) {
+export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, onCancelled }: ClaimDetailSheetProps) {
     const [loading, setLoading] = useState(false);
     const [conflict, setConflict] = useState<{ date: string; time: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -157,10 +159,12 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange }
             setError("Something went wrong. Please try again.");
             return;
         }
-        // Cancel succeeded — refresh the feed and close the sheet.
+        // Cancel succeeded — refresh the feed, then show the "reopened" banner (which
+        // also closes the sheet) or just close if no banner handler is provided.
         onClaimChange?.();
-        onClose();
-    }, [claimId, onClaimChange, onClose]);
+        if (onCancelled) onCancelled(post);
+        else onClose();
+    }, [claimId, onClaimChange, onCancelled, onClose, post]);
 
     const playType = formatPlayType(post.play_type);
     const title = [playType, "Tennis"].filter(Boolean).join(" ");
