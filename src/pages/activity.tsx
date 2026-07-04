@@ -248,7 +248,13 @@ export function Activity() {
     };
 
     const renderCreated = () => {
-        if (myPosts.length === 0) {
+        // Drop expired posts once the event is more than 7 days past (undated posts stay).
+        const graceCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const visiblePosts = myPosts.filter((post) => {
+            if (!post.game_date) return true;
+            return new Date(`${post.game_date}T${post.game_time ?? "23:59"}:00`).getTime() >= graceCutoff;
+        });
+        if (visiblePosts.length === 0) {
             return (
                 <EmptyState
                     title="No posts yet"
@@ -260,7 +266,7 @@ export function Activity() {
         }
         return (
             <ul className="flex flex-col gap-3">
-                {myPosts.map((post) => (
+                {visiblePosts.map((post) => (
                     <li key={post.id}>
                         <SubCard
                             post={me ? postToFeedPost(post, me) : postToFeedPost(post, { id: "", first_name: "", last_name: "", photo_url: null })}

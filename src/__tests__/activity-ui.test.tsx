@@ -23,9 +23,10 @@ vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
 
 const rpc = vi.mocked(supabase.rpc);
 
+const futureDate = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
 const createdPost = {
     id: "post-1", post_type: "sub_need", format: null, play_type: "round_robin", duration: 2,
-    skill_level: "4.0", notes: "Come play", game_date: "2026-07-11", game_time: "09:00",
+    skill_level: "4.0", notes: "Come play", game_date: futureDate, game_time: "09:00",
     location: "Longshore Club", custom_court: null, cost: 25, original_cost: null,
     spots_total: 1, spots_available: 0, status: "active", created_at: "2026-07-01T12:00:00Z",
     series_id: null, deleted_at: null, deleted_by: null,
