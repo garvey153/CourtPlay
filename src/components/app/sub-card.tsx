@@ -29,11 +29,11 @@ const KIND_CONFIG: Record<CardKind, KindConfig> = {
     approved: { bar: "bg-brand-500", label: "Approved", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", dot: "bg-brand-500", dim: false },
     claimed: { bar: "bg-neutral-400", label: "Claimed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: true },
     pending: { bar: "bg-neutral-400", label: "Pending", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: false },
-    expired: { bar: "bg-red-500", label: "Expired", badgeBg: "bg-red-500", badgeFg: "text-white", dot: null, dim: true },
+    expired: { bar: "bg-red-500", label: "Expired", badgeBg: "bg-red-900", badgeFg: "text-red-400", dot: "bg-red-400", dim: true },
     filled: { bar: "bg-neutral-400", label: "Filled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: true },
     completed: { bar: "bg-neutral-400", label: "Completed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
     cancelled: { bar: "bg-neutral-400", label: "Cancelled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
-    rejected: { bar: "bg-red-500", label: "Declined", badgeBg: "bg-red-500", badgeFg: "text-white", dot: null, dim: true },
+    rejected: { bar: "bg-red-500", label: "Declined", badgeBg: "bg-red-900", badgeFg: "text-red-400", dot: "bg-red-400", dim: true },
     backed_out: { bar: "bg-neutral-400", label: "Backed out", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
 };
 
