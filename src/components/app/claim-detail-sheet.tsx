@@ -5,6 +5,7 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useShare } from "@/hooks/use-share";
+import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
 import { ShareModal } from "./share-modal";
 import { ReportModal } from "./report-modal";
@@ -149,6 +150,20 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
         .join(" · ");
     const costLabel = post.cost != null ? `Claim for $${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Claim spot";
 
+    // Claim-status banner shown to the claiming user (pending → approved).
+    const claimApproved = post.user_claim_status === "approved";
+    const claimStatusMessage = claimApproved ? "Your claim has been approved!" : "Your claim is pending approval";
+
+    const titleHeader = (
+        <div className="flex min-w-0 flex-col gap-1">
+            <h2 id="claim-sheet-title" className="text-md font-semibold text-primary">
+                {title}
+                {when && ` · ${when}`}
+            </h2>
+            {subtitle && <p className="text-sm text-secondary">{subtitle}</p>}
+        </div>
+    );
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
@@ -164,15 +179,15 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                 animate={{ y: 0 }}
                 transition={{ type: "spring", damping: 38, stiffness: 420 }}
             >
-                {/* Header */}
+                {/* Header — claim-status banner once claimed, otherwise the title. */}
                 <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 flex-col gap-1">
-                        <h2 id="claim-sheet-title" className="text-md font-semibold text-primary">
-                            {title}
-                            {when && ` · ${when}`}
-                        </h2>
-                        {subtitle && <p className="text-sm text-secondary">{subtitle}</p>}
-                    </div>
+                    {activeClaim ? (
+                        <p className={cx("text-sm font-semibold", claimApproved ? "text-brand-500" : "text-secondary")}>
+                            {claimStatusMessage}
+                        </p>
+                    ) : (
+                        titleHeader
+                    )}
                     <button
                         type="button"
                         onClick={onClose}
@@ -182,6 +197,8 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                         <XClose className="size-5" />
                     </button>
                 </div>
+
+                {activeClaim && titleHeader}
 
                 {/* Poster */}
                 <div className="flex items-center gap-2">
@@ -242,13 +259,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimed }: Cl
                 <div className="flex flex-col gap-3">
                     {isOwnPost ? (
                         <p className="text-center text-sm text-tertiary">This is your post.</p>
-                    ) : activeClaim ? (
-                        <p className="text-center text-sm text-tertiary">
-                            {post.user_claim_status === "pending"
-                                ? "Awaiting poster approval"
-                                : "Your spot is approved — check My Activity for details."}
-                        </p>
-                    ) : isExpired ? (
+                    ) : activeClaim ? null : isExpired ? (
                         <p className="text-center text-sm text-tertiary">This post has expired.</p>
                     ) : isFull ? (
                         notifyState === "done" ? (
