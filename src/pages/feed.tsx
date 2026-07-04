@@ -5,6 +5,7 @@ import { FeedFilters, activeCount } from "@/components/app/feed-filters";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { SubCard } from "@/components/app/sub-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
+import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { WelcomeCard } from "@/components/app/welcome-card";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -217,6 +218,7 @@ export function Feed() {
                                         profileComplete={profileComplete}
                                         currentUserId={user?.id}
                                         onViewed={handleViewed}
+                                        onOpenDetail={setDetailPost}
                                     />
                                 </li>
                             ),
@@ -226,17 +228,28 @@ export function Feed() {
             </div>
             </PullToRefresh>
 
-            {detailPost && (
-                <ClaimDetailSheet
-                    post={detailPost}
-                    currentUserId={user?.id}
-                    onClose={() => setDetailPost(null)}
-                    onClaimed={() => {
-                        setDetailPost(null);
-                        fetchPosts();
-                    }}
-                />
-            )}
+            {detailPost &&
+                (detailPost.post_type === "sub_need" ? (
+                    <ClaimDetailSheet
+                        post={detailPost}
+                        currentUserId={user?.id}
+                        onClose={() => setDetailPost(null)}
+                        onClaimed={() => {
+                            setDetailPost(null);
+                            fetchPosts();
+                        }}
+                    />
+                ) : (
+                    <GroupDetailSheet
+                        post={detailPost}
+                        currentUserId={user?.id}
+                        onClose={() => setDetailPost(null)}
+                        onConnected={() => {
+                            setDetailPost(null);
+                            fetchPosts();
+                        }}
+                    />
+                ))}
         </AppLayout>
     );
 }

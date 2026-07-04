@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render as rtlRender, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { GroupCard } from "@/components/app/group-card";
 import type { FeedPost } from "@/types/feed";
@@ -73,10 +74,18 @@ describe("GroupCard", () => {
         expect(screen.getByText(/Morning/i)).toBeInTheDocument();
         // Location
         expect(screen.getByText("Longshore Club")).toBeInTheDocument();
-        // Poster name links to the profile (first name + last initial)
-        expect(screen.getByRole("link", { name: /Alice S\./i })).toBeInTheDocument();
+        // Poster name (first name + last initial)
+        expect(screen.getByText(/Alice S\./i)).toBeInTheDocument();
         // Brief note
         expect(screen.getByText(/Looking for consistent group/i)).toBeInTheDocument();
+    });
+
+    it("opens the detail sheet when the card is tapped", async () => {
+        const onOpenDetail = vi.fn();
+        const post = makePost();
+        render(<GroupCard post={post} profileComplete={false} onOpenDetail={onOpenDetail} />);
+        await userEvent.click(screen.getByRole("button"));
+        expect(onOpenDetail).toHaveBeenCalledWith(post);
     });
 
     it("shows the friend badge for friends' posts", () => {

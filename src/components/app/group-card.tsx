@@ -1,5 +1,4 @@
 import { memo, useEffect, useRef } from "react";
-import { Link } from "react-router";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
@@ -20,10 +19,12 @@ interface GroupCardProps {
     profileComplete: boolean;
     currentUserId?: string | null;
     onViewed?: (postId: string) => void;
+    /** Tapping the card opens the regular-play detail bottom sheet. */
+    onOpenDetail?: (post: FeedPost) => void;
 }
 
-export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed }: GroupCardProps) {
-    const cardRef = useRef<HTMLDivElement>(null);
+export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed, onOpenDetail }: GroupCardProps) {
+    const cardRef = useRef<HTMLButtonElement>(null);
     const didTrack = useRef(false);
 
     useEffect(() => {
@@ -55,7 +56,12 @@ export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed
         .join(" · ");
 
     return (
-        <div ref={cardRef} className="flex w-full overflow-hidden rounded text-left">
+        <button
+            ref={cardRef}
+            type="button"
+            onClick={() => onOpenDetail?.(post)}
+            className="flex w-full overflow-hidden rounded text-left"
+        >
             {/* Left accent bar — blue for regular play, gradient when featured (pro/club) */}
             <span
                 className={cx(
@@ -77,13 +83,10 @@ export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed
                         className="shrink-0 bg-white p-px shadow-xs"
                     />
                     <span className="truncate text-xs text-tertiary">
-                        <Link
-                            to={`/profile/${post.author_id}`}
-                            className="font-medium text-tertiary hover:text-secondary hover:underline"
-                        >
+                        <span className="font-medium">
                             {post.first_name}
                             {post.last_name ? ` ${post.last_name.charAt(0).toUpperCase()}.` : ""}
-                        </Link>
+                        </span>
                         {" · "}
                         {timeAgo(post.created_at)}
                     </span>
@@ -108,6 +111,6 @@ export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed
                     </div>
                 )}
             </div>
-        </div>
+        </button>
     );
 });
