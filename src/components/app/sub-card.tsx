@@ -3,7 +3,17 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
 
-type CardKind = "open" | "approved" | "claimed" | "pending" | "expired";
+export type CardKind =
+    | "open"
+    | "approved"
+    | "claimed"
+    | "pending"
+    | "expired"
+    | "filled"
+    | "completed"
+    | "cancelled"
+    | "rejected"
+    | "backed_out";
 
 interface KindConfig {
     bar: string;
@@ -20,6 +30,11 @@ const KIND_CONFIG: Record<CardKind, KindConfig> = {
     claimed: { bar: "bg-neutral-400", label: "Claimed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: true },
     pending: { bar: "bg-neutral-400", label: "Pending", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: false },
     expired: { bar: "bg-red-500", label: "Expired", badgeBg: "bg-red-500", badgeFg: "text-white", dot: null, dim: true },
+    filled: { bar: "bg-neutral-400", label: "Filled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: true },
+    completed: { bar: "bg-neutral-400", label: "Completed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
+    cancelled: { bar: "bg-neutral-400", label: "Cancelled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
+    rejected: { bar: "bg-red-500", label: "Rejected", badgeBg: "bg-red-500", badgeFg: "text-white", dot: null, dim: true },
+    backed_out: { bar: "bg-neutral-400", label: "Backed out", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
 };
 
 function getCardKind(post: FeedPost): CardKind {
@@ -76,9 +91,11 @@ interface SubCardProps {
     onViewed?: (postId: string) => void;
     /** Tapping the card opens the claim-detail bottom sheet. */
     onOpenDetail?: (post: FeedPost) => void;
+    /** Force the card state (Activity uses this from the claim/post display state). */
+    kindOverride?: CardKind;
 }
 
-export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, onOpenDetail }: SubCardProps) {
+export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, onOpenDetail, kindOverride }: SubCardProps) {
     const cardRef = useRef<HTMLButtonElement>(null);
     const didTrack = useRef(false);
 
@@ -100,7 +117,7 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
         return () => observer.disconnect();
     }, [post.id, post.author_id, currentUserId, onViewed]);
 
-    const kind = getCardKind(post);
+    const kind = kindOverride ?? getCardKind(post);
     const config = KIND_CONFIG[kind];
 
     const playType = formatPlayType(post.play_type);
