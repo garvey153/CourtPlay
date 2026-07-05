@@ -227,7 +227,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                 {/* Header — claim-status banner once claimed, otherwise the title. */}
                 <div className="flex items-start justify-between gap-3">
                     {activeClaim ? (
-                        <p className="text-sm font-semibold text-brand-500">{claimStatusMessage}</p>
+                        <p className="text-sm text-brand-500">{claimStatusMessage}</p>
                     ) : (
                         titleHeader
                     )}

@@ -117,7 +117,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                 {/* Header — status banner (when claimed) + close */}
                 <div className="flex items-start justify-between gap-3">
                     {banner ? (
-                        <p className="text-sm font-semibold text-brand-500">{banner}</p>
+                        <p className="text-sm text-brand-500">{banner}</p>
                     ) : (
                         <div className="flex min-w-0 flex-col gap-1">
                             <h2 id="created-sheet-title" className="text-md font-semibold text-primary">
