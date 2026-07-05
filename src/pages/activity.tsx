@@ -257,6 +257,8 @@ export function Activity() {
 
     return (
         <AppLayout>
+            {/* Fill the body so empty states can center vertically. */}
+            <div className="flex min-h-full flex-col">
             {/* Pill tabs */}
             <div className="flex gap-2 px-5 pt-3 pb-1">
                 {(
@@ -283,7 +285,7 @@ export function Activity() {
                 <div className="mx-5 mt-3 rounded-lg bg-error-secondary p-3 text-sm text-error-primary">{actionError}</div>
             )}
 
-            <div className="px-5 py-4">
+            <div className="flex flex-1 flex-col px-5 py-4">
                 {loading ? (
                     <ul aria-label="Loading" className="flex flex-col gap-3">
                         {[1, 2, 3].map((i) => (
@@ -306,6 +308,7 @@ export function Activity() {
                 ) : (
                     renderCreated()
                 )}
+            </div>
             </div>
 
             {contactModal && <ContactModal info={contactModal} onClose={() => setContactModal(null)} />}
@@ -344,7 +347,7 @@ export function Activity() {
 
 function EmptyState({ title, body, ctaLabel, ctaHref }: { title: string; body: string; ctaLabel: string; ctaHref: string }) {
     return (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
             <p className="text-base font-semibold text-primary">{title}</p>
             <p className="text-sm text-tertiary">{body}</p>
             <Link
