@@ -232,9 +232,9 @@ export function Activity() {
         if (visiblePosts.length === 0) {
             return (
                 <EmptyState
-                    title="No posts yet"
-                    body="You haven't posted any sub needs yet."
-                    ctaLabel="Find a Sub"
+                    title="It's your serve!"
+                    body="You haven't posted any openings yet."
+                    ctaLabel="Find a sub"
                     ctaHref="/post/new"
                 />
             );
@@ -349,7 +349,7 @@ function EmptyState({ title, body, ctaLabel, ctaHref }: { title: string; body: s
             <p className="text-sm text-tertiary">{body}</p>
             <Link
                 to={ctaHref}
-                className="mt-1 rounded-full bg-brand-solid px-5 py-2 text-sm font-semibold text-white hover:bg-brand-solid_hover"
+                className="mt-1 rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800"
             >
                 {ctaLabel}
             </Link>
