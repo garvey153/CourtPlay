@@ -148,21 +148,6 @@ export function Activity() {
         [fetchData, user],
     );
 
-    const showClaimerContact = useCallback((claim: ClaimRow, post: MyPost) => {
-        setContactModal({
-            role: "claimer",
-            viewerRole: "poster",
-            firstName: claim.first_name,
-            lastName: claim.last_name,
-            phone: claim.phone,
-            venmoHandle: claim.venmo_handle,
-            gameDate: post.game_date,
-            gameTime: post.game_time,
-            location: post.location ?? post.custom_court,
-            cost: post.cost,
-        });
-    }, []);
-
     // ── Render ────────────────────────────────────────────────────────────────
 
     // Past the game's date/time (time optional → treat as end of day).
@@ -350,11 +335,6 @@ export function Activity() {
                         const post = createdSheet;
                         setCreatedSheet(null);
                         handleDecline(claim, post);
-                    }}
-                    onViewContact={(claim) => {
-                        const post = createdSheet;
-                        setCreatedSheet(null);
-                        showClaimerContact(claim, post);
                     }}
                 />
             )}

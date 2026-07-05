@@ -58,8 +58,6 @@ interface CreatedDetailSheetProps {
     onClose: () => void;
     onApprove: (claim: ClaimRow) => void;
     onDecline: (claim: ClaimRow) => void;
-    /** Opens the contact modal for an approved claim. */
-    onViewContact: (claim: ClaimRow) => void;
     /** Claim id currently being approved/declined. */
     actionLoading?: string | null;
 }
@@ -69,7 +67,7 @@ interface CreatedDetailSheetProps {
  * claim it shows "Your post has been claimed!" with the claimant and Approve /
  * Decline. Matches design 274-4741.
  */
-export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline, onViewContact, actionLoading }: CreatedDetailSheetProps) {
+export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline, actionLoading }: CreatedDetailSheetProps) {
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (e.key === "Escape") onClose();
@@ -93,6 +91,13 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
     const priceLabel = post.cost != null ? `$${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Free";
 
     const banner = pendingClaim ? "Your post has been claimed!" : approvedClaim ? "Claim approved!" : null;
+
+    // Once approved, the creator can charge the claimant via Venmo.
+    const chargeHref =
+        approvedClaim?.venmo_handle && post.cost != null
+            ? `venmo://paycharge?txn=charge&recipients=${encodeURIComponent(approvedClaim.venmo_handle)}&amount=${post.cost.toFixed(2)}&note=${encodeURIComponent(`CourtPlay - ${court ?? "Tennis"}`)}`
+            : null;
+    const venmoWeb = approvedClaim?.venmo_handle ? `https://venmo.com/${encodeURIComponent(approvedClaim.venmo_handle)}` : null;
 
     return (
         <div
@@ -184,6 +189,14 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                         </div>
                         {/* TODO: show the claimer's message once claims carry a message field
                             (needs a `message` column on claims + submit_claim to accept it). */}
+
+                        {/* Claimant contact — revealed once approved */}
+                        {approvedClaim && (claim.phone || claim.venmo_handle) && (
+                            <div className="flex flex-col gap-0.5 text-sm text-tertiary">
+                                {claim.phone && <p>Phone: {claim.phone}</p>}
+                                {claim.venmo_handle && <p>Venmo: @{claim.venmo_handle}</p>}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -201,9 +214,25 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                     </div>
                 ) : approvedClaim ? (
                     <div className="flex flex-col gap-3">
-                        <button type="button" onClick={() => onViewContact(approvedClaim)} className={PRIMARY_BTN}>
-                            View contact details
-                        </button>
+                        {chargeHref ? (
+                            <a href={chargeHref} className={PRIMARY_BTN}>
+                                Request payment via Venmo
+                            </a>
+                        ) : (
+                            <button type="button" onClick={onClose} className={PRIMARY_BTN}>
+                                Done
+                            </button>
+                        )}
+                        {venmoWeb && chargeHref && (
+                            <a
+                                href={venmoWeb}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-center text-xs text-tertiary underline underline-offset-2 hover:text-secondary"
+                            >
+                                Open Venmo on web instead
+                            </a>
+                        )}
                     </div>
                 ) : null}
             </motion.div>
