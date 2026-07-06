@@ -40,7 +40,12 @@ const KIND_CONFIG: Record<CardKind, KindConfig> = {
 /** Epoch ms of a dated post's end (game date + time). Null for undated posts. */
 export function gameEndMs(post: Pick<FeedPost, "game_date" | "game_time">): number | null {
     if (!post.game_date) return null;
-    return new Date(`${post.game_date}T${post.game_time ?? "23:59"}:00`).getTime();
+    // game_time comes from Postgres as "HH:MM:SS"; keep just HH:MM so the ISO
+    // string stays valid ("…THH:MM:00"). Fall back to null on any parse failure
+    // so a bad value never drops the post from the feed.
+    const time = (post.game_time ?? "23:59").slice(0, 5);
+    const ms = new Date(`${post.game_date}T${time}:00`).getTime();
+    return Number.isNaN(ms) ? null : ms;
 }
 
 function getCardKind(post: FeedPost): CardKind {

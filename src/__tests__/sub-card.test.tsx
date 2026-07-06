@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { SubCard } from "@/components/app/sub-card";
+import { SubCard, gameEndMs } from "@/components/app/sub-card";
 import type { FeedPost } from "@/types/feed";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,6 +67,24 @@ beforeEach(() => {
     mockDisconnect.mockClear();
 });
 
+describe("gameEndMs", () => {
+    it("returns null for undated posts", () => {
+        expect(gameEndMs({ game_date: null, game_time: null })).toBeNull();
+    });
+
+    it("parses a Postgres 'HH:MM:SS' time into a valid timestamp (not NaN)", () => {
+        const ms = gameEndMs({ game_date: "2026-07-08", game_time: "09:00:00" });
+        expect(ms).not.toBeNull();
+        expect(Number.isNaN(ms)).toBe(false);
+        expect(ms).toBe(new Date("2026-07-08T09:00").getTime());
+    });
+
+    it("defaults a null time to end-of-day", () => {
+        const ms = gameEndMs({ game_date: "2026-07-08", game_time: null });
+        expect(ms).toBe(new Date("2026-07-08T23:59").getTime());
+    });
+});
+
 describe("SubCard", () => {
     it("renders title from play type, sport, and start time", () => {
         render(<SubCard post={makePost()} />);
@@ -112,13 +130,14 @@ describe("SubCard", () => {
 
     it("shows Expired badge once the game date/time has passed", () => {
         const pastDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().slice(0, 10);
-        render(<SubCard post={makePost({ game_date: pastDate, game_time: "00:01" })} />);
+        // game_time comes from Postgres with seconds ("HH:MM:SS") — must still parse.
+        render(<SubCard post={makePost({ game_date: pastDate, game_time: "00:01:00" })} />);
         expect(screen.getByText("Expired")).toBeInTheDocument();
     });
 
     it("keeps a filled spot as Claimed even after the game date/time has passed", () => {
         const pastDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().slice(0, 10);
-        render(<SubCard post={makePost({ game_date: pastDate, game_time: "00:01", spots_available: 0 })} />);
+        render(<SubCard post={makePost({ game_date: pastDate, game_time: "00:01:00", spots_available: 0 })} />);
         expect(screen.getByText("Claimed")).toBeInTheDocument();
     });
 
