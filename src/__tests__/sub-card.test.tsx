@@ -18,6 +18,10 @@ class MockIntersectionObserver {
 }
 vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
 
+// A date ~30 days out so the default fixture reads as an upcoming (not expired)
+// game regardless of when the suite runs.
+const FUTURE_DATE = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
 function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
     return {
         id: "post-1",
@@ -29,7 +33,7 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
         play_type: "doubles",
         duration: 2,
         total_players: 4,
-        game_date: "2026-05-10",
+        game_date: FUTURE_DATE,
         game_time: "09:00",
         skill_level: "4.0",
         location: "Longshore Club",
@@ -104,6 +108,18 @@ describe("SubCard", () => {
     it("shows Expired badge for an expired post", () => {
         render(<SubCard post={makePost({ status: "expired" })} />);
         expect(screen.getByText("Expired")).toBeInTheDocument();
+    });
+
+    it("shows Expired badge once the game date/time has passed", () => {
+        const pastDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        render(<SubCard post={makePost({ game_date: pastDate, game_time: "00:01" })} />);
+        expect(screen.getByText("Expired")).toBeInTheDocument();
+    });
+
+    it("keeps a filled spot as Claimed even after the game date/time has passed", () => {
+        const pastDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        render(<SubCard post={makePost({ game_date: pastDate, game_time: "00:01", spots_available: 0 })} />);
+        expect(screen.getByText("Claimed")).toBeInTheDocument();
     });
 
     it("shows Pending badge when the viewer's claim is pending", () => {

@@ -37,11 +37,21 @@ const KIND_CONFIG: Record<CardKind, KindConfig> = {
     backed_out: { bar: "bg-neutral-400", label: "Backed out", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
 };
 
+/** Epoch ms of a dated post's end (game date + time). Null for undated posts. */
+export function gameEndMs(post: Pick<FeedPost, "game_date" | "game_time">): number | null {
+    if (!post.game_date) return null;
+    return new Date(`${post.game_date}T${post.game_time ?? "23:59"}:00`).getTime();
+}
+
 function getCardKind(post: FeedPost): CardKind {
-    if (post.status === "expired") return "expired";
+    // The viewer's own claim takes precedence so their card reflects their state.
     if (post.user_claim_status === "approved") return "approved";
     if (post.user_claim_status === "pending") return "pending";
+    // A filled spot stays "Claimed" even once the game date/time has passed.
     if (post.spots_available <= 0) return "claimed";
+    // An unclaimed post whose game date/time has passed is "Expired".
+    const end = gameEndMs(post);
+    if (post.status === "expired" || (end !== null && end < Date.now())) return "expired";
     return "open";
 }
 

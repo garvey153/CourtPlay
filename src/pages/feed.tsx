@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { GroupCard } from "@/components/app/group-card";
 import { FeedFilters, activeCount } from "@/components/app/feed-filters";
-import { SubCard } from "@/components/app/sub-card";
+import { SubCard, gameEndMs } from "@/components/app/sub-card";
 import { ClaimCancelledBanner } from "@/components/app/claim-cancelled-banner";
 import { PostSuccessBanner } from "@/components/app/post-success-banner";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
@@ -23,8 +23,17 @@ interface Court {
     name: string;
 }
 
+// Dated posts stay in the feed until 24h after their game date/time; after that
+// they drop off. Undated posts (e.g. regular-game availability) are unaffected.
+const FEED_GRACE_MS = 24 * 60 * 60 * 1000;
+function withinFeedWindow(post: FeedPost): boolean {
+    const end = gameEndMs(post);
+    return end === null || Date.now() <= end + FEED_GRACE_MS;
+}
+
 function applyFilters(posts: FeedPost[], f: FilterState): FeedPost[] {
     return posts.filter((p) => {
+        if (!withinFeedWindow(p)) return false;
         if (f.skillLevels.length > 0 && !f.skillLevels.includes(p.skill_level ?? "")) return false;
         // sub_need posts store their type in play_type; regular_game in format.
         if (f.formats.length > 0 && !f.formats.includes(p.play_type ?? p.format ?? "")) return false;
@@ -159,7 +168,19 @@ export function Feed() {
     const profileComplete =
         !!profile && !!(profile.skill_level) && !!(profile.headline || profile.photo_url);
 
-    const filteredPosts = useMemo(() => applyFilters(posts, filters), [posts, filters]);
+    const filteredPosts = useMemo(() => {
+        const visible = applyFilters(posts, filters);
+        // Keep the RPC order, but sink posts whose game time has passed (expired /
+        // past-claimed) to the bottom so they sit below still-upcoming spots.
+        const isPast = (p: FeedPost) => {
+            const end = gameEndMs(p);
+            return end !== null && end < Date.now();
+        };
+        return visible
+            .map((p, i) => ({ p, i }))
+            .sort((a, b) => Number(isPast(a.p)) - Number(isPast(b.p)) || a.i - b.i)
+            .map(({ p }) => p);
+    }, [posts, filters]);
     const showWelcome = !welcomeDismissed && !loading && filteredPosts.length < 3;
 
     return (
