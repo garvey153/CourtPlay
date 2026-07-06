@@ -201,13 +201,12 @@ export function PostNew() {
                 setOriginalCost(postCost);
                 setNotes(post.notes ?? "");
             } else {
-                // Prefer the multi-value arrays; fall back to the legacy single columns.
-                setRgPlayTypes(new Set(post.pref_play_types ?? (post.format ? [post.format] : [])));
-                setRgGroupSizes(new Set((post.pref_group_sizes ?? (post.total_players != null ? [post.total_players] : [])).map(String)));
-                setRgSkillLevels(new Set(post.pref_skill_levels ?? (post.skill_level ? [post.skill_level] : [])));
+                setRgPlayTypes(new Set(post.play_type ? [post.play_type] : []));
+                setRgGroupSizes(new Set(post.total_players != null ? [String(post.total_players)] : []));
+                setRgSkillLevels(new Set(post.skill_level ? [post.skill_level] : []));
                 setRgDays(new Set(post.preferred_days ?? []));
                 setRgTimes(new Set(post.preferred_times ?? []));
-                setRgCourts(new Set(post.court_preferences ?? []));
+                setRgCourts(new Set(post.court_id ? [post.court_id] : []));
                 setRgNote(post.notes ?? "");
             }
         });
@@ -370,18 +369,17 @@ export function PostNew() {
                 const expiresAt = new Date();
                 expiresAt.setDate(expiresAt.getDate() + 30);
 
-                // Multi-value prefs go to the array columns; the first value also fills the
-                // legacy single columns so the feed card / filter keep working.
+                // Persist to the columns that exist on `posts`. The multi-selects keep
+                // their primary value in the single columns (play_type / total_players /
+                // skill_level / court_id) — the ones the feed card, detail sheet and
+                // filters actually read.
                 const rgFields = {
-                    format: playTypeArr[0] ?? null,
+                    play_type: playTypeArr[0] ?? null,
                     total_players: sizeArr[0] ?? null,
                     skill_level: skillArr[0] ?? null,
-                    pref_play_types: playTypeArr,
-                    pref_group_sizes: sizeArr,
-                    pref_skill_levels: skillArr,
+                    court_id: courtArr[0] ?? null,
                     preferred_days: dayArr,
                     preferred_times: timeArr,
-                    court_preferences: courtArr,
                     notes: rgNote || null,
                 };
 
