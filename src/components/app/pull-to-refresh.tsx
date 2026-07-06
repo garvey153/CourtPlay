@@ -20,6 +20,10 @@ interface PullToRefreshProps {
     /** Invoked when the user pulls past the threshold and releases. Awaited to keep the spinner up. */
     onRefresh: () => Promise<unknown> | unknown;
     children: ReactNode;
+    /** Extra classes on the outer wrapper (e.g. to grow within a flex column). */
+    className?: string;
+    /** Extra classes on the translated content wrapper. */
+    contentClassName?: string;
 }
 
 /**
@@ -28,7 +32,7 @@ interface PullToRefreshProps {
  * the finger (with resistance) and a spinner shows; releasing past the threshold
  * runs onRefresh. Only the wrapped content moves — the app header stays fixed.
  */
-export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
+export function PullToRefresh({ onRefresh, children, className, contentClassName }: PullToRefreshProps) {
     const wrapRef = useRef<HTMLDivElement>(null);
     const [pull, setPull] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
@@ -109,7 +113,7 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
     const progress = Math.min(1, pull / THRESHOLD);
 
     return (
-        <div ref={wrapRef} className="relative">
+        <div ref={wrapRef} className={cx("relative", className)}>
             {/* Spinner revealed in the gap that opens as the content translates down. */}
             <div
                 className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center overflow-hidden"
@@ -127,6 +131,7 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
                 />
             </div>
             <div
+                className={contentClassName}
                 style={{
                     transform: `translateY(${pull}px)`,
                     // Animate the snap-back / settle; follow the finger 1:1 while dragging.

@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { SubCard, type CardKind } from "@/components/app/sub-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
+import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { ContactModal, type ContactInfo } from "@/components/app/contact-modal";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -259,56 +260,58 @@ export function Activity() {
         <AppLayout>
             {/* Fill the body so empty states can center vertically. */}
             <div className="flex min-h-full flex-col">
-            {/* Pill tabs */}
-            <div className="flex gap-2 px-5 pt-3 pb-1">
-                {(
-                    [
-                        { id: "claims", label: "Claimed posts" },
-                        { id: "created", label: "Created posts" },
-                    ] as const
-                ).map((t) => (
-                    <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setTab(t.id)}
-                        className={cx(
-                            "rounded-full px-3.5 py-1 text-xs font-semibold transition duration-100 ease-linear",
-                            tab === t.id ? "bg-brand-500 text-neutral-950" : "bg-tertiary text-secondary hover:text-primary",
-                        )}
-                    >
-                        {t.label}
-                    </button>
-                ))}
-            </div>
-
-            {actionError && (
-                <div className="mx-5 mt-3 rounded-lg bg-error-secondary p-3 text-sm text-error-primary">{actionError}</div>
-            )}
-
-            <div className="flex flex-1 flex-col px-5 py-4">
-                {loading ? (
-                    <ul aria-label="Loading" className="flex flex-col gap-3">
-                        {[1, 2, 3].map((i) => (
-                            <li key={i} className="h-40 animate-pulse rounded-xl bg-secondary" />
-                        ))}
-                    </ul>
-                ) : error ? (
-                    <div className="flex flex-col items-center gap-4 py-16 text-center">
-                        <p className="text-base font-semibold text-primary">Something went wrong</p>
-                        <p className="text-sm text-tertiary">{error}</p>
+                {/* Pill tabs — pinned under the header while the sections scroll. */}
+                <div className="sticky top-0 z-10 flex gap-2 bg-primary px-5 pt-3 pb-2">
+                    {(
+                        [
+                            { id: "claims", label: "Claimed posts" },
+                            { id: "created", label: "Created posts" },
+                        ] as const
+                    ).map((t) => (
                         <button
-                            onClick={fetchData}
-                            className="rounded-full bg-brand-solid px-5 py-2 text-sm font-semibold text-white hover:bg-brand-solid_hover"
+                            key={t.id}
+                            type="button"
+                            onClick={() => setTab(t.id)}
+                            className={cx(
+                                "rounded-full px-3.5 py-1 text-xs font-semibold transition duration-100 ease-linear",
+                                tab === t.id ? "bg-brand-500 text-neutral-950" : "bg-tertiary text-secondary hover:text-primary",
+                            )}
                         >
-                            Retry
+                            {t.label}
                         </button>
-                    </div>
-                ) : tab === "claims" ? (
-                    renderClaims()
-                ) : (
-                    renderCreated()
+                    ))}
+                </div>
+
+                {actionError && (
+                    <div className="mx-5 mt-3 rounded-lg bg-error-secondary p-3 text-sm text-error-primary">{actionError}</div>
                 )}
-            </div>
+
+                <PullToRefresh onRefresh={fetchData} className="flex flex-1 flex-col" contentClassName="flex flex-1 flex-col">
+                    <div className="flex flex-1 flex-col px-5 pt-2 pb-4">
+                        {loading ? (
+                            <ul aria-label="Loading" className="flex flex-col gap-3">
+                                {[1, 2, 3].map((i) => (
+                                    <li key={i} className="h-40 animate-pulse rounded-xl bg-secondary" />
+                                ))}
+                            </ul>
+                        ) : error ? (
+                            <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+                                <p className="text-base font-semibold text-primary">Something went wrong</p>
+                                <p className="text-sm text-tertiary">{error}</p>
+                                <button
+                                    onClick={fetchData}
+                                    className="rounded-full bg-brand-solid px-5 py-2 text-sm font-semibold text-white hover:bg-brand-solid_hover"
+                                >
+                                    Retry
+                                </button>
+                            </div>
+                        ) : tab === "claims" ? (
+                            renderClaims()
+                        ) : (
+                            renderCreated()
+                        )}
+                    </div>
+                </PullToRefresh>
             </div>
 
             {contactModal && <ContactModal info={contactModal} onClose={() => setContactModal(null)} />}
