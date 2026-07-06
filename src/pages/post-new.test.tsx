@@ -98,7 +98,7 @@ describe("PostNew — header & post type", () => {
 
     it("defaults to the Find a sub form", async () => {
         renderPostNew();
-        await waitFor(() => expect(screen.getByText("Sport")).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText("Play type")).toBeInTheDocument());
     });
 });
 
@@ -110,9 +110,9 @@ describe("PostNew — sub need form (rendering)", () => {
         setupDefaultMocks();
     });
 
-    it("renders the Sport dropdown label", async () => {
+    it("renders the Play type dropdown label", async () => {
         renderPostNew();
-        await waitFor(() => expect(screen.getByText("Sport")).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText("Play type")).toBeInTheDocument());
     });
 
     it("renders the Date & time label and native time input", async () => {
@@ -158,7 +158,7 @@ describe("PostNew — sub need form (rendering)", () => {
 
     it("does not render the removed fields (spots, total players, multi-date)", async () => {
         renderPostNew();
-        await waitFor(() => screen.getByText("Sport"));
+        await waitFor(() => screen.getByText("Play type"));
         expect(screen.queryByText(/spots open/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/total players/i)).not.toBeInTheDocument();
         expect(document.querySelector('input[role="switch"]')).toBeNull();

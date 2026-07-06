@@ -402,7 +402,7 @@ export function PostNew() {
                 {postType === "sub_need" && (
                     <div className="flex flex-col gap-5">
                         <Select
-                            label="Sport"
+                            label="Play type"
                             placeholder="Select type"
                             items={PLAY_TYPES}
                             selectedKey={playType || null}
