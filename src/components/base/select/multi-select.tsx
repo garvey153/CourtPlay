@@ -33,10 +33,11 @@ const footerButtonSize = {
     lg: "sm" as const,
 };
 
+// Show 6 option rows before the list scrolls (matches the single-select popover).
 const popoverMaxHeights = {
-    sm: "max-h-68",
-    md: "max-h-76",
-    lg: "max-h-92",
+    sm: "max-h-[236px]",
+    md: "max-h-[260px]",
+    lg: "max-h-[284px]",
 };
 
 interface MultiSelectFooterProps {
@@ -208,7 +209,7 @@ const MultiSelectRoot = ({
 
     return (
         <SelectContext.Provider value={{ size }}>
-            <div className={cx("flex flex-col gap-1.5", className)} style={style}>
+            <div className={cx("flex flex-col gap-2", className)} style={style}>
                 {label && (
                     <Label isRequired={hideRequiredIndicator ? false : isRequired} isInvalid={isInvalid} tooltip={tooltip}>
                         {label}

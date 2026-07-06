@@ -4,7 +4,6 @@ import { TimeField as AriaTimeField } from "react-aria-components";
 import { useNavigate, useSearchParams } from "react-router";
 import { parseDate, parseTime, today, getLocalTimeZone } from "@internationalized/date";
 import { XClose } from "@untitledui/icons";
-import { Button } from "@/components/base/buttons/button";
 import { InputDate, InputDateBase } from "@/components/base/input/input-date";
 import { Input } from "@/components/base/input/input";
 import { MultiSelect } from "@/components/base/select/multi-select";
@@ -24,12 +23,28 @@ import { cx } from "@/utils/cx";
 const FIELD = "bg-tertiary ring-neutral-600";
 const FIELD_SELECT = "bg-tertiary ring-0 shadow-none";
 
+// Design-system buttons (node 32-85): primary = bg/brand + on-brand text;
+// secondary = bg/tertiary + secondary text.
+const PRIMARY_BTN =
+    "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
+const SECONDARY_BTN =
+    "rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800";
+
 // A dropdown is sized to fit its longest option (and its placeholder, so the
-// resting text never clips), capped to the sheet width. ch approximates the
-// glyph advance; the rem covers the horizontal padding + chevron.
+// resting text never clips), capped to the sheet width. Measured with canvas so
+// the width tracks the real glyph widths of the font, not a per-char estimate.
+let _measureCanvas: HTMLCanvasElement | null = null;
 function menuWidth(items: { label: string }[], placeholder = "") {
-    const max = items.reduce((m, i) => Math.max(m, i.label.length), placeholder.length);
-    return { width: `calc(${max}ch + 3.5rem)`, maxWidth: "100%" as const };
+    if (typeof document === "undefined") return undefined;
+    _measureCanvas ??= document.createElement("canvas");
+    const ctx = _measureCanvas.getContext("2d");
+    if (!ctx) return undefined;
+    ctx.font = "500 14px Inter, system-ui, sans-serif";
+    const texts = [placeholder, ...items.map((i) => i.label)];
+    const max = texts.reduce((m, t) => Math.max(m, ctx.measureText(t).width), 0);
+    if (!max) return undefined;
+    // + padding (px-3 ×2 = 24) + chevron (16) + gaps/buffer.
+    return { width: `${Math.ceil(max) + 44}px`, maxWidth: "100%" as const };
 }
 
 // Play type supersedes `format` for sub_need posts; drives the feed card title.
@@ -454,7 +469,6 @@ export function PostNew() {
                                 label="Location"
                                 placeholder="Select court"
                                 items={courtItems}
-                                triggerStyle={menuWidth(courtItems, "Select court")}
                                 selectedKey={courtId}
                                 onSelectionChange={(k) => handleCourtSelect(k as string)}
                                 isRequired
@@ -486,7 +500,7 @@ export function PostNew() {
                         )}
 
                         {/* Date & time */}
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-2">
                             <FieldLabel required>Date &amp; time</FieldLabel>
                             <div className="flex items-center gap-3">
                                 <div className="w-[132px] shrink-0">
@@ -515,8 +529,13 @@ export function PostNew() {
                                 >
                                     <InputDateBase
                                         size="sm"
-                                        wrapperClassName={cx(FIELD, "w-[112px]")}
-                                        className={cx(!timeTouched && "[&_[role=spinbutton]]:text-secondary")}
+                                        wrapperClassName={cx(FIELD, "w-[96px]")}
+                                        className={cx(
+                                            "[&_[data-type]]:px-0 [&_[data-type=dayPeriod]]:ml-1",
+                                            timeTouched
+                                                ? "[&_[data-type=literal]]:text-primary"
+                                                : "[&_[role=spinbutton]]:text-placeholder",
+                                        )}
                                     />
                                 </AriaTimeField>
                             </div>
@@ -582,7 +601,7 @@ export function PostNew() {
                             />
                         </div>
 
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">
                                 <FieldLabel required>Message</FieldLabel>
                                 <span className="text-xs text-tertiary">{notes.length}/100</span>
@@ -676,7 +695,6 @@ export function PostNew() {
                             label="Preferred locations"
                             placeholder="Any court"
                             items={courts.map((c) => ({ id: c.id, label: c.name, supportingText: c.area ?? undefined }))}
-                            triggerStyle={menuWidth(courts.map((c) => ({ label: c.name })), "Any court")}
                             selectedKeys={rgCourts}
                             onSelectionChange={(k) => setRgCourts(k)}
                             size="sm"
@@ -685,7 +703,7 @@ export function PostNew() {
                             {(item) => <SelectItem id={item.id} supportingText={item.supportingText}>{item.label}</SelectItem>}
                         </MultiSelect>
 
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">
                                 <FieldLabel required>Message</FieldLabel>
                                 <span className="text-xs text-tertiary">{rgNote.length}/150</span>
@@ -707,19 +725,26 @@ export function PostNew() {
                 {error && <p className="mt-4 text-sm text-error-primary">{error}</p>}
 
                 <div className="mt-8 flex flex-col gap-3">
-                    <Button
-                        color="primary"
-                        size="lg"
-                        isLoading={saving}
-                        showTextWhileLoading
-                        isDisabled={postType === "sub_need" ? !validateSubNeed() : !validateRegularGame()}
+                    <button
+                        type="button"
                         onClick={handleSubmit}
+                        disabled={saving || (postType === "sub_need" ? !validateSubNeed() : !validateRegularGame())}
+                        className={PRIMARY_BTN}
                     >
-                        {isEditing ? "Save changes" : "Create post"}
-                    </Button>
-                    <Button color="secondary" size="lg" onClick={() => navigate(-1)}>
+                        {saving ? (
+                            <span
+                                className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950"
+                                aria-hidden="true"
+                            />
+                        ) : isEditing ? (
+                            "Save changes"
+                        ) : (
+                            "Create post"
+                        )}
+                    </button>
+                    <button type="button" onClick={() => navigate(-1)} className={SECONDARY_BTN}>
                         Cancel
-                    </Button>
+                    </button>
                 </div>
                     </div>
                 </div>

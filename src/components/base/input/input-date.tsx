@@ -129,7 +129,7 @@ export const InputDateBase = ({
                     <AriaDateSegment
                         segment={segment}
                         className={cx(
-                            "rounded px-0.5 text-primary tabular-nums caret-transparent focus:bg-brand-500 focus:font-medium focus:text-white focus:outline-hidden",
+                            "rounded px-0.5 text-primary tabular-nums caret-transparent focus:bg-brand-500 focus:font-medium focus:text-white! focus:outline-hidden",
                             // The placeholder segment.
                             segment.isPlaceholder && "text-placeholder uppercase",
                             // The separator "/" segment.
@@ -224,7 +224,7 @@ export const InputDate = ({
         <AriaDateField
             {...props}
             className={(state) =>
-                cx("group flex h-max w-full flex-col items-start justify-start gap-1.5", typeof className === "function" ? className(state) : className)
+                cx("group flex h-max w-full flex-col items-start justify-start gap-2", typeof className === "function" ? className(state) : className)
             }
         >
             {({ isInvalid, state }) => (
