@@ -291,23 +291,24 @@ describe("PostNew — regular game form", () => {
         expect(screen.getByText("0/150")).toBeInTheDocument();
     });
 
-    it("Create post is disabled until play type, group size, skill, and notes are set", async () => {
+    // The regular-game dropdowns are multi-selects that stay open on pick; close
+    // each (Escape) before opening the next.
+    async function pickMulti(user: ReturnType<typeof userEvent.setup>, placeholder: string, optionName: string | RegExp) {
+        await user.click(screen.getByText(placeholder));
+        await user.click(await screen.findByRole("option", { name: optionName }));
+        await user.keyboard("{Escape}");
+    }
+
+    it("Create post is disabled until play type, skill, and notes are set (group size optional)", async () => {
         const user = await switchToRegularGame();
         const submit = () => screen.getByRole("button", { name: /^Create post$/i });
         expect(submit()).toBeDisabled();
 
-        // Play type
-        await user.click(screen.getByRole("button", { name: /Play type/i }));
-        await user.click(await screen.findByRole("option", { name: "Doubles" }));
-        // Group size
-        await user.click(screen.getByRole("button", { name: /Preferred group size/i }));
-        await user.click(await screen.findByRole("option", { name: "4" }));
-        // Skill
-        await user.click(screen.getByRole("button", { name: /Skill level/i }));
-        await user.click(await screen.findByRole("option", { name: /NTRP 4\.0/ }));
-        // Notes
+        await pickMulti(user, "Select", "Doubles");
+        await pickMulti(user, "Select level", /NTRP 4\.0/);
         await user.type(screen.getByPlaceholderText(/tell the group/i), "Looking for a weekly game");
 
+        // Group size is not required, so the form is valid without it.
         await waitFor(() => expect(submit()).not.toBeDisabled());
     });
 
@@ -324,12 +325,9 @@ describe("PostNew — regular game form", () => {
         await user.click(screen.getByText("Find a regular game"));
         await waitFor(() => screen.getByText("Play type"));
 
-        await user.click(screen.getByRole("button", { name: /Play type/i }));
-        await user.click(await screen.findByRole("option", { name: "Doubles" }));
-        await user.click(screen.getByRole("button", { name: /Preferred group size/i }));
-        await user.click(await screen.findByRole("option", { name: "4" }));
-        await user.click(screen.getByRole("button", { name: /Skill level/i }));
-        await user.click(await screen.findByRole("option", { name: /NTRP 4\.0/ }));
+        await pickMulti(user, "Select", "Doubles");
+        await pickMulti(user, "Any size", "4");
+        await pickMulti(user, "Select level", /NTRP 4\.0/);
         await user.type(screen.getByPlaceholderText(/tell the group/i), "Weekly game");
 
         await waitFor(() => expect(screen.getByRole("button", { name: /^Create post$/i })).not.toBeDisabled());

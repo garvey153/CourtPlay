@@ -34,7 +34,9 @@ const SECONDARY_BTN =
 // resting text never clips), capped to the sheet width. Measured with canvas so
 // the width tracks the real glyph widths of the font, not a per-char estimate.
 let _measureCanvas: HTMLCanvasElement | null = null;
-function menuWidth(items: { label: string }[], placeholder = "") {
+// extraPx reserves room for a left checkbox in the option rows (24 ≈ box + gap),
+// since the options popover is the same width as the trigger.
+function menuWidth(items: { label: string }[], placeholder = "", extraPx = 0) {
     if (typeof document === "undefined") return undefined;
     _measureCanvas ??= document.createElement("canvas");
     const ctx = _measureCanvas.getContext("2d");
@@ -43,8 +45,14 @@ function menuWidth(items: { label: string }[], placeholder = "") {
     const texts = [placeholder, ...items.map((i) => i.label)];
     const max = texts.reduce((m, t) => Math.max(m, ctx.measureText(t).width), 0);
     if (!max) return undefined;
-    // + padding (px-3 ×2 = 24) + chevron (16) + gaps/buffer.
-    return { width: `${Math.ceil(max) + 44}px`, maxWidth: "100%" as const };
+    // + padding (px-3 ×2 = 24) + chevron (16) + gaps/buffer + optional checkbox room.
+    return { width: `${Math.ceil(max) + 44 + extraPx}px`, maxWidth: "100%" as const };
+}
+
+// Width for a checkbox multi-select: fits the longest option (with checkbox room)
+// and the "N selected" summary the trigger shows once items are picked.
+function multiMenuWidth(items: { label: string }[], placeholder = "") {
+    return menuWidth([...items, { label: `${items.length} selected` }], placeholder, 24);
 }
 
 // Play type supersedes `format` for sub_need posts; drives the feed card title.
@@ -138,10 +146,10 @@ export function PostNew() {
     const [cost, setCost] = useState<number | null>(null);
     const [notes, setNotes] = useState("");
 
-    // regular_game fields
-    const [rgPlayType, setRgPlayType] = useState("");
-    const [rgGroupSize, setRgGroupSize] = useState<number | null>(null);
-    const [rgSkillLevel, setRgSkillLevel] = useState("");
+    // regular_game fields (multi-select preferences)
+    const [rgPlayTypes, setRgPlayTypes] = useState<Selection>(new Set());
+    const [rgGroupSizes, setRgGroupSizes] = useState<Selection>(new Set());
+    const [rgSkillLevels, setRgSkillLevels] = useState<Selection>(new Set());
     const [rgDays, setRgDays] = useState<Selection>(new Set());
     const [rgTimes, setRgTimes] = useState<Selection>(new Set());
     const [rgCourts, setRgCourts] = useState<Selection>(new Set());
@@ -156,6 +164,15 @@ export function PostNew() {
         supabase.from("courts").select("id, name, area").eq("active", true).order("name")
             .then(({ data }) => setCourts(data ?? []));
     }, []);
+
+    // Close the form sheet on Escape (matches the other bottom sheets).
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === "Escape") navigate(-1);
+        };
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, [navigate]);
 
     // Load post for editing
     useEffect(() => {
@@ -184,9 +201,10 @@ export function PostNew() {
                 setOriginalCost(postCost);
                 setNotes(post.notes ?? "");
             } else {
-                setRgPlayType(post.format ?? "");
-                setRgGroupSize(post.total_players ?? null);
-                setRgSkillLevel(post.skill_level ?? "");
+                // Prefer the multi-value arrays; fall back to the legacy single columns.
+                setRgPlayTypes(new Set(post.pref_play_types ?? (post.format ? [post.format] : [])));
+                setRgGroupSizes(new Set((post.pref_group_sizes ?? (post.total_players != null ? [post.total_players] : [])).map(String)));
+                setRgSkillLevels(new Set(post.pref_skill_levels ?? (post.skill_level ? [post.skill_level] : [])));
                 setRgDays(new Set(post.preferred_days ?? []));
                 setRgTimes(new Set(post.preferred_times ?? []));
                 setRgCourts(new Set(post.court_preferences ?? []));
@@ -214,7 +232,9 @@ export function PostNew() {
     const validateSubNeed = () =>
         !!(playType && gameDate && gameTime && duration != null && skillLevel && (courtId || customCourt.trim()) && cost !== null && notes.trim());
 
-    const validateRegularGame = () => !!(rgPlayType && rgGroupSize && rgSkillLevel && rgNote.trim());
+    const setSize = (s: Selection) => (s instanceof Set ? s.size : 0);
+    const validateRegularGame = () =>
+        setSize(rgPlayTypes) > 0 && setSize(rgSkillLevels) > 0 && !!rgNote.trim();
 
     const handleSubmit = async () => {
         if (!user) return;
@@ -334,33 +354,38 @@ export function PostNew() {
                     }
                 }
             } else {
-                const dayArr = rgDays instanceof Set ? [...rgDays as Set<string>] : [];
-                const timeArr = rgTimes instanceof Set ? [...rgTimes as Set<string>] : [];
-                const courtArr = rgCourts instanceof Set ? [...rgCourts as Set<string>] : [];
+                const asArr = (s: Selection) => (s instanceof Set ? [...(s as Set<string>)] : []);
+                const dayArr = asArr(rgDays);
+                const timeArr = asArr(rgTimes);
+                const courtArr = asArr(rgCourts);
+                const playTypeArr = asArr(rgPlayTypes);
+                const skillArr = asArr(rgSkillLevels);
+                const sizeArr = asArr(rgGroupSizes).map(Number);
                 const expiresAt = new Date();
                 expiresAt.setDate(expiresAt.getDate() + 30);
 
+                // Multi-value prefs go to the array columns; the first value also fills the
+                // legacy single columns so the feed card / filter keep working.
+                const rgFields = {
+                    format: playTypeArr[0] ?? null,
+                    total_players: sizeArr[0] ?? null,
+                    skill_level: skillArr[0] ?? null,
+                    pref_play_types: playTypeArr,
+                    pref_group_sizes: sizeArr,
+                    pref_skill_levels: skillArr,
+                    preferred_days: dayArr,
+                    preferred_times: timeArr,
+                    court_preferences: courtArr,
+                    notes: rgNote || null,
+                };
+
                 if (isEditing && editPostId) {
-                    await supabase.from("posts").update({
-                        format: rgPlayType || null,
-                        total_players: rgGroupSize,
-                        skill_level: rgSkillLevel,
-                        preferred_days: dayArr,
-                        preferred_times: timeArr,
-                        court_preferences: courtArr,
-                        notes: rgNote || null,
-                    }).eq("id", editPostId);
+                    await supabase.from("posts").update(rgFields).eq("id", editPostId);
                 } else {
                     await supabase.from("posts").insert({
                         author_id: user.id,
                         post_type: "regular_game",
-                        format: rgPlayType || null,
-                        total_players: rgGroupSize,
-                        skill_level: rgSkillLevel,
-                        preferred_days: dayArr,
-                        preferred_times: timeArr,
-                        court_preferences: courtArr,
-                        notes: rgNote || null,
+                        ...rgFields,
                         expires_at: expiresAt.toISOString(),
                     });
                 }
@@ -383,10 +408,16 @@ export function PostNew() {
 
     return (
         <AppLayout>
-            {/* Large bottom sheet: starts just below the app header and fills the rest,
-                with the form scrolling inside. */}
-            <div className="fixed inset-x-0 top-[68px] bottom-0 z-50 flex justify-center">
-                <div className="flex w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-secondary shadow-xl">
+            {/* Dim + blur the page/header behind the sheet (matches the filter sheet).
+                Clicking it (e.g. the header area) closes the sheet. */}
+            <div
+                className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[8px]"
+                onClick={() => navigate(-1)}
+                aria-hidden="true"
+            />
+            {/* Full-height sheet: spans the whole screen with the form scrolling inside. */}
+            <div className="pointer-events-none fixed inset-0 z-50 flex justify-center">
+                <div className="pointer-events-auto flex w-full max-w-lg flex-col overflow-hidden bg-secondary shadow-xl">
                     {/* Sheet header — pinned */}
                     <div className="relative shrink-0 px-5 pt-[18px] pb-5">
                         <h1 className="pr-9 text-lg font-semibold text-primary">
@@ -527,6 +558,13 @@ export function PostNew() {
                                     }}
                                     hourCycle={12}
                                     isDisabled={lockedField}
+                                    // Editing a segment to the same value as the default 9:00 won't fire
+                                    // onChange, so also mark the field "touched" on any edit keypress.
+                                    onKeyDown={(e) => {
+                                        if (/^[0-9]$/.test(e.key) || e.key === "ArrowUp" || e.key === "ArrowDown") {
+                                            setTimeTouched(true);
+                                        }
+                                    }}
                                     className="shrink-0"
                                 >
                                     <InputDateBase
@@ -589,7 +627,7 @@ export function PostNew() {
                             no steppers, sized for $0000.00 */}
                         <div className="flex w-[120px] flex-col gap-2">
                             <FieldLabel required>Price</FieldLabel>
-                            <div className="flex h-9 items-center rounded-lg bg-tertiary px-3 text-sm shadow-xs ring-1 ring-neutral-600 transition-shadow duration-100 ring-inset focus-within:ring-2 focus-within:ring-brand">
+                            <div className="flex h-9 items-center rounded-lg bg-tertiary px-3 text-sm shadow-xs ring-1 ring-neutral-600 transition-shadow duration-100 ring-inset focus-within:ring-2">
                                 <span className={cx("shrink-0", cost != null ? "text-primary" : "text-placeholder")}>$</span>
                                 <input
                                     aria-label="Price"
@@ -600,7 +638,7 @@ export function PostNew() {
                                         const n = parseFloat(digits);
                                         setCost(digits === "" || isNaN(n) ? null : n);
                                     }}
-                                    className="ml-0.5 w-full bg-transparent text-primary caret-brand-500 outline-none placeholder:text-placeholder"
+                                    className="ml-0.5 w-full bg-transparent text-primary outline-none placeholder:text-placeholder"
                                 />
                             </div>
                         </div>
@@ -627,53 +665,70 @@ export function PostNew() {
                 {/* ── Find a regular game form ── */}
                 {postType === "regular_game" && (
                     <div className="flex flex-col gap-5">
-                        <Select
+                        <MultiSelect
                             label="Play type"
                             placeholder="Select"
                             items={PLAY_TYPES}
-                            triggerStyle={menuWidth(PLAY_TYPES, "Select")}
-                            selectedKey={rgPlayType || null}
-                            onSelectionChange={(k) => setRgPlayType(k as string)}
+                            triggerStyle={multiMenuWidth(PLAY_TYPES, "Select")}
+                            selectedKeys={rgPlayTypes}
+                            onSelectionChange={(k) => setRgPlayTypes(k)}
                             isRequired
                             size="sm"
+                            showSearch={false}
+                            showFooter={false}
                             triggerClassName={FIELD_SELECT}
                         >
-                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
-                        </Select>
+                            {(item) => (
+                                <SelectItem id={item.id} selectionIndicator="checkbox" selectionIndicatorAlign="left">
+                                    {item.label}
+                                </SelectItem>
+                            )}
+                        </MultiSelect>
 
-                        <Select
+                        <MultiSelect
                             label="Preferred group size"
-                            placeholder="2"
+                            placeholder="Any size"
                             items={GROUP_SIZES}
-                            triggerStyle={menuWidth(GROUP_SIZES, "2")}
-                            selectedKey={rgGroupSize != null ? String(rgGroupSize) : null}
-                            onSelectionChange={(k) => setRgGroupSize(k != null ? Number(k) : null)}
-                            isRequired
+                            triggerStyle={multiMenuWidth(GROUP_SIZES, "Any size")}
+                            selectedKeys={rgGroupSizes}
+                            onSelectionChange={(k) => setRgGroupSizes(k)}
                             size="sm"
+                            showSearch={false}
+                            showFooter={false}
                             triggerClassName={FIELD_SELECT}
                         >
-                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
-                        </Select>
+                            {(item) => (
+                                <SelectItem id={item.id} selectionIndicator="checkbox" selectionIndicatorAlign="left">
+                                    {item.label}
+                                </SelectItem>
+                            )}
+                        </MultiSelect>
 
-                        <Select
+                        <MultiSelect
                             label="Skill level"
                             placeholder="Select level"
                             items={SKILL_LEVELS}
-                            triggerStyle={menuWidth(SKILL_LEVELS, "Select level")}
-                            selectedKey={rgSkillLevel || null}
-                            onSelectionChange={(k) => setRgSkillLevel(k as string)}
+                            triggerStyle={multiMenuWidth(SKILL_LEVELS, "Select level")}
+                            selectedKeys={rgSkillLevels}
+                            onSelectionChange={(k) => setRgSkillLevels(k)}
                             isRequired
                             size="sm"
+                            showSearch={false}
+                            showFooter={false}
                             triggerClassName={FIELD_SELECT}
                         >
-                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
-                        </Select>
+                            {(item) => (
+                                <SelectItem id={item.id} selectionIndicator="checkbox" selectionIndicatorAlign="left">
+                                    {item.label}
+                                </SelectItem>
+                            )}
+                        </MultiSelect>
 
                         <MultiSelect
                             label="Preferred days"
                             placeholder="Any day"
                             items={DAYS}
-                            triggerStyle={menuWidth(DAYS, "Any day")}
+                            triggerStyle={multiMenuWidth(DAYS, "Any day")}
                             selectedKeys={rgDays}
                             onSelectionChange={(k) => setRgDays(k)}
                             size="sm"
@@ -681,14 +736,18 @@ export function PostNew() {
                             showFooter={false}
                             triggerClassName={FIELD_SELECT}
                         >
-                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
+                            {(item) => (
+                                <SelectItem id={item.id} selectionIndicator="checkbox" selectionIndicatorAlign="left">
+                                    {item.label}
+                                </SelectItem>
+                            )}
                         </MultiSelect>
 
                         <MultiSelect
                             label="Preferred times"
                             placeholder="Any time"
                             items={TIMES_OF_DAY}
-                            triggerStyle={menuWidth(TIMES_OF_DAY, "Any time")}
+                            triggerStyle={multiMenuWidth(TIMES_OF_DAY, "Any time")}
                             selectedKeys={rgTimes}
                             onSelectionChange={(k) => setRgTimes(k)}
                             size="sm"
@@ -696,7 +755,11 @@ export function PostNew() {
                             showFooter={false}
                             triggerClassName={FIELD_SELECT}
                         >
-                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
+                            {(item) => (
+                                <SelectItem id={item.id} selectionIndicator="checkbox" selectionIndicatorAlign="left">
+                                    {item.label}
+                                </SelectItem>
+                            )}
                         </MultiSelect>
 
                         <MultiSelect
@@ -710,7 +773,16 @@ export function PostNew() {
                             showFooter={false}
                             triggerClassName={FIELD_SELECT}
                         >
-                            {(item) => <SelectItem id={item.id} supportingText={item.supportingText}>{item.label}</SelectItem>}
+                            {(item) => (
+                                <SelectItem
+                                    id={item.id}
+                                    supportingText={item.supportingText}
+                                    selectionIndicator="checkbox"
+                                    selectionIndicatorAlign="left"
+                                >
+                                    {item.label}
+                                </SelectItem>
+                            )}
                         </MultiSelect>
 
                         <div className="flex flex-col gap-2">
