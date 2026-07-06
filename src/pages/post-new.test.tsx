@@ -152,7 +152,7 @@ describe("PostNew — sub need form (rendering)", () => {
         renderPostNew();
         await waitFor(() => {
             expect(screen.getByText("Message")).toBeInTheDocument();
-            expect(screen.getByText("0/100")).toBeInTheDocument();
+            expect(screen.getByText("0/150")).toBeInTheDocument();
         });
     });
 

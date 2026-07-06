@@ -606,14 +606,14 @@ export function PostNew() {
                         <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">
                                 <FieldLabel required>Message</FieldLabel>
-                                <span className="text-xs text-tertiary">{notes.length}/100</span>
+                                <span className="text-xs text-tertiary">{notes.length}/150</span>
                             </div>
                             <TextArea
                                 aria-label="Message"
                                 placeholder="Anything else the sub should know…"
                                 value={notes}
                                 onChange={(v) => setNotes(v)}
-                                maxLength={100}
+                                maxLength={150}
                                 rows={3}
                                 size="sm"
                                 textAreaClassName={FIELD}
@@ -675,6 +675,8 @@ export function PostNew() {
                             selectedKeys={rgDays}
                             onSelectionChange={(k) => setRgDays(k)}
                             size="sm"
+                            showSearch={false}
+                            showFooter={false}
                             triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
@@ -688,6 +690,8 @@ export function PostNew() {
                             selectedKeys={rgTimes}
                             onSelectionChange={(k) => setRgTimes(k)}
                             size="sm"
+                            showSearch={false}
+                            showFooter={false}
                             triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
@@ -700,6 +704,8 @@ export function PostNew() {
                             selectedKeys={rgCourts}
                             onSelectionChange={(k) => setRgCourts(k)}
                             size="sm"
+                            showSearch={false}
+                            showFooter={false}
                             triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id} supportingText={item.supportingText}>{item.label}</SelectItem>}
