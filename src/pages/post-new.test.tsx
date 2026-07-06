@@ -119,7 +119,7 @@ describe("PostNew — sub need form (rendering)", () => {
         renderPostNew();
         await waitFor(() => {
             expect(screen.getByText(/date & time/i, { selector: "label" })).toBeInTheDocument();
-            expect(document.querySelector('input[type="time"]')).not.toBeNull();
+            expect(document.querySelector('[aria-label="Game time"]')).not.toBeNull();
         });
     });
 
@@ -304,7 +304,7 @@ describe("PostNew — regular game form", () => {
         await user.click(await screen.findByRole("option", { name: "4" }));
         // Skill
         await user.click(screen.getByRole("button", { name: /Skill level/i }));
-        await user.click(await screen.findByRole("option", { name: "4.0" }));
+        await user.click(await screen.findByRole("option", { name: /NTRP 4\.0/ }));
         // Notes
         await user.type(screen.getByPlaceholderText(/tell the group/i), "Looking for a weekly game");
 
@@ -329,7 +329,7 @@ describe("PostNew — regular game form", () => {
         await user.click(screen.getByRole("button", { name: /Preferred group size/i }));
         await user.click(await screen.findByRole("option", { name: "4" }));
         await user.click(screen.getByRole("button", { name: /Skill level/i }));
-        await user.click(await screen.findByRole("option", { name: "4.0" }));
+        await user.click(await screen.findByRole("option", { name: /NTRP 4\.0/ }));
         await user.type(screen.getByPlaceholderText(/tell the group/i), "Weekly game");
 
         await waitFor(() => expect(screen.getByRole("button", { name: /^Create post$/i })).not.toBeDisabled());

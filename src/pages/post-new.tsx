@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import type { DateValue } from "react-aria-components";
+import { TimeField as AriaTimeField } from "react-aria-components";
 import { useNavigate, useSearchParams } from "react-router";
-import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
+import { parseDate, parseTime, today, getLocalTimeZone } from "@internationalized/date";
 import { XClose } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
-import { InputDate } from "@/components/base/input/input-date";
+import { InputDate, InputDateBase } from "@/components/base/input/input-date";
 import { Input } from "@/components/base/input/input";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
@@ -49,13 +50,15 @@ const DURATIONS = [
     { id: "3", label: "3 hrs" },
 ];
 
+// Descriptive NTRP labels, matching the feed filter. ids stay within the DB
+// skill_level check constraint (2.5–5.0).
 const SKILL_LEVELS = [
-    { id: "2.5", label: "2.5" },
-    { id: "3.0", label: "3.0" },
-    { id: "3.5", label: "3.5" },
-    { id: "4.0", label: "4.0" },
-    { id: "4.5", label: "4.5" },
-    { id: "5.0", label: "5.0" },
+    { id: "2.5", label: "NTRP 2.5 (Advanced Beginner)" },
+    { id: "3.0", label: "NTRP 3.0 (Lower-Intermediate)" },
+    { id: "3.5", label: "NTRP 3.5 (Intermediate)" },
+    { id: "4.0", label: "NTRP 4.0 (Intermediate-Advanced)" },
+    { id: "4.5", label: "NTRP 4.5 (Advanced)" },
+    { id: "5.0", label: "NTRP 5.0 to 7.0 (Pro)" },
 ];
 
 const GROUP_SIZES = [2, 3, 4, 5, 6, 7, 8].map((n) => ({ id: String(n), label: String(n) }));
@@ -110,6 +113,8 @@ export function PostNew() {
     const [duration, setDuration] = useState<number | null>(null);
     const [gameDate, setGameDate] = useState<DateValue | null>(null);
     const [gameTime, setGameTime] = useState("09:00");
+    // The default time shows in secondary until the user actually sets it.
+    const [timeTouched, setTimeTouched] = useState(false);
     const [skillLevel, setSkillLevel] = useState("");
     const [courtId, setCourtId] = useState<string | null>(null);
     const [showCustomCourt, setShowCustomCourt] = useState(false);
@@ -153,6 +158,7 @@ export function PostNew() {
                 setDuration(post.duration != null ? Number(post.duration) : null);
                 setGameDate(post.game_date ? parseDate(post.game_date) : null);
                 setGameTime(post.game_time ? post.game_time.slice(0, 5) : "09:00");
+                setTimeTouched(true);
                 setSkillLevel(post.skill_level ?? "");
                 setCourtId(post.court_id ?? null);
                 setCustomCourt(post.custom_court ?? "");
@@ -495,14 +501,24 @@ export function PostNew() {
                                         inputClassName="[&_[data-type]]:px-0"
                                     />
                                 </div>
-                                <input
-                                    type="time"
+                                <AriaTimeField
                                     aria-label="Game time"
-                                    value={gameTime}
-                                    onChange={(e) => setGameTime(e.target.value)}
-                                    disabled={lockedField}
-                                    className="h-9 w-[108px] shrink-0 rounded-lg bg-tertiary px-3 text-sm text-primary shadow-xs ring-1 ring-neutral-600 ring-inset focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50 [&::-webkit-calendar-picker-indicator]:hidden"
-                                />
+                                    value={gameTime ? parseTime(gameTime) : null}
+                                    onChange={(t) => {
+                                        if (!t) return;
+                                        setGameTime(`${String(t.hour).padStart(2, "0")}:${String(t.minute).padStart(2, "0")}`);
+                                        setTimeTouched(true);
+                                    }}
+                                    hourCycle={12}
+                                    isDisabled={lockedField}
+                                    className="shrink-0"
+                                >
+                                    <InputDateBase
+                                        size="sm"
+                                        wrapperClassName={cx(FIELD, "w-[112px]")}
+                                        className={cx(!timeTouched && "[&_[role=spinbutton]]:text-secondary")}
+                                    />
+                                </AriaTimeField>
                             </div>
                         </div>
 
@@ -554,10 +570,11 @@ export function PostNew() {
                                 label="Price"
                                 placeholder="$"
                                 inputMode="decimal"
-                                value={cost != null ? String(cost) : ""}
+                                value={cost != null ? `$${cost}` : ""}
                                 onChange={(v) => {
-                                    const n = parseFloat(v);
-                                    setCost(v.trim() === "" || isNaN(n) ? null : n);
+                                    const digits = v.replace(/[^0-9.]/g, "");
+                                    const n = parseFloat(digits);
+                                    setCost(digits === "" || isNaN(n) ? null : n);
                                 }}
                                 isRequired
                                 size="sm"
@@ -565,18 +582,22 @@ export function PostNew() {
                             />
                         </div>
 
-                        <TextArea
-                            label="Message"
-                            placeholder="Anything else the sub should know…"
-                            value={notes}
-                            onChange={(v) => setNotes(v)}
-                            maxLength={100}
-                            hint={`${notes.length}/100`}
-                            isRequired
-                            rows={3}
-                            size="sm"
-                            textAreaClassName={FIELD}
-                        />
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                                <FieldLabel required>Message</FieldLabel>
+                                <span className="text-xs text-tertiary">{notes.length}/100</span>
+                            </div>
+                            <TextArea
+                                aria-label="Message"
+                                placeholder="Anything else the sub should know…"
+                                value={notes}
+                                onChange={(v) => setNotes(v)}
+                                maxLength={100}
+                                rows={3}
+                                size="sm"
+                                textAreaClassName={FIELD}
+                            />
+                        </div>
                     </div>
                 )}
 
@@ -664,18 +685,22 @@ export function PostNew() {
                             {(item) => <SelectItem id={item.id} supportingText={item.supportingText}>{item.label}</SelectItem>}
                         </MultiSelect>
 
-                        <TextArea
-                            label="Message"
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                                <FieldLabel required>Message</FieldLabel>
+                                <span className="text-xs text-tertiary">{rgNote.length}/150</span>
+                            </div>
+                            <TextArea
+                            aria-label="Message"
                             placeholder="Tell the group what you're looking for…"
                             value={rgNote}
                             onChange={(v) => setRgNote(v)}
                             maxLength={150}
-                            hint={`${rgNote.length}/150`}
-                            isRequired
                             rows={3}
                             size="sm"
                             textAreaClassName={FIELD}
-                        />
+                            />
+                        </div>
                     </div>
                 )}
 
