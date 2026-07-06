@@ -265,7 +265,7 @@ export function PostNew() {
                 const location = usedCustomCourt ? customCourt.trim() : courts.find((c) => c.id === courtId)?.name ?? null;
 
                 if (isEditing && editPostId) {
-                    await supabase.from("posts").update({
+                    const { error: updateError } = await supabase.from("posts").update({
                         ...(existingClaims ? {} : {
                             play_type: playType,
                             duration,
@@ -280,6 +280,7 @@ export function PostNew() {
                         cost,
                         notes: notes || null,
                     }).eq("id", editPostId);
+                    if (updateError) throw updateError;
 
                     // N5: Cost changed — notify active claimers
                     const activeClaimerIds = new Set<string>();
@@ -320,7 +321,7 @@ export function PostNew() {
                         }
                     }
                 } else {
-                    const { data: inserted } = await supabase.from("posts").insert({
+                    const { data: inserted, error: insertError } = await supabase.from("posts").insert({
                         author_id: user.id,
                         post_type: "sub_need",
                         play_type: playType,
@@ -336,6 +337,7 @@ export function PostNew() {
                         spots_total: 1,
                         notes: notes || null,
                     }).select("id");
+                    if (insertError) throw insertError;
                     newPostId = inserted?.[0]?.id ?? null;
 
                     // N13: Friend new post — notify followers (opt-in only)
@@ -384,9 +386,10 @@ export function PostNew() {
                 };
 
                 if (isEditing && editPostId) {
-                    await supabase.from("posts").update(rgFields).eq("id", editPostId);
+                    const { error: updateError } = await supabase.from("posts").update(rgFields).eq("id", editPostId);
+                    if (updateError) throw updateError;
                 } else {
-                    const { data: inserted } = await supabase
+                    const { data: inserted, error: insertError } = await supabase
                         .from("posts")
                         .insert({
                             author_id: user.id,
@@ -395,6 +398,7 @@ export function PostNew() {
                             expires_at: expiresAt.toISOString(),
                         })
                         .select("id");
+                    if (insertError) throw insertError;
                     newPostId = inserted?.[0]?.id ?? null;
                 }
             }
