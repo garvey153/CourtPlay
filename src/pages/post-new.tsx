@@ -242,6 +242,9 @@ export function PostNew() {
         setError(null);
 
         try {
+            // Id of the row created this submit (null when editing).
+            let newPostId: string | null = null;
+
             if (!isEditing) {
                 // Rate limit check
                 const { count } = await supabase
@@ -333,6 +336,7 @@ export function PostNew() {
                         spots_total: 1,
                         notes: notes || null,
                     }).select("id");
+                    newPostId = inserted?.[0]?.id ?? null;
 
                     // N13: Friend new post — notify followers (opt-in only)
                     const { data: followers } = await supabase
@@ -382,18 +386,25 @@ export function PostNew() {
                 if (isEditing && editPostId) {
                     await supabase.from("posts").update(rgFields).eq("id", editPostId);
                 } else {
-                    await supabase.from("posts").insert({
-                        author_id: user.id,
-                        post_type: "regular_game",
-                        ...rgFields,
-                        expires_at: expiresAt.toISOString(),
-                    });
+                    const { data: inserted } = await supabase
+                        .from("posts")
+                        .insert({
+                            author_id: user.id,
+                            post_type: "regular_game",
+                            ...rgFields,
+                            expires_at: expiresAt.toISOString(),
+                        })
+                        .select("id");
+                    newPostId = inserted?.[0]?.id ?? null;
                 }
             }
 
-            // Flag first post creation for push prompt on feed page
-            if (!isEditing) {
-                localStorage.setItem("courtsub_show_push_prompt", "post_created");
+            // Flag a freshly-created post so the feed can show the success banner.
+            if (!isEditing && newPostId) {
+                localStorage.setItem(
+                    "courtsub_post_created",
+                    JSON.stringify({ id: newPostId, type: postType }),
+                );
             }
             navigate("/feed");
         } catch (e) {

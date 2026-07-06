@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { GroupCard } from "@/components/app/group-card";
 import { FeedFilters, activeCount } from "@/components/app/feed-filters";
-import { PushPrompt } from "@/components/app/push-prompt";
 import { SubCard } from "@/components/app/sub-card";
 import { ClaimCancelledBanner } from "@/components/app/claim-cancelled-banner";
+import { PostSuccessBanner } from "@/components/app/post-success-banner";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
@@ -58,6 +58,20 @@ export function Feed() {
     const [welcomeDismissed, setWelcomeDismissed] = useState(
         () => localStorage.getItem(WELCOME_KEY) === "1",
     );
+    // Success banner shown once after a post is created (flag set by the post form).
+    const [createdPost, setCreatedPost] = useState<{ id: string; type: "sub_need" | "regular_game" } | null>(() => {
+        const raw = localStorage.getItem("courtsub_post_created");
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch {
+            return null;
+        }
+    });
+    // Consume the flag so the banner only shows once.
+    useEffect(() => {
+        localStorage.removeItem("courtsub_post_created");
+    }, []);
 
     // Tracks post IDs that have already had their view counted this session
     const viewedIds = useRef(new Set<string>());
@@ -187,9 +201,13 @@ export function Feed() {
                     />
                 )}
 
-                {/* Push prompt after first post creation */}
-                {localStorage.getItem("courtsub_show_push_prompt") === "post_created" && (
-                    <PushPrompt variant="post_created" />
+                {/* Confirmation banner after a post is created */}
+                {createdPost && (
+                    <PostSuccessBanner
+                        postType={createdPost.type}
+                        onDismiss={() => setCreatedPost(null)}
+                        onEdit={() => navigate(`/post/new?edit=${createdPost.id}`)}
+                    />
                 )}
 
                 {loading ? (
