@@ -10,7 +10,6 @@ import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
 import { SelectItem } from "@/components/base/select/select-item";
 import { TextArea } from "@/components/base/textarea/textarea";
-import { Toggle } from "@/components/base/toggle/toggle";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { upsertCustomCourt } from "@/lib/custom-court";
@@ -19,13 +18,9 @@ import { supabase } from "@/lib/supabase";
 import type { Selection } from "react-aria-components";
 import { cx } from "@/utils/cx";
 
-const FORMATS = [
-    { id: "point_play", label: "Point play" },
-    { id: "clinic", label: "Clinic" },
-    { id: "lesson", label: "Lesson" },
-    { id: "round_robin", label: "Round robin" },
-    { id: "other", label: "Other event" },
-];
+// Dropdown menus should be at least as wide as their trigger and grow to fit the
+// longest option (so nothing truncates); capped to the viewport.
+const SELECT_POPOVER = "w-max min-w-(--trigger-width) max-w-[calc(100vw-2rem)]";
 
 // Play type supersedes `format` for sub_need posts; drives the feed card title.
 const PLAY_TYPES = [
@@ -54,6 +49,8 @@ const SKILL_LEVELS = [
     { id: "5.0", label: "5.0" },
 ];
 
+const GROUP_SIZES = [2, 3, 4, 5, 6, 7, 8].map((n) => ({ id: String(n), label: String(n) }));
+
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => ({ id: d, label: d }));
 const TIMES_OF_DAY = [
     { id: "Morning", label: "Morning" },
@@ -62,7 +59,30 @@ const TIMES_OF_DAY = [
     { id: "Evening", label: "Evening" },
 ];
 
+const POST_TYPES = [
+    {
+        id: "sub_need" as const,
+        title: "Find a sub",
+        desc: "Post a specific date, time, and court to fill an open spot and recoup the cost.",
+    },
+    {
+        id: "regular_game" as const,
+        title: "Find a regular game",
+        desc: "Post your availability and preferences to connect with ongoing groups.",
+    },
+];
+
 interface Court { id: string; name: string; area: string | null }
+
+/** Section label with an optional required asterisk. */
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
+    return (
+        <label className="text-sm font-medium text-secondary">
+            {children}
+            {required && <span className="text-error-primary"> *</span>}
+        </label>
+    );
+}
 
 export function PostNew() {
     const { user } = useAuth();
@@ -79,10 +99,7 @@ export function PostNew() {
     // sub_need fields
     const [playType, setPlayType] = useState("");
     const [duration, setDuration] = useState<number | null>(null);
-    const [totalPlayers, setTotalPlayers] = useState(4);
     const [gameDate, setGameDate] = useState<DateValue | null>(null);
-    const [multiDateMode, setMultiDateMode] = useState(false);
-    const [extraDates, setExtraDates] = useState<DateValue[]>([]);
     const [gameTime, setGameTime] = useState("09:00");
     const [skillLevel, setSkillLevel] = useState("");
     const [courtId, setCourtId] = useState<string | null>(null);
@@ -90,11 +107,10 @@ export function PostNew() {
     const [customCourt, setCustomCourt] = useState("");
     const [proName, setProName] = useState("");
     const [cost, setCost] = useState<number | null>(null);
-    const [spotsTotal, setSpotsTotal] = useState(1);
     const [notes, setNotes] = useState("");
 
     // regular_game fields
-    const [rgFormats, setRgFormats] = useState<Selection>(new Set());
+    const [rgPlayType, setRgPlayType] = useState("");
     const [rgGroupSize, setRgGroupSize] = useState<number | null>(null);
     const [rgSkillLevel, setRgSkillLevel] = useState("");
     const [rgDays, setRgDays] = useState<Selection>(new Set());
@@ -104,7 +120,6 @@ export function PostNew() {
 
     // edit mode state
     const [existingClaims, setExistingClaims] = useState(false);
-    const [seriesId, setSeriesId] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [originalCost, setOriginalCost] = useState<number | null>(null);
 
@@ -123,12 +138,10 @@ export function PostNew() {
         ]).then(([{ data: post }, { data: claims }]) => {
             if (!post) return;
             setPostType(post.post_type);
-            setSeriesId(post.series_id);
             setExistingClaims((claims ?? []).length > 0);
             if (post.post_type === "sub_need") {
                 setPlayType(post.play_type ?? "");
                 setDuration(post.duration != null ? Number(post.duration) : null);
-                setTotalPlayers(post.total_players ?? 4);
                 setGameDate(post.game_date ? parseDate(post.game_date) : null);
                 setGameTime(post.game_time ? post.game_time.slice(0, 5) : "09:00");
                 setSkillLevel(post.skill_level ?? "");
@@ -139,10 +152,9 @@ export function PostNew() {
                 const postCost = post.cost ? Number(post.cost) : null;
                 setCost(postCost);
                 setOriginalCost(postCost);
-                setSpotsTotal(post.spots_total ?? 1);
                 setNotes(post.notes ?? "");
             } else {
-                setRgFormats(new Set(post.format ? [post.format] : []));
+                setRgPlayType(post.format ?? "");
                 setRgGroupSize(post.total_players ?? null);
                 setRgSkillLevel(post.skill_level ?? "");
                 setRgDays(new Set(post.preferred_days ?? []));
@@ -169,15 +181,10 @@ export function PostNew() {
         }
     };
 
-
-    const allDates = gameDate
-        ? [gameDate, ...extraDates.filter((d) => d.toString() !== gameDate.toString())]
-        : [];
-
     const validateSubNeed = () =>
-        playType && gameDate && gameTime && skillLevel && (courtId || customCourt.trim()) && cost !== null;
+        !!(playType && gameDate && gameTime && duration != null && skillLevel && (courtId || customCourt.trim()) && cost !== null && notes.trim());
 
-    const validateRegularGame = () => rgSkillLevel;
+    const validateRegularGame = () => !!(rgPlayType && rgGroupSize && rgSkillLevel && rgNote.trim());
 
     const handleSubmit = async () => {
         if (!user) return;
@@ -202,24 +209,20 @@ export function PostNew() {
             if (postType === "sub_need") {
                 const usedCustomCourt = showCustomCourt && customCourt.trim();
                 if (usedCustomCourt) await upsertCustomCourt(customCourt.trim());
-
-                const newSeriesId = allDates.length > 1 ? crypto.randomUUID() : seriesId;
-                const datesToInsert = allDates.length > 0 ? allDates : (gameDate ? [gameDate] : []);
+                const location = usedCustomCourt ? customCourt.trim() : courts.find((c) => c.id === courtId)?.name ?? null;
 
                 if (isEditing && editPostId) {
                     await supabase.from("posts").update({
                         ...(existingClaims ? {} : {
                             play_type: playType,
                             duration,
-                            total_players: totalPlayers,
                             game_date: gameDate?.toString(),
                             game_time: gameTime,
                             skill_level: skillLevel,
                             court_id: courtId,
                             custom_court: usedCustomCourt ? customCourt.trim() : null,
-                            location: usedCustomCourt ? customCourt.trim() : courts.find((c) => c.id === courtId)?.name ?? null,
+                            location,
                             pro_name: proName || null,
-                            spots_total: spotsTotal,
                         }),
                         cost,
                         notes: notes || null,
@@ -264,26 +267,22 @@ export function PostNew() {
                         }
                     }
                 } else {
-                    const { data: inserted } = await supabase.from("posts").insert(
-                        datesToInsert.map((d) => ({
-                            author_id: user.id,
-                            post_type: "sub_need",
-                            play_type: playType,
-                            duration,
-                            total_players: totalPlayers,
-                            game_date: d.toString(),
-                            game_time: gameTime,
-                            skill_level: skillLevel,
-                            court_id: courtId,
-                            custom_court: usedCustomCourt ? customCourt.trim() : null,
-                            location: usedCustomCourt ? customCourt.trim() : courts.find((c) => c.id === courtId)?.name ?? null,
-                            pro_name: proName || null,
-                            cost,
-                            spots_total: spotsTotal,
-                            notes: notes || null,
-                            series_id: datesToInsert.length > 1 ? newSeriesId : null,
-                        })),
-                    ).select("id");
+                    const { data: inserted } = await supabase.from("posts").insert({
+                        author_id: user.id,
+                        post_type: "sub_need",
+                        play_type: playType,
+                        duration,
+                        game_date: gameDate?.toString(),
+                        game_time: gameTime,
+                        skill_level: skillLevel,
+                        court_id: courtId,
+                        custom_court: usedCustomCourt ? customCourt.trim() : null,
+                        location,
+                        pro_name: proName || null,
+                        cost,
+                        spots_total: 1,
+                        notes: notes || null,
+                    }).select("id");
 
                     // N13: Friend new post — notify followers (opt-in only)
                     const { data: followers } = await supabase
@@ -293,8 +292,6 @@ export function PostNew() {
 
                     if (followers && followers.length > 0 && inserted && inserted.length > 0) {
                         const followerIds = followers.map((f) => f.follower_id);
-                        const locationDisplay = usedCustomCourt ? customCourt.trim() : courts.find((c) => c.id === courtId)?.name ?? "";
-                        // Get poster name for notification
                         const { data: posterInfo } = await supabase
                             .from("users")
                             .select("first_name")
@@ -302,12 +299,11 @@ export function PostNew() {
                             .single();
                         sendNotificationBatch(followerIds, "friend_new_post", inserted[0].id, {
                             poster_name: posterInfo?.first_name ?? "",
-                            post_summary: locationDisplay,
+                            post_summary: location ?? "",
                         });
                     }
                 }
             } else {
-                const fmtArr = rgFormats instanceof Set ? [...rgFormats as Set<string>] : [];
                 const dayArr = rgDays instanceof Set ? [...rgDays as Set<string>] : [];
                 const timeArr = rgTimes instanceof Set ? [...rgTimes as Set<string>] : [];
                 const courtArr = rgCourts instanceof Set ? [...rgCourts as Set<string>] : [];
@@ -316,7 +312,7 @@ export function PostNew() {
 
                 if (isEditing && editPostId) {
                     await supabase.from("posts").update({
-                        format: fmtArr[0] ?? null,
+                        format: rgPlayType || null,
                         total_players: rgGroupSize,
                         skill_level: rgSkillLevel,
                         preferred_days: dayArr,
@@ -328,7 +324,7 @@ export function PostNew() {
                     await supabase.from("posts").insert({
                         author_id: user.id,
                         post_type: "regular_game",
-                        format: fmtArr[0] ?? null,
+                        format: rgPlayType || null,
                         total_players: rgGroupSize,
                         skill_level: rgSkillLevel,
                         preferred_days: dayArr,
@@ -357,31 +353,42 @@ export function PostNew() {
 
     return (
         <AppLayout>
-            <div className="mx-auto max-w-lg px-4 py-6">
-                <h1 className="mb-1 text-xl font-semibold text-primary">
-                    {isEditing ? "Edit post" : "New post"}
+            <div className="mx-auto max-w-lg px-5 py-6">
+                <h1 className="mb-5 text-lg font-semibold text-primary">
+                    {isEditing ? "Edit post" : "Create a new post"}
                 </h1>
-                <p className="mb-5 text-sm text-tertiary">
-                    {isEditing ? "Update your post details." : "Let the group know you need a sub or a regular game."}
-                </p>
 
-                {/* Post type toggle — hidden in edit mode */}
+                {/* Post type — radio cards (hidden in edit mode) */}
                 {!isEditing && (
-                    <div className="mb-6 flex rounded-lg border border-secondary p-1">
-                        {(["sub_need", "regular_game"] as const).map((t) => (
-                            <button
-                                key={t}
-                                onClick={() => setPostType(t)}
-                                className={cx(
-                                    "flex-1 rounded-md py-2 text-sm font-semibold transition-colors",
-                                    postType === t
-                                        ? "bg-brand-solid text-white"
-                                        : "text-tertiary hover:text-secondary",
-                                )}
-                            >
-                                {t === "sub_need" ? "Find a Sub" : "Regular Game"}
-                            </button>
-                        ))}
+                    <div className="mb-6 flex flex-col gap-3">
+                        <FieldLabel required>Select a post type</FieldLabel>
+                        {POST_TYPES.map((t) => {
+                            const selected = postType === t.id;
+                            return (
+                                <button
+                                    key={t.id}
+                                    type="button"
+                                    onClick={() => setPostType(t.id)}
+                                    className={cx(
+                                        "flex flex-col gap-1 rounded-lg border p-4 text-left transition duration-100 ease-linear",
+                                        selected ? "border-brand ring-1 ring-brand" : "border-secondary hover:border-primary",
+                                    )}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span
+                                            className={cx(
+                                                "flex size-4 shrink-0 items-center justify-center rounded-full border",
+                                                selected ? "border-brand bg-brand-solid" : "border-neutral-500",
+                                            )}
+                                        >
+                                            {selected && <span className="size-1.5 rounded-full bg-white" />}
+                                        </span>
+                                        <span className="text-sm font-semibold text-primary">{t.title}</span>
+                                    </div>
+                                    <p className="pl-6 text-sm text-tertiary">{t.desc}</p>
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
 
@@ -391,118 +398,19 @@ export function PostNew() {
                     </p>
                 )}
 
-                {/* ── Sub need form ── */}
+                {/* ── Find a sub form ── */}
                 {postType === "sub_need" && (
                     <div className="flex flex-col gap-5">
                         <Select
-                            label="Play type"
-                            placeholder="Select play type"
+                            label="Sport"
+                            placeholder="Select type"
                             items={PLAY_TYPES}
                             selectedKey={playType || null}
                             onSelectionChange={(k) => setPlayType(k as string)}
                             isRequired
                             isDisabled={lockedField}
                             tooltip={lockedField ? lockedTitle : undefined}
-                        >
-                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
-                        </Select>
-
-                        <Select
-                            label="Duration (optional)"
-                            placeholder="Select duration"
-                            items={DURATIONS}
-                            selectedKey={duration != null ? String(duration) : null}
-                            onSelectionChange={(k) => setDuration(k != null ? Number(k) : null)}
-                            isDisabled={lockedField}
-                            tooltip={lockedField ? lockedTitle : undefined}
-                        >
-                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
-                        </Select>
-
-                        <InputNumber
-                            label="Total players"
-                            minValue={2}
-                            maxValue={20}
-                            value={totalPlayers}
-                            onChange={(v) => setTotalPlayers(v)}
-                            isRequired
-                            isDisabled={lockedField}
-                        />
-
-                        {/* Date(s) */}
-                        <div className="flex flex-col gap-2">
-                            <InputDate
-                                label="Game date"
-                                value={gameDate}
-                                onChange={(v) => setGameDate(v)}
-                                minValue={today(getLocalTimeZone())}
-                                isRequired
-                                isDisabled={lockedField}
-                            />
-                            {!lockedField && (
-                                <Toggle size="sm" isSelected={multiDateMode} onChange={setMultiDateMode}>
-                                    Multi-date series
-                                </Toggle>
-                            )}
-                            {multiDateMode && !lockedField && (
-                                <div className="flex flex-col gap-2">
-                                    {extraDates.map((d, i) => (
-                                        <div key={i} className="flex items-center gap-2">
-                                            <div className="flex-1">
-                                                <InputDate
-                                                    label={`Date ${i + 2}`}
-                                                    value={d}
-                                                    onChange={(v) => {
-                                                        const next = [...extraDates];
-                                                        next[i] = v!;
-                                                        setExtraDates(next);
-                                                    }}
-                                                    minValue={today(getLocalTimeZone())}
-                                                />
-                                            </div>
-                                            <button
-                                                onClick={() => setExtraDates(extraDates.filter((_, j) => j !== i))}
-                                                className="mt-5 text-sm text-tertiary hover:text-primary"
-                                            >
-                                                Remove
-                                            </button>
-                                        </div>
-                                    ))}
-                                    <Button
-                                        color="secondary"
-                                        size="sm"
-                                        className="self-start"
-                                        onClick={() => setExtraDates([...extraDates, today(getLocalTimeZone())])}
-                                    >
-                                        + Add date
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Time */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-medium text-secondary">
-                                Game time <span className="text-error-primary">*</span>
-                            </label>
-                            <input
-                                type="time"
-                                value={gameTime}
-                                onChange={(e) => setGameTime(e.target.value)}
-                                disabled={lockedField}
-                                className="h-10 rounded-lg border border-primary px-3 text-sm text-primary shadow-xs focus:outline-none focus:ring-2 focus:ring-brand-solid disabled:opacity-50"
-                            />
-                        </div>
-
-                        <Select
-                            label="Skill level required"
-                            placeholder="Select level"
-                            items={SKILL_LEVELS}
-                            selectedKey={skillLevel || null}
-                            onSelectionChange={(k) => setSkillLevel(k as string)}
-                            isRequired
-                            isDisabled={lockedField}
-                            tooltip={lockedField ? lockedTitle : undefined}
+                            popoverClassName={SELECT_POPOVER}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
@@ -510,14 +418,15 @@ export function PostNew() {
                         {/* Court selection */}
                         {!showCustomCourt ? (
                             <Select
-                                label="Location / court"
-                                placeholder="Search courts…"
+                                label="Location"
+                                placeholder="Select court"
                                 items={courtItems}
                                 selectedKey={courtId}
                                 onSelectionChange={(k) => handleCourtSelect(k as string)}
                                 isRequired
                                 isDisabled={lockedField}
                                 tooltip={lockedField ? lockedTitle : undefined}
+                                popoverClassName={SELECT_POPOVER}
                             >
                                 {(item) => <SelectItem id={item.id} supportingText={item.supportingText}>{item.label}</SelectItem>}
                             </Select>
@@ -539,80 +448,117 @@ export function PostNew() {
                             </div>
                         )}
 
+                        {/* Date & time */}
+                        <div className="flex flex-col gap-1.5">
+                            <FieldLabel required>Date &amp; time</FieldLabel>
+                            <div className="flex gap-3">
+                                <div className="flex-1">
+                                    <InputDate
+                                        aria-label="Game date"
+                                        value={gameDate}
+                                        onChange={(v) => setGameDate(v)}
+                                        minValue={today(getLocalTimeZone())}
+                                        isDisabled={lockedField}
+                                    />
+                                </div>
+                                <input
+                                    type="time"
+                                    aria-label="Game time"
+                                    value={gameTime}
+                                    onChange={(e) => setGameTime(e.target.value)}
+                                    disabled={lockedField}
+                                    className="h-10 shrink-0 rounded-lg bg-primary px-3 text-sm text-primary shadow-xs ring-1 ring-primary ring-inset focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50"
+                                />
+                            </div>
+                        </div>
+
+                        <Select
+                            label="Duration"
+                            placeholder="Select duration"
+                            items={DURATIONS}
+                            selectedKey={duration != null ? String(duration) : null}
+                            onSelectionChange={(k) => setDuration(k != null ? Number(k) : null)}
+                            isRequired
+                            isDisabled={lockedField}
+                            tooltip={lockedField ? lockedTitle : undefined}
+                            popoverClassName={SELECT_POPOVER}
+                        >
+                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
+                        </Select>
+
+                        <Select
+                            label="Required skill level"
+                            placeholder="Select level"
+                            items={SKILL_LEVELS}
+                            selectedKey={skillLevel || null}
+                            onSelectionChange={(k) => setSkillLevel(k as string)}
+                            isRequired
+                            isDisabled={lockedField}
+                            tooltip={lockedField ? lockedTitle : undefined}
+                            popoverClassName={SELECT_POPOVER}
+                        >
+                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
+                        </Select>
+
                         <Input
                             label="Pro name (optional)"
-                            placeholder="e.g. Mike at Longshore"
+                            placeholder="e.g. John Smith"
                             value={proName}
                             onChange={(v) => setProName(v)}
                             isDisabled={lockedField}
                         />
 
-                        {/* Cost */}
                         <InputNumber
-                            label="Cost per sub ($)"
+                            label="Price"
                             minValue={0}
-                            formatOptions={{ style: "decimal", minimumFractionDigits: 0, maximumFractionDigits: 2 }}
+                            formatOptions={{ style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 2 }}
+                            placeholder="$"
                             value={cost ?? undefined}
                             onChange={(v) => setCost(isNaN(v) ? null : v)}
                             isRequired
                         />
 
-                        {/* Spots */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-medium text-secondary">
-                                Spots open <span className="text-error-primary">*</span>
-                            </label>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => setSpotsTotal((s) => Math.max(1, s - 1))}
-                                    disabled={lockedField || spotsTotal <= 1}
-                                    className="flex size-9 items-center justify-center rounded-lg border border-secondary text-lg font-semibold text-primary hover:bg-primary_hover disabled:opacity-40"
-                                >
-                                    −
-                                </button>
-                                <span className="w-6 text-center font-semibold text-primary">{spotsTotal}</span>
-                                <button
-                                    onClick={() => setSpotsTotal((s) => Math.min(8, s + 1))}
-                                    disabled={lockedField || spotsTotal >= 8}
-                                    className="flex size-9 items-center justify-center rounded-lg border border-secondary text-lg font-semibold text-primary hover:bg-primary_hover disabled:opacity-40"
-                                >
-                                    +
-                                </button>
-                            </div>
-                        </div>
-
                         <TextArea
-                            label="Notes (optional)"
+                            label="Notes"
                             placeholder="Anything else the sub should know…"
                             value={notes}
                             onChange={(v) => setNotes(v)}
                             maxLength={100}
                             hint={`${notes.length}/100`}
+                            isRequired
                             rows={3}
                         />
                     </div>
                 )}
 
-                {/* ── Regular game form ── */}
+                {/* ── Find a regular game form ── */}
                 {postType === "regular_game" && (
                     <div className="flex flex-col gap-5">
-                        <MultiSelect
-                            label="Format(s)"
-                            placeholder="Select format(s)"
-                            items={FORMATS}
-                            selectedKeys={rgFormats}
-                            onSelectionChange={(k) => setRgFormats(k)}
+                        <Select
+                            label="Play type"
+                            placeholder="Select"
+                            items={PLAY_TYPES}
+                            selectedKey={rgPlayType || null}
+                            onSelectionChange={(k) => setRgPlayType(k as string)}
+                            isRequired
+                            popoverClassName={SELECT_POPOVER}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
-                        </MultiSelect>
+                        </Select>
 
-                        <InputNumber
-                            label="Preferred group size (optional)"
-                            minValue={2}
-                            maxValue={20}
-                            value={rgGroupSize ?? undefined}
-                            onChange={(v) => setRgGroupSize(isNaN(v) ? null : v)}
-                        />
+                        <div className="max-w-[120px]">
+                            <Select
+                                label="Preferred group size"
+                                placeholder="2"
+                                items={GROUP_SIZES}
+                                selectedKey={rgGroupSize != null ? String(rgGroupSize) : null}
+                                onSelectionChange={(k) => setRgGroupSize(k != null ? Number(k) : null)}
+                                isRequired
+                                popoverClassName={SELECT_POPOVER}
+                            >
+                                {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
+                            </Select>
+                        </div>
 
                         <Select
                             label="Skill level"
@@ -621,6 +567,7 @@ export function PostNew() {
                             selectedKey={rgSkillLevel || null}
                             onSelectionChange={(k) => setRgSkillLevel(k as string)}
                             isRequired
+                            popoverClassName={SELECT_POPOVER}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
@@ -631,6 +578,7 @@ export function PostNew() {
                             items={DAYS}
                             selectedKeys={rgDays}
                             onSelectionChange={(k) => setRgDays(k)}
+                            popoverClassName={SELECT_POPOVER}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </MultiSelect>
@@ -641,27 +589,30 @@ export function PostNew() {
                             items={TIMES_OF_DAY}
                             selectedKeys={rgTimes}
                             onSelectionChange={(k) => setRgTimes(k)}
+                            popoverClassName={SELECT_POPOVER}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </MultiSelect>
 
                         <MultiSelect
-                            label="Preferred courts (optional)"
+                            label="Preferred locations"
                             placeholder="Any court"
                             items={courts.map((c) => ({ id: c.id, label: c.name, supportingText: c.area ?? undefined }))}
                             selectedKeys={rgCourts}
                             onSelectionChange={(k) => setRgCourts(k)}
+                            popoverClassName={SELECT_POPOVER}
                         >
                             {(item) => <SelectItem id={item.id} supportingText={item.supportingText}>{item.label}</SelectItem>}
                         </MultiSelect>
 
                         <TextArea
-                            label="Brief note (optional)"
+                            label="Notes"
                             placeholder="Tell the group what you're looking for…"
                             value={rgNote}
                             onChange={(v) => setRgNote(v)}
                             maxLength={150}
                             hint={`${rgNote.length}/150`}
+                            isRequired
                             rows={3}
                         />
                     </div>
@@ -669,20 +620,19 @@ export function PostNew() {
 
                 {error && <p className="mt-4 text-sm text-error-primary">{error}</p>}
 
-                <div className="mt-8 flex gap-3">
-                    <Button color="secondary" size="lg" className="flex-1" onClick={() => navigate(-1)}>
-                        Cancel
-                    </Button>
+                <div className="mt-8 flex flex-col gap-3">
                     <Button
                         color="primary"
                         size="lg"
-                        className="flex-1"
                         isLoading={saving}
                         showTextWhileLoading
                         isDisabled={postType === "sub_need" ? !validateSubNeed() : !validateRegularGame()}
                         onClick={handleSubmit}
                     >
-                        {isEditing ? "Save changes" : allDates.length > 1 ? `Post ${allDates.length} dates` : "Post"}
+                        {isEditing ? "Save changes" : "Create post"}
+                    </Button>
+                    <Button color="secondary" size="lg" onClick={() => navigate(-1)}>
+                        Cancel
                     </Button>
                 </div>
             </div>
