@@ -25,6 +25,8 @@ begin
             'game_time', p.game_time,
             'location', p.location,
             'custom_court', p.custom_court,
+            'preferred_days', p.preferred_days,
+            'preferred_times', p.preferred_times,
             'cost', p.cost,
             'original_cost', p.original_cost,
             'spots_total', p.spots_total,

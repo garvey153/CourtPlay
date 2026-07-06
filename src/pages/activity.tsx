@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { SubCard, type CardKind } from "@/components/app/sub-card";
+import { GroupCard } from "@/components/app/group-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
@@ -242,16 +243,29 @@ export function Activity() {
         }
         return (
             <ul className="flex flex-col gap-3">
-                {visiblePosts.map((post) => (
-                    <li key={post.id}>
-                        <SubCard
-                            post={me ? postToFeedPost(post, me) : postToFeedPost(post, { id: "", first_name: "", last_name: "", photo_url: null })}
-                            currentUserId={user?.id}
-                            kindOverride={postKind(derivePostState(post))}
-                            onOpenDetail={() => setCreatedSheet(post)}
-                        />
-                    </li>
-                ))}
+                {visiblePosts.map((post) => {
+                    const feedPost = postToFeedPost(post, me ?? { id: "", first_name: "", last_name: "", photo_url: null });
+                    return (
+                        <li key={post.id}>
+                            {/* Match the feed: regular-play posts use the blue GroupCard, subs the green SubCard. */}
+                            {post.post_type === "regular_game" ? (
+                                <GroupCard
+                                    post={feedPost}
+                                    profileComplete
+                                    currentUserId={user?.id}
+                                    onOpenDetail={() => setCreatedSheet(post)}
+                                />
+                            ) : (
+                                <SubCard
+                                    post={feedPost}
+                                    currentUserId={user?.id}
+                                    kindOverride={postKind(derivePostState(post))}
+                                    onOpenDetail={() => setCreatedSheet(post)}
+                                />
+                            )}
+                        </li>
+                    );
+                })}
             </ul>
         );
     };

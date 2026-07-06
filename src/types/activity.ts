@@ -27,6 +27,8 @@ export interface MyPost {
     game_time: string | null;
     location: string | null;
     custom_court: string | null;
+    preferred_days: string[] | null;
+    preferred_times: string[] | null;
     cost: number | null;
     original_cost: number | null;
     spots_total: number;
