@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { DateValue } from "react-aria-components";
 import { useNavigate, useSearchParams } from "react-router";
 import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
+import { XClose } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { InputDate } from "@/components/base/input/input-date";
 import { InputNumber } from "@/components/base/input/input-number";
@@ -21,6 +22,10 @@ import { cx } from "@/utils/cx";
 // Dropdown menus should be at least as wide as their trigger and grow to fit the
 // longest option (so nothing truncates); capped to the viewport.
 const SELECT_POPOVER = "w-max min-w-(--trigger-width) max-w-[calc(100vw-2rem)]";
+
+// Field surface per the design: bg/tertiary with a border/tertiary outline,
+// sitting on the lighter bg/secondary sheet.
+const FIELD = "bg-tertiary ring-neutral-600";
 
 // Play type supersedes `format` for sub_need posts; drives the feed card title.
 const PLAY_TYPES = [
@@ -353,11 +358,27 @@ export function PostNew() {
 
     return (
         <AppLayout>
-            <div className="mx-auto max-w-lg px-5 py-6">
-                <h1 className="mb-5 text-lg font-semibold text-primary">
-                    {isEditing ? "Edit post" : "Create a new post"}
-                </h1>
+            {/* Large bottom sheet: starts just below the app header and fills the rest,
+                with the form scrolling inside. */}
+            <div className="fixed inset-x-0 top-[60px] bottom-0 z-50 flex justify-center">
+                <div className="flex w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-secondary shadow-xl">
+                    {/* Sheet header — pinned */}
+                    <div className="relative shrink-0 px-5 pt-[18px] pb-4">
+                        <h1 className="pr-9 text-lg font-semibold text-primary">
+                            {isEditing ? "Edit post" : "Create a new post"}
+                        </h1>
+                        <button
+                            type="button"
+                            onClick={() => navigate(-1)}
+                            aria-label="Close"
+                            className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-lg text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                        >
+                            <XClose className="size-5" />
+                        </button>
+                    </div>
 
+                    {/* Scrolling form body */}
+                    <div className="flex-1 overflow-y-auto overscroll-y-contain px-5 pb-8">
                 {/* Post type — radio cards (hidden in edit mode) */}
                 {!isEditing && (
                     <div className="mb-6 flex flex-col gap-3">
@@ -370,22 +391,22 @@ export function PostNew() {
                                     type="button"
                                     onClick={() => setPostType(t.id)}
                                     className={cx(
-                                        "flex flex-col gap-1 rounded-lg border p-4 text-left transition duration-100 ease-linear",
-                                        selected ? "border-brand ring-1 ring-brand" : "border-secondary hover:border-primary",
+                                        "flex flex-col gap-1 rounded-lg bg-tertiary p-4 text-left transition duration-100 ease-linear",
+                                        selected ? "border-2 border-brand" : "border border-neutral-600 hover:border-neutral-500",
                                     )}
                                 >
                                     <div className="flex items-center gap-2">
                                         <span
                                             className={cx(
-                                                "flex size-4 shrink-0 items-center justify-center rounded-full border",
-                                                selected ? "border-brand bg-brand-solid" : "border-neutral-500",
+                                                "flex size-4 shrink-0 items-center justify-center rounded-full",
+                                                selected ? "bg-brand-solid" : "border border-neutral-600",
                                             )}
                                         >
                                             {selected && <span className="size-1.5 rounded-full bg-white" />}
                                         </span>
-                                        <span className="text-sm font-semibold text-primary">{t.title}</span>
+                                        <span className="text-sm font-medium text-primary">{t.title}</span>
                                     </div>
-                                    <p className="pl-6 text-sm text-tertiary">{t.desc}</p>
+                                    <p className="pl-6 text-sm text-secondary">{t.desc}</p>
                                 </button>
                             );
                         })}
@@ -411,6 +432,7 @@ export function PostNew() {
                             isDisabled={lockedField}
                             tooltip={lockedField ? lockedTitle : undefined}
                             popoverClassName={SELECT_POPOVER}
+                            triggerClassName={FIELD}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
@@ -427,6 +449,7 @@ export function PostNew() {
                                 isDisabled={lockedField}
                                 tooltip={lockedField ? lockedTitle : undefined}
                                 popoverClassName={SELECT_POPOVER}
+                            triggerClassName={FIELD}
                             >
                                 {(item) => <SelectItem id={item.id} supportingText={item.supportingText}>{item.label}</SelectItem>}
                             </Select>
@@ -438,6 +461,7 @@ export function PostNew() {
                                     value={customCourt}
                                     onChange={(v) => setCustomCourt(v)}
                                     isRequired
+                                    wrapperClassName={FIELD}
                                 />
                                 <button
                                     onClick={() => { setShowCustomCourt(false); setCustomCourt(""); }}
@@ -459,6 +483,7 @@ export function PostNew() {
                                         onChange={(v) => setGameDate(v)}
                                         minValue={today(getLocalTimeZone())}
                                         isDisabled={lockedField}
+                                        wrapperClassName={FIELD}
                                     />
                                 </div>
                                 <input
@@ -467,7 +492,7 @@ export function PostNew() {
                                     value={gameTime}
                                     onChange={(e) => setGameTime(e.target.value)}
                                     disabled={lockedField}
-                                    className="h-10 shrink-0 rounded-lg bg-primary px-3 text-sm text-primary shadow-xs ring-1 ring-primary ring-inset focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50"
+                                    className="h-10 shrink-0 rounded-lg bg-tertiary px-3 text-sm text-primary shadow-xs ring-1 ring-neutral-600 ring-inset focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50"
                                 />
                             </div>
                         </div>
@@ -482,6 +507,7 @@ export function PostNew() {
                             isDisabled={lockedField}
                             tooltip={lockedField ? lockedTitle : undefined}
                             popoverClassName={SELECT_POPOVER}
+                            triggerClassName={FIELD}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
@@ -496,6 +522,7 @@ export function PostNew() {
                             isDisabled={lockedField}
                             tooltip={lockedField ? lockedTitle : undefined}
                             popoverClassName={SELECT_POPOVER}
+                            triggerClassName={FIELD}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
@@ -506,6 +533,7 @@ export function PostNew() {
                             value={proName}
                             onChange={(v) => setProName(v)}
                             isDisabled={lockedField}
+                            wrapperClassName={FIELD}
                         />
 
                         <InputNumber
@@ -516,6 +544,7 @@ export function PostNew() {
                             value={cost ?? undefined}
                             onChange={(v) => setCost(isNaN(v) ? null : v)}
                             isRequired
+                            wrapperClassName={FIELD}
                         />
 
                         <TextArea
@@ -527,6 +556,7 @@ export function PostNew() {
                             hint={`${notes.length}/100`}
                             isRequired
                             rows={3}
+                            textAreaClassName={FIELD}
                         />
                     </div>
                 )}
@@ -542,6 +572,7 @@ export function PostNew() {
                             onSelectionChange={(k) => setRgPlayType(k as string)}
                             isRequired
                             popoverClassName={SELECT_POPOVER}
+                            triggerClassName={FIELD}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
@@ -555,6 +586,7 @@ export function PostNew() {
                                 onSelectionChange={(k) => setRgGroupSize(k != null ? Number(k) : null)}
                                 isRequired
                                 popoverClassName={SELECT_POPOVER}
+                            triggerClassName={FIELD}
                             >
                                 {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                             </Select>
@@ -568,6 +600,7 @@ export function PostNew() {
                             onSelectionChange={(k) => setRgSkillLevel(k as string)}
                             isRequired
                             popoverClassName={SELECT_POPOVER}
+                            triggerClassName={FIELD}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
@@ -579,6 +612,7 @@ export function PostNew() {
                             selectedKeys={rgDays}
                             onSelectionChange={(k) => setRgDays(k)}
                             popoverClassName={SELECT_POPOVER}
+                            triggerClassName={FIELD}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </MultiSelect>
@@ -590,6 +624,7 @@ export function PostNew() {
                             selectedKeys={rgTimes}
                             onSelectionChange={(k) => setRgTimes(k)}
                             popoverClassName={SELECT_POPOVER}
+                            triggerClassName={FIELD}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </MultiSelect>
@@ -601,6 +636,7 @@ export function PostNew() {
                             selectedKeys={rgCourts}
                             onSelectionChange={(k) => setRgCourts(k)}
                             popoverClassName={SELECT_POPOVER}
+                            triggerClassName={FIELD}
                         >
                             {(item) => <SelectItem id={item.id} supportingText={item.supportingText}>{item.label}</SelectItem>}
                         </MultiSelect>
@@ -614,6 +650,7 @@ export function PostNew() {
                             hint={`${rgNote.length}/150`}
                             isRequired
                             rows={3}
+                            textAreaClassName={FIELD}
                         />
                     </div>
                 )}
@@ -634,6 +671,8 @@ export function PostNew() {
                     <Button color="secondary" size="lg" onClick={() => navigate(-1)}>
                         Cancel
                     </Button>
+                </div>
+                    </div>
                 </div>
             </div>
         </AppLayout>

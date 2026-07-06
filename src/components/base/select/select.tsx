@@ -18,6 +18,8 @@ export { SelectContext, sizes, type CommonProps, type SelectItemType } from "./s
 export interface SelectProps extends Omit<AriaSelectProps<SelectItemType>, "children" | "items">, RefAttributes<HTMLDivElement>, CommonProps {
     items?: SelectItemType[];
     popoverClassName?: string;
+    /** Extra classes on the trigger button (e.g. to recolor its surface). */
+    triggerClassName?: string;
     icon?: FC | ReactNode;
     children: ReactNode | ((item: SelectItemType) => ReactNode);
 }
@@ -30,9 +32,10 @@ interface SelectValueProps {
     placeholder?: string;
     ref?: Ref<HTMLButtonElement>;
     icon?: FC | ReactNode;
+    triggerClassName?: string;
 }
 
-const SelectValue = ({ isOpen, isFocused, isDisabled, size, placeholder, icon, ref }: SelectValueProps) => {
+const SelectValue = ({ isOpen, isFocused, isDisabled, size, placeholder, icon, ref, triggerClassName }: SelectValueProps) => {
     return (
         <AriaButton
             ref={ref}
@@ -40,6 +43,7 @@ const SelectValue = ({ isOpen, isFocused, isDisabled, size, placeholder, icon, r
                 "relative flex w-full cursor-pointer items-center rounded-lg bg-primary shadow-xs ring-1 ring-primary outline-hidden transition duration-100 ease-linear ring-inset",
                 (isFocused || isOpen) && "ring-2 ring-brand",
                 isDisabled && "cursor-not-allowed opacity-50",
+                triggerClassName,
             )}
         >
             <AriaSelectValue<SelectItemType>
@@ -92,7 +96,7 @@ const SelectValue = ({ isOpen, isFocused, isDisabled, size, placeholder, icon, r
     );
 };
 
-const Select = ({ placeholder = "Select", icon, size = "md", children, items, label, hint, tooltip, hideRequiredIndicator, className, ...rest }: SelectProps) => {
+const Select = ({ placeholder = "Select", icon, size = "md", children, items, label, hint, tooltip, hideRequiredIndicator, className, triggerClassName, ...rest }: SelectProps) => {
     return (
         <SelectContext.Provider value={{ size }}>
             <AriaSelect {...rest} className={(state) => cx("flex flex-col gap-1.5", typeof className === "function" ? className(state) : className)}>
@@ -104,7 +108,7 @@ const Select = ({ placeholder = "Select", icon, size = "md", children, items, la
                             </Label>
                         )}
 
-                        <SelectValue {...state} {...{ size, placeholder }} icon={icon} />
+                        <SelectValue {...state} {...{ size, placeholder }} icon={icon} triggerClassName={triggerClassName} />
 
                         <Popover size={size} className={rest.popoverClassName}>
                             <AriaListBox items={items} className="size-full outline-hidden">

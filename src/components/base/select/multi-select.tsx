@@ -126,6 +126,8 @@ interface MultiSelectProps extends RefAttributes<HTMLDivElement>, CommonProps {
     isInvalid?: boolean;
     /** Additional class name for the popover. */
     popoverClassName?: string;
+    /** Additional class name for the trigger button. */
+    triggerClassName?: string;
     /** Additional class name for the root element. */
     className?: string;
     /** Handler that is called when the reset button is clicked. */
@@ -168,6 +170,7 @@ const MultiSelectRoot = ({
     tooltip,
     hideRequiredIndicator,
     popoverClassName,
+    triggerClassName,
     className,
     onReset,
     onSelectAll,
@@ -216,6 +219,7 @@ const MultiSelectRoot = ({
                                 "relative flex w-full cursor-pointer items-center rounded-lg bg-primary shadow-xs ring-1 ring-primary outline-hidden transition duration-100 ease-linear ring-inset",
                                 (state.isFocusVisible || state.isPressed) && "ring-2 ring-brand",
                                 state.isDisabled && "cursor-not-allowed opacity-50",
+                                triggerClassName,
                             )
                         }
                     >
