@@ -133,7 +133,7 @@ describe("PostNew — edit mode rendering", () => {
     it("pre-fills the cost field with the existing value", async () => {
         renderEditMode();
         await waitFor(() => {
-            const costInput = screen.getByDisplayValue("$25");
+            const costInput = screen.getByDisplayValue("25");
             expect(costInput).toBeInTheDocument();
         });
     });
@@ -186,7 +186,7 @@ describe("PostNew — edit mode locked fields (with existing claims)", () => {
 
         await waitFor(() => {
             // Cost NumberField renders as <input type="text">
-            const costInput = screen.getByDisplayValue("$25");
+            const costInput = screen.getByDisplayValue("25");
             expect(costInput).not.toBeDisabled();
         });
     });

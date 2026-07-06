@@ -585,22 +585,24 @@ export function PostNew() {
                             wrapperClassName={FIELD}
                         />
 
-                        {/* Price — plain field (no steppers), sized for $0000.00 */}
-                        <div className="w-[120px]">
-                            <Input
-                                label="Price"
-                                placeholder="$"
-                                inputMode="decimal"
-                                value={cost != null ? `$${cost}` : ""}
-                                onChange={(v) => {
-                                    const digits = v.replace(/[^0-9.]/g, "");
-                                    const n = parseFloat(digits);
-                                    setCost(digits === "" || isNaN(n) ? null : n);
-                                }}
-                                isRequired
-                                size="sm"
-                                wrapperClassName={FIELD}
-                            />
+                        {/* Price — "$" is a persistent prefix so the caret sits after it;
+                            no steppers, sized for $0000.00 */}
+                        <div className="flex w-[120px] flex-col gap-2">
+                            <FieldLabel required>Price</FieldLabel>
+                            <div className="flex h-9 items-center rounded-lg bg-tertiary px-3 text-sm shadow-xs ring-1 ring-neutral-600 transition-shadow duration-100 ring-inset focus-within:ring-2 focus-within:ring-brand">
+                                <span className={cx("shrink-0", cost != null ? "text-primary" : "text-placeholder")}>$</span>
+                                <input
+                                    aria-label="Price"
+                                    inputMode="decimal"
+                                    value={cost != null ? String(cost) : ""}
+                                    onChange={(e) => {
+                                        const digits = e.target.value.replace(/[^0-9.]/g, "");
+                                        const n = parseFloat(digits);
+                                        setCost(digits === "" || isNaN(n) ? null : n);
+                                    }}
+                                    className="ml-0.5 w-full bg-transparent text-primary caret-brand-500 outline-none placeholder:text-placeholder"
+                                />
+                            </div>
                         </div>
 
                         <div className="flex flex-col gap-2">
