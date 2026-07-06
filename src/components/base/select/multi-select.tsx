@@ -128,8 +128,12 @@ interface MultiSelectProps extends RefAttributes<HTMLDivElement>, CommonProps {
     popoverClassName?: string;
     /** Additional class name for the trigger button. */
     triggerClassName?: string;
+    /** Inline style for the trigger button (e.g. an explicit width). */
+    triggerStyle?: React.CSSProperties;
     /** Additional class name for the root element. */
     className?: string;
+    /** Inline style for the root element (e.g. an explicit width). */
+    style?: React.CSSProperties;
     /** Handler that is called when the reset button is clicked. */
     onReset?: () => void;
     /** Handler that is called when the select all button is clicked. */
@@ -171,7 +175,9 @@ const MultiSelectRoot = ({
     hideRequiredIndicator,
     popoverClassName,
     triggerClassName,
+    triggerStyle,
     className,
+    style,
     onReset,
     onSelectAll,
     showFooter = true,
@@ -202,7 +208,7 @@ const MultiSelectRoot = ({
 
     return (
         <SelectContext.Provider value={{ size }}>
-            <div className={cx("flex flex-col gap-1.5", className)}>
+            <div className={cx("flex flex-col gap-1.5", className)} style={style}>
                 {label && (
                     <Label isRequired={hideRequiredIndicator ? false : isRequired} isInvalid={isInvalid} tooltip={tooltip}>
                         {label}
@@ -213,6 +219,7 @@ const MultiSelectRoot = ({
                     <AriaButton
                         ref={triggerRef}
                         isDisabled={isDisabled}
+                        style={triggerStyle}
                         onClick={onResize}
                         className={(state) =>
                             cx(

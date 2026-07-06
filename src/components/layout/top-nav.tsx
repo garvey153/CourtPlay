@@ -11,8 +11,8 @@ interface TopNavProps {
 export function TopNav({ onOpenFilters, filtersActive }: TopNavProps) {
     const navigate = useNavigate();
     const { pathname } = useLocation();
-    // The Post CTA is redundant on the post-creation screen itself.
-    const showPostCta = pathname !== "/post/new";
+    // On the post-creation screen the CTA is redundant, so it's shown disabled.
+    const postCtaDisabled = pathname === "/post/new";
 
     return (
         <header className="sticky top-0 z-40 flex items-center justify-between bg-primary px-5 py-4">
@@ -31,15 +31,14 @@ export function TopNav({ onOpenFilters, filtersActive }: TopNavProps) {
                         )}
                     </button>
                 )}
-                {showPostCta && (
-                    <button
-                        type="button"
-                        onClick={() => navigate("/post/new")}
-                        className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600"
-                    >
-                        Post
-                    </button>
-                )}
+                <button
+                    type="button"
+                    onClick={() => navigate("/post/new")}
+                    disabled={postCtaDisabled}
+                    className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    Post
+                </button>
             </div>
         </header>
     );

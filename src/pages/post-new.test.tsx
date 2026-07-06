@@ -151,7 +151,7 @@ describe("PostNew — sub need form (rendering)", () => {
     it("renders the Notes textarea with a 0/100 counter", async () => {
         renderPostNew();
         await waitFor(() => {
-            expect(screen.getByText("Notes")).toBeInTheDocument();
+            expect(screen.getByText("Message")).toBeInTheDocument();
             expect(screen.getByText("0/100")).toBeInTheDocument();
         });
     });
@@ -287,7 +287,7 @@ describe("PostNew — regular game form", () => {
 
     it("renders the Notes textarea with a 0/150 counter", async () => {
         await switchToRegularGame();
-        expect(screen.getByText("Notes")).toBeInTheDocument();
+        expect(screen.getByText("Message")).toBeInTheDocument();
         expect(screen.getByText("0/150")).toBeInTheDocument();
     });
 

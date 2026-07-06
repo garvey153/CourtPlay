@@ -5,7 +5,6 @@ import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
 import { XClose } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { InputDate } from "@/components/base/input/input-date";
-import { InputNumber } from "@/components/base/input/input-number";
 import { Input } from "@/components/base/input/input";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
@@ -19,13 +18,18 @@ import { supabase } from "@/lib/supabase";
 import type { Selection } from "react-aria-components";
 import { cx } from "@/utils/cx";
 
-// Dropdown menus should be at least as wide as their trigger and grow to fit the
-// longest option (so nothing truncates); capped to the viewport.
-const SELECT_POPOVER = "w-max min-w-(--trigger-width) max-w-[calc(100vw-2rem)]";
-
-// Field surface per the design: bg/tertiary with a border/tertiary outline,
-// sitting on the lighter bg/secondary sheet.
+// Field surface per the design: text inputs get a bg/tertiary fill with a
+// border/tertiary outline; dropdowns get the fill only (no border).
 const FIELD = "bg-tertiary ring-neutral-600";
+const FIELD_SELECT = "bg-tertiary ring-0 shadow-none";
+
+// A dropdown is sized to fit its longest option (and its placeholder, so the
+// resting text never clips), capped to the sheet width. ch approximates the
+// glyph advance; the rem covers the horizontal padding + chevron.
+function menuWidth(items: { label: string }[], placeholder = "") {
+    const max = items.reduce((m, i) => Math.max(m, i.label.length), placeholder.length);
+    return { width: `calc(${max}ch + 3.5rem)`, maxWidth: "100%" as const };
+}
 
 // Play type supersedes `format` for sub_need posts; drives the feed card title.
 const PLAY_TYPES = [
@@ -84,7 +88,7 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
     return (
         <label className="text-sm font-medium text-secondary">
             {children}
-            {required && <span className="text-error-primary"> *</span>}
+            {required && <span> *</span>}
         </label>
     );
 }
@@ -360,10 +364,10 @@ export function PostNew() {
         <AppLayout>
             {/* Large bottom sheet: starts just below the app header and fills the rest,
                 with the form scrolling inside. */}
-            <div className="fixed inset-x-0 top-[60px] bottom-0 z-50 flex justify-center">
+            <div className="fixed inset-x-0 top-[68px] bottom-0 z-50 flex justify-center">
                 <div className="flex w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-secondary shadow-xl">
                     {/* Sheet header — pinned */}
-                    <div className="relative shrink-0 px-5 pt-[18px] pb-4">
+                    <div className="relative shrink-0 px-5 pt-[18px] pb-5">
                         <h1 className="pr-9 text-lg font-semibold text-primary">
                             {isEditing ? "Edit post" : "Create a new post"}
                         </h1>
@@ -381,7 +385,7 @@ export function PostNew() {
                     <div className="flex-1 overflow-y-auto overscroll-y-contain px-5 pb-8">
                 {/* Post type — radio cards (hidden in edit mode) */}
                 {!isEditing && (
-                    <div className="mb-6 flex flex-col gap-3">
+                    <div className="mb-7 flex flex-col gap-3">
                         <FieldLabel required>Select a post type</FieldLabel>
                         {POST_TYPES.map((t) => {
                             const selected = postType === t.id;
@@ -391,22 +395,22 @@ export function PostNew() {
                                     type="button"
                                     onClick={() => setPostType(t.id)}
                                     className={cx(
-                                        "flex flex-col gap-1 rounded-lg bg-tertiary p-4 text-left transition duration-100 ease-linear",
+                                        "flex items-start gap-2 rounded-lg bg-tertiary p-4 text-left transition duration-100 ease-linear",
                                         selected ? "border-2 border-brand" : "border border-neutral-600 hover:border-neutral-500",
                                     )}
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <span
-                                            className={cx(
-                                                "flex size-4 shrink-0 items-center justify-center rounded-full",
-                                                selected ? "bg-brand-solid" : "border border-neutral-600",
-                                            )}
-                                        >
-                                            {selected && <span className="size-1.5 rounded-full bg-white" />}
-                                        </span>
+                                    <span
+                                        className={cx(
+                                            "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full",
+                                            selected ? "bg-brand-solid" : "border border-neutral-600",
+                                        )}
+                                    >
+                                        {selected && <span className="size-1.5 rounded-full bg-white" />}
+                                    </span>
+                                    <span className="flex min-w-0 flex-col">
                                         <span className="text-sm font-medium text-primary">{t.title}</span>
-                                    </div>
-                                    <p className="pl-6 text-sm text-secondary">{t.desc}</p>
+                                        <span className="text-sm text-secondary">{t.desc}</span>
+                                    </span>
                                 </button>
                             );
                         })}
@@ -426,13 +430,14 @@ export function PostNew() {
                             label="Play type"
                             placeholder="Select type"
                             items={PLAY_TYPES}
+                            triggerStyle={menuWidth(PLAY_TYPES, "Select type")}
                             selectedKey={playType || null}
                             onSelectionChange={(k) => setPlayType(k as string)}
                             isRequired
                             isDisabled={lockedField}
                             tooltip={lockedField ? lockedTitle : undefined}
-                            popoverClassName={SELECT_POPOVER}
-                            triggerClassName={FIELD}
+                            size="sm"
+                            triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
@@ -443,13 +448,14 @@ export function PostNew() {
                                 label="Location"
                                 placeholder="Select court"
                                 items={courtItems}
+                                triggerStyle={menuWidth(courtItems, "Select court")}
                                 selectedKey={courtId}
                                 onSelectionChange={(k) => handleCourtSelect(k as string)}
                                 isRequired
                                 isDisabled={lockedField}
                                 tooltip={lockedField ? lockedTitle : undefined}
-                                popoverClassName={SELECT_POPOVER}
-                            triggerClassName={FIELD}
+                                size="sm"
+                            triggerClassName={FIELD_SELECT}
                             >
                                 {(item) => <SelectItem id={item.id} supportingText={item.supportingText}>{item.label}</SelectItem>}
                             </Select>
@@ -461,6 +467,7 @@ export function PostNew() {
                                     value={customCourt}
                                     onChange={(v) => setCustomCourt(v)}
                                     isRequired
+                                    size="sm"
                                     wrapperClassName={FIELD}
                                 />
                                 <button
@@ -475,15 +482,17 @@ export function PostNew() {
                         {/* Date & time */}
                         <div className="flex flex-col gap-1.5">
                             <FieldLabel required>Date &amp; time</FieldLabel>
-                            <div className="flex gap-3">
-                                <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                                <div className="w-[132px] shrink-0">
                                     <InputDate
                                         aria-label="Game date"
                                         value={gameDate}
                                         onChange={(v) => setGameDate(v)}
                                         minValue={today(getLocalTimeZone())}
                                         isDisabled={lockedField}
+                                        size="sm"
                                         wrapperClassName={FIELD}
+                                        inputClassName="[&_[data-type]]:px-0"
                                     />
                                 </div>
                                 <input
@@ -492,7 +501,7 @@ export function PostNew() {
                                     value={gameTime}
                                     onChange={(e) => setGameTime(e.target.value)}
                                     disabled={lockedField}
-                                    className="h-10 shrink-0 rounded-lg bg-tertiary px-3 text-sm text-primary shadow-xs ring-1 ring-neutral-600 ring-inset focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50"
+                                    className="h-9 w-[108px] shrink-0 rounded-lg bg-tertiary px-3 text-sm text-primary shadow-xs ring-1 ring-neutral-600 ring-inset focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50 [&::-webkit-calendar-picker-indicator]:hidden"
                                 />
                             </div>
                         </div>
@@ -501,13 +510,14 @@ export function PostNew() {
                             label="Duration"
                             placeholder="Select duration"
                             items={DURATIONS}
+                            triggerStyle={menuWidth(DURATIONS, "Select duration")}
                             selectedKey={duration != null ? String(duration) : null}
                             onSelectionChange={(k) => setDuration(k != null ? Number(k) : null)}
                             isRequired
                             isDisabled={lockedField}
                             tooltip={lockedField ? lockedTitle : undefined}
-                            popoverClassName={SELECT_POPOVER}
-                            triggerClassName={FIELD}
+                            size="sm"
+                            triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
@@ -516,13 +526,14 @@ export function PostNew() {
                             label="Required skill level"
                             placeholder="Select level"
                             items={SKILL_LEVELS}
+                            triggerStyle={menuWidth(SKILL_LEVELS, "Select level")}
                             selectedKey={skillLevel || null}
                             onSelectionChange={(k) => setSkillLevel(k as string)}
                             isRequired
                             isDisabled={lockedField}
                             tooltip={lockedField ? lockedTitle : undefined}
-                            popoverClassName={SELECT_POPOVER}
-                            triggerClassName={FIELD}
+                            size="sm"
+                            triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
@@ -533,22 +544,29 @@ export function PostNew() {
                             value={proName}
                             onChange={(v) => setProName(v)}
                             isDisabled={lockedField}
+                            size="sm"
                             wrapperClassName={FIELD}
                         />
 
-                        <InputNumber
-                            label="Price"
-                            minValue={0}
-                            formatOptions={{ style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 2 }}
-                            placeholder="$"
-                            value={cost ?? undefined}
-                            onChange={(v) => setCost(isNaN(v) ? null : v)}
-                            isRequired
-                            wrapperClassName={FIELD}
-                        />
+                        {/* Price — plain field (no steppers), sized for $0000.00 */}
+                        <div className="w-[120px]">
+                            <Input
+                                label="Price"
+                                placeholder="$"
+                                inputMode="decimal"
+                                value={cost != null ? String(cost) : ""}
+                                onChange={(v) => {
+                                    const n = parseFloat(v);
+                                    setCost(v.trim() === "" || isNaN(n) ? null : n);
+                                }}
+                                isRequired
+                                size="sm"
+                                wrapperClassName={FIELD}
+                            />
+                        </div>
 
                         <TextArea
-                            label="Notes"
+                            label="Message"
                             placeholder="Anything else the sub should know…"
                             value={notes}
                             onChange={(v) => setNotes(v)}
@@ -556,6 +574,7 @@ export function PostNew() {
                             hint={`${notes.length}/100`}
                             isRequired
                             rows={3}
+                            size="sm"
                             textAreaClassName={FIELD}
                         />
                     </div>
@@ -568,39 +587,40 @@ export function PostNew() {
                             label="Play type"
                             placeholder="Select"
                             items={PLAY_TYPES}
+                            triggerStyle={menuWidth(PLAY_TYPES, "Select")}
                             selectedKey={rgPlayType || null}
                             onSelectionChange={(k) => setRgPlayType(k as string)}
                             isRequired
-                            popoverClassName={SELECT_POPOVER}
-                            triggerClassName={FIELD}
+                            size="sm"
+                            triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
 
-                        <div className="max-w-[120px]">
-                            <Select
-                                label="Preferred group size"
-                                placeholder="2"
-                                items={GROUP_SIZES}
-                                selectedKey={rgGroupSize != null ? String(rgGroupSize) : null}
-                                onSelectionChange={(k) => setRgGroupSize(k != null ? Number(k) : null)}
-                                isRequired
-                                popoverClassName={SELECT_POPOVER}
-                            triggerClassName={FIELD}
-                            >
-                                {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
-                            </Select>
-                        </div>
+                        <Select
+                            label="Preferred group size"
+                            placeholder="2"
+                            items={GROUP_SIZES}
+                            triggerStyle={menuWidth(GROUP_SIZES, "2")}
+                            selectedKey={rgGroupSize != null ? String(rgGroupSize) : null}
+                            onSelectionChange={(k) => setRgGroupSize(k != null ? Number(k) : null)}
+                            isRequired
+                            size="sm"
+                            triggerClassName={FIELD_SELECT}
+                        >
+                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
+                        </Select>
 
                         <Select
                             label="Skill level"
                             placeholder="Select level"
                             items={SKILL_LEVELS}
+                            triggerStyle={menuWidth(SKILL_LEVELS, "Select level")}
                             selectedKey={rgSkillLevel || null}
                             onSelectionChange={(k) => setRgSkillLevel(k as string)}
                             isRequired
-                            popoverClassName={SELECT_POPOVER}
-                            triggerClassName={FIELD}
+                            size="sm"
+                            triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
@@ -609,10 +629,11 @@ export function PostNew() {
                             label="Preferred days"
                             placeholder="Any day"
                             items={DAYS}
+                            triggerStyle={menuWidth(DAYS, "Any day")}
                             selectedKeys={rgDays}
                             onSelectionChange={(k) => setRgDays(k)}
-                            popoverClassName={SELECT_POPOVER}
-                            triggerClassName={FIELD}
+                            size="sm"
+                            triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </MultiSelect>
@@ -621,10 +642,11 @@ export function PostNew() {
                             label="Preferred times"
                             placeholder="Any time"
                             items={TIMES_OF_DAY}
+                            triggerStyle={menuWidth(TIMES_OF_DAY, "Any time")}
                             selectedKeys={rgTimes}
                             onSelectionChange={(k) => setRgTimes(k)}
-                            popoverClassName={SELECT_POPOVER}
-                            triggerClassName={FIELD}
+                            size="sm"
+                            triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </MultiSelect>
@@ -633,16 +655,17 @@ export function PostNew() {
                             label="Preferred locations"
                             placeholder="Any court"
                             items={courts.map((c) => ({ id: c.id, label: c.name, supportingText: c.area ?? undefined }))}
+                            triggerStyle={menuWidth(courts.map((c) => ({ label: c.name })), "Any court")}
                             selectedKeys={rgCourts}
                             onSelectionChange={(k) => setRgCourts(k)}
-                            popoverClassName={SELECT_POPOVER}
-                            triggerClassName={FIELD}
+                            size="sm"
+                            triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id} supportingText={item.supportingText}>{item.label}</SelectItem>}
                         </MultiSelect>
 
                         <TextArea
-                            label="Notes"
+                            label="Message"
                             placeholder="Tell the group what you're looking for…"
                             value={rgNote}
                             onChange={(v) => setRgNote(v)}
@@ -650,6 +673,7 @@ export function PostNew() {
                             hint={`${rgNote.length}/150`}
                             isRequired
                             rows={3}
+                            size="sm"
                             textAreaClassName={FIELD}
                         />
                     </div>
