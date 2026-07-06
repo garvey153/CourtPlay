@@ -416,8 +416,10 @@ export function PostNew() {
                                     type="button"
                                     onClick={() => setPostType(t.id)}
                                     className={cx(
-                                        "flex items-start gap-2 rounded-lg bg-tertiary p-4 text-left transition duration-100 ease-linear",
-                                        selected ? "border-2 border-brand" : "border border-neutral-600 hover:border-neutral-500",
+                                        // Always border-2 (color-only change) so the card's inner width — and
+                                        // therefore the description wrapping — stays constant when toggling.
+                                        "flex items-start gap-2 rounded-lg border-2 bg-tertiary p-4 text-left transition duration-100 ease-linear",
+                                        selected ? "border-brand" : "border-neutral-600 hover:border-neutral-500",
                                     )}
                                 >
                                     <span
