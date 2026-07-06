@@ -275,7 +275,7 @@ export function Activity() {
             {/* Fill the body so empty states can center vertically. */}
             <div className="flex min-h-full flex-col">
                 {/* Pill tabs — pinned under the header while the sections scroll. */}
-                <div className="sticky top-0 z-10 flex gap-2 bg-primary px-5 pt-3 pb-2">
+                <div className="sticky top-0 z-10 flex gap-2 bg-primary px-5 pt-1 pb-2">
                     {(
                         [
                             { id: "claims", label: "Claimed posts" },
