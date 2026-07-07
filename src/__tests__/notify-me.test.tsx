@@ -46,7 +46,7 @@ describe("notify me (claim-detail sheet)", () => {
     it("Claim button (not Notify) shown when spots are available", () => {
         render(<ClaimDetailSheet post={makePost({ spots_available: 2 })} currentUserId="other-user" onClose={vi.fn()} />);
         expect(screen.queryByText(NOTIFY_LABEL)).not.toBeInTheDocument();
-        expect(screen.getByText(/Claim for/)).toBeInTheDocument();
+        expect(screen.getByText("Submit claim")).toBeInTheDocument();
     });
 
     it("calls add_notify_me RPC on click", async () => {

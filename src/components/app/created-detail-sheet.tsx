@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
-import type { ClaimRow, MyPost } from "@/types/activity";
+import type { ClaimMessage, ClaimRow, MyPost } from "@/types/activity";
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -66,6 +66,44 @@ interface CreatedDetailSheetProps {
     actionLoading?: string | null;
     /** Whether the post is currently being deleted. */
     deleting?: boolean;
+    /** Send a reply in the claim thread; resolves once the thread is refreshed. */
+    onReply?: (body: string) => void | Promise<void>;
+}
+
+const MESSAGE_MAX = 150;
+
+function timeAgoShort(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+}
+
+/** One reply in the thread — indented under the original message. */
+function ThreadMessage({ msg }: { msg: ClaimMessage }) {
+    const name = msg.last_name ? `${msg.first_name} ${msg.last_name.charAt(0).toUpperCase()}.` : msg.first_name;
+    return (
+        <div className="flex flex-col gap-1 pl-8">
+            <div className="flex items-center gap-2">
+                <Avatar
+                    size="xs"
+                    src={msg.photo_url}
+                    alt={msg.first_name}
+                    initials={msg.first_name.charAt(0).toUpperCase()}
+                    className="shrink-0 bg-white p-px shadow-xs"
+                />
+                <span className="truncate text-xs text-tertiary">
+                    {name} · {timeAgoShort(msg.created_at)}
+                </span>
+            </div>
+            <div className="w-full rounded-lg rounded-tl-none border border-neutral-600 px-3 py-2.5">
+                <p className="text-sm text-secondary">“{msg.body}”</p>
+            </div>
+        </div>
+    );
 }
 
 /**
@@ -73,9 +111,12 @@ interface CreatedDetailSheetProps {
  * claim it shows "Your post has been claimed!" with the claimant and Approve /
  * Decline. Matches design 274-4741.
  */
-export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline, onEdit, onDelete, actionLoading, deleting }: CreatedDetailSheetProps) {
+export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline, onEdit, onDelete, actionLoading, deleting, onReply }: CreatedDetailSheetProps) {
     // Delete confirmation is shown inline in this same sheet (no close/reopen).
     const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const [reply, setReply] = useState("");
+    const [sending, setSending] = useState(false);
+    const threadEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
@@ -110,6 +151,72 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
             : null;
     const venmoWeb = approvedClaim?.venmo_handle ? `https://venmo.com/${encodeURIComponent(approvedClaim.venmo_handle)}` : null;
 
+    const messages = claim?.messages ?? [];
+    const claimerFirstName = claim?.first_name ?? "";
+
+    const handleSend = async () => {
+        const body = reply.trim();
+        if (!body || !onReply || sending) return;
+        setSending(true);
+        await onReply(body);
+        setReply("");
+        setSending(false);
+    };
+
+    // Keep the newest message in view as the thread grows.
+    useEffect(() => {
+        threadEndRef.current?.scrollIntoView?.({ block: "end" });
+    }, [messages.length]);
+
+    const closeBtn = (
+        <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
+        >
+            <XClose className="size-5" />
+        </button>
+    );
+    const titleBlock = (
+        <div className="flex min-w-0 flex-col gap-1">
+            <h2 id="created-sheet-title" className="text-md font-semibold text-primary">
+                {title}
+                {when && ` · ${when}`}
+            </h2>
+            {subtitle && <p className="text-sm text-secondary">{subtitle}</p>}
+        </div>
+    );
+    const posterPrice = (
+        <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+                <Avatar
+                    size="xs"
+                    src={poster.photo_url}
+                    alt={poster.first_name}
+                    initials={poster.first_name.charAt(0).toUpperCase()}
+                    className="shrink-0 bg-white p-px shadow-xs"
+                />
+                <span className="truncate text-xs text-tertiary">
+                    {posterName} · {timeAgo(post.created_at)}
+                </span>
+            </div>
+            {!isRegular && <span className="shrink-0 text-sm font-semibold text-primary">{priceLabel}</span>}
+        </div>
+    );
+    const noteBubble = post.notes ? (
+        <div className="w-full rounded-lg rounded-tl-none border border-neutral-600 px-3 py-2.5">
+            <p className="text-sm text-secondary">“{post.notes}”</p>
+        </div>
+    ) : null;
+    const contactBlock =
+        approvedClaim && (approvedClaim.phone || approvedClaim.venmo_handle) ? (
+            <div className="flex flex-col gap-0.5 pl-8 text-sm text-tertiary">
+                {approvedClaim.phone && <p>Phone: {approvedClaim.phone}</p>}
+                {approvedClaim.venmo_handle && <p>Venmo: @{approvedClaim.venmo_handle}</p>}
+            </div>
+        ) : null;
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
@@ -120,13 +227,13 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
             <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
 
             <motion.div
-                className="relative flex w-full max-w-md flex-col gap-4 rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl"
+                className="relative flex max-h-[calc(100dvh-61px)] w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-secondary shadow-xl sm:rounded-2xl"
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 transition={{ type: "spring", damping: 38, stiffness: 420 }}
             >
                 {confirmingDelete ? (
-                    <>
+                    <div className="flex flex-col gap-4 px-5 pt-5 pb-8">
                         {/* Delete confirmation — same sheet (design 274-5651) */}
                         <div className="flex items-start justify-between gap-3">
                             <div className="flex min-w-0 flex-col gap-1">
@@ -176,140 +283,99 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                                 No, keep it
                             </button>
                         </div>
+                    </div>
+                ) : claim ? (
+                    <>
+                        {/* Claimed — message thread (design 274-4741). Header + footer pinned; thread scrolls. */}
+                        <div className="flex shrink-0 flex-col gap-4 px-5 pt-5">
+                            <div className="flex items-start justify-between gap-3">
+                                {banner ? <p className="text-sm text-brand-500">{banner}</p> : titleBlock}
+                                {closeBtn}
+                            </div>
+                            {banner && titleBlock}
+                            {posterPrice}
+                        </div>
+
+                        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                            <div className="flex flex-col gap-3">
+                                {noteBubble}
+                                {messages.map((m) => (
+                                    <ThreadMessage key={m.id} msg={m} />
+                                ))}
+                                {contactBlock}
+                                <div ref={threadEndRef} />
+                            </div>
+                        </div>
+
+                        <div className="flex shrink-0 flex-col gap-3 border-t border-secondary px-5 pt-3 pb-8">
+                            {onReply && (
+                                <input
+                                    aria-label="Reply"
+                                    value={reply}
+                                    onChange={(e) => setReply(e.target.value.slice(0, MESSAGE_MAX))}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSend();
+                                        }
+                                    }}
+                                    disabled={sending}
+                                    placeholder={`Reply to ${claimerFirstName}…`}
+                                    className="w-full rounded-lg bg-tertiary px-3 py-2.5 text-sm text-primary shadow-xs ring-1 ring-neutral-600 outline-none transition-shadow duration-100 ring-inset placeholder:text-placeholder focus:ring-2 focus:ring-brand disabled:opacity-50"
+                                />
+                            )}
+                            {pendingClaim ? (
+                                <div className="flex flex-col gap-3">
+                                    <button type="button" onClick={() => onApprove(pendingClaim)} disabled={busy} className={PRIMARY_BTN}>
+                                        {busy ? <ButtonSpinner /> : "Approve claim"}
+                                    </button>
+                                    <button type="button" onClick={() => onDecline(pendingClaim)} disabled={busy} className={SECONDARY_BTN}>
+                                        Decline
+                                    </button>
+                                </div>
+                            ) : approvedClaim ? (
+                                <div className="flex flex-col gap-3">
+                                    {chargeHref ? (
+                                        <a href={chargeHref} className={PRIMARY_BTN}>
+                                            Request payment via Venmo
+                                        </a>
+                                    ) : (
+                                        <button type="button" onClick={onClose} className={PRIMARY_BTN}>
+                                            Done
+                                        </button>
+                                    )}
+                                    {venmoWeb && chargeHref && (
+                                        <a
+                                            href={venmoWeb}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-center text-xs text-tertiary underline underline-offset-2 hover:text-secondary"
+                                        >
+                                            Open Venmo on web instead
+                                        </a>
+                                    )}
+                                </div>
+                            ) : null}
+                        </div>
                     </>
                 ) : (
-                    <>
-                {/* Header — status banner (when claimed) + close */}
-                <div className="flex items-start justify-between gap-3">
-                    {banner ? (
-                        <p className="text-sm text-brand-500">{banner}</p>
-                    ) : (
-                        <div className="flex min-w-0 flex-col gap-1">
-                            <h2 id="created-sheet-title" className="text-md font-semibold text-primary">
-                                {title}
-                                {when && ` · ${when}`}
-                            </h2>
-                            {subtitle && <p className="text-sm text-secondary">{subtitle}</p>}
+                    <div className="flex flex-col gap-4 px-5 pt-5 pb-8">
+                        {/* No claims yet — manage the post (design 271-4581). */}
+                        <div className="flex items-start justify-between gap-3">
+                            {titleBlock}
+                            {closeBtn}
                         </div>
-                    )}
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        aria-label="Close"
-                        className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
-                    >
-                        <XClose className="size-5" />
-                    </button>
-                </div>
-
-                {/* Title (below banner when claimed) */}
-                {banner && (
-                    <div className="flex min-w-0 flex-col gap-1">
-                        <h2 className="text-md font-semibold text-primary">
-                            {title}
-                            {when && ` · ${when}`}
-                        </h2>
-                        {subtitle && <p className="text-sm text-secondary">{subtitle}</p>}
-                    </div>
-                )}
-
-                {/* Poster (me) + price */}
-                <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <Avatar
-                            size="xs"
-                            src={poster.photo_url}
-                            alt={poster.first_name}
-                            initials={poster.first_name.charAt(0).toUpperCase()}
-                            className="shrink-0 bg-white p-px shadow-xs"
-                        />
-                        <span className="truncate text-xs text-tertiary">
-                            {posterName} · {timeAgo(post.created_at)}
-                        </span>
-                    </div>
-                    {!isRegular && <span className="shrink-0 text-sm font-semibold text-primary">{priceLabel}</span>}
-                </div>
-
-                {/* Poster's note */}
-                {post.notes && (
-                    <div className="w-full rounded-lg rounded-tl-none border border-neutral-600 px-3 py-2.5">
-                        <p className="text-sm text-secondary">“{post.notes}”</p>
-                    </div>
-                )}
-
-                {/* Claimant */}
-                {claim && (
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                            <Avatar
-                                size="xs"
-                                src={claim.photo_url}
-                                alt={claim.first_name}
-                                initials={claim.first_name.charAt(0).toUpperCase()}
-                                className="shrink-0 bg-white p-px shadow-xs"
-                            />
-                            <span className="truncate text-xs text-tertiary">
-                                {claim.first_name} {claim.last_name.charAt(0).toUpperCase()}. · {timeAgo(claim.created_at)}
-                            </span>
-                        </div>
-                        {/* TODO: show the claimer's message once claims carry a message field
-                            (needs a `message` column on claims + submit_claim to accept it). */}
-
-                        {/* Claimant contact — revealed once approved */}
-                        {approvedClaim && (claim.phone || claim.venmo_handle) && (
-                            <div className="flex flex-col gap-0.5 text-sm text-tertiary">
-                                {claim.phone && <p>Phone: {claim.phone}</p>}
-                                {claim.venmo_handle && <p>Venmo: @{claim.venmo_handle}</p>}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Actions */}
-                {!claim ? (
-                    // No claims yet — manage the post (design 271-4581). Extra top space
-                    // separates the actions from the message, matching the design.
-                    <div className="mt-4 flex flex-col gap-3">
-                        <button type="button" onClick={onEdit} className={PRIMARY_BTN}>
-                            Edit post
-                        </button>
-                        <button type="button" onClick={() => setConfirmingDelete(true)} className={SECONDARY_BTN}>
-                            Delete post
-                        </button>
-                    </div>
-                ) : pendingClaim ? (
-                    <div className="flex flex-col gap-3">
-                        <button type="button" onClick={() => onApprove(pendingClaim)} disabled={busy} className={PRIMARY_BTN}>
-                            {busy ? <ButtonSpinner /> : "Approve claim"}
-                        </button>
-                        <button type="button" onClick={() => onDecline(pendingClaim)} disabled={busy} className={SECONDARY_BTN}>
-                            Decline
-                        </button>
-                    </div>
-                ) : approvedClaim ? (
-                    <div className="flex flex-col gap-3">
-                        {chargeHref ? (
-                            <a href={chargeHref} className={PRIMARY_BTN}>
-                                Request payment via Venmo
-                            </a>
-                        ) : (
-                            <button type="button" onClick={onClose} className={PRIMARY_BTN}>
-                                Done
+                        {posterPrice}
+                        {noteBubble}
+                        <div className="mt-4 flex flex-col gap-3">
+                            <button type="button" onClick={onEdit} className={PRIMARY_BTN}>
+                                Edit post
                             </button>
-                        )}
-                        {venmoWeb && chargeHref && (
-                            <a
-                                href={venmoWeb}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-center text-xs text-tertiary underline underline-offset-2 hover:text-secondary"
-                            >
-                                Open Venmo on web instead
-                            </a>
-                        )}
+                            <button type="button" onClick={() => setConfirmingDelete(true)} className={SECONDARY_BTN}>
+                                Delete post
+                            </button>
+                        </div>
                     </div>
-                ) : null}
-                    </>
                 )}
             </motion.div>
         </div>

@@ -1,5 +1,16 @@
 import type { ClaimStatus, RejectionReason } from "./claims";
 
+/** One message in a claim thread. */
+export interface ClaimMessage {
+    id: string;
+    sender_id: string;
+    body: string;
+    created_at: string;
+    first_name: string;
+    last_name: string;
+    photo_url: string | null;
+}
+
 /** A claim on one of my posts (creator view). */
 export interface ClaimRow {
     id: string;
@@ -12,6 +23,7 @@ export interface ClaimRow {
     skill_level: string | null;
     venmo_handle: string | null;
     phone: string | null;
+    messages: ClaimMessage[];
 }
 
 /** One of my created posts, with its claims (Created tab). */
@@ -66,4 +78,5 @@ export interface MyClaim {
     poster_photo_url: string | null;
     poster_venmo_handle: string | null;
     poster_phone: string | null;
+    messages: ClaimMessage[];
 }

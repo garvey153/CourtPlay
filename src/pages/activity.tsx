@@ -156,6 +156,19 @@ export function Activity() {
         [fetchData, user],
     );
 
+    const handleSendClaimMessage = useCallback(
+        async (post: MyPost, body: string) => {
+            const c = post.claims.find((x) => x.status === "pending" || x.status === "approved");
+            if (!c) return;
+            await supabase.rpc("send_claim_message", { p_claim_id: c.id, p_body: body });
+            const { data } = await supabase.rpc("get_my_posts_with_claims");
+            const list = (data as MyPost[]) ?? [];
+            setMyPosts(list);
+            setCreatedSheet(list.find((pp) => pp.id === post.id) ?? post);
+        },
+        [],
+    );
+
     const handleDeletePost = useCallback(
         async (post: MyPost) => {
             if (!user) return;
@@ -442,6 +455,7 @@ export function Activity() {
                     }}
                     onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/activity?tab=created" } })}
                     onDelete={() => handleDeletePost(createdSheet)}
+                    onReply={(body) => handleSendClaimMessage(createdSheet, body)}
                 />
             )}
         </AppLayout>

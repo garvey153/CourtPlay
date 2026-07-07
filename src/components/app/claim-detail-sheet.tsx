@@ -2,12 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
+import { TextArea } from "@/components/base/textarea/textarea";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useShare } from "@/hooks/use-share";
 import type { FeedPost } from "@/types/feed";
 import { ShareModal } from "./share-modal";
 import { ReportModal } from "./report-modal";
+
+const MESSAGE_MAX = 150;
 
 function formatWhen(gameDate: string | null, gameTime: string | null): string {
     const parts: string[] = [];
@@ -96,6 +99,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
     const [claimStatus, setClaimStatus] = useState(post.user_claim_status);
     const [claimId, setClaimId] = useState(post.user_claim_id);
     const [cancelling, setCancelling] = useState(false);
+    const [message, setMessage] = useState("");
     const { shareData, handleShare, closeShareModal } = useShare();
 
     useEffect(() => {
@@ -116,7 +120,10 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
         setError(null);
         setConflict(null);
 
-        const { data, error: rpcError } = await supabase.rpc("submit_claim", { p_post_id: post.id });
+        const { data, error: rpcError } = await supabase.rpc("submit_claim", {
+            p_post_id: post.id,
+            p_message: message.trim() || null,
+        });
         setLoading(false);
 
         if (rpcError) {
@@ -142,7 +149,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
         setClaimId(data.claim_id as string);
         setClaimStatus("pending");
         onClaimChange?.();
-    }, [post.id, post.author_id, onClaimChange]);
+    }, [post.id, post.author_id, onClaimChange, message]);
 
     const handleNotifyMe = useCallback(async () => {
         if (notifyState !== "idle") return;
@@ -176,7 +183,6 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
     const subtitle = [court, post.skill_level ? `NTRP ${post.skill_level}` : null, formatDuration(post.duration)]
         .filter(Boolean)
         .join(" · ");
-    const costLabel = post.cost != null ? `Claim for $${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Claim spot";
 
     // Claim-status banner shown to the claiming user (pending → approved).
     const claimApproved = claimStatus === "approved";
@@ -243,18 +249,25 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
 
                 {activeClaim && titleHeader}
 
-                {/* Poster */}
-                <div className="flex items-center gap-2">
-                    <Avatar
-                        size="xs"
-                        src={post.photo_url}
-                        alt={post.first_name}
-                        initials={post.first_name.charAt(0).toUpperCase()}
-                        className="shrink-0 bg-white p-px shadow-xs"
-                    />
-                    <span className="text-xs text-tertiary">
-                        {posterName} · {timeAgo(post.created_at)}
-                    </span>
+                {/* Poster + price */}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                        <Avatar
+                            size="xs"
+                            src={post.photo_url}
+                            alt={post.first_name}
+                            initials={post.first_name.charAt(0).toUpperCase()}
+                            className="shrink-0 bg-white p-px shadow-xs"
+                        />
+                        <span className="truncate text-xs text-tertiary">
+                            {posterName} · {timeAgo(post.created_at)}
+                        </span>
+                    </div>
+                    {post.post_type === "sub_need" && (
+                        <span className="shrink-0 text-sm font-semibold text-primary">
+                            {post.cost != null ? `$${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Free"}
+                        </span>
+                    )}
                 </div>
 
                 {/* Notes */}
@@ -282,26 +295,39 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                 )}
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                {/* Helper text — only when a claim is possible. The "Report claim" link
-                    lives inline here (same style/placement) and replaces the old
-                    standalone "Report this post" link. */}
-                {!isOwnPost && !activeClaim && !isFull && !isExpired && (
-                    // mb-[11px] + the gap-4 (16px) below puts 32px from the text baseline to the
-                    // button top (the last line's baseline sits ~5px above the box bottom).
+                {/* Message to the poster, sent with the claim (design 149-1155). */}
+                {claimableHelper && (
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-end">
+                            <span className="text-xs text-tertiary">
+                                {message.length}/{MESSAGE_MAX}
+                            </span>
+                        </div>
+                        <TextArea
+                            aria-label="Message"
+                            placeholder={`Reply to ${post.first_name}…`}
+                            value={message}
+                            onChange={setMessage}
+                            maxLength={MESSAGE_MAX}
+                            rows={2}
+                            size="sm"
+                            textAreaClassName="bg-tertiary ring-neutral-600"
+                        />
+                    </div>
+                )}
+
+                {/* Helper text — only when a claim is possible. */}
+                {claimableHelper && (
                     <p className="mb-[11px] text-xs text-tertiary">
-                        * Your claim will be sent to {post.first_name} for approval. You'll be notified once approved.
+                        * Have an issue?{" "}
                         {currentUserId && (
-                            <>
-                                {" "}
-                                Have a problem?{" "}
-                                <button
-                                    type="button"
-                                    onClick={() => setShowReport(true)}
-                                    className="text-tertiary underline underline-offset-2 transition duration-100 ease-linear hover:text-secondary"
-                                >
-                                    Report issue
-                                </button>
-                            </>
+                            <button
+                                type="button"
+                                onClick={() => setShowReport(true)}
+                                className="text-tertiary underline underline-offset-2 transition duration-100 ease-linear hover:text-secondary"
+                            >
+                                Report claim
+                            </button>
                         )}
                     </p>
                 )}
@@ -379,9 +405,11 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                                 disabled={loading || !!conflict}
                                 className={PRIMARY_BTN}
                             >
-                                {loading ? <ButtonSpinner /> : costLabel}
+                                {loading ? <ButtonSpinner /> : "Submit claim"}
                             </button>
-                            {shareButton}
+                            <button type="button" onClick={onClose} className={SECONDARY_BTN}>
+                                Cancel claim
+                            </button>
                         </>
                     )}
                 </div>

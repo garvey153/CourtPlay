@@ -244,6 +244,19 @@ export function Feed() {
         [fetchPosts, fetchMyPosts],
     );
 
+    const handleSendClaimMessage = useCallback(
+        async (post: MyPost, body: string) => {
+            const c = post.claims.find((x) => x.status === "pending" || x.status === "approved");
+            if (!c) return;
+            await supabase.rpc("send_claim_message", { p_claim_id: c.id, p_body: body });
+            const { data } = await supabase.rpc("get_my_posts_with_claims");
+            const list = (data as MyPost[]) ?? [];
+            setMyPosts(list);
+            setCreatedSheet(list.find((pp) => pp.id === post.id) ?? post);
+        },
+        [],
+    );
+
     const handleDeletePost = useCallback(
         async (post: MyPost) => {
             if (!user) return;
@@ -493,6 +506,7 @@ export function Feed() {
                     onDecline={(claim) => handleDeclineClaim(claim, createdSheet)}
                     onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/feed" } })}
                     onDelete={() => handleDeletePost(createdSheet)}
+                    onReply={(body) => handleSendClaimMessage(createdSheet, body)}
                 />
             )}
         </AppLayout>
