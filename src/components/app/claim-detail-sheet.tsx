@@ -100,11 +100,15 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
     const [claimId, setClaimId] = useState(post.user_claim_id);
     const [cancelling, setCancelling] = useState(false);
     const [message, setMessage] = useState("");
+    // The claimable sheet has two states: the detail (Claim for $X) and, after tapping
+    // it, the compose state (message + Submit claim). They transition in place.
+    const [composing, setComposing] = useState(false);
     const { shareData, handleShare, closeShareModal } = useShare();
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            if (e.key === "Escape") onClose();
+            // Escape backs out of the compose state first, then closes the sheet.
+            if (e.key === "Escape") setComposing((c) => (c ? false : (onClose(), false)));
         };
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
@@ -183,6 +187,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
     const subtitle = [court, post.skill_level ? `NTRP ${post.skill_level}` : null, formatDuration(post.duration)]
         .filter(Boolean)
         .join(" · ");
+    const costLabel = post.cost != null ? `Claim for $${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Claim spot";
 
     // Claim-status banner shown to the claiming user (pending → approved).
     const claimApproved = claimStatus === "approved";
@@ -295,8 +300,8 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                 )}
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                {/* Message to the poster, sent with the claim (design 149-1155). */}
-                {claimableHelper && (
+                {/* Compose state (design 149-1155): message to the poster, sent with the claim. */}
+                {claimableHelper && composing && (
                     <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-end">
                             <span className="text-xs text-tertiary">
@@ -316,8 +321,28 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                     </div>
                 )}
 
-                {/* Helper text — only when a claim is possible. */}
-                {claimableHelper && (
+                {/* Detail-state helper (design 49-206). */}
+                {claimableHelper && !composing && (
+                    <p className="mb-[11px] text-xs text-tertiary">
+                        * Your claim will be sent to {post.first_name} for approval. You'll be notified once approved.
+                        {currentUserId && (
+                            <>
+                                {" "}
+                                Have an issue?{" "}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowReport(true)}
+                                    className="text-tertiary underline underline-offset-2 transition duration-100 ease-linear hover:text-secondary"
+                                >
+                                    Report claim
+                                </button>
+                            </>
+                        )}
+                    </p>
+                )}
+
+                {/* Compose-state helper (design 149-1155). */}
+                {claimableHelper && composing && (
                     <p className="mb-[11px] text-xs text-tertiary">
                         * Have an issue?{" "}
                         {currentUserId && (
@@ -397,7 +422,8 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                             )}
                             {shareButton}
                         </>
-                    ) : (
+                    ) : composing ? (
+                        // Compose state (design 149-1155): submit the claim with the message.
                         <>
                             <button
                                 type="button"
@@ -407,9 +433,17 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                             >
                                 {loading ? <ButtonSpinner /> : "Submit claim"}
                             </button>
-                            <button type="button" onClick={onClose} className={SECONDARY_BTN}>
+                            <button type="button" onClick={() => setComposing(false)} className={SECONDARY_BTN}>
                                 Cancel claim
                             </button>
+                        </>
+                    ) : (
+                        // Detail state (design 49-206): open the compose state.
+                        <>
+                            <button type="button" onClick={() => setComposing(true)} className={PRIMARY_BTN}>
+                                {costLabel}
+                            </button>
+                            {shareButton}
                         </>
                     )}
                 </div>

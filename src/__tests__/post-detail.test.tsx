@@ -142,7 +142,7 @@ describe("PostDetail", () => {
         renderWithRoute(activeSubNeed.id);
         const card = await screen.findByText(/Tennis/);
         await user.click(card.closest("button")!);
-        expect(await screen.findByText("Submit claim")).toBeInTheDocument();
+        expect(await screen.findByText(/Claim for/)).toBeInTheDocument();
     });
 
     it("opens claim sheet with Notify Me on a full post", async () => {
