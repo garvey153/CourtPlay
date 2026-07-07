@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -102,7 +102,16 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
     // The claimable sheet has two states: the detail (Claim for $X) and, after tapping
     // it, the compose state (message + Submit claim). They transition in place.
     const [composing, setComposing] = useState(false);
+    const replyRef = useRef<HTMLTextAreaElement>(null);
     const { shareData, handleShare, closeShareModal } = useShare();
+
+    // Auto-grow the reply field with its content (wraps + expands the sheet).
+    useEffect(() => {
+        const el = replyRef.current;
+        if (!el) return;
+        el.style.height = "auto";
+        el.style.height = `${el.scrollHeight}px`;
+    }, [message, composing]);
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
@@ -299,15 +308,18 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                 )}
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                {/* Compose state (design 149-1155): single-line message field, 32px above it. */}
+                {/* Compose state (design 149-1155): field starts at 36px (one line) and
+                    auto-grows as the message wraps, expanding the sheet with it. */}
                 {claimableHelper && composing && (
-                    <input
+                    <textarea
+                        ref={replyRef}
                         aria-label="Message"
                         placeholder={`Reply to ${post.first_name}…`}
                         value={message}
                         onChange={(e) => setMessage(e.target.value.slice(0, MESSAGE_MAX))}
                         maxLength={MESSAGE_MAX}
-                        className="mt-4 h-9 w-full rounded-lg bg-tertiary px-3 text-sm text-primary shadow-xs ring-1 ring-neutral-600 outline-none transition-shadow duration-100 ring-inset placeholder:text-placeholder focus:ring-2 focus:ring-brand"
+                        rows={1}
+                        className="mt-4 block w-full resize-none overflow-hidden rounded-lg bg-tertiary px-3 py-2 text-sm text-primary shadow-xs ring-1 ring-neutral-600 outline-none transition-shadow duration-100 ring-inset placeholder:text-placeholder focus:ring-2 focus:ring-brand"
                     />
                 )}
 
