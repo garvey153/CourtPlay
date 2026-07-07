@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { SubCard, gameEndMs, type CardKind } from "@/components/app/sub-card";
 import { GroupCard } from "@/components/app/group-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
@@ -26,7 +26,9 @@ export function Activity() {
     const { user } = useAuth();
     const { profile } = useProfile();
     const navigate = useNavigate();
-    const [tab, setTab] = useState<Tab>("claims");
+    // Open a specific tab when navigated with ?tab= (e.g. returning from editing a created post).
+    const [searchParams] = useSearchParams();
+    const [tab, setTab] = useState<Tab>(searchParams.get("tab") === "created" ? "created" : "claims");
     const [myPosts, setMyPosts] = useState<MyPost[]>([]);
     const [myClaims, setMyClaims] = useState<MyClaim[]>([]);
     const [loading, setLoading] = useState(true);
@@ -388,7 +390,7 @@ export function Activity() {
                         setCreatedSheet(null);
                         handleDecline(claim, post);
                     }}
-                    onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`)}
+                    onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/activity?tab=created" } })}
                     onDelete={() => handleDeletePost(createdSheet)}
                 />
             )}

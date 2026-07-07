@@ -227,7 +227,7 @@ export function Feed() {
                     <PostSuccessBanner
                         postType={createdPost.type}
                         onDismiss={() => setCreatedPost(null)}
-                        onEdit={() => navigate(`/post/new?edit=${createdPost.id}`)}
+                        onEdit={() => navigate(`/post/new?edit=${createdPost.id}`, { state: { returnTo: "/feed" } })}
                     />
                 )}
 

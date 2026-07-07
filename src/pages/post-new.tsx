@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { DateValue } from "react-aria-components";
 import { TimeField as AriaTimeField } from "react-aria-components";
-import { useNavigate, useSearchParams } from "react-router";
+import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { parseDate, parseTime, today, getLocalTimeZone } from "@internationalized/date";
 import { XClose } from "@untitledui/icons";
 import { InputDate, InputDateBase } from "@/components/base/input/input-date";
@@ -122,8 +122,13 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
 export function PostNew() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
     const editPostId = searchParams.get("edit");
+    // Where to go when the sheet closes (set by whoever opened the edit form, e.g.
+    // the Activity Created tab). Falls back to a plain back-navigation.
+    const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? null;
+    const closeForm = () => (returnTo ? navigate(returnTo) : navigate(-1));
 
     const [postType, setPostType] = useState<"sub_need" | "regular_game">("sub_need");
     const [courts, setCourts] = useState<Court[]>([]);
@@ -155,9 +160,12 @@ export function PostNew() {
     const [rgCourts, setRgCourts] = useState<Selection>(new Set());
     const [rgNote, setRgNote] = useState("");
 
-    // edit mode state
+    // edit mode state — init from the URL so the header/fields never flash the
+    // "create" state before the edit data loads.
     const [existingClaims, setExistingClaims] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(!!editPostId);
+    // In edit mode the form is hidden until the post is fetched; create mode is ready immediately.
+    const [loaded, setLoaded] = useState(!editPostId);
     const [originalCost, setOriginalCost] = useState<number | null>(null);
 
     useEffect(() => {
@@ -168,11 +176,12 @@ export function PostNew() {
     // Close the form sheet on Escape (matches the other bottom sheets).
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            if (e.key === "Escape") navigate(-1);
+            if (e.key === "Escape") closeForm();
         };
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
-    }, [navigate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [returnTo]);
 
     // Load post for editing
     useEffect(() => {
@@ -182,7 +191,10 @@ export function PostNew() {
             supabase.from("posts").select("*").eq("id", editPostId).single(),
             supabase.from("claims").select("id").eq("post_id", editPostId).in("status", ["pending", "approved"]).limit(1),
         ]).then(([{ data: post }, { data: claims }]) => {
-            if (!post) return;
+            if (!post) {
+                setLoaded(true);
+                return;
+            }
             setPostType(post.post_type);
             setExistingClaims((claims ?? []).length > 0);
             if (post.post_type === "sub_need") {
@@ -209,6 +221,7 @@ export function PostNew() {
                 setRgCourts(new Set(post.court_id ? [post.court_id] : []));
                 setRgNote(post.notes ?? "");
             }
+            setLoaded(true);
         });
     }, [editPostId, user]);
 
@@ -401,14 +414,20 @@ export function PostNew() {
                 }
             }
 
-            // Flag a freshly-created post so the feed can show the success banner.
-            if (!isEditing && newPostId) {
-                localStorage.setItem(
-                    "courtsub_post_created",
-                    JSON.stringify({ id: newPostId, type: postType }),
-                );
+            // Editing returns to wherever the form was opened from (e.g. the Activity
+            // Created tab). Creating shows the success banner on the feed.
+            if (isEditing) {
+                if (returnTo) navigate(returnTo);
+                else navigate("/feed");
+            } else {
+                if (newPostId) {
+                    localStorage.setItem(
+                        "courtsub_post_created",
+                        JSON.stringify({ id: newPostId, type: postType }),
+                    );
+                }
+                navigate("/feed");
             }
-            navigate("/feed");
         } catch (e) {
             setError(e instanceof Error ? e.message : "Something went wrong.");
         } finally {
@@ -425,7 +444,7 @@ export function PostNew() {
                 Clicking it (e.g. the header area) closes the sheet. */}
             <div
                 className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[8px]"
-                onClick={() => navigate(-1)}
+                onClick={closeForm}
                 aria-hidden="true"
             />
             {/* Full-height sheet: spans the whole screen with the form scrolling inside. */}
@@ -438,7 +457,7 @@ export function PostNew() {
                         </h1>
                         <button
                             type="button"
-                            onClick={() => navigate(-1)}
+                            onClick={closeForm}
                             aria-label="Close"
                             className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-lg text-tertiary transition duration-100 ease-linear hover:text-secondary"
                         >
@@ -448,6 +467,13 @@ export function PostNew() {
 
                     {/* Scrolling form body */}
                     <div className="flex-1 overflow-y-auto overscroll-y-contain px-5 pb-8">
+                {!loaded ? (
+                    // Edit mode: hold the sheet until the post loads so the create form never flashes.
+                    <div className="flex items-center justify-center py-20">
+                        <span className="size-6 animate-spin rounded-full border-2 border-secondary border-t-transparent" aria-hidden="true" />
+                    </div>
+                ) : (
+                <>
                 {/* Post type — radio cards (hidden in edit mode) */}
                 {!isEditing && (
                     <div className="mb-7 flex flex-col gap-3">
@@ -837,10 +863,12 @@ export function PostNew() {
                             "Create post"
                         )}
                     </button>
-                    <button type="button" onClick={() => navigate(-1)} className={SECONDARY_BTN}>
+                    <button type="button" onClick={closeForm} className={SECONDARY_BTN}>
                         Cancel
                     </button>
                 </div>
+                </>
+                )}
                     </div>
                 </div>
             </div>
