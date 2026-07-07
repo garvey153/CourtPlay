@@ -37,9 +37,9 @@ const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 const SECONDARY_BTN =
     "rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary";
-// Connect uses the Regular Play status color (blue) rather than the brand green.
+// Connect uses the primary brand green, consistent with every other bottom-sheet CTA.
 const CONNECT_BTN =
-    "flex items-center justify-center rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition duration-100 ease-linear enabled:hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50";
+    "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Spinner tuned for the brand button (dark strokes on green). */
 const ButtonSpinner = () => (

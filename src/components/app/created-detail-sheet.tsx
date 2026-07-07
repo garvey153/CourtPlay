@@ -38,9 +38,6 @@ function formatDuration(duration: number | null): string | null {
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
-// Regular-play posts use the blue CTA (matching the feed's "Connect" button).
-const PRIMARY_BTN_BLUE =
-    "flex items-center justify-center rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition duration-100 ease-linear enabled:hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50";
 const SECONDARY_BTN =
     "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -93,8 +90,6 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
     const approvedClaim = post.claims.find((c) => c.status === "approved");
     const claim = pendingClaim ?? approvedClaim ?? null;
     const busy = !!actionLoading && claim?.id === actionLoading;
-    // Regular-play posts use the blue CTA (like the feed's Connect button).
-    const isRegular = post.post_type === "regular_game";
 
     const title = [formatPlayType(post.play_type, post.format), "Tennis"].filter(Boolean).join(" ");
     const when = formatWhen(post.game_date, post.game_time);
@@ -217,9 +212,10 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
 
                 {/* Actions */}
                 {!claim ? (
-                    // No claims yet — manage the post (design 271-4581).
-                    <div className="flex flex-col gap-3">
-                        <button type="button" onClick={onEdit} className={isRegular ? PRIMARY_BTN_BLUE : PRIMARY_BTN}>
+                    // No claims yet — manage the post (design 271-4581). Extra top space
+                    // separates the actions from the message, matching the design.
+                    <div className="mt-4 flex flex-col gap-3">
+                        <button type="button" onClick={onEdit} className={PRIMARY_BTN}>
                             Edit post
                         </button>
                         <button type="button" onClick={onDelete} disabled={deleting} className={SECONDARY_BTN}>
