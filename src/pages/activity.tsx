@@ -4,7 +4,6 @@ import { SubCard, gameEndMs, type CardKind } from "@/components/app/sub-card";
 import { GroupCard } from "@/components/app/group-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
-import { DeletePostSheet } from "@/components/app/delete-post-sheet";
 import { PostDeletedBanner } from "@/components/app/post-deleted-banner";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { ContactModal, type ContactInfo } from "@/components/app/contact-modal";
@@ -43,7 +42,6 @@ export function Activity() {
     // Claimer's detail sheet; contact is attached once the claim is approved.
     const [claimSheet, setClaimSheet] = useState<{ post: FeedPost; contact?: { venmoHandle: string | null; phone: string | null } } | null>(null);
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null); // creator view
-    const [deleteConfirm, setDeleteConfirm] = useState<MyPost | null>(null); // "Delete this post?" sheet
     const [deletedPost, setDeletedPost] = useState<MyPost | null>(null); // undo banner
     const [deletingPost, setDeletingPost] = useState(false);
     const [undoingDelete, setUndoingDelete] = useState(false);
@@ -173,7 +171,7 @@ export function Activity() {
                 setActionError("Failed to delete post. Please try again.");
                 return;
             }
-            setDeleteConfirm(null);
+            setCreatedSheet(null);
             setDeletedPost(post); // drives the undo banner
             fetchData();
         },
@@ -344,8 +342,9 @@ export function Activity() {
                 region below scrolls. This keeps the tabs fixed under the header, so a
                 pull-to-refresh drags just the posts. */}
             <div className="flex h-full flex-col">
-                {/* Pill tabs — fixed above the scrolling posts region. */}
-                <div className="flex shrink-0 gap-2 bg-primary px-5 pt-1 pb-2">
+                {/* Pill tabs — fixed above the scrolling posts region.
+                    pt-0.5 puts 24px between the logo baseline and the pill top. */}
+                <div className="flex shrink-0 gap-2 bg-primary px-5 pt-0.5 pb-2">
                     {(
                         [
                             { id: "claims", label: "Claimed posts" },
@@ -430,25 +429,7 @@ export function Activity() {
                         handleDecline(claim, post);
                     }}
                     onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/activity?tab=created" } })}
-                    onDelete={() => {
-                        // Confirm before deleting (design 274-5651).
-                        setDeleteConfirm(createdSheet);
-                        setCreatedSheet(null);
-                    }}
-                />
-            )}
-
-            {deleteConfirm && me && (
-                <DeletePostSheet
-                    post={deleteConfirm}
-                    poster={me}
-                    deleting={deletingPost}
-                    onConfirm={() => handleDeletePost(deleteConfirm)}
-                    onCancel={() => {
-                        // Keep the post — reopen the creator sheet.
-                        setCreatedSheet(deleteConfirm);
-                        setDeleteConfirm(null);
-                    }}
+                    onDelete={() => handleDeletePost(createdSheet)}
                 />
             )}
         </AppLayout>

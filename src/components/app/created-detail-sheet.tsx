@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -45,10 +45,6 @@ const ButtonSpinner = () => (
     <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
 );
 
-const ButtonSpinnerSecondary = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-secondary/40 border-t-secondary" aria-hidden="true" />
-);
-
 interface Poster {
     first_name: string;
     last_name: string;
@@ -78,9 +74,13 @@ interface CreatedDetailSheetProps {
  * Decline. Matches design 274-4741.
  */
 export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline, onEdit, onDelete, actionLoading, deleting }: CreatedDetailSheetProps) {
+    // Delete confirmation is shown inline in this same sheet (no close/reopen).
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
+
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            if (e.key === "Escape") onClose();
+            // Escape backs out of the confirmation first, then closes the sheet.
+            if (e.key === "Escape") setConfirmingDelete((c) => (c ? false : (onClose(), false)));
         };
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
@@ -126,6 +126,60 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                 animate={{ y: 0 }}
                 transition={{ type: "spring", damping: 38, stiffness: 420 }}
             >
+                {confirmingDelete ? (
+                    <>
+                        {/* Delete confirmation — same sheet (design 274-5651) */}
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 flex-col gap-1">
+                                <h2 className="text-md font-semibold text-primary">Delete this post?</h2>
+                                <p className="text-sm text-secondary">This will permanently remove it from the app.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                aria-label="Close"
+                                className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                            >
+                                <XClose className="size-5" />
+                            </button>
+                        </div>
+
+                        <div className="flex flex-col gap-3 rounded-lg border border-neutral-600 p-4">
+                            <div className="flex min-w-0 flex-col gap-1">
+                                <p className="text-md font-semibold text-primary">
+                                    {title}
+                                    {when && ` · ${when}`}
+                                </p>
+                                {subtitle && <p className="text-sm text-secondary">{subtitle}</p>}
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <Avatar
+                                        size="xs"
+                                        src={poster.photo_url}
+                                        alt={poster.first_name}
+                                        initials={poster.first_name.charAt(0).toUpperCase()}
+                                        className="shrink-0 bg-white p-px shadow-xs"
+                                    />
+                                    <span className="truncate text-xs text-tertiary">
+                                        {posterName} · {timeAgo(post.created_at)}
+                                    </span>
+                                </div>
+                                {!isRegular && <span className="shrink-0 text-sm font-semibold text-primary">{priceLabel}</span>}
+                            </div>
+                        </div>
+
+                        <div className="mt-2 flex flex-col gap-3">
+                            <button type="button" onClick={onDelete} disabled={deleting} className={PRIMARY_BTN}>
+                                {deleting ? <ButtonSpinner /> : "Yes, delete"}
+                            </button>
+                            <button type="button" onClick={() => setConfirmingDelete(false)} disabled={deleting} className={SECONDARY_BTN}>
+                                No, keep it
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
                 {/* Header — status banner (when claimed) + close */}
                 <div className="flex items-start justify-between gap-3">
                     {banner ? (
@@ -220,8 +274,8 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                         <button type="button" onClick={onEdit} className={PRIMARY_BTN}>
                             Edit post
                         </button>
-                        <button type="button" onClick={onDelete} disabled={deleting} className={SECONDARY_BTN}>
-                            {deleting ? <ButtonSpinnerSecondary /> : "Delete post"}
+                        <button type="button" onClick={() => setConfirmingDelete(true)} className={SECONDARY_BTN}>
+                            Delete post
                         </button>
                     </div>
                 ) : pendingClaim ? (
@@ -256,6 +310,8 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                         )}
                     </div>
                 ) : null}
+                    </>
+                )}
             </motion.div>
         </div>
     );

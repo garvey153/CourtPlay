@@ -8,7 +8,6 @@ import { PostSuccessBanner } from "@/components/app/post-success-banner";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
-import { DeletePostSheet } from "@/components/app/delete-post-sheet";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { WelcomeCard } from "@/components/app/welcome-card";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -69,7 +68,6 @@ export function Feed() {
     const [detailPost, setDetailPost] = useState<FeedPost | null>(null);
     // Tapping one of the viewer's own posts opens the creator sheet instead.
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null);
-    const [deleteConfirm, setDeleteConfirm] = useState<MyPost | null>(null);
     const [createdActionLoading, setCreatedActionLoading] = useState<string | null>(null);
     const [deletingCreated, setDeletingCreated] = useState(false);
     // Set after a claim is cancelled — drives the "spot reopened" banner at the top of the feed.
@@ -229,7 +227,7 @@ export function Feed() {
                 .eq("id", post.id);
             setDeletingCreated(false);
             if (!delError) {
-                setDeleteConfirm(null);
+                setCreatedSheet(null);
                 fetchPosts();
             }
         },
@@ -396,23 +394,7 @@ export function Feed() {
                     onApprove={(claim) => handleApproveClaim(claim, createdSheet)}
                     onDecline={(claim) => handleDeclineClaim(claim, createdSheet)}
                     onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/feed" } })}
-                    onDelete={() => {
-                        setDeleteConfirm(createdSheet);
-                        setCreatedSheet(null);
-                    }}
-                />
-            )}
-
-            {deleteConfirm && profile && (
-                <DeletePostSheet
-                    post={deleteConfirm}
-                    poster={{ first_name: profile.first_name, last_name: profile.last_name, photo_url: profile.photo_url }}
-                    deleting={deletingCreated}
-                    onConfirm={() => handleDeletePost(deleteConfirm)}
-                    onCancel={() => {
-                        setCreatedSheet(deleteConfirm);
-                        setDeleteConfirm(null);
-                    }}
+                    onDelete={() => handleDeletePost(createdSheet)}
                 />
             )}
         </AppLayout>
