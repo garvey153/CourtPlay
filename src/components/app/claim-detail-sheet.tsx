@@ -11,6 +11,17 @@ import { ReportModal } from "./report-modal";
 
 const MESSAGE_MAX = 150;
 
+// Friendly default replies — one is picked at random and used as the placeholder
+// and, if the claimer doesn't type anything, sent as their message. Written to read
+// naturally after "Hey {name}, ".
+const DEFAULT_REPLIES = [
+    "let's do this!",
+    "count me in!",
+    "I'd love to grab this spot!",
+    "happy to sub in for you!",
+    "looking forward to it!",
+];
+
 function formatWhen(gameDate: string | null, gameTime: string | null): string {
     const parts: string[] = [];
     if (gameDate) {
@@ -103,6 +114,9 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
     // it, the compose state (message + Submit claim). They transition in place.
     const [composing, setComposing] = useState(false);
     const replyRef = useRef<HTMLTextAreaElement>(null);
+    // Pick a default reply once per sheet; used as the placeholder + empty-submit fallback.
+    const [defaultReply] = useState(() => DEFAULT_REPLIES[Math.floor(Math.random() * DEFAULT_REPLIES.length)]);
+    const defaultMessage = `Hey ${post.first_name}, ${defaultReply}`;
     const { shareData, handleShare, closeShareModal } = useShare();
 
     // Auto-grow the reply field with its content (wraps + expands the sheet).
@@ -134,7 +148,8 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
 
         const { data, error: rpcError } = await supabase.rpc("submit_claim", {
             p_post_id: post.id,
-            p_message: message.trim() || null,
+            // Fall back to the suggested default when the claimer leaves it blank.
+            p_message: message.trim() || defaultMessage,
         });
         setLoading(false);
 
@@ -161,7 +176,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
         setClaimId(data.claim_id as string);
         setClaimStatus("pending");
         onClaimChange?.();
-    }, [post.id, post.author_id, onClaimChange, message]);
+    }, [post.id, post.author_id, onClaimChange, message, defaultMessage]);
 
     const handleNotifyMe = useCallback(async () => {
         if (notifyState !== "idle") return;
@@ -314,7 +329,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                     <textarea
                         ref={replyRef}
                         aria-label="Message"
-                        placeholder={`Reply to ${post.first_name}…`}
+                        placeholder={`Reply... ${defaultMessage}`}
                         value={message}
                         onChange={(e) => setMessage(e.target.value.slice(0, MESSAGE_MAX))}
                         maxLength={MESSAGE_MAX}
