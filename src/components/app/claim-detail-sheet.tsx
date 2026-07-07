@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
-import { TextArea } from "@/components/base/textarea/textarea";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useShare } from "@/hooks/use-share";
@@ -300,25 +299,16 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                 )}
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                {/* Compose state (design 149-1155): message to the poster, sent with the claim. */}
+                {/* Compose state (design 149-1155): single-line message field, 32px above it. */}
                 {claimableHelper && composing && (
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-end">
-                            <span className="text-xs text-tertiary">
-                                {message.length}/{MESSAGE_MAX}
-                            </span>
-                        </div>
-                        <TextArea
-                            aria-label="Message"
-                            placeholder={`Reply to ${post.first_name}…`}
-                            value={message}
-                            onChange={setMessage}
-                            maxLength={MESSAGE_MAX}
-                            rows={2}
-                            size="sm"
-                            textAreaClassName="bg-tertiary ring-neutral-600"
-                        />
-                    </div>
+                    <input
+                        aria-label="Message"
+                        placeholder={`Reply to ${post.first_name}…`}
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value.slice(0, MESSAGE_MAX))}
+                        maxLength={MESSAGE_MAX}
+                        className="mt-4 h-9 w-full rounded-lg bg-tertiary px-3 text-sm text-primary shadow-xs ring-1 ring-neutral-600 outline-none transition-shadow duration-100 ring-inset placeholder:text-placeholder focus:ring-2 focus:ring-brand"
+                    />
                 )}
 
                 {/* Detail-state helper (design 49-206). */}
