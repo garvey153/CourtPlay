@@ -41,10 +41,10 @@ export function IosInstallPrompt() {
         }
     };
 
-    // Matches the post create/delete confirmation banners (aligned with the feed cards,
-    // with the same 12px gap to the first post).
+    // Matches the post create/delete confirmation banners. Rendered inside the feed
+    // list so it scrolls and pulls with the posts (spacing comes from the feed's gap).
     return (
-        <div className="relative mx-5 mt-3 mb-3 rounded-lg bg-brand-800 p-4">
+        <div className="relative rounded-lg bg-brand-800 p-4">
             <button
                 onClick={dismiss}
                 aria-label="Dismiss"

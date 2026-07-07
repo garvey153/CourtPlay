@@ -8,6 +8,7 @@ import { PostSuccessBanner } from "@/components/app/post-success-banner";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
+import { IosInstallPrompt } from "@/components/app/ios-install-prompt";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { WelcomeCard } from "@/components/app/welcome-card";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -264,6 +265,9 @@ export function Feed() {
 
             <PullToRefresh onRefresh={fetchPosts}>
             <div className="flex flex-col gap-3 px-5 pb-4">
+                {/* Install prompt — first feed item so it scrolls/pulls like a post. */}
+                <IosInstallPrompt />
+
                 {cancelledPost && (
                     <ClaimCancelledBanner
                         post={cancelledPost}

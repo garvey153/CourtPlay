@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { BottomNav } from "./bottom-nav";
-import { IosInstallPrompt } from "@/components/app/ios-install-prompt";
 import { TopNav } from "./top-nav";
 
 interface AppLayoutProps {
@@ -18,7 +17,6 @@ export function AppLayout({ children, onOpenFilters, filtersActive }: AppLayoutP
         // refresh so the feed can own that gesture.
         <div className="flex h-dvh flex-col overflow-hidden bg-primary">
             <TopNav onOpenFilters={onOpenFilters} filtersActive={filtersActive} />
-            <IosInstallPrompt />
             <main className="flex-1 overflow-y-auto overscroll-y-contain pb-20">{children}</main>
             <BottomNav />
         </div>
