@@ -85,7 +85,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
     const [reply, setReply] = useState("");
     const [sending, setSending] = useState(false);
     const [showReport, setShowReport] = useState(false);
-    const threadEndRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
@@ -134,7 +134,8 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
 
     // Keep the newest message in view as the thread grows.
     useEffect(() => {
-        threadEndRef.current?.scrollIntoView?.({ block: "end" });
+        const el = scrollRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
     }, [messages.length]);
 
     const closeBtn = (
@@ -265,18 +266,17 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                             {posterPrice}
                         </div>
 
-                        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                             <div className="flex flex-col gap-5">
                                 {noteBubble}
                                 {messages.map((m) => (
                                     <ThreadMessage key={m.id} msg={m} />
                                 ))}
                                 {contactBlock}
-                                <div ref={threadEndRef} />
                             </div>
                         </div>
 
-                        <div className="flex shrink-0 flex-col gap-4 px-5 pt-4 pb-8">
+                        <div className="flex shrink-0 flex-col px-5 pt-4 pb-8">
                             {onReply && (
                                 <input
                                     aria-label="Reply"
@@ -294,7 +294,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                                 />
                             )}
                             {claim && (
-                                <p className="text-xs text-tertiary">
+                                <p className="mt-4 text-xs text-tertiary">
                                     * Have an issue?{" "}
                                     <button
                                         type="button"
@@ -306,7 +306,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                                 </p>
                             )}
                             {pendingClaim ? (
-                                <div className="flex flex-col gap-3">
+                                <div className="mt-8 flex flex-col gap-3">
                                     <button type="button" onClick={() => onApprove(pendingClaim)} disabled={busy} className={PRIMARY_BTN}>
                                         {busy ? <ButtonSpinner /> : "Approve claim"}
                                     </button>
@@ -315,7 +315,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                                     </button>
                                 </div>
                             ) : approvedClaim ? (
-                                <div className="flex flex-col gap-3">
+                                <div className="mt-8 flex flex-col gap-3">
                                     {chargeHref ? (
                                         <a href={chargeHref} className={PRIMARY_BTN}>
                                             Request payment via Venmo
