@@ -90,6 +90,8 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
     const approvedClaim = post.claims.find((c) => c.status === "approved");
     const claim = pendingClaim ?? approvedClaim ?? null;
     const busy = !!actionLoading && claim?.id === actionLoading;
+    // Regular-play posts have no price, so the poster row omits it.
+    const isRegular = post.post_type === "regular_game";
 
     const title = [formatPlayType(post.play_type, post.format), "Tennis"].filter(Boolean).join(" ");
     const when = formatWhen(post.game_date, post.game_time);
@@ -172,7 +174,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                             {posterName} · {timeAgo(post.created_at)}
                         </span>
                     </div>
-                    <span className="shrink-0 text-sm font-semibold text-primary">{priceLabel}</span>
+                    {!isRegular && <span className="shrink-0 text-sm font-semibold text-primary">{priceLabel}</span>}
                 </div>
 
                 {/* Poster's note */}

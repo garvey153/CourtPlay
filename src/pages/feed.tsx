@@ -7,12 +7,16 @@ import { ClaimCancelledBanner } from "@/components/app/claim-cancelled-banner";
 import { PostSuccessBanner } from "@/components/app/post-success-banner";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
+import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { WelcomeCard } from "@/components/app/welcome-card";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
+import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
+import { REJECTION_REASONS } from "@/types/claims";
+import type { ClaimRow, MyPost } from "@/types/activity";
 import type { FeedPost, FilterState } from "@/types/feed";
 
 const WELCOME_KEY = "cs_welcome_dismissed";
@@ -62,6 +66,10 @@ export function Feed() {
     });
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [detailPost, setDetailPost] = useState<FeedPost | null>(null);
+    // Tapping one of the viewer's own posts opens the creator sheet instead.
+    const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null);
+    const [createdActionLoading, setCreatedActionLoading] = useState<string | null>(null);
+    const [deletingCreated, setDeletingCreated] = useState(false);
     // Set after a claim is cancelled — drives the "spot reopened" banner at the top of the feed.
     const [cancelledPost, setCancelledPost] = useState<FeedPost | null>(null);
     const [welcomeDismissed, setWelcomeDismissed] = useState(
@@ -164,6 +172,67 @@ export function Feed() {
     const handleToggleFilters = useCallback(() => {
         setFiltersOpen((v) => !v);
     }, []);
+
+    // Own posts open the creator sheet (same as Activity → Created); others open the
+    // claim/connect sheet. The creator sheet needs the post's claims, so fetch them.
+    const openDetail = useCallback(
+        async (post: FeedPost) => {
+            if (!user || post.author_id !== user.id) {
+                setDetailPost(post);
+                return;
+            }
+            const { data } = await supabase.rpc("get_my_posts_with_claims");
+            const mine = ((data as MyPost[]) ?? []).find((p) => p.id === post.id);
+            if (mine) setCreatedSheet(mine);
+            else setDetailPost(post);
+        },
+        [user],
+    );
+
+    const handleApproveClaim = useCallback(
+        async (claim: ClaimRow, post: MyPost) => {
+            setCreatedActionLoading(claim.id);
+            const { data, error: rpcError } = await supabase.rpc("approve_claim", { p_claim_id: claim.id });
+            if (!rpcError && data?.success) {
+                sendNotification({ user_id: claim.claimer_id, notification_type: "claim_approved", post_id: post.id, claim_id: claim.id });
+                setCreatedSheet(null);
+                fetchPosts();
+            }
+            setCreatedActionLoading(null);
+        },
+        [fetchPosts],
+    );
+
+    const handleDeclineClaim = useCallback(
+        async (claim: ClaimRow, post: MyPost) => {
+            setCreatedActionLoading(claim.id);
+            const { data, error: rpcError } = await supabase.rpc("reject_claim", { p_claim_id: claim.id, p_reason: REJECTION_REASONS[0] });
+            if (!rpcError && data?.success) {
+                sendNotification({ user_id: claim.claimer_id, notification_type: "claim_rejected", post_id: post.id, claim_id: claim.id, data: { reason: REJECTION_REASONS[0] } });
+                setCreatedSheet(null);
+                fetchPosts();
+            }
+            setCreatedActionLoading(null);
+        },
+        [fetchPosts],
+    );
+
+    const handleDeletePost = useCallback(
+        async (post: MyPost) => {
+            if (!user) return;
+            setDeletingCreated(true);
+            const { error: delError } = await supabase
+                .from("posts")
+                .update({ status: "deleted", deleted_at: new Date().toISOString(), deleted_by: user.id })
+                .eq("id", post.id);
+            setDeletingCreated(false);
+            if (!delError) {
+                setCreatedSheet(null);
+                fetchPosts();
+            }
+        },
+        [fetchPosts, user],
+    );
 
     const profileComplete =
         !!profile && !!(profile.skill_level) && !!(profile.headline || profile.photo_url);
@@ -270,7 +339,7 @@ export function Feed() {
                                         post={post}
                                         currentUserId={user?.id}
                                         onViewed={handleViewed}
-                                        onOpenDetail={setDetailPost}
+                                        onOpenDetail={openDetail}
                                     />
                                 </li>
                             ) : (
@@ -280,7 +349,7 @@ export function Feed() {
                                         profileComplete={profileComplete}
                                         currentUserId={user?.id}
                                         onViewed={handleViewed}
-                                        onOpenDetail={setDetailPost}
+                                        onOpenDetail={openDetail}
                                     />
                                 </li>
                             ),
@@ -314,6 +383,20 @@ export function Feed() {
                         }}
                     />
                 ))}
+
+            {createdSheet && profile && (
+                <CreatedDetailSheet
+                    post={createdSheet}
+                    poster={{ first_name: profile.first_name, last_name: profile.last_name, photo_url: profile.photo_url }}
+                    actionLoading={createdActionLoading}
+                    deleting={deletingCreated}
+                    onClose={() => setCreatedSheet(null)}
+                    onApprove={(claim) => handleApproveClaim(claim, createdSheet)}
+                    onDecline={(claim) => handleDeclineClaim(claim, createdSheet)}
+                    onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/feed" } })}
+                    onDelete={() => handleDeletePost(createdSheet)}
+                />
+            )}
         </AppLayout>
     );
 }
