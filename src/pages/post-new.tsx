@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DateValue } from "react-aria-components";
 import { TimeField as AriaTimeField } from "react-aria-components";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
@@ -119,6 +119,43 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
     );
 }
 
+// Fields that make up a post, used to detect unsaved changes in edit mode.
+interface FormFields {
+    postType: string;
+    playType: string;
+    duration: number | null;
+    gameDate: string | null;
+    gameTime: string;
+    skillLevel: string;
+    courtId: string | null;
+    showCustomCourt: boolean;
+    customCourt: string;
+    proName: string;
+    cost: number | null;
+    notes: string;
+    rgPlayTypes: string[];
+    rgGroupSizes: string[];
+    rgSkillLevels: string[];
+    rgDays: string[];
+    rgTimes: string[];
+    rgCourts: string[];
+    rgNote: string;
+}
+
+const keysOf = (s: Selection): string[] => (s instanceof Set ? [...s].map(String) : []);
+
+// Order-independent signature of the form's values (multi-selects are sorted).
+const buildFormSig = (v: FormFields): string =>
+    JSON.stringify({
+        ...v,
+        rgPlayTypes: [...v.rgPlayTypes].sort(),
+        rgGroupSizes: [...v.rgGroupSizes].sort(),
+        rgSkillLevels: [...v.rgSkillLevels].sort(),
+        rgDays: [...v.rgDays].sort(),
+        rgTimes: [...v.rgTimes].sort(),
+        rgCourts: [...v.rgCourts].sort(),
+    });
+
 export function PostNew() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -183,9 +220,13 @@ export function PostNew() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [returnTo]);
 
-    // Load post for editing
+    // Load post for editing — once per post id. Keyed on user?.id (a stable string)
+    // and guarded by a ref so a new useAuth() object reference can't re-trigger the fetch.
+    const loadedIdRef = useRef<string | null>(null);
     useEffect(() => {
-        if (!editPostId || !user) return;
+        if (!editPostId || !user?.id) return;
+        if (loadedIdRef.current === editPostId) return;
+        loadedIdRef.current = editPostId;
         setIsEditing(true);
         Promise.all([
             supabase.from("posts").select("*").eq("id", editPostId).single(),
@@ -221,9 +262,58 @@ export function PostNew() {
                 setRgCourts(new Set(post.court_id ? [post.court_id] : []));
                 setRgNote(post.notes ?? "");
             }
+            // Baseline signature from the loaded values — must mirror the setters above
+            // exactly so an untouched form reads as "not dirty".
+            setInitialSig(
+                buildFormSig(
+                    post.post_type === "sub_need"
+                        ? {
+                              postType: post.post_type,
+                              playType: post.play_type ?? "",
+                              duration: post.duration != null ? Number(post.duration) : null,
+                              gameDate: post.game_date ?? null,
+                              gameTime: post.game_time ? post.game_time.slice(0, 5) : "09:00",
+                              skillLevel: post.skill_level ?? "",
+                              courtId: post.court_id ?? null,
+                              showCustomCourt: !!post.custom_court && !post.court_id,
+                              customCourt: post.custom_court ?? "",
+                              proName: post.pro_name ?? "",
+                              cost: post.cost ? Number(post.cost) : null,
+                              notes: post.notes ?? "",
+                              rgPlayTypes: [],
+                              rgGroupSizes: [],
+                              rgSkillLevels: [],
+                              rgDays: [],
+                              rgTimes: [],
+                              rgCourts: [],
+                              rgNote: "",
+                          }
+                        : {
+                              postType: post.post_type,
+                              playType: "",
+                              duration: null,
+                              gameDate: null,
+                              gameTime: "09:00",
+                              skillLevel: "",
+                              courtId: null,
+                              showCustomCourt: false,
+                              customCourt: "",
+                              proName: "",
+                              cost: null,
+                              notes: "",
+                              rgPlayTypes: post.play_type ? [post.play_type] : [],
+                              rgGroupSizes: post.total_players != null ? [String(post.total_players)] : [],
+                              rgSkillLevels: post.skill_level ? [post.skill_level] : [],
+                              rgDays: post.preferred_days ?? [],
+                              rgTimes: post.preferred_times ?? [],
+                              rgCourts: post.court_id ? [post.court_id] : [],
+                              rgNote: post.notes ?? "",
+                          },
+                ),
+            );
             setLoaded(true);
         });
-    }, [editPostId, user]);
+    }, [editPostId, user?.id]);
 
     const courtItems = [
         ...courts.map((c) => ({ id: c.id, label: c.name, supportingText: c.area ?? undefined })),
@@ -247,6 +337,40 @@ export function PostNew() {
     const setSize = (s: Selection) => (s instanceof Set ? s.size : 0);
     const validateRegularGame = () =>
         setSize(rgPlayTypes) > 0 && setSize(rgSkillLevels) > 0 && !!rgNote.trim();
+
+    // ── Dirty tracking (edit mode) ──────────────────────────────────────────
+    // In edit mode "Save changes" stays disabled until the user actually changes
+    // something. A signature of every field lets us compare against the loaded post.
+    const formSig = useMemo(
+        () =>
+            buildFormSig({
+                postType,
+                playType,
+                duration,
+                gameDate: gameDate?.toString() ?? null,
+                gameTime,
+                skillLevel,
+                courtId,
+                showCustomCourt,
+                customCourt,
+                proName,
+                cost,
+                notes,
+                rgPlayTypes: keysOf(rgPlayTypes),
+                rgGroupSizes: keysOf(rgGroupSizes),
+                rgSkillLevels: keysOf(rgSkillLevels),
+                rgDays: keysOf(rgDays),
+                rgTimes: keysOf(rgTimes),
+                rgCourts: keysOf(rgCourts),
+                rgNote,
+            }),
+        [postType, playType, duration, gameDate, gameTime, skillLevel, courtId, showCustomCourt, customCourt, proName, cost, notes, rgPlayTypes, rgGroupSizes, rgSkillLevels, rgDays, rgTimes, rgCourts, rgNote],
+    );
+    // Baseline captured directly from the loaded post (in the load effect), so it's
+    // race-free — no dependency on when state/effects flush.
+    const [initialSig, setInitialSig] = useState<string | null>(null);
+    // Create mode is always "dirty"; edit mode only once a field differs from the load.
+    const dirty = !isEditing || (initialSig !== null && formSig !== initialSig);
 
     const handleSubmit = async () => {
         if (!user) return;
@@ -850,7 +974,7 @@ export function PostNew() {
                     <button
                         type="button"
                         onClick={handleSubmit}
-                        disabled={saving || (postType === "sub_need" ? !validateSubNeed() : !validateRegularGame())}
+                        disabled={saving || (postType === "sub_need" ? !validateSubNeed() : !validateRegularGame()) || !dirty}
                         className={PRIMARY_BTN}
                     >
                         {saving ? (

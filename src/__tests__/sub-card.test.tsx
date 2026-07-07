@@ -128,16 +128,17 @@ describe("SubCard", () => {
         expect(screen.getByText("Expired")).toBeInTheDocument();
     });
 
+    // 2 days ago at noon — unambiguously in the past regardless of timezone.
+    const pastDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
     it("shows Expired badge once the game date/time has passed", () => {
-        const pastDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().slice(0, 10);
         // game_time comes from Postgres with seconds ("HH:MM:SS") — must still parse.
-        render(<SubCard post={makePost({ game_date: pastDate, game_time: "00:01:00" })} />);
+        render(<SubCard post={makePost({ game_date: pastDate, game_time: "12:00:00" })} />);
         expect(screen.getByText("Expired")).toBeInTheDocument();
     });
 
     it("keeps a filled spot as Claimed even after the game date/time has passed", () => {
-        const pastDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().slice(0, 10);
-        render(<SubCard post={makePost({ game_date: pastDate, game_time: "00:01:00", spots_available: 0 })} />);
+        render(<SubCard post={makePost({ game_date: pastDate, game_time: "12:00:00", spots_available: 0 })} />);
         expect(screen.getByText("Claimed")).toBeInTheDocument();
     });
 

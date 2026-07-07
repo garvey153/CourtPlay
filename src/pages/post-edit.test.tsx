@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -239,7 +239,8 @@ describe("PostNew — edit mode save submission", () => {
 
         await waitFor(() => screen.getByText("Edit post"));
 
-        // Submit with current data (already pre-filled and valid)
+        // Save is disabled until a change is made (dirty tracking); edit the message.
+        fireEvent.change(await screen.findByLabelText("Message"), { target: { value: "Updated message" } });
         await waitFor(() =>
             expect(screen.getByRole("button", { name: /Save changes/i })).not.toBeDisabled(),
         );
@@ -254,6 +255,7 @@ describe("PostNew — edit mode save submission", () => {
         const user = userEvent.setup();
         const { postsChain } = renderEditMode(false);
 
+        fireEvent.change(await screen.findByLabelText("Message"), { target: { value: "Updated message" } });
         await waitFor(() =>
             expect(screen.getByRole("button", { name: /Save changes/i })).not.toBeDisabled(),
         );
@@ -281,6 +283,8 @@ describe("PostNew — edit mode save submission", () => {
             </MemoryRouter>,
         );
 
+        // Message stays editable even with claims — use it to dirty the form.
+        fireEvent.change(await screen.findByLabelText("Message"), { target: { value: "Updated message" } });
         await waitFor(() =>
             expect(screen.getByRole("button", { name: /Save changes/i })).not.toBeDisabled(),
         );
@@ -305,6 +309,7 @@ describe("PostNew — edit mode save submission", () => {
         const user = userEvent.setup();
         renderEditMode(false);
 
+        fireEvent.change(await screen.findByLabelText("Message"), { target: { value: "Updated message" } });
         await waitFor(() =>
             expect(screen.getByRole("button", { name: /Save changes/i })).not.toBeDisabled(),
         );
