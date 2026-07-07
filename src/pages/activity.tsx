@@ -4,6 +4,8 @@ import { SubCard, gameEndMs, type CardKind } from "@/components/app/sub-card";
 import { GroupCard } from "@/components/app/group-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
+import { DeletePostSheet } from "@/components/app/delete-post-sheet";
+import { PostDeletedBanner } from "@/components/app/post-deleted-banner";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { ContactModal, type ContactInfo } from "@/components/app/contact-modal";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -41,7 +43,10 @@ export function Activity() {
     // Claimer's detail sheet; contact is attached once the claim is approved.
     const [claimSheet, setClaimSheet] = useState<{ post: FeedPost; contact?: { venmoHandle: string | null; phone: string | null } } | null>(null);
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null); // creator view
+    const [deleteConfirm, setDeleteConfirm] = useState<MyPost | null>(null); // "Delete this post?" sheet
+    const [deletedPost, setDeletedPost] = useState<MyPost | null>(null); // undo banner
     const [deletingPost, setDeletingPost] = useState(false);
+    const [undoingDelete, setUndoingDelete] = useState(false);
 
     const me =
         user && profile
@@ -168,7 +173,27 @@ export function Activity() {
                 setActionError("Failed to delete post. Please try again.");
                 return;
             }
-            setCreatedSheet(null);
+            setDeleteConfirm(null);
+            setDeletedPost(post); // drives the undo banner
+            fetchData();
+        },
+        [fetchData, user],
+    );
+
+    const handleUndoDelete = useCallback(
+        async (post: MyPost) => {
+            if (!user) return;
+            setUndoingDelete(true);
+            const { error: undoError } = await supabase
+                .from("posts")
+                .update({ status: "active", deleted_at: null, deleted_by: null })
+                .eq("id", post.id);
+            setUndoingDelete(false);
+            if (undoError) {
+                setActionError("Failed to restore post. Please try again.");
+                return;
+            }
+            setDeletedPost(null);
             fetchData();
         },
         [fetchData, user],
@@ -252,25 +277,38 @@ export function Activity() {
     };
 
     const renderCreated = () => {
-        // Drop expired posts once the event is more than 7 days past (undated posts stay).
-        // gameEndMs returns null for undated posts (and on any parse failure), which we keep.
+        // Drop deleted posts, and expired posts once the event is more than 7 days past
+        // (undated posts stay). gameEndMs returns null for undated posts / parse failures.
         const graceCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
         const visiblePosts = myPosts.filter((post) => {
+            if (post.status === "deleted") return false;
             const end = gameEndMs(post);
             return end === null || end >= graceCutoff;
         });
+        const banner = deletedPost ? (
+            <PostDeletedBanner
+                onDismiss={() => setDeletedPost(null)}
+                onUndo={() => handleUndoDelete(deletedPost)}
+                undoing={undoingDelete}
+            />
+        ) : null;
         if (visiblePosts.length === 0) {
             return (
-                <EmptyState
-                    title="It's your serve!"
-                    body="You haven't posted any openings yet."
-                    ctaLabel="Find a sub"
-                    ctaHref="/post/new"
-                />
+                <div className="flex flex-1 flex-col">
+                    {banner && <div className="mb-3">{banner}</div>}
+                    <EmptyState
+                        title="It's your serve!"
+                        body="You haven't posted any openings yet."
+                        ctaLabel="Find a sub"
+                        ctaHref="/post/new"
+                    />
+                </div>
             );
         }
         return (
-            <ul className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3">
+                {banner}
+                <ul className="flex flex-col gap-3">
                 {visiblePosts.map((post) => {
                     const feedPost = postToFeedPost(post, me ?? { id: "", first_name: "", last_name: "", photo_url: null });
                     return (
@@ -294,7 +332,8 @@ export function Activity() {
                         </li>
                     );
                 })}
-            </ul>
+                </ul>
+            </div>
         );
     };
 
@@ -391,7 +430,25 @@ export function Activity() {
                         handleDecline(claim, post);
                     }}
                     onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/activity?tab=created" } })}
-                    onDelete={() => handleDeletePost(createdSheet)}
+                    onDelete={() => {
+                        // Confirm before deleting (design 274-5651).
+                        setDeleteConfirm(createdSheet);
+                        setCreatedSheet(null);
+                    }}
+                />
+            )}
+
+            {deleteConfirm && me && (
+                <DeletePostSheet
+                    post={deleteConfirm}
+                    poster={me}
+                    deleting={deletingPost}
+                    onConfirm={() => handleDeletePost(deleteConfirm)}
+                    onCancel={() => {
+                        // Keep the post — reopen the creator sheet.
+                        setCreatedSheet(deleteConfirm);
+                        setDeleteConfirm(null);
+                    }}
                 />
             )}
         </AppLayout>
