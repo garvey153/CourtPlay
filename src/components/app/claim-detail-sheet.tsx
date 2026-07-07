@@ -319,7 +319,7 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                         onChange={(e) => setMessage(e.target.value.slice(0, MESSAGE_MAX))}
                         maxLength={MESSAGE_MAX}
                         rows={1}
-                        className="mt-4 block w-full resize-none overflow-hidden rounded-lg bg-tertiary px-3 py-2 text-sm text-primary shadow-xs ring-1 ring-neutral-600 outline-none transition-shadow duration-100 ring-inset placeholder:text-placeholder focus:ring-2 focus:ring-brand"
+                        className="mt-4 block w-full resize-none overflow-hidden rounded-lg bg-tertiary px-3 py-2 text-sm text-primary shadow-xs ring-1 ring-neutral-600 outline-none ring-inset placeholder:text-placeholder"
                     />
                 )}
 

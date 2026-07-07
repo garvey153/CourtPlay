@@ -321,7 +321,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                                     }}
                                     disabled={sending}
                                     placeholder={`Reply to ${claimerFirstName}…`}
-                                    className="w-full rounded-lg bg-tertiary px-3 py-2.5 text-sm text-primary shadow-xs ring-1 ring-neutral-600 outline-none transition-shadow duration-100 ring-inset placeholder:text-placeholder focus:ring-2 focus:ring-brand disabled:opacity-50"
+                                    className="w-full rounded-lg bg-tertiary px-3 py-2.5 text-sm text-primary shadow-xs ring-1 ring-neutral-600 outline-none ring-inset placeholder:text-placeholder disabled:opacity-50"
                                 />
                             )}
                             {pendingClaim ? (
