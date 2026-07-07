@@ -8,6 +8,7 @@ import { PostSuccessBanner } from "@/components/app/post-success-banner";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
+import { ClaimReceivedBanner } from "@/components/app/claim-received-banner";
 import { IosInstallPrompt } from "@/components/app/ios-install-prompt";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { WelcomeCard } from "@/components/app/welcome-card";
@@ -71,6 +72,11 @@ export function Feed() {
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null);
     const [createdActionLoading, setCreatedActionLoading] = useState<string | null>(null);
     const [deletingCreated, setDeletingCreated] = useState(false);
+    // The viewer's own posts (with claims) — drives the "waiting for approval" banners.
+    const [myPosts, setMyPosts] = useState<MyPost[]>([]);
+    const [dismissedClaims, setDismissedClaims] = useState<Set<string>>(
+        () => new Set<string>(JSON.parse(localStorage.getItem("cs_claim_banner_dismissed") || "[]")),
+    );
     // Set after a claim is cancelled — drives the "spot reopened" banner at the top of the feed.
     const [cancelledPost, setCancelledPost] = useState<FeedPost | null>(null);
     const [welcomeDismissed, setWelcomeDismissed] = useState(
@@ -107,10 +113,17 @@ export function Feed() {
         setLoading(false);
     }, []);
 
+    const fetchMyPosts = useCallback(async () => {
+        if (!user) return;
+        const { data } = await supabase.rpc("get_my_posts_with_claims");
+        setMyPosts((data as MyPost[]) ?? []);
+    }, [user]);
+
     // Initial load
     useEffect(() => {
         fetchPosts();
-    }, [fetchPosts]);
+        fetchMyPosts();
+    }, [fetchPosts, fetchMyPosts]);
 
     // Load courts for filter dropdown
     useEffect(() => {
@@ -129,11 +142,11 @@ export function Feed() {
             .on(
                 "postgres_changes",
                 { event: "*", schema: "public", table: "posts" },
-                () => { fetchPosts(); },
+                () => { fetchPosts(); fetchMyPosts(); },
             )
             .subscribe();
         return () => { supabase.removeChannel(channel); };
-    }, [fetchPosts]);
+    }, [fetchPosts, fetchMyPosts]);
 
     // View tracking — called by each card when it enters the viewport
     const handleViewed = useCallback(
@@ -198,10 +211,11 @@ export function Feed() {
                 sendNotification({ user_id: claim.claimer_id, notification_type: "claim_approved", post_id: post.id, claim_id: claim.id });
                 setCreatedSheet(null);
                 fetchPosts();
+                fetchMyPosts();
             }
             setCreatedActionLoading(null);
         },
-        [fetchPosts],
+        [fetchPosts, fetchMyPosts],
     );
 
     const handleDeclineClaim = useCallback(
@@ -212,10 +226,11 @@ export function Feed() {
                 sendNotification({ user_id: claim.claimer_id, notification_type: "claim_rejected", post_id: post.id, claim_id: claim.id, data: { reason: REJECTION_REASONS[0] } });
                 setCreatedSheet(null);
                 fetchPosts();
+                fetchMyPosts();
             }
             setCreatedActionLoading(null);
         },
-        [fetchPosts],
+        [fetchPosts, fetchMyPosts],
     );
 
     const handleDeletePost = useCallback(
@@ -230,10 +245,25 @@ export function Feed() {
             if (!delError) {
                 setCreatedSheet(null);
                 fetchPosts();
+                fetchMyPosts();
             }
         },
-        [fetchPosts, user],
+        [fetchPosts, fetchMyPosts, user],
     );
+
+    const dismissClaim = useCallback((claimId: string) => {
+        setDismissedClaims((prev) => {
+            const next = new Set(prev);
+            next.add(claimId);
+            localStorage.setItem("cs_claim_banner_dismissed", JSON.stringify([...next]));
+            return next;
+        });
+    }, []);
+
+    // Own posts with a pending claim (awaiting the viewer's approval), not yet dismissed.
+    const claimBanners = myPosts
+        .map((post) => ({ post, claim: post.claims.find((c) => c.status === "pending") }))
+        .filter((x): x is { post: MyPost; claim: ClaimRow } => !!x.claim && !dismissedClaims.has(x.claim.id));
 
     const profileComplete =
         !!profile && !!(profile.skill_level) && !!(profile.headline || profile.photo_url);
@@ -263,8 +293,18 @@ export function Feed() {
                 onToggle={handleToggleFilters}
             />
 
-            <PullToRefresh onRefresh={fetchPosts}>
+            <PullToRefresh onRefresh={() => Promise.all([fetchPosts(), fetchMyPosts()])}>
             <div className="flex flex-col gap-3 px-5 pb-4">
+                {/* "Waiting for approval" — one per own post with a pending claim. */}
+                {claimBanners.map(({ post, claim }) => (
+                    <ClaimReceivedBanner
+                        key={claim.id}
+                        post={post}
+                        onDismiss={() => dismissClaim(claim.id)}
+                        onView={() => setCreatedSheet(post)}
+                    />
+                ))}
+
                 {/* Install prompt — first feed item so it scrolls/pulls like a post. */}
                 <IosInstallPrompt />
 
