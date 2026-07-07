@@ -4,6 +4,7 @@ import { XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import type { ClaimRow, MyPost } from "@/types/activity";
 import { ThreadMessage } from "./thread-message";
+import { ReportModal } from "./report-modal";
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -83,6 +84,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [reply, setReply] = useState("");
     const [sending, setSending] = useState(false);
+    const [showReport, setShowReport] = useState(false);
     const threadEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -274,7 +276,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                             </div>
                         </div>
 
-                        <div className="flex shrink-0 flex-col gap-3 border-t border-secondary px-5 pt-3 pb-8">
+                        <div className="flex shrink-0 flex-col gap-4 px-5 pt-4 pb-8">
                             {onReply && (
                                 <input
                                     aria-label="Reply"
@@ -290,6 +292,18 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                                     placeholder={`Reply to ${claimerFirstName}…`}
                                     className="w-full rounded-lg bg-tertiary px-3 py-2.5 text-sm text-primary shadow-xs ring-1 ring-neutral-600 outline-none ring-inset placeholder:text-placeholder disabled:opacity-50"
                                 />
+                            )}
+                            {claim && (
+                                <p className="text-xs text-tertiary">
+                                    * Have an issue?{" "}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowReport(true)}
+                                        className="text-tertiary underline underline-offset-2 transition duration-100 ease-linear hover:text-secondary"
+                                    >
+                                        Report claim
+                                    </button>
+                                </p>
                             )}
                             {pendingClaim ? (
                                 <div className="flex flex-col gap-3">
@@ -345,6 +359,10 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                     </div>
                 )}
             </motion.div>
+
+            {showReport && claim && (
+                <ReportModal targetType="user" targetId={claim.claimer_id} onClose={() => setShowReport(false)} />
+            )}
         </div>
     );
 }
