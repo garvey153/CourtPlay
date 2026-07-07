@@ -79,8 +79,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            // Escape backs out of the confirmation first, then closes the sheet.
-            if (e.key === "Escape") setConfirmingDelete((c) => (c ? false : (onClose(), false)));
+            if (e.key === "Escape") onClose();
         };
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
@@ -173,7 +172,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                             <button type="button" onClick={onDelete} disabled={deleting} className={PRIMARY_BTN}>
                                 {deleting ? <ButtonSpinner /> : "Yes, delete"}
                             </button>
-                            <button type="button" onClick={() => setConfirmingDelete(false)} disabled={deleting} className={SECONDARY_BTN}>
+                            <button type="button" onClick={onClose} disabled={deleting} className={SECONDARY_BTN}>
                                 No, keep it
                             </button>
                         </div>

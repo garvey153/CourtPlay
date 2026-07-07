@@ -30,9 +30,21 @@ export function IosInstallPrompt() {
         setVisible(false);
     };
 
-    // Matches the post create/delete confirmation banners.
+    const share = async () => {
+        // Opens the native share sheet, where "Add to Home Screen" lives.
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: "CourtPlay", url: window.location.origin });
+            }
+        } catch {
+            // User cancelled the share sheet — no-op.
+        }
+    };
+
+    // Matches the post create/delete confirmation banners (aligned with the feed cards,
+    // with the same 12px gap to the first post).
     return (
-        <div className="relative mx-4 mt-3 rounded-lg bg-brand-800 p-4">
+        <div className="relative mx-5 mt-3 mb-3 rounded-lg bg-brand-800 p-4">
             <button
                 onClick={dismiss}
                 aria-label="Dismiss"
@@ -40,8 +52,26 @@ export function IosInstallPrompt() {
             >
                 <X className="size-4" aria-hidden="true" />
             </button>
+
             <p className="pr-6 text-sm font-semibold text-primary">Add CourtPlay to your home screen</p>
-            <p className="mt-1 text-sm text-secondary">Tap the Share button, then "Add to Home Screen" for the best experience.</p>
+            <p className="mt-1 text-sm text-secondary">Tap Share, then "Add to Home Screen" for the best experience.</p>
+
+            <div className="mt-3 flex items-center gap-3">
+                <button
+                    type="button"
+                    onClick={dismiss}
+                    className="text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary"
+                >
+                    Dismiss
+                </button>
+                <button
+                    type="button"
+                    onClick={share}
+                    className="text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
+                >
+                    Share
+                </button>
+            </div>
         </div>
     );
 }
