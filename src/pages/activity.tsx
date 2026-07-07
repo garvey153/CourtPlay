@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { SubCard, type CardKind } from "@/components/app/sub-card";
+import { SubCard, gameEndMs, type CardKind } from "@/components/app/sub-card";
 import { GroupCard } from "@/components/app/group-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
@@ -153,8 +153,11 @@ export function Activity() {
     // ── Render ────────────────────────────────────────────────────────────────
 
     // Past the game's date/time (time optional → treat as end of day).
-    const isPast = (date: string | null, time: string | null) =>
-        !!date && new Date(`${date}T${time ?? "23:59"}:00`).getTime() < Date.now();
+    // gameEndMs handles the Postgres "HH:MM:SS" format and returns null on parse failure.
+    const isPast = (date: string | null, time: string | null) => {
+        const end = gameEndMs({ game_date: date, game_time: time });
+        return end !== null && end < Date.now();
+    };
 
     const renderClaims = () => {
         // Three sections only: Pending (awaiting approval), Approved, Declined.
@@ -226,10 +229,11 @@ export function Activity() {
 
     const renderCreated = () => {
         // Drop expired posts once the event is more than 7 days past (undated posts stay).
+        // gameEndMs returns null for undated posts (and on any parse failure), which we keep.
         const graceCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
         const visiblePosts = myPosts.filter((post) => {
-            if (!post.game_date) return true;
-            return new Date(`${post.game_date}T${post.game_time ?? "23:59"}:00`).getTime() >= graceCutoff;
+            const end = gameEndMs(post);
+            return end === null || end >= graceCutoff;
         });
         if (visiblePosts.length === 0) {
             return (
