@@ -39,7 +39,7 @@ export function Activity() {
     // Overlays
     const [contactModal, setContactModal] = useState<ContactInfo | null>(null);
     // Claimer's detail sheet; contact is attached once the claim is approved.
-    const [claimSheet, setClaimSheet] = useState<{ post: FeedPost; contact?: { venmoHandle: string | null; phone: string | null } } | null>(null);
+    const [claimSheet, setClaimSheet] = useState<{ post: FeedPost; contact?: { venmoHandle: string | null; phone: string | null }; messages?: MyClaim["messages"] } | null>(null);
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null); // creator view
     const [deletedPost, setDeletedPost] = useState<MyPost | null>(null); // undo banner
     const [deletingPost, setDeletingPost] = useState(false);
@@ -232,7 +232,7 @@ export function Activity() {
                 label: "Pending",
                 kind: "pending",
                 claims: myClaims.filter((c) => c.status === "pending"),
-                onTap: (claim) => setClaimSheet({ post: claimToFeedPost(claim) }),
+                onTap: (claim) => setClaimSheet({ post: claimToFeedPost(claim), messages: claim.messages }),
             },
             {
                 label: "Approved",
@@ -242,6 +242,7 @@ export function Activity() {
                     setClaimSheet({
                         post: claimToFeedPost(claim),
                         contact: { venmoHandle: claim.poster_venmo_handle, phone: claim.poster_phone },
+                        messages: claim.messages,
                     }),
             },
             {
@@ -430,6 +431,12 @@ export function Activity() {
                 <ClaimDetailSheet
                     post={claimSheet.post}
                     contact={claimSheet.contact}
+                    messages={claimSheet.messages}
+                    currentUser={
+                        profile
+                            ? { first_name: profile.first_name, last_name: profile.last_name, photo_url: profile.photo_url }
+                            : undefined
+                    }
                     currentUserId={user?.id}
                     onClose={() => setClaimSheet(null)}
                     onClaimChange={fetchData}

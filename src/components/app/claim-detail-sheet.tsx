@@ -6,8 +6,10 @@ import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useShare } from "@/hooks/use-share";
 import type { FeedPost } from "@/types/feed";
+import type { ClaimMessage } from "@/types/activity";
 import { ShareModal } from "./share-modal";
 import { ReportModal } from "./report-modal";
+import { ThreadMessage } from "./thread-message";
 
 const MESSAGE_MAX = 150;
 
@@ -96,9 +98,22 @@ interface ClaimDetailSheetProps {
     onCancelled?: (post: FeedPost) => void;
     /** Poster contact, shown once the claim is approved (Activity → Claimed → Approved). */
     contact?: { venmoHandle: string | null; phone: string | null };
+    /** Existing thread on this claim (claimer view) — shown indented under the poster's note. */
+    messages?: ClaimMessage[];
+    /** The claimer's profile, used to render their reply immediately after submitting. */
+    currentUser?: { first_name: string; last_name: string | null; photo_url: string | null };
 }
 
-export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, onCancelled, contact }: ClaimDetailSheetProps) {
+export function ClaimDetailSheet({
+    post,
+    currentUserId,
+    onClose,
+    onClaimChange,
+    onCancelled,
+    contact,
+    messages,
+    currentUser,
+}: ClaimDetailSheetProps) {
     const [loading, setLoading] = useState(false);
     const [conflict, setConflict] = useState<{ date: string; time: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -117,7 +132,13 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
     // Pick a default reply once per sheet; used as the placeholder + empty-submit fallback.
     const [defaultReply] = useState(() => DEFAULT_REPLIES[Math.floor(Math.random() * DEFAULT_REPLIES.length)]);
     const defaultMessage = `Hey ${post.first_name}, ${defaultReply}`;
+    // The message the claimer just submitted, shown immediately (before the feed refetch
+    // populates `messages`). Once `messages` arrives it takes over.
+    const [justSent, setJustSent] = useState<ClaimMessage | null>(null);
     const { shareData, handleShare, closeShareModal } = useShare();
+
+    // The claimer's reply(ies) shown under the poster's note once the claim is active.
+    const threadMessages = messages && messages.length > 0 ? messages : justSent ? [justSent] : [];
 
     // Auto-grow the reply field with its content (wraps + expands the sheet).
     useEffect(() => {
@@ -146,14 +167,17 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
         setError(null);
         setConflict(null);
 
+        // Send the typed message, or the suggested default when the claimer leaves it blank.
+        const sentBody = message.trim() || defaultMessage;
+        let messageStored = true;
         let { data, error: rpcError } = await supabase.rpc("submit_claim", {
             p_post_id: post.id,
-            // Fall back to the suggested default when the claimer leaves it blank.
-            p_message: message.trim() || defaultMessage,
+            p_message: sentBody,
         });
         // If the claim_messages migration isn't applied yet, the message-aware RPC
         // won't exist — retry the message-less claim so claiming still works.
         if (rpcError && (rpcError.code === "PGRST202" || /submit_claim/.test(rpcError.message ?? ""))) {
+            messageStored = false;
             ({ data, error: rpcError } = await supabase.rpc("submit_claim", { p_post_id: post.id }));
         }
         setLoading(false);
@@ -177,11 +201,24 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
             post_id: post.id,
             claim_id: data.claim_id as string,
         });
+        // Show the claimer's reply immediately (the feed refetch replaces it with the
+        // stored row). Only when the message was actually persisted.
+        if (messageStored && currentUserId) {
+            setJustSent({
+                id: `local-${data.claim_id}`,
+                sender_id: currentUserId,
+                body: sentBody,
+                created_at: new Date().toISOString(),
+                first_name: currentUser?.first_name ?? "You",
+                last_name: currentUser?.last_name ?? "",
+                photo_url: currentUser?.photo_url ?? null,
+            });
+        }
         // Transition the sheet to the pending state in place (keep it open).
         setClaimId(data.claim_id as string);
         setClaimStatus("pending");
         onClaimChange?.();
-    }, [post.id, post.author_id, onClaimChange, message, defaultMessage]);
+    }, [post.id, post.author_id, onClaimChange, message, defaultMessage, currentUserId, currentUser]);
 
     const handleNotifyMe = useCallback(async () => {
         if (notifyState !== "idle") return;
@@ -309,6 +346,10 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
                         <p className="text-sm text-secondary">“{post.notes}”</p>
                     </div>
                 )}
+
+                {/* Claimer's reply(ies), indented under the note once the claim is active (design 274-4741). */}
+                {activeClaim &&
+                    threadMessages.map((m) => <ThreadMessage key={m.id} msg={m} />)}
 
                 {/* Poster contact — revealed once approved */}
                 {showContact && (

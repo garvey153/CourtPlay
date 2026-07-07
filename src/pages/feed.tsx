@@ -467,6 +467,12 @@ export function Feed() {
                     <ClaimDetailSheet
                         post={detailPost}
                         contact={claimContact ?? undefined}
+                        messages={myClaims.find((c) => c.post_id === detailPost.id)?.messages}
+                        currentUser={
+                            profile
+                                ? { first_name: profile.first_name, last_name: profile.last_name, photo_url: profile.photo_url }
+                                : undefined
+                        }
                         currentUserId={user?.id}
                         onClose={() => {
                             setDetailPost(null);

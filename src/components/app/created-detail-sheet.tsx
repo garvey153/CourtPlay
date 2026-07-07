@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
-import type { ClaimMessage, ClaimRow, MyPost } from "@/types/activity";
+import type { ClaimRow, MyPost } from "@/types/activity";
+import { ThreadMessage } from "./thread-message";
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -71,40 +72,6 @@ interface CreatedDetailSheetProps {
 }
 
 const MESSAGE_MAX = 150;
-
-function timeAgoShort(dateStr: string): string {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
-}
-
-/** One reply in the thread — indented under the original message. */
-function ThreadMessage({ msg }: { msg: ClaimMessage }) {
-    const name = msg.last_name ? `${msg.first_name} ${msg.last_name.charAt(0).toUpperCase()}.` : msg.first_name;
-    return (
-        <div className="flex flex-col gap-1 pl-8">
-            <div className="flex items-center gap-2">
-                <Avatar
-                    size="xs"
-                    src={msg.photo_url}
-                    alt={msg.first_name}
-                    initials={msg.first_name.charAt(0).toUpperCase()}
-                    className="shrink-0 bg-white p-px shadow-xs"
-                />
-                <span className="truncate text-xs text-tertiary">
-                    {name} · {timeAgoShort(msg.created_at)}
-                </span>
-            </div>
-            <div className="w-full rounded-lg rounded-tl-none border border-neutral-600 px-3 py-2.5">
-                <p className="text-sm text-secondary">“{msg.body}”</p>
-            </div>
-        </div>
-    );
-}
 
 /**
  * Creator's view of one of their posts (Created tab). When the post has a pending
@@ -297,7 +264,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                         </div>
 
                         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-                            <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-5">
                                 {noteBubble}
                                 {messages.map((m) => (
                                     <ThreadMessage key={m.id} msg={m} />
