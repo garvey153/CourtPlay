@@ -94,12 +94,13 @@ describe("Activity redesign", () => {
         expect(rpc).toHaveBeenCalledWith("approve_claim", { p_claim_id: "claim-1" });
     });
 
-    it("created post with no claims shows 'No claims yet.' in the sheet", async () => {
+    it("created post with no claims shows Edit / Delete actions in the sheet", async () => {
         setup([{ ...createdPost, spots_available: 1, claims: [] }], []);
         const user = userEvent.setup();
         render(<MemoryRouter><Activity /></MemoryRouter>);
         await user.click(await screen.findByRole("button", { name: "Created posts" }));
         await user.click(await screen.findByText(/Round Robin Tennis/));
-        expect(await screen.findByText("No claims yet.")).toBeInTheDocument();
+        expect(await screen.findByRole("button", { name: "Edit post" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Delete post" })).toBeInTheDocument();
     });
 });

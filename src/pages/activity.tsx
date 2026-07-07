@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { SubCard, gameEndMs, type CardKind } from "@/components/app/sub-card";
 import { GroupCard } from "@/components/app/group-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
@@ -25,6 +25,7 @@ type Tab = "claims" | "created";
 export function Activity() {
     const { user } = useAuth();
     const { profile } = useProfile();
+    const navigate = useNavigate();
     const [tab, setTab] = useState<Tab>("claims");
     const [myPosts, setMyPosts] = useState<MyPost[]>([]);
     const [myClaims, setMyClaims] = useState<MyClaim[]>([]);
@@ -38,6 +39,7 @@ export function Activity() {
     // Claimer's detail sheet; contact is attached once the claim is approved.
     const [claimSheet, setClaimSheet] = useState<{ post: FeedPost; contact?: { venmoHandle: string | null; phone: string | null } } | null>(null);
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null); // creator view
+    const [deletingPost, setDeletingPost] = useState(false);
 
     const me =
         user && profile
@@ -146,6 +148,26 @@ export function Activity() {
                 setActionError("Something went wrong. Please try again.");
             }
             setActionLoading(null);
+        },
+        [fetchData, user],
+    );
+
+    const handleDeletePost = useCallback(
+        async (post: MyPost) => {
+            if (!user) return;
+            setDeletingPost(true);
+            setActionError(null);
+            const { error: delError } = await supabase
+                .from("posts")
+                .update({ status: "deleted", deleted_at: new Date().toISOString(), deleted_by: user.id })
+                .eq("id", post.id);
+            setDeletingPost(false);
+            if (delError) {
+                setActionError("Failed to delete post. Please try again.");
+                return;
+            }
+            setCreatedSheet(null);
+            fetchData();
         },
         [fetchData, user],
     );
@@ -354,6 +376,7 @@ export function Activity() {
                     post={createdSheet}
                     poster={me}
                     actionLoading={actionLoading}
+                    deleting={deletingPost}
                     onClose={() => setCreatedSheet(null)}
                     onApprove={(claim) => {
                         const post = createdSheet;
@@ -365,6 +388,8 @@ export function Activity() {
                         setCreatedSheet(null);
                         handleDecline(claim, post);
                     }}
+                    onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`)}
+                    onDelete={() => handleDeletePost(createdSheet)}
                 />
             )}
         </AppLayout>

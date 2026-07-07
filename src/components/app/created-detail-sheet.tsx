@@ -38,11 +38,18 @@ function formatDuration(duration: number | null): string | null {
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
+// Regular-play posts use the blue CTA (matching the feed's "Connect" button).
+const PRIMARY_BTN_BLUE =
+    "flex items-center justify-center rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition duration-100 ease-linear enabled:hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50";
 const SECONDARY_BTN =
-    "rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary";
+    "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
 const ButtonSpinner = () => (
     <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
+);
+
+const ButtonSpinnerSecondary = () => (
+    <span className="size-5 animate-spin rounded-full border-2 border-secondary/40 border-t-secondary" aria-hidden="true" />
 );
 
 interface Poster {
@@ -58,8 +65,14 @@ interface CreatedDetailSheetProps {
     onClose: () => void;
     onApprove: (claim: ClaimRow) => void;
     onDecline: (claim: ClaimRow) => void;
+    /** Open the post in the edit form (no-claim state). */
+    onEdit: () => void;
+    /** Delete the post (no-claim state). */
+    onDelete: () => void;
     /** Claim id currently being approved/declined. */
     actionLoading?: string | null;
+    /** Whether the post is currently being deleted. */
+    deleting?: boolean;
 }
 
 /**
@@ -67,7 +80,7 @@ interface CreatedDetailSheetProps {
  * claim it shows "Your post has been claimed!" with the claimant and Approve /
  * Decline. Matches design 274-4741.
  */
-export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline, actionLoading }: CreatedDetailSheetProps) {
+export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline, onEdit, onDelete, actionLoading, deleting }: CreatedDetailSheetProps) {
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (e.key === "Escape") onClose();
@@ -80,6 +93,8 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
     const approvedClaim = post.claims.find((c) => c.status === "approved");
     const claim = pendingClaim ?? approvedClaim ?? null;
     const busy = !!actionLoading && claim?.id === actionLoading;
+    // Regular-play posts use the blue CTA (like the feed's Connect button).
+    const isRegular = post.post_type === "regular_game";
 
     const title = [formatPlayType(post.play_type, post.format), "Tennis"].filter(Boolean).join(" ");
     const when = formatWhen(post.game_date, post.game_time);
@@ -200,10 +215,18 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                     </div>
                 )}
 
-                {!claim && <p className="text-sm text-tertiary">No claims yet.</p>}
-
                 {/* Actions */}
-                {pendingClaim ? (
+                {!claim ? (
+                    // No claims yet — manage the post (design 271-4581).
+                    <div className="flex flex-col gap-3">
+                        <button type="button" onClick={onEdit} className={isRegular ? PRIMARY_BTN_BLUE : PRIMARY_BTN}>
+                            Edit post
+                        </button>
+                        <button type="button" onClick={onDelete} disabled={deleting} className={SECONDARY_BTN}>
+                            {deleting ? <ButtonSpinnerSecondary /> : "Delete post"}
+                        </button>
+                    </div>
+                ) : pendingClaim ? (
                     <div className="flex flex-col gap-3">
                         <button type="button" onClick={() => onApprove(pendingClaim)} disabled={busy} className={PRIMARY_BTN}>
                             {busy ? <ButtonSpinner /> : "Approve claim"}
