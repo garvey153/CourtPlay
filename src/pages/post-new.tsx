@@ -584,7 +584,8 @@ export function PostNew() {
                                         isDisabled={lockedField}
                                         size="sm"
                                         wrapperClassName={FIELD}
-                                        inputClassName="[&_[data-type]]:px-0"
+                                        // Whiten the "/" separators once a date is entered (matches the time field's colon).
+                                        inputClassName={cx("[&_[data-type]]:px-0", gameDate && "[&_[data-type=literal]]:text-primary")}
                                     />
                                 </div>
                                 <AriaTimeField
