@@ -277,9 +277,12 @@ export function Activity() {
     return (
         <AppLayout>
             {/* Fill the body so empty states can center vertically. */}
-            <div className="flex min-h-full flex-col">
-                {/* Pill tabs — pinned under the header while the sections scroll. */}
-                <div className="sticky top-0 z-10 flex gap-2 bg-primary px-5 pt-1 pb-2">
+            {/* Fill <main> exactly so it never scrolls/bounces — only the inner posts
+                region below scrolls. This keeps the tabs fixed under the header, so a
+                pull-to-refresh drags just the posts. */}
+            <div className="flex h-full flex-col">
+                {/* Pill tabs — fixed above the scrolling posts region. */}
+                <div className="flex shrink-0 gap-2 bg-primary px-5 pt-1 pb-2">
                     {(
                         [
                             { id: "claims", label: "Claimed posts" },
@@ -304,7 +307,8 @@ export function Activity() {
                     <div className="mx-5 mt-3 rounded-lg bg-error-secondary p-3 text-sm text-error-primary">{actionError}</div>
                 )}
 
-                <PullToRefresh onRefresh={fetchData} className="flex flex-1 flex-col" contentClassName="flex flex-1 flex-col">
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+                    <PullToRefresh onRefresh={fetchData} className="flex min-h-full flex-col" contentClassName="flex min-h-full flex-col">
                     <div className="flex flex-1 flex-col px-5 pt-2 pb-4">
                         {loading ? (
                             <ul aria-label="Loading" className="flex flex-col gap-3">
@@ -329,7 +333,8 @@ export function Activity() {
                             renderCreated()
                         )}
                     </div>
-                </PullToRefresh>
+                    </PullToRefresh>
+                </div>
             </div>
 
             {contactModal && <ContactModal info={contactModal} onClose={() => setContactModal(null)} />}
