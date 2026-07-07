@@ -15,8 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { REJECTION_REASONS } from "@/types/claims";
 import type { ClaimRow, MyClaim, MyPost } from "@/types/activity";
 import type { FeedPost } from "@/types/feed";
-import { derivePostState } from "@/utils/activity-states";
-import { claimToFeedPost, postKind, postToFeedPost } from "@/utils/activity-feed-map";
+import { claimToFeedPost, postToFeedPost } from "@/utils/activity-feed-map";
 import { cx } from "@/utils/cx";
 
 // ── Main component ─────────────────────────────────────────────────────────
@@ -283,6 +282,22 @@ export function Activity() {
             const end = gameEndMs(post);
             return end === null || end >= graceCutoff;
         });
+
+        const hasPending = (p: MyPost) => p.claims.some((c) => c.status === "pending");
+        const hasApproved = (p: MyPost) => p.claims.some((c) => c.status === "approved");
+
+        // Group into the same section style as the Claimed tab.
+        const allSections: Array<{ label: string; kind: CardKind; posts: MyPost[] }> = [
+            { label: "Pending", kind: "pending", posts: visiblePosts.filter((p) => hasPending(p)) },
+            { label: "Approved", kind: "approved", posts: visiblePosts.filter((p) => !hasPending(p) && hasApproved(p)) },
+            {
+                label: "Active",
+                kind: "open",
+                posts: visiblePosts.filter((p) => !hasPending(p) && !hasApproved(p) && !isPast(p.game_date, p.game_time)),
+            },
+        ];
+        const sections = allSections.filter((s) => s.posts.length > 0);
+
         const banner = deletedPost ? (
             <PostDeletedBanner
                 onDismiss={() => setDeletedPost(null)}
@@ -290,7 +305,18 @@ export function Activity() {
                 undoing={undoingDelete}
             />
         ) : null;
-        if (visiblePosts.length === 0) {
+
+        // Match the feed: regular-play posts use the blue GroupCard, subs the green SubCard.
+        const renderCard = (post: MyPost, kind: CardKind) => {
+            const feedPost = postToFeedPost(post, me ?? { id: "", first_name: "", last_name: "", photo_url: null });
+            return post.post_type === "regular_game" ? (
+                <GroupCard post={feedPost} profileComplete currentUserId={user?.id} onOpenDetail={() => setCreatedSheet(post)} />
+            ) : (
+                <SubCard post={feedPost} currentUserId={user?.id} kindOverride={kind} onOpenDetail={() => setCreatedSheet(post)} />
+            );
+        };
+
+        if (sections.length === 0) {
             return (
                 <div className="flex flex-1 flex-col">
                     {banner && <div className="mb-3">{banner}</div>}
@@ -303,34 +329,20 @@ export function Activity() {
                 </div>
             );
         }
+
         return (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-5">
                 {banner}
-                <ul className="flex flex-col gap-3">
-                {visiblePosts.map((post) => {
-                    const feedPost = postToFeedPost(post, me ?? { id: "", first_name: "", last_name: "", photo_url: null });
-                    return (
-                        <li key={post.id}>
-                            {/* Match the feed: regular-play posts use the blue GroupCard, subs the green SubCard. */}
-                            {post.post_type === "regular_game" ? (
-                                <GroupCard
-                                    post={feedPost}
-                                    profileComplete
-                                    currentUserId={user?.id}
-                                    onOpenDetail={() => setCreatedSheet(post)}
-                                />
-                            ) : (
-                                <SubCard
-                                    post={feedPost}
-                                    currentUserId={user?.id}
-                                    kindOverride={postKind(derivePostState(post))}
-                                    onOpenDetail={() => setCreatedSheet(post)}
-                                />
-                            )}
-                        </li>
-                    );
-                })}
-                </ul>
+                {sections.map((section) => (
+                    <div key={section.label}>
+                        <p className="mb-2 text-xs font-medium text-tertiary">{section.label}</p>
+                        <ul className="flex flex-col gap-3">
+                            {section.posts.map((post) => (
+                                <li key={post.id}>{renderCard(post, section.kind)}</li>
+                            ))}
+                        </ul>
+                    </div>
+                ))}
             </div>
         );
     };
