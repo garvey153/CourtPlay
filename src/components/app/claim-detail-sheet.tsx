@@ -146,11 +146,16 @@ export function ClaimDetailSheet({ post, currentUserId, onClose, onClaimChange, 
         setError(null);
         setConflict(null);
 
-        const { data, error: rpcError } = await supabase.rpc("submit_claim", {
+        let { data, error: rpcError } = await supabase.rpc("submit_claim", {
             p_post_id: post.id,
             // Fall back to the suggested default when the claimer leaves it blank.
             p_message: message.trim() || defaultMessage,
         });
+        // If the claim_messages migration isn't applied yet, the message-aware RPC
+        // won't exist — retry the message-less claim so claiming still works.
+        if (rpcError && (rpcError.code === "PGRST202" || /submit_claim/.test(rpcError.message ?? ""))) {
+            ({ data, error: rpcError } = await supabase.rpc("submit_claim", { p_post_id: post.id }));
+        }
         setLoading(false);
 
         if (rpcError) {
