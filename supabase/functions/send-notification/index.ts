@@ -180,9 +180,10 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
 
 // Default channels per notification type
 const DEFAULT_CHANNELS: Record<NotificationType, { push: boolean; email: boolean }> = {
-    claim_submitted:    { push: false, email: true },
-    claim_approved:     { push: false, email: true },
-    claim_rejected:     { push: false, email: true },
+    // Claim lifecycle (claimed / approved / declined) pushes by default.
+    claim_submitted:    { push: true, email: true },
+    claim_approved:     { push: true, email: true },
+    claim_rejected:     { push: true, email: true },
     claimer_backed_out: { push: false, email: true },
     cost_changed:       { push: false, email: true },
     nudge_no_response:  { push: false, email: true },

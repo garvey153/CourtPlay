@@ -73,13 +73,17 @@ describe("notification preferences", () => {
         }
     });
 
-    it("default state: email on, push off for all types", async () => {
+    it("default state: email on everywhere; push on only for claim lifecycle", async () => {
         render(<Settings />);
         await screen.findByText(ALL_LABELS[0]);
 
+        // Claim lifecycle events push by default; the rest are email-only.
+        const pushOnByDefault = ["New claim on your post", "Claim approved", "Claim rejected"];
+
         for (const label of ALL_LABELS) {
             const pushToggle = screen.getByLabelText(`${label} push`);
-            expect(pushToggle).not.toBeChecked();
+            if (pushOnByDefault.includes(label)) expect(pushToggle).toBeChecked();
+            else expect(pushToggle).not.toBeChecked();
 
             if (label === "Friend posts new sub need") continue; // email also off for this one
 
@@ -93,12 +97,13 @@ describe("notification preferences", () => {
         render(<Settings />);
         await screen.findByText(ALL_LABELS[0]);
 
-        const pushToggle = screen.getByLabelText("New claim on your post push");
+        // "Cost changed" is push-off by default, so clicking turns it on.
+        const pushToggle = screen.getByLabelText("Cost changed push");
         await user.click(pushToggle);
 
         expect(supabase.from).toHaveBeenCalledWith("notification_preferences");
         expect(mockUpsert).toHaveBeenCalledWith(
-            { user_id: "test-user-id", notification_type: "claim_submitted", push_enabled: true },
+            { user_id: "test-user-id", notification_type: "cost_changed", push_enabled: true },
             { onConflict: "user_id,notification_type" },
         );
     });
@@ -127,7 +132,7 @@ describe("notification preferences", () => {
         render(<Settings />);
         await screen.findByText(ALL_LABELS[0]);
 
-        const pushToggle = screen.getByLabelText("New claim on your post push");
+        const pushToggle = screen.getByLabelText("Cost changed push");
         expect(pushToggle).not.toBeChecked();
 
         await user.click(pushToggle);
