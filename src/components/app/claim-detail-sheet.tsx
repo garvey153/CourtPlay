@@ -258,8 +258,9 @@ export function ClaimDetailSheet({
         : null;
     const payLabel = post.cost != null ? `Pay $${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)} with Venmo` : "Pay with Venmo";
 
+    // pr-8 keeps the title/subtitle clear of the absolutely-positioned close button.
     const titleHeader = (
-        <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1 pr-8">
             <h2 id="claim-sheet-title" className="text-md font-semibold text-primary">
                 {title}
                 {when && ` · ${when}`}
@@ -274,11 +275,7 @@ export function ClaimDetailSheet({
         </button>
     );
 
-    // States with a helper line already get 32px from its baseline to the button (mb-[11px]).
-    // States without one (full/expired/own) need a matching gap above the button group.
     const claimableHelper = !isOwnPost && !activeClaim && !isFull && !isExpired;
-    const pendingHelper = activeClaim && !claimApproved && !!currentUserId;
-    const hasHelper = claimableHelper || pendingHelper;
 
     return (
         <div
@@ -295,24 +292,19 @@ export function ClaimDetailSheet({
                 animate={{ y: 0 }}
                 transition={{ type: "spring", damping: 38, stiffness: 420 }}
             >
-                {/* Header — claim-status banner once claimed, otherwise the title. */}
-                <div className="flex items-start justify-between gap-3">
-                    {activeClaim ? (
-                        <p className="text-sm text-brand-500">{claimStatusMessage}</p>
-                    ) : (
-                        titleHeader
-                    )}
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        aria-label="Close"
-                        className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
-                    >
-                        <XClose className="size-5" />
-                    </button>
-                </div>
+                {/* Close button — absolute so it doesn't affect the content spacing. */}
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Close"
+                    className="absolute top-4 right-3 z-10 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                >
+                    <XClose className="size-5" />
+                </button>
 
-                {activeClaim && titleHeader}
+                {/* Header — claim-status text once claimed, otherwise just the title. */}
+                {activeClaim && <p className="pr-8 text-sm text-brand-500">{claimStatusMessage}</p>}
+                {titleHeader}
 
                 {/* Poster + price */}
                 <div className="flex items-center justify-between gap-2">
@@ -366,7 +358,7 @@ export function ClaimDetailSheet({
 
                 {/* Reply field (design 149-1155): send follow-ups; Enter or the arrow sends. */}
                 {activeClaim && !claimApproved && (
-                    <div className="mt-4 flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
+                    <div className="flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
                         <input
                             aria-label="Reply"
                             value={reply}
@@ -395,7 +387,7 @@ export function ClaimDetailSheet({
 
                 {/* Detail-state helper (design 49-206). */}
                 {claimableHelper && (
-                    <p className="mb-[11px] text-xs text-tertiary">
+                    <p className="text-xs text-tertiary">
                         * Your claim will be sent to {post.first_name} for approval. You'll be notified once approved.
                         {currentUserId && (
                             <>
@@ -415,7 +407,7 @@ export function ClaimDetailSheet({
 
                 {/* Pending-claim helper (design 149-1155). */}
                 {activeClaim && !claimApproved && currentUserId && (
-                    <p className="mb-[11px] text-xs text-tertiary">
+                    <p className="text-xs text-tertiary">
                         * Have an issue?{" "}
                         <button
                             type="button"
@@ -428,7 +420,7 @@ export function ClaimDetailSheet({
                 )}
 
                 {/* Primary action */}
-                <div className={`flex flex-col gap-3${hasHelper ? "" : " mt-4"}`}>
+                <div className="flex flex-col gap-3">
                     {isOwnPost ? (
                         <>
                             <p className="text-center text-sm text-tertiary">This is your post.</p>
