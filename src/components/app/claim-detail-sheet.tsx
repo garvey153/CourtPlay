@@ -344,9 +344,9 @@ export function ClaimDetailSheet({
 
                 {/* Action area — 20px above the first item (message → disclaimer / reply). */}
                 <div className="mt-1 flex flex-col">
-                {/* Reply field (design 149-1155): 28px above (mt-2 + the 20px lead-in), 16px below. Enter or the arrow sends. */}
+                {/* Reply field (design 149-1155): 32px above (mt-3 + the 20px lead-in), 16px below. Enter or the arrow sends. */}
                 {activeClaim && !claimApproved && (
-                    <div className="mt-2 mb-4 flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
+                    <div className="mt-3 mb-4 flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
                         <input
                             aria-label="Reply"
                             value={reply}
