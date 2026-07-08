@@ -306,8 +306,8 @@ export function ClaimDetailSheet({
                 {activeClaim && <p className="pr-8 text-sm text-brand-500">{claimStatusMessage}</p>}
                 {titleHeader}
 
-                {/* Poster + price */}
-                <div className="flex items-center justify-between gap-2">
+                {/* Poster + price — design adds a 4px lead-in (20px above). */}
+                <div className="flex items-center justify-between gap-2 pt-1">
                     <div className="flex min-w-0 items-center gap-2">
                         <Avatar
                             size="xs"
@@ -356,9 +356,9 @@ export function ClaimDetailSheet({
                 )}
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                {/* Reply field (design 149-1155): send follow-ups; Enter or the arrow sends. */}
+                {/* Reply field (design 149-1155): 32px separation above the input (16px gap + mt-4). */}
                 {activeClaim && !claimApproved && (
-                    <div className="flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
+                    <div className="mt-4 flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
                         <input
                             aria-label="Reply"
                             value={reply}
@@ -419,8 +419,8 @@ export function ClaimDetailSheet({
                     </p>
                 )}
 
-                {/* Primary action */}
-                <div className="flex flex-col gap-3">
+                {/* Primary action — 32px separation above the buttons (16px gap + mt-4). */}
+                <div className="mt-4 flex flex-col gap-3">
                     {isOwnPost ? (
                         <>
                             <p className="text-center text-sm text-tertiary">This is your post.</p>
