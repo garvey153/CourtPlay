@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { XClose } from "@untitledui/icons";
+import { ArrowCircleRight, XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
@@ -124,34 +124,39 @@ export function ClaimDetailSheet({
     const [claimStatus, setClaimStatus] = useState(post.user_claim_status);
     const [claimId, setClaimId] = useState(post.user_claim_id);
     const [cancelling, setCancelling] = useState(false);
-    const [message, setMessage] = useState("");
-    // The claimable sheet has two states: the detail (Claim for $X) and, after tapping
-    // it, the compose state (message + Submit claim). They transition in place.
-    const [composing, setComposing] = useState(false);
-    const replyRef = useRef<HTMLTextAreaElement>(null);
-    // Pick a default reply once per sheet; used as the placeholder + empty-submit fallback.
+    // Reply field (design 149-1155): send follow-up messages once the claim is active.
+    const [reply, setReply] = useState("");
+    const [sendingReply, setSendingReply] = useState(false);
+    // Pick a random default reply once per sheet; sent as the claim's first message.
     const [defaultReply] = useState(() => DEFAULT_REPLIES[Math.floor(Math.random() * DEFAULT_REPLIES.length)]);
     const defaultMessage = `Hey ${post.first_name}, ${defaultReply}`;
-    // The message the claimer just submitted, shown immediately (before the feed refetch
-    // populates `messages`). Once `messages` arrives it takes over.
-    const [justSent, setJustSent] = useState<ClaimMessage | null>(null);
+    // Messages sent optimistically this session (initial default + replies), shown
+    // immediately; the feed refetch reconciles them via `messages`.
+    const [localSent, setLocalSent] = useState<ClaimMessage[]>([]);
     const { shareData, handleShare, closeShareModal } = useShare();
 
-    // The claimer's reply(ies) shown under the poster's note once the claim is active.
-    const threadMessages = messages && messages.length > 0 ? messages : justSent ? [justSent] : [];
+    // Build a local message row from the claimer's profile for optimistic display.
+    const makeLocalMessage = useCallback(
+        (body: string): ClaimMessage => ({
+            id: `local-${Date.now()}-${Math.round(Math.random() * 1e6)}`,
+            sender_id: currentUserId ?? "me",
+            body,
+            created_at: new Date().toISOString(),
+            first_name: currentUser?.first_name ?? "You",
+            last_name: currentUser?.last_name ?? "",
+            photo_url: currentUser?.photo_url ?? null,
+        }),
+        [currentUserId, currentUser],
+    );
 
-    // Auto-grow the reply field with its content (wraps + expands the sheet).
-    useEffect(() => {
-        const el = replyRef.current;
-        if (!el) return;
-        el.style.height = "auto";
-        el.style.height = `${el.scrollHeight}px`;
-    }, [message, composing]);
+    // The claim thread — server messages plus any optimistic sends not yet reflected.
+    const baseMessages = messages ?? [];
+    const seenBodies = new Set(baseMessages.map((m) => `${m.sender_id}|${m.body}`));
+    const threadMessages = [...baseMessages, ...localSent.filter((m) => !seenBodies.has(`${m.sender_id}|${m.body}`))];
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            // Escape backs out of the compose state first, then closes the sheet.
-            if (e.key === "Escape") setComposing((c) => (c ? false : (onClose(), false)));
+            if (e.key === "Escape") onClose();
         };
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
@@ -167,8 +172,8 @@ export function ClaimDetailSheet({
         setError(null);
         setConflict(null);
 
-        // Send the typed message, or the suggested default when the claimer leaves it blank.
-        const sentBody = message.trim() || defaultMessage;
+        // Submit immediately with a random friendly default as the claim's first message.
+        const sentBody = defaultMessage;
         let messageStored = true;
         let { data, error: rpcError } = await supabase.rpc("submit_claim", {
             p_post_id: post.id,
@@ -201,24 +206,25 @@ export function ClaimDetailSheet({
             post_id: post.id,
             claim_id: data.claim_id as string,
         });
-        // Show the claimer's reply immediately (the feed refetch replaces it with the
-        // stored row). Only when the message was actually persisted.
-        if (messageStored && currentUserId) {
-            setJustSent({
-                id: `local-${data.claim_id}`,
-                sender_id: currentUserId,
-                body: sentBody,
-                created_at: new Date().toISOString(),
-                first_name: currentUser?.first_name ?? "You",
-                last_name: currentUser?.last_name ?? "",
-                photo_url: currentUser?.photo_url ?? null,
-            });
-        }
+        // Show the claimer's default reply immediately (the feed refetch reconciles it).
+        if (messageStored) setLocalSent([makeLocalMessage(sentBody)]);
         // Transition the sheet to the pending state in place (keep it open).
         setClaimId(data.claim_id as string);
         setClaimStatus("pending");
         onClaimChange?.();
-    }, [post.id, post.author_id, onClaimChange, message, defaultMessage, currentUserId, currentUser]);
+    }, [post.id, post.author_id, onClaimChange, defaultMessage, makeLocalMessage]);
+
+    // Send a follow-up reply (arrow button or Enter) via send_claim_message.
+    const handleSendReply = useCallback(async () => {
+        const body = reply.trim();
+        if (!body || !claimId || sendingReply) return;
+        setSendingReply(true);
+        setLocalSent((prev) => [...prev, makeLocalMessage(body)]);
+        setReply("");
+        await supabase.rpc("send_claim_message", { p_claim_id: claimId, p_body: body });
+        setSendingReply(false);
+        onClaimChange?.();
+    }, [reply, claimId, sendingReply, makeLocalMessage, onClaimChange]);
 
     const handleNotifyMe = useCallback(async () => {
         if (notifyState !== "idle") return;
@@ -370,23 +376,37 @@ export function ClaimDetailSheet({
                 )}
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                {/* Compose state (design 149-1155): field starts at 36px (one line) and
-                    auto-grows as the message wraps, expanding the sheet with it. */}
-                {claimableHelper && composing && (
-                    <textarea
-                        ref={replyRef}
-                        aria-label="Message"
-                        placeholder={`Reply... ${defaultMessage}`}
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value.slice(0, MESSAGE_MAX))}
-                        maxLength={MESSAGE_MAX}
-                        rows={1}
-                        className="mt-4 block w-full resize-none overflow-hidden rounded-lg bg-tertiary px-3 py-2 text-sm text-primary shadow-xs ring-1 ring-neutral-600 outline-none ring-inset placeholder:text-placeholder"
-                    />
+                {/* Reply field (design 149-1155): send follow-ups; Enter or the arrow sends. */}
+                {activeClaim && !claimApproved && (
+                    <div className="mt-4 flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
+                        <input
+                            aria-label="Reply"
+                            value={reply}
+                            onChange={(e) => setReply(e.target.value.slice(0, MESSAGE_MAX))}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendReply();
+                                }
+                            }}
+                            disabled={sendingReply}
+                            placeholder={`Reply to ${post.first_name}…`}
+                            className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-placeholder disabled:opacity-50"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleSendReply}
+                            disabled={!reply.trim() || sendingReply}
+                            aria-label="Send reply"
+                            className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-secondary disabled:opacity-40"
+                        >
+                            <ArrowCircleRight className="size-6" aria-hidden="true" />
+                        </button>
+                    </div>
                 )}
 
                 {/* Detail-state helper (design 49-206). */}
-                {claimableHelper && !composing && (
+                {claimableHelper && (
                     <p className="mb-[11px] text-xs text-tertiary">
                         * Your claim will be sent to {post.first_name} for approval. You'll be notified once approved.
                         {currentUserId && (
@@ -405,32 +425,16 @@ export function ClaimDetailSheet({
                     </p>
                 )}
 
-                {/* Compose-state helper (design 149-1155). */}
-                {claimableHelper && composing && (
-                    <p className="mb-[11px] text-xs text-tertiary">
-                        * Have an issue?{" "}
-                        {currentUserId && (
-                            <button
-                                type="button"
-                                onClick={() => setShowReport(true)}
-                                className="text-tertiary underline underline-offset-2 transition duration-100 ease-linear hover:text-secondary"
-                            >
-                                Report claim
-                            </button>
-                        )}
-                    </p>
-                )}
-
-                {/* Pending-claim helper — same style/placement, with the inline report link. */}
+                {/* Pending-claim helper (design 149-1155). */}
                 {activeClaim && !claimApproved && currentUserId && (
                     <p className="mb-[11px] text-xs text-tertiary">
-                        * Have a problem?{" "}
+                        * Have an issue?{" "}
                         <button
                             type="button"
                             onClick={() => setShowReport(true)}
                             className="text-tertiary underline underline-offset-2 transition duration-100 ease-linear hover:text-secondary"
                         >
-                            Report issue
+                            Report claim
                         </button>
                     </p>
                 )}
@@ -486,8 +490,9 @@ export function ClaimDetailSheet({
                             )}
                             {shareButton}
                         </>
-                    ) : composing ? (
-                        // Compose state (design 149-1155): submit the claim with the message.
+                    ) : (
+                        // Detail state (design 49-206): claim immediately, then transition
+                        // to the pending view (design 149-1155) in place.
                         <>
                             <button
                                 type="button"
@@ -495,17 +500,7 @@ export function ClaimDetailSheet({
                                 disabled={loading || !!conflict}
                                 className={PRIMARY_BTN}
                             >
-                                {loading ? <ButtonSpinner /> : "Submit claim"}
-                            </button>
-                            <button type="button" onClick={() => setComposing(false)} className={SECONDARY_BTN}>
-                                Cancel claim
-                            </button>
-                        </>
-                    ) : (
-                        // Detail state (design 49-206): open the compose state.
-                        <>
-                            <button type="button" onClick={() => setComposing(true)} className={PRIMARY_BTN}>
-                                {costLabel}
+                                {loading ? <ButtonSpinner /> : costLabel}
                             </button>
                             {shareButton}
                         </>
