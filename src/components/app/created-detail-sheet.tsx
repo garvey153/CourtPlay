@@ -132,6 +132,19 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
         setSending(false);
     };
 
+    // Approving sends any typed reply first (so it lands in the thread), then approves.
+    const handleApproveClick = async () => {
+        if (!pendingClaim || busy) return;
+        const body = reply.trim();
+        if (body && onReply) {
+            setSending(true);
+            await onReply(body);
+            setReply("");
+            setSending(false);
+        }
+        onApprove(pendingClaim);
+    };
+
     // Keep the newest message in view as the thread grows.
     useEffect(() => {
         const el = scrollRef.current;
@@ -307,8 +320,8 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                             )}
                             {pendingClaim ? (
                                 <div className="mt-8 flex flex-col gap-3">
-                                    <button type="button" onClick={() => onApprove(pendingClaim)} disabled={busy} className={PRIMARY_BTN}>
-                                        {busy ? <ButtonSpinner /> : "Approve claim"}
+                                    <button type="button" onClick={handleApproveClick} disabled={busy || sending} className={PRIMARY_BTN}>
+                                        {busy || sending ? <ButtonSpinner /> : "Approve claim"}
                                     </button>
                                     <button type="button" onClick={() => onDecline(pendingClaim)} disabled={busy} className={SECONDARY_BTN}>
                                         Decline

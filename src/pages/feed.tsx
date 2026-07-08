@@ -220,9 +220,12 @@ export function Feed() {
             const { data, error: rpcError } = await supabase.rpc("approve_claim", { p_claim_id: claim.id });
             if (!rpcError && data?.success) {
                 sendNotification({ user_id: claim.claimer_id, notification_type: "claim_approved", post_id: post.id, claim_id: claim.id });
-                setCreatedSheet(null);
                 fetchPosts();
-                fetchMyPosts();
+                // Refresh and keep the sheet open in its approved state (thread + contact).
+                const { data: list } = await supabase.rpc("get_my_posts_with_claims");
+                const posts = (list as MyPost[]) ?? [];
+                setMyPosts(posts);
+                setCreatedSheet(posts.find((p) => p.id === post.id) ?? null);
             }
             setCreatedActionLoading(null);
         },

@@ -6,7 +6,6 @@ import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
 import { PostDeletedBanner } from "@/components/app/post-deleted-banner";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
-import { ContactModal, type ContactInfo } from "@/components/app/contact-modal";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
@@ -37,7 +36,6 @@ export function Activity() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     // Overlays
-    const [contactModal, setContactModal] = useState<ContactInfo | null>(null);
     // Claimer's detail sheet; contact is attached once the claim is approved.
     const [claimSheet, setClaimSheet] = useState<{ post: FeedPost; contact?: { venmoHandle: string | null; phone: string | null }; messages?: MyClaim["messages"] } | null>(null);
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null); // creator view
@@ -99,26 +97,18 @@ export function Activity() {
                     post_id: post.id,
                     claim_id: claim.id,
                 });
-                // Reveal claimer contact so the poster can coordinate + charge via Venmo.
-                setContactModal({
-                    role: "claimer",
-                    viewerRole: "poster",
-                    firstName: claim.first_name,
-                    lastName: claim.last_name,
-                    phone: claim.phone,
-                    venmoHandle: claim.venmo_handle,
-                    gameDate: post.game_date,
-                    gameTime: post.game_time,
-                    location: post.location ?? post.custom_court,
-                    cost: post.cost,
-                });
-                fetchData();
+                // Refresh and keep the sheet open in its approved state so the thread
+                // (including any reply the poster just sent) and contact stay visible.
+                const { data: list } = await supabase.rpc("get_my_posts_with_claims");
+                const posts = (list as MyPost[]) ?? [];
+                setMyPosts(posts);
+                setCreatedSheet(posts.find((p) => p.id === post.id) ?? null);
             } catch {
                 setActionError("Something went wrong. Please try again.");
             }
             setActionLoading(null);
         },
-        [fetchData],
+        [],
     );
 
     const handleDecline = useCallback(
@@ -425,7 +415,6 @@ export function Activity() {
                 </div>
             </div>
 
-            {contactModal && <ContactModal info={contactModal} onClose={() => setContactModal(null)} />}
 
             {claimSheet && (
                 <ClaimDetailSheet
@@ -450,11 +439,7 @@ export function Activity() {
                     actionLoading={actionLoading}
                     deleting={deletingPost}
                     onClose={() => setCreatedSheet(null)}
-                    onApprove={(claim) => {
-                        const post = createdSheet;
-                        setCreatedSheet(null);
-                        handleApprove(claim, post);
-                    }}
+                    onApprove={(claim) => handleApprove(claim, createdSheet)}
                     onDecline={(claim) => {
                         const post = createdSheet;
                         setCreatedSheet(null);
