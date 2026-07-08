@@ -276,6 +276,9 @@ export function ClaimDetailSheet({
     );
 
     const claimableHelper = !isOwnPost && !activeClaim && !isFull && !isExpired;
+    // Detail + pending share the same title/poster/note; pin their action area to the
+    // bottom (min-height) so those elements don't shift when the states swap.
+    const needsPin = claimableHelper || (activeClaim && !claimApproved);
 
     return (
         <div
@@ -356,9 +359,13 @@ export function ClaimDetailSheet({
                 )}
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                {/* Reply field (design 149-1155): 32px separation above the input (16px gap + mt-4). */}
+                {/* Action area — pinned to the bottom (min-height + mt-auto buttons) so the
+                    title, subtitle, and poster keep the same screen position when the sheet
+                    transitions from claimable → pending. 32px lead-in above (mt-4). */}
+                <div className={`mt-4 flex flex-col gap-4${needsPin ? " min-h-40" : ""}`}>
+                {/* Reply field (design 149-1155): Enter or the arrow sends. */}
                 {activeClaim && !claimApproved && (
-                    <div className="mt-4 flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
+                    <div className="flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
                         <input
                             aria-label="Reply"
                             value={reply}
@@ -419,8 +426,8 @@ export function ClaimDetailSheet({
                     </p>
                 )}
 
-                {/* Primary action — 32px separation above the buttons (16px gap + mt-4). */}
-                <div className="mt-4 flex flex-col gap-3">
+                {/* Primary action — pinned to the bottom of the action area. */}
+                <div className="mt-auto flex flex-col gap-3">
                     {isOwnPost ? (
                         <>
                             <p className="text-center text-sm text-tertiary">This is your post.</p>
@@ -485,6 +492,7 @@ export function ClaimDetailSheet({
                             {shareButton}
                         </>
                     )}
+                </div>
                 </div>
 
             </motion.div>
