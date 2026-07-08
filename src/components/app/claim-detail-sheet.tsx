@@ -172,19 +172,8 @@ export function ClaimDetailSheet({
         setError(null);
         setConflict(null);
 
-        // Submit immediately with a random friendly default as the claim's first message.
-        const sentBody = defaultMessage;
-        let messageStored = true;
-        let { data, error: rpcError } = await supabase.rpc("submit_claim", {
-            p_post_id: post.id,
-            p_message: sentBody,
-        });
-        // If the claim_messages migration isn't applied yet, the message-aware RPC
-        // won't exist — retry the message-less claim so claiming still works.
-        if (rpcError && (rpcError.code === "PGRST202" || /submit_claim/.test(rpcError.message ?? ""))) {
-            messageStored = false;
-            ({ data, error: rpcError } = await supabase.rpc("submit_claim", { p_post_id: post.id }));
-        }
+        // Claim with no message — the reply field only suggests a default; nothing is sent.
+        const { data, error: rpcError } = await supabase.rpc("submit_claim", { p_post_id: post.id });
         setLoading(false);
 
         if (rpcError) {
@@ -206,13 +195,11 @@ export function ClaimDetailSheet({
             post_id: post.id,
             claim_id: data.claim_id as string,
         });
-        // Show the claimer's default reply immediately (the feed refetch reconciles it).
-        if (messageStored) setLocalSent([makeLocalMessage(sentBody)]);
         // Transition the sheet to the pending state in place (keep it open).
         setClaimId(data.claim_id as string);
         setClaimStatus("pending");
         onClaimChange?.();
-    }, [post.id, post.author_id, onClaimChange, defaultMessage, makeLocalMessage]);
+    }, [post.id, post.author_id, onClaimChange]);
 
     // Send a follow-up reply (arrow button or Enter) via send_claim_message.
     const handleSendReply = useCallback(async () => {
@@ -390,7 +377,7 @@ export function ClaimDetailSheet({
                                 }
                             }}
                             disabled={sendingReply}
-                            placeholder={`Reply to ${post.first_name}…`}
+                            placeholder={defaultMessage}
                             className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-placeholder disabled:opacity-50"
                         />
                         <button
