@@ -172,8 +172,9 @@ export function ClaimDetailSheet({
         setError(null);
         setConflict(null);
 
-        // Claim with no message — the reply field only suggests a default; nothing is sent.
-        const { data, error: rpcError } = await supabase.rpc("submit_claim", { p_post_id: post.id });
+        // Claim with no message — pass p_message: null so PostgREST resolves the
+        // overloaded submit_claim (the RPC skips inserting a message when it's null).
+        const { data, error: rpcError } = await supabase.rpc("submit_claim", { p_post_id: post.id, p_message: null });
         setLoading(false);
 
         if (rpcError) {
