@@ -276,9 +276,6 @@ export function ClaimDetailSheet({
     );
 
     const claimableHelper = !isOwnPost && !activeClaim && !isFull && !isExpired;
-    // Detail + pending share the same title/poster/note; pin their action area to the
-    // bottom (min-height) so those elements don't shift when the states swap.
-    const needsPin = claimableHelper || (activeClaim && !claimApproved);
 
     return (
         <div
@@ -359,13 +356,11 @@ export function ClaimDetailSheet({
                 )}
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                {/* Action area — pinned to the bottom (min-height + mt-auto buttons) so the
-                    title, subtitle, and poster keep the same screen position when the sheet
-                    transitions from claimable → pending. 32px lead-in above (mt-4). */}
-                <div className={`mt-4 flex flex-col gap-4${needsPin ? " min-h-40" : ""}`}>
-                {/* Reply field (design 149-1155): Enter or the arrow sends. */}
+                {/* Action area — 20px above the first item (message → disclaimer / reply). */}
+                <div className="mt-1 flex flex-col">
+                {/* Reply field (design 149-1155): Enter or the arrow sends. 16px above the disclaimer. */}
                 {activeClaim && !claimApproved && (
-                    <div className="flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
+                    <div className="mb-4 flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
                         <input
                             aria-label="Reply"
                             value={reply}
@@ -426,8 +421,8 @@ export function ClaimDetailSheet({
                     </p>
                 )}
 
-                {/* Primary action — pinned to the bottom of the action area. */}
-                <div className="mt-auto flex flex-col gap-3">
+                {/* Primary action — 32px below the disclaimer (baseline → button top). */}
+                <div className="mt-8 flex flex-col gap-3">
                     {isOwnPost ? (
                         <>
                             <p className="text-center text-sm text-tertiary">This is your post.</p>
