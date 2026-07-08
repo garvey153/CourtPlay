@@ -258,10 +258,11 @@ export function ClaimDetailSheet({
     const claimApproved = claimStatus === "approved";
     const claimStatusMessage = claimApproved ? "Your claim has been approved!" : "Your claim is pending approval";
     const showContact = claimApproved && !!contact && (!!contact.venmoHandle || !!contact.phone);
-    const venmoHref =
-        contact?.venmoHandle && post.cost != null
-            ? `https://venmo.com/${encodeURIComponent(contact.venmoHandle)}?txn=pay&amount=${post.cost.toFixed(2)}&note=${encodeURIComponent(`CourtPlay - ${court ?? "Tennis"}`)}`
-            : null;
+    // Pay CTA needs the poster's Venmo handle; the amount is included only when the post has a cost.
+    const venmoHref = contact?.venmoHandle
+        ? `https://venmo.com/${encodeURIComponent(contact.venmoHandle)}?txn=pay${post.cost != null ? `&amount=${post.cost.toFixed(2)}` : ""}&note=${encodeURIComponent(`CourtPlay - ${court ?? "Tennis"}`)}`
+        : null;
+    const payLabel = post.cost != null ? `Pay $${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)} with Venmo` : "Pay with Venmo";
 
     const titleHeader = (
         <div className="flex min-w-0 flex-col gap-1">
@@ -445,7 +446,7 @@ export function ClaimDetailSheet({
                         <>
                             {claimApproved && venmoHref && (
                                 <a href={venmoHref} target="_blank" rel="noopener noreferrer" className={PRIMARY_BTN}>
-                                    Pay ${post.cost! % 1 === 0 ? post.cost : post.cost!.toFixed(2)} with Venmo
+                                    {payLabel}
                                 </a>
                             )}
                             <button
