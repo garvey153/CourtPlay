@@ -203,6 +203,13 @@ export function Feed() {
     const openDetail = useCallback(
         async (post: FeedPost) => {
             if (!user || post.author_id !== user.id) {
+                // Reveal the poster's contact for the pay CTA when the viewer's claim is approved.
+                const mineClaim = myClaims.find((c) => c.post_id === post.id);
+                setClaimContact(
+                    mineClaim?.status === "approved"
+                        ? { venmoHandle: mineClaim.poster_venmo_handle, phone: mineClaim.poster_phone }
+                        : null,
+                );
                 setDetailPost(post);
                 return;
             }
@@ -211,7 +218,7 @@ export function Feed() {
             if (mine) setCreatedSheet(mine);
             else setDetailPost(post);
         },
-        [user],
+        [user, myClaims],
     );
 
     const handleApproveClaim = useCallback(
