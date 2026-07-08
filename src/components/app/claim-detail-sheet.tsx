@@ -13,17 +13,6 @@ import { ThreadMessage } from "./thread-message";
 
 const MESSAGE_MAX = 150;
 
-// Friendly default replies — one is picked at random and used as the placeholder
-// and, if the claimer doesn't type anything, sent as their message. Written to read
-// naturally after "Hey {name}, ".
-const DEFAULT_REPLIES = [
-    "let's do this!",
-    "count me in!",
-    "I'd love to grab this spot!",
-    "happy to sub in for you!",
-    "looking forward to it!",
-];
-
 function formatWhen(gameDate: string | null, gameTime: string | null): string {
     const parts: string[] = [];
     if (gameDate) {
@@ -127,9 +116,6 @@ export function ClaimDetailSheet({
     // Reply field (design 149-1155): send follow-up messages once the claim is active.
     const [reply, setReply] = useState("");
     const [sendingReply, setSendingReply] = useState(false);
-    // Pick a random default reply once per sheet; sent as the claim's first message.
-    const [defaultReply] = useState(() => DEFAULT_REPLIES[Math.floor(Math.random() * DEFAULT_REPLIES.length)]);
-    const defaultMessage = `Hey ${post.first_name}, ${defaultReply}`;
     // Messages sent optimistically this session (initial default + replies), shown
     // immediately; the feed refetch reconciles them via `messages`.
     const [localSent, setLocalSent] = useState<ClaimMessage[]>([]);
@@ -358,9 +344,9 @@ export function ClaimDetailSheet({
 
                 {/* Action area — 20px above the first item (message → disclaimer / reply). */}
                 <div className="mt-1 flex flex-col">
-                {/* Reply field (design 149-1155): Enter or the arrow sends. 16px above the disclaimer. */}
+                {/* Reply field (design 149-1155): 32px above (mt-3 + the 20px lead-in), 16px below. Enter or the arrow sends. */}
                 {activeClaim && !claimApproved && (
-                    <div className="mb-4 flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
+                    <div className="mt-3 mb-4 flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
                         <input
                             aria-label="Reply"
                             value={reply}
@@ -372,7 +358,7 @@ export function ClaimDetailSheet({
                                 }
                             }}
                             disabled={sendingReply}
-                            placeholder={defaultMessage}
+                            placeholder={`Message ${post.first_name}…`}
                             className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-placeholder disabled:opacity-50"
                         />
                         <button
