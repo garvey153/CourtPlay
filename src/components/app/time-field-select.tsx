@@ -188,7 +188,7 @@ export function TimeFieldSelect({ value, onChange, isDisabled, className, ...pro
                 // field while the page scrolls. bg-primary + secondary_alt ring match the menus.
                 <div className="absolute top-full left-0 z-40 mt-1 flex rounded-lg bg-primary px-1 shadow-lg ring-1 ring-secondary_alt">
                     {/* Centre highlight line — the row on it is the selected value. */}
-                    <div className="pointer-events-none absolute inset-x-1 top-1/2 -translate-y-1/2 rounded-md bg-secondary" style={{ height: ITEM_H }} />
+                    <div className="pointer-events-none absolute inset-x-1 top-1/2 -translate-y-1/2 rounded-md bg-tertiary" style={{ height: ITEM_H }} />
                     <ScrollColumn
                         items={HOURS.map(String)}
                         activeIndex={idx.hour}
