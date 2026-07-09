@@ -304,7 +304,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                                             }
                                         }}
                                         disabled={sending}
-                                        placeholder={`Message ${claimerFirstName}…`}
+                                        placeholder={`${messages.length === 0 ? "Message" : "Reply"} ${claimerFirstName}…`}
                                         className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-placeholder disabled:opacity-50"
                                     />
                                     <button
