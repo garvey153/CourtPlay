@@ -248,7 +248,7 @@ export function Profile() {
 
     return (
         <AppLayout>
-            <div className="px-4 py-6">
+            <div className="px-4 pt-1 pb-6">
                 {/* Header: avatar + name + skill label (+ Edit profile on own) */}
                 <div className="flex items-center gap-4">
                     {profile.photo_url ? (
@@ -274,7 +274,7 @@ export function Profile() {
                                     {label && <span className="text-tertiary" aria-hidden="true">·</span>}
                                     <Link
                                         to="/settings"
-                                        className="font-medium text-brand-secondary hover:text-brand-secondary_hover"
+                                        className="font-medium text-brand-500 hover:text-brand-600"
                                     >
                                         Edit profile
                                     </Link>
