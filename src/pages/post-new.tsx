@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DateValue } from "react-aria-components";
-import { TimeField as AriaTimeField } from "react-aria-components";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
-import { parseDate, parseTime, today, getLocalTimeZone } from "@internationalized/date";
+import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
 import { XClose } from "@untitledui/icons";
-import { InputDateBase } from "@/components/base/input/input-date";
 import { DateFieldSelect } from "@/components/app/date-field-select";
+import { TimeFieldSelect } from "@/components/app/time-field-select";
 import { Input } from "@/components/base/input/input";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
@@ -179,8 +178,6 @@ export function PostNew() {
     const [duration, setDuration] = useState<number | null>(null);
     const [gameDate, setGameDate] = useState<DateValue | null>(null);
     const [gameTime, setGameTime] = useState("09:00");
-    // The default time shows in secondary until the user actually sets it.
-    const [timeTouched, setTimeTouched] = useState(false);
     const [skillLevel, setSkillLevel] = useState("");
     const [courtId, setCourtId] = useState<string | null>(null);
     const [showCustomCourt, setShowCustomCourt] = useState(false);
@@ -244,7 +241,6 @@ export function PostNew() {
                 setDuration(post.duration != null ? Number(post.duration) : null);
                 setGameDate(post.game_date ? parseDate(post.game_date) : null);
                 setGameTime(post.game_time ? post.game_time.slice(0, 5) : "09:00");
-                setTimeTouched(true);
                 setSkillLevel(post.skill_level ?? "");
                 setCourtId(post.court_id ?? null);
                 setCustomCourt(post.custom_court ?? "");
@@ -710,36 +706,13 @@ export function PostNew() {
                                     isDisabled={lockedField}
                                     className="w-[144px] shrink-0"
                                 />
-                                <AriaTimeField
+                                <TimeFieldSelect
                                     aria-label="Game time"
-                                    value={gameTime ? parseTime(gameTime) : null}
-                                    onChange={(t) => {
-                                        if (!t) return;
-                                        setGameTime(`${String(t.hour).padStart(2, "0")}:${String(t.minute).padStart(2, "0")}`);
-                                        setTimeTouched(true);
-                                    }}
-                                    hourCycle={12}
+                                    value={gameTime}
+                                    onChange={(v) => setGameTime(v)}
                                     isDisabled={lockedField}
-                                    // Editing a segment to the same value as the default 9:00 won't fire
-                                    // onChange, so also mark the field "touched" on any edit keypress.
-                                    onKeyDown={(e) => {
-                                        if (/^[0-9]$/.test(e.key) || e.key === "ArrowUp" || e.key === "ArrowDown") {
-                                            setTimeTouched(true);
-                                        }
-                                    }}
-                                    className="shrink-0"
-                                >
-                                    <InputDateBase
-                                        size="sm"
-                                        wrapperClassName={cx(FIELD, "w-[96px]")}
-                                        className={cx(
-                                            "[&_[data-type]]:px-0 [&_[data-type=dayPeriod]]:ml-1",
-                                            timeTouched
-                                                ? "[&_[data-type=literal]]:text-primary"
-                                                : "[&_[role=spinbutton]]:text-placeholder",
-                                        )}
-                                    />
-                                </AriaTimeField>
+                                    className="w-[100px] shrink-0"
+                                />
                             </div>
                         </div>
 
