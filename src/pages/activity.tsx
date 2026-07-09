@@ -146,6 +146,30 @@ export function Activity() {
         [fetchData, user],
     );
 
+    const handleCancelApproval = useCallback(
+        async (claim: ClaimRow, post: MyPost) => {
+            setActionLoading(claim.id);
+            setActionError(null);
+            try {
+                const { data, error: rpcError } = await supabase.rpc("cancel_approval", { p_claim_id: claim.id });
+                if (rpcError || !data?.success) {
+                    setActionError(data?.error ?? "Failed to cancel approval.");
+                    setActionLoading(null);
+                    return;
+                }
+                // Back to pending — refresh and keep the sheet open to re-decide.
+                const { data: list } = await supabase.rpc("get_my_posts_with_claims");
+                const posts = (list as MyPost[]) ?? [];
+                setMyPosts(posts);
+                setCreatedSheet(posts.find((p) => p.id === post.id) ?? null);
+            } catch {
+                setActionError("Something went wrong. Please try again.");
+            }
+            setActionLoading(null);
+        },
+        [],
+    );
+
     const handleSendClaimMessage = useCallback(
         async (post: MyPost, body: string) => {
             const c = post.claims.find((x) => x.status === "pending" || x.status === "approved");
@@ -445,6 +469,7 @@ export function Activity() {
                         setCreatedSheet(null);
                         handleDecline(claim, post);
                     }}
+                    onCancelApproval={(claim) => handleCancelApproval(claim, createdSheet)}
                     onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/activity?tab=created" } })}
                     onDelete={() => handleDeletePost(createdSheet)}
                     onReply={(body) => handleSendClaimMessage(createdSheet, body)}

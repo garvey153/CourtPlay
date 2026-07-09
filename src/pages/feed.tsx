@@ -254,6 +254,22 @@ export function Feed() {
         [fetchPosts, fetchMyPosts],
     );
 
+    const handleCancelApproval = useCallback(
+        async (claim: ClaimRow, post: MyPost) => {
+            setCreatedActionLoading(claim.id);
+            const { data, error: rpcError } = await supabase.rpc("cancel_approval", { p_claim_id: claim.id });
+            if (!rpcError && data?.success) {
+                fetchPosts();
+                const { data: list } = await supabase.rpc("get_my_posts_with_claims");
+                const posts = (list as MyPost[]) ?? [];
+                setMyPosts(posts);
+                setCreatedSheet(posts.find((p) => p.id === post.id) ?? null);
+            }
+            setCreatedActionLoading(null);
+        },
+        [fetchPosts],
+    );
+
     const handleSendClaimMessage = useCallback(
         async (post: MyPost, body: string) => {
             const c = post.claims.find((x) => x.status === "pending" || x.status === "approved");
@@ -520,6 +536,7 @@ export function Feed() {
                     onClose={() => setCreatedSheet(null)}
                     onApprove={(claim) => handleApproveClaim(claim, createdSheet)}
                     onDecline={(claim) => handleDeclineClaim(claim, createdSheet)}
+                    onCancelApproval={(claim) => handleCancelApproval(claim, createdSheet)}
                     onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/feed" } })}
                     onDelete={() => handleDeletePost(createdSheet)}
                     onReply={(body) => handleSendClaimMessage(createdSheet, body)}

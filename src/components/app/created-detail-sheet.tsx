@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { XClose } from "@untitledui/icons";
+import { ArrowCircleRight, XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import type { ClaimRow, MyPost } from "@/types/activity";
 import { ThreadMessage } from "./thread-message";
@@ -60,6 +60,8 @@ interface CreatedDetailSheetProps {
     onClose: () => void;
     onApprove: (claim: ClaimRow) => void;
     onDecline: (claim: ClaimRow) => void;
+    /** Undo an approval (approved → pending) so the creator can re-decide. */
+    onCancelApproval?: (claim: ClaimRow) => void;
     /** Open the post in the edit form (no-claim state). */
     onEdit: () => void;
     /** Delete the post (no-claim state). */
@@ -79,7 +81,7 @@ const MESSAGE_MAX = 150;
  * claim it shows "Your post has been claimed!" with the claimant and Approve /
  * Decline. Matches design 274-4741.
  */
-export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline, onEdit, onDelete, actionLoading, deleting, onReply }: CreatedDetailSheetProps) {
+export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline, onCancelApproval, onEdit, onDelete, actionLoading, deleting, onReply }: CreatedDetailSheetProps) {
     // Delete confirmation is shown inline in this same sheet (no close/reopen).
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [reply, setReply] = useState("");
@@ -193,10 +195,9 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
         </div>
     ) : null;
     const contactBlock =
-        approvedClaim && (approvedClaim.phone || approvedClaim.venmo_handle) ? (
+        approvedClaim && approvedClaim.venmo_handle ? (
             <div className="flex flex-col gap-0.5 pl-8 text-sm text-tertiary">
-                {approvedClaim.phone && <p>Phone: {approvedClaim.phone}</p>}
-                {approvedClaim.venmo_handle && <p>Venmo: @{approvedClaim.venmo_handle}</p>}
+                <p>Venmo: @{approvedClaim.venmo_handle}</p>
             </div>
         ) : null;
 
@@ -291,20 +292,31 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
 
                         <div className="flex shrink-0 flex-col px-5 pt-4 pb-8">
                             {onReply && (
-                                <input
-                                    aria-label="Reply"
-                                    value={reply}
-                                    onChange={(e) => setReply(e.target.value.slice(0, MESSAGE_MAX))}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter" && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleSend();
-                                        }
-                                    }}
-                                    disabled={sending}
-                                    placeholder={`Reply to ${claimerFirstName}…`}
-                                    className="w-full rounded-lg bg-tertiary px-3 py-2.5 text-sm text-primary shadow-xs ring-1 ring-neutral-600 outline-none ring-inset placeholder:text-placeholder disabled:opacity-50"
-                                />
+                                <div className="flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
+                                    <input
+                                        aria-label="Reply"
+                                        value={reply}
+                                        onChange={(e) => setReply(e.target.value.slice(0, MESSAGE_MAX))}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSend();
+                                            }
+                                        }}
+                                        disabled={sending}
+                                        placeholder={`Message ${claimerFirstName}…`}
+                                        className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-placeholder disabled:opacity-50"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleSend}
+                                        disabled={!reply.trim() || sending}
+                                        aria-label="Send reply"
+                                        className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-secondary disabled:opacity-40"
+                                    >
+                                        <ArrowCircleRight className="size-6" aria-hidden="true" />
+                                    </button>
+                                </div>
                             )}
                             {claim && (
                                 <p className="mt-4 text-xs text-tertiary">
@@ -329,15 +341,19 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                                 </div>
                             ) : approvedClaim ? (
                                 <div className="mt-8 flex flex-col gap-3">
-                                    {chargeHref ? (
+                                    {chargeHref && (
                                         <a href={chargeHref} className={PRIMARY_BTN}>
                                             Request payment via Venmo
                                         </a>
-                                    ) : (
-                                        <button type="button" onClick={onClose} className={PRIMARY_BTN}>
-                                            Done
-                                        </button>
                                     )}
+                                    <button
+                                        type="button"
+                                        onClick={() => onCancelApproval?.(approvedClaim)}
+                                        disabled={busy}
+                                        className={`${SECONDARY_BTN} flex items-center justify-center`}
+                                    >
+                                        {busy ? <ButtonSpinner /> : "Cancel approval"}
+                                    </button>
                                     {venmoWeb && chargeHref && (
                                         <a
                                             href={venmoWeb}
