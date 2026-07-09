@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
-import { DotsVertical, SearchLg } from "@untitledui/icons";
+import { Link, useLocation, useParams } from "react-router";
+import { DotsVertical, SearchSm } from "@untitledui/icons";
 import { SubCard } from "@/components/app/sub-card";
 import { ReportModal } from "@/components/app/report-modal";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
+import { usePostSheets } from "@/hooks/use-post-sheets";
 import { supabase } from "@/lib/supabase";
 import type { FeedPost } from "@/types/feed";
 import { skillLabel } from "@/utils/skill-label";
@@ -126,7 +127,7 @@ function rowName(first: string, last: string, level: string | null): string {
 
 export function Profile() {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
+    const location = useLocation();
     const { user, loading: authLoading } = useAuth();
     const profileId = (!id || id === "me") ? user?.id : id;
 
@@ -217,6 +218,10 @@ export function Profile() {
         if (rpcError) fetchProfile();
     }, [profileId, fetchProfile]);
 
+    // Tapping a post opens the same bottom sheet as the feed (creator sheet for your
+    // own post, claim/connect sheet for others'). Refresh the profile after any change.
+    const { openDetail, sheets } = usePostSheets({ onChanged: fetchProfile, editReturnTo: location.pathname });
+
     if (loading) {
         return (
             <AppLayout>
@@ -245,21 +250,26 @@ export function Profile() {
 
     const label = skillLabel(profile.skill_level);
     const isSearching = searchQuery.trim().length >= 2;
+    // Hide posts missing required info: every post needs a court, and dated (sub_need)
+    // posts need a date. Regular-game posts are dateless by design, so they're exempt.
+    const openPosts = profile.active_posts.filter(
+        (p) => (p.location || p.custom_court) && (p.post_type === "regular_game" || p.game_date),
+    );
 
     return (
         <AppLayout>
             <div className="px-4 pt-1 pb-6">
                 {/* Header: avatar + name + skill label (+ Edit profile on own) */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     {profile.photo_url ? (
                         <img
                             src={profile.photo_url}
                             alt=""
                             referrerPolicy="no-referrer"
-                            className="size-16 shrink-0 rounded-full object-cover"
+                            className="size-[72px] shrink-0 rounded-full object-cover"
                         />
                     ) : (
-                        <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-tertiary text-xl font-semibold text-secondary">
+                        <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full bg-tertiary text-2xl font-semibold text-secondary">
                             {profile.first_name.charAt(0).toUpperCase()}
                         </div>
                     )}
@@ -335,18 +345,18 @@ export function Profile() {
                 {/* Open posts (feed-style cards) */}
                 <div className="mt-6">
                     <p className="mb-3 text-sm font-semibold text-tertiary">
-                        Open posts ({profile.active_posts.length})
+                        Open posts ({openPosts.length})
                     </p>
-                    {profile.active_posts.length === 0 ? (
+                    {openPosts.length === 0 ? (
                         <p className="text-sm text-tertiary">No open posts.</p>
                     ) : (
                         <div className="flex flex-col gap-3">
-                            {profile.active_posts.map((post) => (
+                            {openPosts.map((post) => (
                                 <SubCard
                                     key={post.id}
                                     post={toFeedPost(post, profile)}
                                     currentUserId={user?.id}
-                                    onOpenDetail={(p) => navigate(`/post/${p.id}`)}
+                                    onOpenDetail={openDetail}
                                 />
                             ))}
                         </div>
@@ -360,11 +370,11 @@ export function Profile() {
                             Following ({profile.following_count})
                         </p>
 
-                        {/* Search field */}
-                        <div className="mb-2 flex items-center gap-2 rounded-lg bg-tertiary px-3 py-2.5 ring-1 ring-inset ring-transparent transition duration-100 ease-linear focus-within:ring-brand">
-                            <SearchLg className="size-4 shrink-0 text-fg-quaternary" aria-hidden="true" />
+                        {/* Search field — matches the filter sheet's location search */}
+                        <div className="mb-2 flex h-9 items-center gap-2 rounded-lg border border-neutral-600 bg-tertiary px-3 shadow-xs">
+                            <SearchSm className="size-6 shrink-0 text-neutral-600" aria-hidden="true" />
                             <input
-                                className="w-full bg-transparent text-sm text-primary outline-none placeholder:text-placeholder"
+                                className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
                                 placeholder="Search for players to follow..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -441,6 +451,8 @@ export function Profile() {
                     onClose={() => setShowReportModal(false)}
                 />
             )}
+
+            {sheets}
         </AppLayout>
     );
 }
