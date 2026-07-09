@@ -4,7 +4,8 @@ import { TimeField as AriaTimeField } from "react-aria-components";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { parseDate, parseTime, today, getLocalTimeZone } from "@internationalized/date";
 import { XClose } from "@untitledui/icons";
-import { InputDate, InputDateBase } from "@/components/base/input/input-date";
+import { InputDateBase } from "@/components/base/input/input-date";
+import { DateFieldSelect } from "@/components/app/date-field-select";
 import { Input } from "@/components/base/input/input";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
@@ -699,19 +700,15 @@ export function PostNew() {
                         <div className="flex flex-col gap-2">
                             <FieldLabel required>Date &amp; time</FieldLabel>
                             <div className="flex items-center gap-3">
-                                <div className="w-[132px] shrink-0">
-                                    <InputDate
-                                        aria-label="Game date"
-                                        value={gameDate}
-                                        onChange={(v) => setGameDate(v)}
-                                        minValue={today(getLocalTimeZone())}
-                                        isDisabled={lockedField}
-                                        size="sm"
-                                        wrapperClassName={FIELD}
-                                        // Whiten the "/" separators once a date is entered (matches the time field's colon).
-                                        inputClassName={cx("[&_[data-type]]:px-0", gameDate && "[&_[data-type=literal]]:text-primary")}
-                                    />
-                                </div>
+                                <DateFieldSelect
+                                    aria-label="Game date"
+                                    value={gameDate}
+                                    onChange={(v) => setGameDate(v)}
+                                    minValue={today(getLocalTimeZone())}
+                                    isDisabled={lockedField}
+                                    placeholder="Select date"
+                                    className="w-[152px] shrink-0"
+                                />
                                 <AriaTimeField
                                     aria-label="Game time"
                                     value={gameTime ? parseTime(gameTime) : null}
