@@ -110,6 +110,12 @@ const Select = ({ placeholder = "Select", icon, size = "md", children, items, la
     // (react-aria doesn't dismiss non-modal popovers on outside pointer interaction).
     const [open, setOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const [menuWidth, setMenuWidth] = useState<number>();
+    // Match the manual menu to the trigger width (react-aria's --trigger-width equivalent).
+    useEffect(() => {
+        if (isNonModal && open && triggerRef.current) setMenuWidth(triggerRef.current.offsetWidth);
+    }, [isNonModal, open]);
     useEffect(() => {
         if (!isNonModal || !open) return;
         const onDown = (e: PointerEvent) => {
@@ -141,13 +147,39 @@ const Select = ({ placeholder = "Select", icon, size = "md", children, items, la
                             </Label>
                         )}
 
-                        <SelectValue {...state} {...{ size, placeholder }} icon={icon} triggerClassName={triggerClassName} triggerStyle={triggerStyle} />
+                        {isNonModal ? (
+                            // Manual dropdown (like the date calendar): renders in-flow below the
+                            // field, so it stays open + fixed to the field while the page scrolls.
+                            <div className="relative">
+                                <SelectValue {...state} {...{ size, placeholder }} icon={icon} triggerClassName={triggerClassName} triggerStyle={triggerStyle} ref={triggerRef} />
+                                {/* Always mounted (react-aria needs the collection); hidden when closed. */}
+                                <div
+                                    style={{ width: menuWidth }}
+                                    className={cx(
+                                        "absolute top-full left-0 z-40 mt-1 overflow-x-hidden overflow-y-auto rounded-lg bg-primary py-1 shadow-lg ring-1 ring-secondary_alt outline-hidden",
+                                        size === "sm" && "max-h-[236px]",
+                                        size === "md" && "max-h-[260px]",
+                                        size === "lg" && "max-h-[284px]",
+                                        !open && "hidden",
+                                        rest.popoverClassName,
+                                    )}
+                                >
+                                    <AriaListBox items={items} className="size-full outline-hidden">
+                                        {children}
+                                    </AriaListBox>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <SelectValue {...state} {...{ size, placeholder }} icon={icon} triggerClassName={triggerClassName} triggerStyle={triggerStyle} />
 
-                        <Popover size={size} isNonModal={isNonModal} className={rest.popoverClassName}>
-                            <AriaListBox items={items} className="size-full outline-hidden">
-                                {children}
-                            </AriaListBox>
-                        </Popover>
+                                <Popover size={size} className={rest.popoverClassName}>
+                                    <AriaListBox items={items} className="size-full outline-hidden">
+                                        {children}
+                                    </AriaListBox>
+                                </Popover>
+                            </>
+                        )}
 
                         {hint && (
                             <HintText isInvalid={state.isInvalid} className={cx(size === "sm" && "text-xs")}>
