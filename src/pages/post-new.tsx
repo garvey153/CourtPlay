@@ -647,6 +647,7 @@ export function PostNew() {
                         <Select
                             label="Play type"
                             placeholder="Select type"
+                            isNonModal
                             items={PLAY_TYPES}
                             triggerStyle={menuWidth(PLAY_TYPES, "Select type")}
                             selectedKey={playType || null}
@@ -665,6 +666,7 @@ export function PostNew() {
                             <Select
                                 label="Location"
                                 placeholder="Select court"
+                                isNonModal
                                 items={courtItems}
                                 selectedKey={courtId}
                                 onSelectionChange={(k) => handleCourtSelect(k as string)}
@@ -744,6 +746,7 @@ export function PostNew() {
                         <Select
                             label="Duration"
                             placeholder="Select duration"
+                            isNonModal
                             items={DURATIONS}
                             triggerStyle={menuWidth(DURATIONS, "Select duration")}
                             selectedKey={duration != null ? String(duration) : null}
@@ -760,6 +763,7 @@ export function PostNew() {
                         <Select
                             label="Required skill level"
                             placeholder="Select level"
+                            isNonModal
                             items={SKILL_LEVELS}
                             triggerStyle={menuWidth(SKILL_LEVELS, "Select level")}
                             selectedKey={skillLevel || null}

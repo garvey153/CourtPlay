@@ -1,5 +1,5 @@
 import type { FC, ReactNode, Ref, RefAttributes } from "react";
-import { isValidElement } from "react";
+import { isValidElement, useEffect, useRef, useState } from "react";
 import { ChevronDown } from "@untitledui/icons";
 import type { SelectProps as AriaSelectProps } from "react-aria-components";
 import { Button as AriaButton, ListBox as AriaListBox, Select as AriaSelect, SelectValue as AriaSelectValue } from "react-aria-components";
@@ -18,6 +18,11 @@ export { SelectContext, sizes, type CommonProps, type SelectItemType } from "./s
 export interface SelectProps extends Omit<AriaSelectProps<SelectItemType>, "children" | "items">, RefAttributes<HTMLDivElement>, CommonProps {
     items?: SelectItemType[];
     popoverClassName?: string;
+    /**
+     * Render the menu non-modally so the page keeps scrolling while it's open (like the
+     * date calendar). Closing on outside/other-field is handled manually.
+     */
+    isNonModal?: boolean;
     /** Extra classes on the trigger button (e.g. to recolor its surface). */
     triggerClassName?: string;
     /** Inline style for the trigger button (e.g. an explicit width). */
@@ -100,10 +105,34 @@ const SelectValue = ({ isOpen, isFocused, isDisabled, size, placeholder, icon, r
     );
 };
 
-const Select = ({ placeholder = "Select", icon, size = "md", children, items, label, hint, tooltip, hideRequiredIndicator, className, triggerClassName, triggerStyle, ...rest }: SelectProps) => {
+const Select = ({ placeholder = "Select", icon, size = "md", children, items, label, hint, tooltip, hideRequiredIndicator, className, triggerClassName, triggerStyle, isNonModal, ...rest }: SelectProps) => {
+    // When non-modal, control the open state so we can close on outside/other-field clicks
+    // (react-aria doesn't dismiss non-modal popovers on outside pointer interaction).
+    const [open, setOpen] = useState(false);
+    const rootRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!isNonModal || !open) return;
+        const onDown = (e: PointerEvent) => {
+            const t = e.target as Element | null;
+            // Ignore clicks on the trigger (this select's root) or inside any option list.
+            if (rootRef.current?.contains(t as Node) || t?.closest?.("[role=listbox]")) return;
+            setOpen(false);
+        };
+        // Capture phase so it beats react-aria's own press handling on other fields.
+        document.addEventListener("pointerdown", onDown, true);
+        return () => document.removeEventListener("pointerdown", onDown, true);
+    }, [isNonModal, open]);
+
+    const openProps = isNonModal ? { isOpen: open, onOpenChange: setOpen } : {};
+
     return (
         <SelectContext.Provider value={{ size }}>
-            <AriaSelect {...rest} className={(state) => cx("flex flex-col gap-2", typeof className === "function" ? className(state) : className)}>
+            <AriaSelect
+                {...rest}
+                {...openProps}
+                ref={isNonModal ? rootRef : rest.ref}
+                className={(state) => cx("flex flex-col gap-2", typeof className === "function" ? className(state) : className)}
+            >
                 {(state) => (
                     <>
                         {label && (
@@ -114,7 +143,7 @@ const Select = ({ placeholder = "Select", icon, size = "md", children, items, la
 
                         <SelectValue {...state} {...{ size, placeholder }} icon={icon} triggerClassName={triggerClassName} triggerStyle={triggerStyle} />
 
-                        <Popover size={size} className={rest.popoverClassName}>
+                        <Popover size={size} isNonModal={isNonModal} className={rest.popoverClassName}>
                             <AriaListBox items={items} className="size-full outline-hidden">
                                 {children}
                             </AriaListBox>
