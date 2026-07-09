@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
-import { DotsVertical, SearchSm } from "@untitledui/icons";
+import { DotsVertical, SearchSm, XClose } from "@untitledui/icons";
 import { SubCard } from "@/components/app/sub-card";
 import { ReportModal } from "@/components/app/report-modal";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -261,18 +261,22 @@ export function Profile() {
             <div className="px-4 pt-1 pb-6">
                 {/* Header: avatar + name + skill label (+ Edit profile on own) */}
                 <div className="flex items-center gap-3">
-                    {profile.photo_url ? (
-                        <img
-                            src={profile.photo_url}
-                            alt=""
-                            referrerPolicy="no-referrer"
-                            className="size-[72px] shrink-0 rounded-full object-cover"
-                        />
-                    ) : (
-                        <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full bg-tertiary text-2xl font-semibold text-secondary">
-                            {profile.first_name.charAt(0).toUpperCase()}
-                        </div>
-                    )}
+                    {/* Design-system "Avatar profile photo" (348:2158): 72px with a
+                        3px white ring + subtle border around the photo. */}
+                    <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full border border-secondary_alt bg-white p-[3px] shadow-xs">
+                        {profile.photo_url ? (
+                            <img
+                                src={profile.photo_url}
+                                alt=""
+                                referrerPolicy="no-referrer"
+                                className="size-full rounded-full object-cover"
+                            />
+                        ) : (
+                            <div className="flex size-full items-center justify-center rounded-full bg-tertiary text-2xl font-semibold text-secondary">
+                                {profile.first_name.charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                    </div>
                     <div className="min-w-0 flex-1">
                         <h1 className="truncate text-xl font-bold text-primary">
                             {profile.first_name} {profile.last_name}
@@ -380,6 +384,16 @@ export function Profile() {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 autoComplete="off"
                             />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    aria-label="Clear search"
+                                    onClick={() => setSearchQuery("")}
+                                    className="shrink-0 text-neutral-600 transition duration-100 ease-linear hover:text-primary"
+                                >
+                                    <XClose className="size-5" />
+                                </button>
+                            )}
                         </div>
 
                         {/* Search results, or the current Following list */}
