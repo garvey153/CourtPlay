@@ -39,10 +39,12 @@ export function DateFieldSelect({ value, onChange, minValue, isDisabled, classNa
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") setOpen(false);
         };
-        document.addEventListener("pointerdown", onPointer);
+        // Capture phase so it still fires when another field's menu (react-aria) stops
+        // propagation on its press — clicking any other field then closes the calendar.
+        document.addEventListener("pointerdown", onPointer, true);
         document.addEventListener("keydown", onKey);
         return () => {
-            document.removeEventListener("pointerdown", onPointer);
+            document.removeEventListener("pointerdown", onPointer, true);
             document.removeEventListener("keydown", onKey);
         };
     }, [open]);
