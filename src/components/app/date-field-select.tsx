@@ -68,7 +68,7 @@ export function DateFieldSelect({ value, onChange, minValue, isDisabled, classNa
                 // scrolls and the calendar tracks the field. bg-primary + secondary_alt ring
                 // match the other dropdown menus; selected day + today dot come from the
                 // shared CalendarCell (same as the feed-filters calendar).
-                <div className="absolute top-full left-0 z-40 mt-2 rounded-lg bg-primary px-6 py-5 shadow-xl ring-1 ring-secondary_alt [&_[data-today]]:bg-secondary!">
+                <div className="absolute top-full left-0 z-40 mt-2 rounded-lg bg-primary px-6 py-5 shadow-xl ring-1 ring-secondary_alt [&_[data-today-cell]]:bg-secondary!">
                     <Calendar
                         aria-label={props["aria-label"] ?? "Date"}
                         value={value}

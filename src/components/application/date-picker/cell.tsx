@@ -63,7 +63,7 @@ export const CalendarCell = ({ date, isHighlighted, showOutOfRangeDates = false,
                             />
                         )}
                         <div
-                            data-today={!isSelected && isTodayDate ? true : undefined}
+                            data-today-cell={!isSelected && isTodayDate ? true : undefined}
                             className={cx(
                                 "relative z-10 mx-auto flex size-10 items-center justify-center rounded-full text-sm text-secondary hover:text-secondary_hover",
                                 // Disabled state.
