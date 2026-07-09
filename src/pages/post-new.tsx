@@ -706,8 +706,7 @@ export function PostNew() {
                                     onChange={(v) => setGameDate(v)}
                                     minValue={today(getLocalTimeZone())}
                                     isDisabled={lockedField}
-                                    placeholder="Select date"
-                                    className="w-[152px] shrink-0"
+                                    className="w-[144px] shrink-0"
                                 />
                                 <AriaTimeField
                                     aria-label="Game time"
