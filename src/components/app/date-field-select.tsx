@@ -20,7 +20,8 @@ interface DateFieldSelectProps {
  * inputs) and opens a calendar below it on click. Uses a plain absolute-positioned
  * dropdown (not a modal popover) so the page keeps scrolling while it's open and the
  * calendar follows the field. Calendar styling per the CourtPlay design: bg-primary
- * surface, secondary_alt ring (matches other menus), neutral-600 selected day.
+ * surface, secondary_alt ring (matches other menus); selected day + today dot match
+ * the feed-filters calendar (shared CalendarCell: brand-solid selected day).
  */
 export function DateFieldSelect({ value, onChange, minValue, isDisabled, className, ...props }: DateFieldSelectProps) {
     const [open, setOpen] = useState(false);
@@ -63,8 +64,9 @@ export function DateFieldSelect({ value, onChange, minValue, isDisabled, classNa
             {open && (
                 // Always below the field; absolute (not a modal popover) so the page still
                 // scrolls and the calendar tracks the field. bg-primary + secondary_alt ring
-                // match the other dropdown menus; neutral-600 selected day per the design.
-                <div className="absolute top-full left-0 z-40 mt-2 rounded-lg bg-primary px-6 py-5 shadow-xl ring-1 ring-secondary_alt [&_[data-selected]>div]:bg-neutral-600!">
+                // match the other dropdown menus; selected day + today dot come from the
+                // shared CalendarCell (same as the feed-filters calendar).
+                <div className="absolute top-full left-0 z-40 mt-2 rounded-lg bg-primary px-6 py-5 shadow-xl ring-1 ring-secondary_alt">
                     <Calendar
                         aria-label={props["aria-label"] ?? "Date"}
                         value={value}
