@@ -108,9 +108,9 @@ function toFeedPost(post: ProfilePost, profile: ProfileData): FeedPost {
 /** Small avatar (photo or initial) used in the following/search rows. */
 function RowAvatar({ photo, name }: { photo: string | null; name: string }) {
     return photo ? (
-        <img src={photo} alt="" referrerPolicy="no-referrer" className="size-8 shrink-0 rounded-full object-cover" />
+        <img src={photo} alt="" referrerPolicy="no-referrer" className="size-6 shrink-0 rounded-full object-cover" />
     ) : (
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tertiary text-sm font-semibold text-secondary">
+        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-tertiary text-xs font-semibold text-secondary">
             {name.charAt(0).toUpperCase()}
         </div>
     );
@@ -326,13 +326,13 @@ export function Profile() {
 
                 {/* Stats cards */}
                 <div className="mt-5 flex gap-3">
-                    <div className="w-28 rounded-xl bg-secondary px-4 py-3">
-                        <p className="text-2xl font-bold text-brand-500">{profile.follower_count}</p>
-                        <p className="mt-0.5 text-sm text-tertiary">Followers</p>
+                    <div className="w-[86px] rounded-lg bg-secondary px-4 py-3">
+                        <p className="text-lg font-semibold leading-7 text-brand-500">{profile.follower_count}</p>
+                        <p className="mt-0.5 text-xs text-tertiary">Followers</p>
                     </div>
-                    <div className="w-28 rounded-xl bg-secondary px-4 py-3">
-                        <p className="text-2xl font-bold text-brand-500">{profile.following_count}</p>
-                        <p className="mt-0.5 text-sm text-tertiary">Following</p>
+                    <div className="w-[86px] rounded-lg bg-secondary px-4 py-3">
+                        <p className="text-lg font-semibold leading-7 text-brand-500">{profile.following_count}</p>
+                        <p className="mt-0.5 text-xs text-tertiary">Following</p>
                     </div>
                 </div>
 
@@ -340,7 +340,7 @@ export function Profile() {
                 {!profile.is_own_profile && (
                     <button
                         onClick={() => (profile.is_following ? handleUnfollow(profile.id) : handleFollow(profile.id))}
-                        className="mt-5 w-full rounded-lg bg-brand-500 py-3 text-md font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600"
+                        className="mt-5 w-full rounded-lg bg-brand-500 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600"
                     >
                         {profile.is_following ? "Following" : "Follow"}
                     </button>
@@ -369,13 +369,13 @@ export function Profile() {
 
                 {/* Following + search (own profile only) */}
                 {profile.is_own_profile && (
-                    <div className="mt-6">
-                        <p className="mb-3 text-sm font-semibold text-tertiary">
+                    <div className="mt-4">
+                        <p className="mb-1.5 text-sm font-semibold text-tertiary">
                             Following ({profile.following_count})
                         </p>
 
                         {/* Search field — matches the filter sheet's location search */}
-                        <div className="mb-2 flex h-9 items-center gap-2 rounded-lg border border-neutral-600 bg-tertiary px-3 shadow-xs">
+                        <div className="mb-4 flex h-9 items-center gap-2 rounded-lg border border-neutral-600 bg-tertiary px-3 shadow-xs">
                             <SearchSm className="size-6 shrink-0 text-neutral-600" aria-hidden="true" />
                             <input
                                 className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
@@ -405,7 +405,7 @@ export function Profile() {
                             ) : (
                                 <div className="flex flex-col">
                                     {searchResults.map((su) => (
-                                        <div key={su.id} className="flex items-center gap-3 py-2">
+                                        <div key={su.id} className="flex items-center gap-2 py-2.5">
                                             <Link to={`/profile/${su.id}`}>
                                                 <RowAvatar photo={su.photo_url} name={su.first_name} />
                                             </Link>
@@ -434,7 +434,7 @@ export function Profile() {
                         ) : (
                             <div className="flex flex-col">
                                 {profile.following_list.map((fu) => (
-                                    <div key={fu.id} className="flex items-center gap-3 py-2">
+                                    <div key={fu.id} className="flex items-center gap-2 py-2.5">
                                         <Link to={`/profile/${fu.id}`}>
                                             <RowAvatar photo={fu.photo_url} name={fu.first_name} />
                                         </Link>

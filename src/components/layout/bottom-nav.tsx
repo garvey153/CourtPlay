@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router";
 import { Activity, Home01, User01 } from "@untitledui/icons";
+import { useAuth } from "@/hooks/use-auth";
 import { cx } from "@/utils/cx";
 
 const tabs = [
@@ -10,11 +11,20 @@ const tabs = [
 
 export function BottomNav() {
     const { pathname } = useLocation();
+    const { user } = useAuth();
+
+    // Profile highlights only for the logged-in user's own profile — not other
+    // players' profiles (/profile/{uuid}).
+    const isOwnProfile =
+        pathname === "/profile/me" || pathname === "/profile" || (!!user && pathname === `/profile/${user.id}`);
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-[68px] items-center bg-primary pb-safe">
             {tabs.map(({ label, href, icon: Icon }) => {
-                const active = pathname === href || (href !== "/feed" && pathname.startsWith(href.replace("/me", "")));
+                const active =
+                    href === "/profile/me"
+                        ? isOwnProfile
+                        : pathname === href || (href !== "/feed" && pathname.startsWith(href));
                 return (
                     <Link
                         key={href}
