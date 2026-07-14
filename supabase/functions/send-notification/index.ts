@@ -214,7 +214,7 @@ function buildEmailHtml(template: TemplateConfig, d: Record<string, string>, pos
             <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0 16px;" />
             <p style="color: #9CA3AF; font-size: 12px; margin: 0;">
                 CourtPlay — Find a tennis sub in Westport<br />
-                <a href="https://courtplay.app/settings" style="color: #9CA3AF; text-decoration: underline;">Manage notification preferences</a>
+                <a href="https://courtplay.app/profile/edit" style="color: #9CA3AF; text-decoration: underline;">Manage notification preferences</a>
             </p>
         </div>
     `;
