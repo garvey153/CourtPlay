@@ -234,9 +234,10 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
 
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                {/* Reply field — only once connected. */}
+                {/* Reply field — only once connected. mt-4 on top of the parent's 16px
+                    gap puts 32px between the last message bubble and the input. */}
                 {showMessageField && (
-                    <div className="flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
+                    <div className="mt-4 flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
                         <input
                             aria-label="Message"
                             value={message}
@@ -248,7 +249,7 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
                                 }
                             }}
                             disabled={sending}
-                            placeholder={`${threadMessages.length === 0 ? "Message" : "Reply"} ${post.first_name}…`}
+                            placeholder={`Reply to ${post.first_name}…`}
                             className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-placeholder disabled:opacity-50"
                         />
                         <button

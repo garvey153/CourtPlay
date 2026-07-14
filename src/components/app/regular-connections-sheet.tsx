@@ -232,7 +232,7 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
                                 }
                             }}
                             disabled={sending}
-                            placeholder={`${selected.messages.length === 0 ? "Message" : "Reply"} ${selected.first_name}…`}
+                            placeholder={`Reply to ${selected.first_name}…`}
                             className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-placeholder disabled:opacity-50"
                         />
                         <button
