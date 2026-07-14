@@ -181,4 +181,11 @@ describe("SubCard", () => {
         expect(onOpenDetail).toHaveBeenCalledTimes(1);
         expect(onOpenDetail).toHaveBeenCalledWith(expect.objectContaining({ id: "post-1" }));
     });
+
+    it("does not open the detail sheet when an expired post is tapped", () => {
+        const onOpenDetail = vi.fn();
+        render(<SubCard post={makePost({ status: "expired" })} onOpenDetail={onOpenDetail} />);
+        fireEvent.click(screen.getByRole("button"));
+        expect(onOpenDetail).not.toHaveBeenCalled();
+    });
 });

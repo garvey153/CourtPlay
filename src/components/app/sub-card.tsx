@@ -135,6 +135,9 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
     const kind = kindOverride ?? getCardKind(post);
     const config = KIND_CONFIG[kind];
 
+    // Expired posts are dead — tapping them opens nothing.
+    const isExpired = kind === "expired";
+
     const playType = formatPlayType(post.play_type);
     const title = [playType, "Tennis"].filter(Boolean).join(" ");
     const when = formatWhen(post.game_date, post.game_time);
@@ -150,14 +153,20 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
         <button
             ref={cardRef}
             type="button"
-            onClick={() => onOpenDetail?.(post)}
-            className="flex w-full overflow-hidden rounded text-left"
+            onClick={isExpired ? undefined : () => onOpenDetail?.(post)}
+            aria-disabled={isExpired || undefined}
+            className={cx("flex w-full overflow-hidden rounded text-left", isExpired && "cursor-default")}
         >
             {/* Left status accent bar */}
             <span className={cx("w-1 shrink-0 self-stretch", config.bar)} aria-hidden="true" />
 
             {/* Card body */}
-            <div className="flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4 transition duration-100 ease-linear hover:bg-secondary_hover">
+            <div
+                className={cx(
+                    "flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4 transition duration-100 ease-linear",
+                    !isExpired && "hover:bg-secondary_hover",
+                )}
+            >
                 {/* Top row: title/subtitle + status badge */}
                 <div className="flex w-full items-start gap-3">
                     <div className="flex min-w-0 flex-1 flex-col gap-1">

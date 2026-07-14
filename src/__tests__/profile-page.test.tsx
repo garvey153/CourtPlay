@@ -142,13 +142,13 @@ describe("profile page", () => {
         renderProfile("aaaaaaaa-0000-0000-0000-000000000001");
         // SubCard title: "Doubles Tennis · <when>"
         expect(await screen.findByText(/Doubles Tennis/)).toBeInTheDocument();
-        expect(screen.getByText("Open posts (1)")).toBeInTheDocument();
+        expect(screen.getByText("Posts (1)")).toBeInTheDocument();
     });
 
     it("shows empty state for no posts", async () => {
         setupMock(minimalProfile);
         renderProfile("cccccccc-0000-0000-0000-000000000003");
-        expect(await screen.findByText("No open posts.")).toBeInTheDocument();
+        expect(await screen.findByText("No posts.")).toBeInTheDocument();
     });
 
     it("shows report menu on other profiles", async () => {

@@ -15,8 +15,8 @@ import { NotFound } from "@/pages/not-found";
 import { Onboarding } from "@/pages/onboarding";
 import { PostDetail } from "@/pages/post-detail";
 import { PostNew } from "@/pages/post-new";
+import { EditProfile } from "@/pages/edit-profile";
 import { Profile } from "@/pages/profile";
-import { Settings } from "@/pages/settings";
 import { Privacy } from "@/pages/privacy";
 import { SignIn } from "@/pages/sign-in";
 import { SignUp } from "@/pages/sign-up";
@@ -66,6 +66,14 @@ createRoot(document.getElementById("root")!).render(
                             }
                         />
                         <Route
+                            path="/profile/edit"
+                            element={
+                                <ProtectedRoute>
+                                    <EditProfile />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
                             path="/profile/me"
                             element={
                                 <ProtectedRoute>
@@ -86,14 +94,6 @@ createRoot(document.getElementById("root")!).render(
                             element={
                                 <ProtectedRoute>
                                     <Activity />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/settings"
-                            element={
-                                <ProtectedRoute>
-                                    <Settings />
                                 </ProtectedRoute>
                             }
                         />

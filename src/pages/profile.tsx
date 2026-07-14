@@ -250,15 +250,17 @@ export function Profile() {
 
     const label = skillLabel(profile.skill_level);
     const isSearching = searchQuery.trim().length >= 2;
-    // Hide posts missing required info: every post needs a court, and dated (sub_need)
-    // posts need a date. Regular-game posts are dateless by design, so they're exempt.
-    const openPosts = profile.active_posts.filter(
+    // The Posts section shows the user's Open, Claimed, and Expired posts (the
+    // SubCard derives which from status + spots + game time). Hide posts missing
+    // required info: every post needs a court, and dated (sub_need) posts need a
+    // date. Regular-game posts are dateless by design, so they're exempt.
+    const posts = profile.active_posts.filter(
         (p) => (p.location || p.custom_court) && (p.post_type === "regular_game" || p.game_date),
     );
 
     return (
         <AppLayout>
-            <div className="px-4 pt-1 pb-6">
+            <div className="px-5 pt-2 pb-6">
                 {/* Header: avatar + name + skill label (+ Edit profile on own) */}
                 <div className="flex items-center gap-3">
                     {/* Design-system "Avatar profile photo" (348:2158): 72px with a
@@ -287,7 +289,7 @@ export function Profile() {
                                 <>
                                     {label && <span className="text-tertiary" aria-hidden="true">·</span>}
                                     <Link
-                                        to="/settings"
+                                        to="/profile/edit"
                                         className="font-medium text-brand-500 hover:text-brand-600"
                                     >
                                         Edit profile
@@ -346,16 +348,16 @@ export function Profile() {
                     </button>
                 )}
 
-                {/* Open posts (feed-style cards) */}
+                {/* Posts (feed-style cards) — Open, Claimed, and Expired */}
                 <div className="mt-6">
                     <p className="mb-3 text-sm font-semibold text-tertiary">
-                        Open posts ({openPosts.length})
+                        Posts ({posts.length})
                     </p>
-                    {openPosts.length === 0 ? (
-                        <p className="text-sm text-tertiary">No open posts.</p>
+                    {posts.length === 0 ? (
+                        <p className="text-sm text-tertiary">No posts.</p>
                     ) : (
                         <div className="flex flex-col gap-3">
-                            {openPosts.map((post) => (
+                            {posts.map((post) => (
                                 <SubCard
                                     key={post.id}
                                     post={toFeedPost(post, profile)}
