@@ -44,7 +44,7 @@ export function PushEnableBanner() {
                 <X className="size-4" aria-hidden="true" />
             </button>
 
-            <p className="pr-6 text-sm font-semibold text-primary">Turn on notifications</p>
+            <p className="pr-6 text-sm font-semibold text-primary">Turn on notifications.</p>
             <p className="mt-1 text-sm text-secondary">
                 Get notified the moment your spots are claimed, approved, or declined.
             </p>

@@ -38,11 +38,11 @@ export function ClaimUpdateBanner({ claim, status, onDismiss, onView }: ClaimUpd
                 <X className="size-4" aria-hidden="true" />
             </button>
 
-            <p className="pr-6 text-sm font-semibold text-primary">{approved ? "Claim approved!" : "Claim not approved"}</p>
+            <p className="pr-6 text-sm font-semibold text-primary">{approved ? "Claim approved!" : "Claim not approved."}</p>
             <p className="mt-1 text-sm text-secondary">
                 {approved
                     ? `Your claim${where ? ` ${where}` : ""} was approved. Open it to coordinate and pay.`
-                    : `Your claim${where ? ` ${where}` : ""} wasn't approved.`}
+                    : `Your claim${where ? ` ${where}` : ""} was declined.`}
             </p>
 
             <div className="mt-3 flex items-center gap-3">

@@ -38,7 +38,7 @@ export function ClaimReceivedBanner({ post, onDismiss, onView }: ClaimReceivedBa
 
             <p className="pr-6 text-sm font-semibold text-primary">Waiting for approval!</p>
             <p className="mt-1 text-sm text-secondary">
-                Your spot{where ? ` ${where}` : ""} has been claimed.
+                Your spot{where ? ` ${where}` : ""} has been claimed!
             </p>
 
             <div className="mt-3 flex items-center gap-3">
