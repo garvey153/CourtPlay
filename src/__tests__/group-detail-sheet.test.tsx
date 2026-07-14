@@ -70,25 +70,30 @@ describe("GroupDetailSheet (regular-post connections)", () => {
 
         await waitFor(() => expect(rpc).toHaveBeenCalledWith("submit_claim", { p_post_id: "post-r1", p_message: null }));
         expect(notify).toHaveBeenCalledWith(expect.objectContaining({ notification_type: "connection_request", user_id: "seeker-1" }));
-        // Transitions in place to the connected thread state.
+        // Transitions in place to the connected thread state, which reveals the message field.
         expect(await screen.findByText(/You're connected/)).toBeInTheDocument();
+        expect(screen.getByLabelText("Message")).toBeInTheDocument();
     });
 
-    it("sends the opening message along with the connection", async () => {
-        rpc.mockResolvedValue({ data: { success: true, claim_id: "conn-2" }, error: null } as never);
-        const user = userEvent.setup();
-
+    it("shows no message field before connecting", () => {
         render(<GroupDetailSheet post={regularPost} currentUserId="responder-1" onClose={vi.fn()} />);
+        expect(screen.getByRole("button", { name: "Connect" })).toBeInTheDocument();
+        expect(screen.queryByLabelText("Message")).not.toBeInTheDocument();
+    });
 
-        await user.type(screen.getByLabelText("Message"), "Hi, we have a spot Wednesdays!");
-        await user.click(screen.getByRole("button", { name: "Connect" }));
+    it("cancels the connection via unclaim when connected", async () => {
+        rpc.mockResolvedValue({ error: null } as never);
+        const onCancelled = vi.fn();
+        const user = userEvent.setup();
+        const connected = { ...regularPost, user_claim_status: "pending" as const, user_claim_id: "conn-9" };
 
-        await waitFor(() =>
-            expect(rpc).toHaveBeenCalledWith("submit_claim", {
-                p_post_id: "post-r1",
-                p_message: "Hi, we have a spot Wednesdays!",
-            }),
+        render(
+            <GroupDetailSheet post={connected} currentUserId="responder-1" onClose={vi.fn()} onCancelled={onCancelled} />,
         );
+
+        await user.click(screen.getByRole("button", { name: "Cancel connection" }));
+        await waitFor(() => expect(rpc).toHaveBeenCalledWith("unclaim", { p_claim_id: "conn-9" }));
+        expect(onCancelled).toHaveBeenCalled();
     });
 
     it("shows a read-only closed thread once the seeker removed the post", () => {
