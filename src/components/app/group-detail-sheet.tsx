@@ -5,6 +5,7 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useShare } from "@/hooks/use-share";
+import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
 import type { ClaimMessage } from "@/types/activity";
 import { ShareModal } from "./share-modal";
@@ -282,30 +283,26 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
                     </p>
                 )}
 
-                {/* Primary action */}
-                <div className="flex flex-col gap-3">
+                {/* Primary action. Connected + active puts 32px above the Cancel button
+                    (mt-4 on top of the parent's 16px gap = 32px from the message field). */}
+                <div className={cx("flex flex-col gap-3", isConnected && !postClosed && "mt-4")}>
                     {isOwnPost ? (
                         <p className="text-center text-sm text-tertiary">This is your post.</p>
                     ) : isConnected ? (
                         // Connected: the thread + message field above are the interaction.
-                        // An active post can be cancelled; a closed one shows only Share.
-                        <>
-                            {!postClosed && (
-                                <button type="button" onClick={handleCancel} disabled={cancelling} className={SECONDARY_BTN}>
-                                    {cancelling ? (
-                                        <span
-                                            className="size-5 animate-spin rounded-full border-2 border-secondary border-t-transparent"
-                                            aria-hidden="true"
-                                        />
-                                    ) : (
-                                        "Cancel connection"
-                                    )}
-                                </button>
-                            )}
-                            <button type="button" onClick={() => handleShare(post)} className={SECONDARY_BTN}>
-                                Share with a friend
+                        // An active post can be cancelled; a closed one is read-only.
+                        !postClosed ? (
+                            <button type="button" onClick={handleCancel} disabled={cancelling} className={SECONDARY_BTN}>
+                                {cancelling ? (
+                                    <span
+                                        className="size-5 animate-spin rounded-full border-2 border-secondary border-t-transparent"
+                                        aria-hidden="true"
+                                    />
+                                ) : (
+                                    "Cancel connection"
+                                )}
                             </button>
-                        </>
+                        ) : null
                     ) : postClosed ? (
                         <>
                             <p className="text-center text-sm text-tertiary">This post is no longer active.</p>
