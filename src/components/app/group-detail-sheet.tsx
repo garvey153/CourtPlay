@@ -170,8 +170,8 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
     const showMessageField = !isOwnPost && isConnected && !postClosed;
     const statusLine = isConnected
         ? postClosed
-            ? `${post.first_name} found a spot — this post is now closed.`
-            : `You're connected — message ${post.first_name} to sort out the details.`
+            ? `${post.first_name} found a spot. This post is now closed.`
+            : `You're connected! Message ${post.first_name} to sort out the details.`
         : null;
 
     return (
