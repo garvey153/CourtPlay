@@ -58,6 +58,7 @@ interface GroupDetailSheetProps {
 export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCancelled, messages, currentUser }: GroupDetailSheetProps) {
     const [loading, setLoading] = useState(false);
     const [cancelling, setCancelling] = useState(false);
+    const [confirmingCancel, setConfirmingCancel] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showReport, setShowReport] = useState(false);
     // Connection state is tracked locally so the sheet can transition in place
@@ -189,6 +190,42 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
                 animate={{ y: 0 }}
                 transition={{ type: "spring", damping: 38, stiffness: 420 }}
             >
+                {confirmingCancel ? (
+                    <>
+                        {/* Cancel-connection confirmation. */}
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 flex-col gap-1">
+                                <h2 className="text-md font-semibold text-primary">Cancel this connection?</h2>
+                                <p className="text-sm text-secondary">
+                                    You'll be removed from {post.first_name}'s conversations. You can connect again later.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                aria-label="Close"
+                                className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                            >
+                                <XClose className="size-5" />
+                            </button>
+                        </div>
+                        {error && <p className="text-sm text-error-primary">{error}</p>}
+                        <div className="mt-2 flex flex-col gap-3">
+                            <button type="button" onClick={handleCancel} disabled={cancelling} className={PRIMARY_BTN}>
+                                {cancelling ? <ButtonSpinner /> : "Yes, cancel"}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setConfirmingCancel(false)}
+                                disabled={cancelling}
+                                className={SECONDARY_BTN}
+                            >
+                                No, keep it
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                <>
                 {/* Close button — absolute so it doesn't affect content spacing. */}
                 <button
                     type="button"
@@ -293,15 +330,8 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
                         // Connected: the thread + message field above are the interaction.
                         // An active post can be cancelled; a closed one is read-only.
                         !postClosed ? (
-                            <button type="button" onClick={handleCancel} disabled={cancelling} className={SECONDARY_BTN}>
-                                {cancelling ? (
-                                    <span
-                                        className="size-5 animate-spin rounded-full border-2 border-secondary border-t-transparent"
-                                        aria-hidden="true"
-                                    />
-                                ) : (
-                                    "Cancel connection"
-                                )}
+                            <button type="button" onClick={() => setConfirmingCancel(true)} className={SECONDARY_BTN}>
+                                Cancel connection
                             </button>
                         ) : null
                     ) : postClosed ? (
@@ -322,6 +352,8 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
                         </>
                     )}
                 </div>
+                </>
+                )}
             </motion.div>
 
             {shareData && <ShareModal url={shareData.url} text={shareData.text} onClose={closeShareModal} />}

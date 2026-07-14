@@ -81,7 +81,7 @@ describe("GroupDetailSheet (regular-post connections)", () => {
         expect(screen.queryByLabelText("Message")).not.toBeInTheDocument();
     });
 
-    it("cancels the connection via unclaim when connected", async () => {
+    it("confirms before cancelling, then unclaims the connection", async () => {
         rpc.mockResolvedValue({ error: null } as never);
         const onCancelled = vi.fn();
         const user = userEvent.setup();
@@ -91,9 +91,26 @@ describe("GroupDetailSheet (regular-post connections)", () => {
             <GroupDetailSheet post={connected} currentUserId="responder-1" onClose={vi.fn()} onCancelled={onCancelled} />,
         );
 
+        // Cancel opens a confirmation; no RPC until confirmed.
         await user.click(screen.getByRole("button", { name: "Cancel connection" }));
+        expect(screen.getByText("Cancel this connection?")).toBeInTheDocument();
+        expect(rpc).not.toHaveBeenCalled();
+
+        await user.click(screen.getByRole("button", { name: "Yes, cancel" }));
         await waitFor(() => expect(rpc).toHaveBeenCalledWith("unclaim", { p_claim_id: "conn-9" }));
         expect(onCancelled).toHaveBeenCalled();
+    });
+
+    it("dismisses the confirmation without cancelling on 'No, keep it'", async () => {
+        const user = userEvent.setup();
+        const connected = { ...regularPost, user_claim_status: "pending" as const, user_claim_id: "conn-9" };
+
+        render(<GroupDetailSheet post={connected} currentUserId="responder-1" onClose={vi.fn()} />);
+
+        await user.click(screen.getByRole("button", { name: "Cancel connection" }));
+        await user.click(screen.getByRole("button", { name: "No, keep it" }));
+        expect(rpc).not.toHaveBeenCalled();
+        expect(screen.getByText(/You're connected/)).toBeInTheDocument();
     });
 
     it("shows a read-only closed thread once the seeker removed the post", () => {

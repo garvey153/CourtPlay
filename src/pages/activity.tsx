@@ -294,7 +294,10 @@ export function Activity() {
         ];
         const sections = allSections.filter((s) => s.claims.length > 0);
         // Regular connections I started — opens the responder-side conversation thread.
-        const connections = myClaims.filter((c) => c.post_type === "regular_game" && c.status !== "cancelled");
+        // Only active connections; cancelling (unclaim → 'unclaimed') drops it from here.
+        const connections = myClaims.filter(
+            (c) => c.post_type === "regular_game" && (c.status === "pending" || c.status === "approved"),
+        );
 
         if (sections.length === 0 && connections.length === 0) {
             return (
