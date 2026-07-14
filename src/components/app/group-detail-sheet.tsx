@@ -169,6 +169,9 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
     // The message field only appears once connected (there's no compose step before
     // connecting). A closed post's thread is read-only.
     const showMessageField = !isOwnPost && isConnected && !postClosed;
+    // "Message {name}…" until the poster has replied, then "Reply to {name}…". Keyed
+    // on the poster (not thread length) so the responder's own sends don't flip it.
+    const posterReplied = threadMessages.some((m) => m.sender_id === post.author_id);
     const statusLine = isConnected
         ? postClosed
             ? `${post.first_name} found a spot. This post is now closed.`
@@ -286,7 +289,7 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
                                 }
                             }}
                             disabled={sending}
-                            placeholder={`Reply to ${post.first_name}…`}
+                            placeholder={`${posterReplied ? "Reply to" : "Message"} ${post.first_name}…`}
                             className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-placeholder disabled:opacity-50"
                         />
                         <button

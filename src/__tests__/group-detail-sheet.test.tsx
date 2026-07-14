@@ -75,6 +75,31 @@ describe("GroupDetailSheet (regular-post connections)", () => {
         expect(screen.getByLabelText("Message")).toBeInTheDocument();
     });
 
+    it("placeholder stays 'Message {name}…' until the poster replies", () => {
+        const connected = { ...regularPost, user_claim_status: "pending" as const, user_claim_id: "c1" };
+        const mine = {
+            id: "m1",
+            sender_id: "responder-1",
+            body: "hi",
+            created_at: new Date().toISOString(),
+            first_name: "Re",
+            last_name: "",
+            photo_url: null,
+        };
+        const { rerender } = render(
+            <GroupDetailSheet post={connected} currentUserId="responder-1" onClose={vi.fn()} messages={[mine]} />,
+        );
+        // Only my own message so far → still "Message Sam…".
+        expect(screen.getByPlaceholderText("Message Sam…")).toBeInTheDocument();
+
+        // The poster (author) replies → "Reply to Sam…".
+        const fromPoster = { ...mine, id: "m2", sender_id: "seeker-1", body: "hey!" };
+        rerender(
+            <GroupDetailSheet post={connected} currentUserId="responder-1" onClose={vi.fn()} messages={[mine, fromPoster]} />,
+        );
+        expect(screen.getByPlaceholderText("Reply to Sam…")).toBeInTheDocument();
+    });
+
     it("shows no message field before connecting", () => {
         render(<GroupDetailSheet post={regularPost} currentUserId="responder-1" onClose={vi.fn()} />);
         expect(screen.getByRole("button", { name: "Connect" })).toBeInTheDocument();
