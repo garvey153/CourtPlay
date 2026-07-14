@@ -8,6 +8,7 @@ import { PostSuccessBanner } from "@/components/app/post-success-banner";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
+import { RegularConnectionsSheet } from "@/components/app/regular-connections-sheet";
 import { ClaimReceivedBanner } from "@/components/app/claim-received-banner";
 import { ClaimUpdateBanner } from "@/components/app/claim-update-banner";
 import { PushEnableBanner } from "@/components/app/push-enable-banner";
@@ -17,7 +18,7 @@ import { WelcomeCard } from "@/components/app/welcome-card";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
-import { sendNotification } from "@/lib/notifications";
+import { sendNotification, sendNotificationBatch } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { REJECTION_REASONS } from "@/types/claims";
 import { claimToFeedPost } from "@/utils/activity-feed-map";
@@ -73,6 +74,8 @@ export function Feed() {
     const [detailPost, setDetailPost] = useState<FeedPost | null>(null);
     // Tapping one of the viewer's own posts opens the creator sheet instead.
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null);
+    // The seeker's own regular-play post → conversation-list sheet.
+    const [regularSheet, setRegularSheet] = useState<MyPost | null>(null);
     const [createdActionLoading, setCreatedActionLoading] = useState<string | null>(null);
     const [deletingCreated, setDeletingCreated] = useState(false);
     // Drives the claim banners: own posts (pending claims) + own claims (approved/declined).
@@ -215,10 +218,23 @@ export function Feed() {
             }
             const { data } = await supabase.rpc("get_my_posts_with_claims");
             const mine = ((data as MyPost[]) ?? []).find((p) => p.id === post.id);
-            if (mine) setCreatedSheet(mine);
-            else setDetailPost(post);
+            if (mine) {
+                if (mine.post_type === "regular_game") setRegularSheet(mine);
+                else setCreatedSheet(mine);
+            } else setDetailPost(post);
         },
         [user, myClaims],
+    );
+
+    const handleRegularReply = useCallback(
+        async (post: MyPost, claimId: string, body: string) => {
+            await supabase.rpc("send_claim_message", { p_claim_id: claimId, p_body: body });
+            const { data } = await supabase.rpc("get_my_posts_with_claims");
+            const list = (data as MyPost[]) ?? [];
+            setMyPosts(list);
+            setRegularSheet(list.find((pp) => pp.id === post.id) ?? post);
+        },
+        [],
     );
 
     const handleApproveClaim = useCallback(
@@ -293,12 +309,20 @@ export function Feed() {
                 .eq("id", post.id);
             setDeletingCreated(false);
             if (!delError) {
+                // A seeker removing their regular post found a spot — tell the responders.
+                if (post.post_type === "regular_game" && post.claims.length > 0) {
+                    const responderIds = [...new Set(post.claims.map((c) => c.claimer_id))];
+                    sendNotificationBatch(responderIds, "connection_closed", post.id, {
+                        poster_name: profile?.first_name ?? "",
+                    });
+                }
                 setCreatedSheet(null);
+                setRegularSheet(null);
                 fetchPosts();
                 fetchMyPosts();
             }
         },
-        [fetchPosts, fetchMyPosts, user],
+        [fetchPosts, fetchMyPosts, user, profile],
     );
 
     const dismissBanner = useCallback((key: string) => {
@@ -317,6 +341,8 @@ export function Feed() {
 
     // Creator side: own posts with a pending claim (awaiting the viewer's approval).
     const pendingBanners = myPosts
+        // Regular-play connections notify via push, not the "your spot was claimed" banner.
+        .filter((post) => post.post_type !== "regular_game")
         .map((post) => ({ post, claim: post.claims.find((c) => c.status === "pending") }))
         .filter((x): x is { post: MyPost; claim: ClaimRow } => !!x.claim && !dismissedClaims.has(`claimed:${x.claim.id}`));
     // Claimer side: the viewer's claims that were approved / declined (upcoming games).
@@ -519,10 +545,16 @@ export function Feed() {
                     <GroupDetailSheet
                         post={detailPost}
                         currentUserId={user?.id}
+                        messages={myClaims.find((c) => c.post_id === detailPost.id)?.messages}
+                        currentUser={
+                            profile
+                                ? { first_name: profile.first_name, last_name: profile.last_name, photo_url: profile.photo_url }
+                                : undefined
+                        }
                         onClose={() => setDetailPost(null)}
-                        onConnected={() => {
-                            setDetailPost(null);
+                        onChange={() => {
                             fetchPosts();
+                            fetchMyPosts();
                         }}
                     />
                 ))}
@@ -540,6 +572,18 @@ export function Feed() {
                     onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/feed" } })}
                     onDelete={() => handleDeletePost(createdSheet)}
                     onReply={(body) => handleSendClaimMessage(createdSheet, body)}
+                />
+            )}
+
+            {regularSheet && profile && (
+                <RegularConnectionsSheet
+                    post={regularSheet}
+                    poster={{ first_name: profile.first_name, last_name: profile.last_name, photo_url: profile.photo_url }}
+                    deleting={deletingCreated}
+                    onClose={() => setRegularSheet(null)}
+                    onEdit={() => navigate(`/post/new?edit=${regularSheet.id}`, { state: { returnTo: "/feed" } })}
+                    onDelete={() => handleDeletePost(regularSheet)}
+                    onReply={(claimId, body) => handleRegularReply(regularSheet, claimId, body)}
                 />
             )}
         </AppLayout>

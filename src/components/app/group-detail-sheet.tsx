@@ -1,26 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { XClose } from "@untitledui/icons";
+import { ArrowCircleRight, XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useShare } from "@/hooks/use-share";
+import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
+import type { ClaimMessage } from "@/types/activity";
 import { ShareModal } from "./share-modal";
 import { ReportModal } from "./report-modal";
+import { ThreadMessage } from "./thread-message";
 
-function formatDateLong(dateStr: string): string {
-    const d = new Date(dateStr + "T12:00:00");
-    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-}
-
-function formatTime12(timeStr: string): string {
-    const [h, m] = timeStr.split(":");
-    const hour = parseInt(h, 10);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const h12 = hour % 12 || 12;
-    return `${h12}:${m} ${ampm}`;
-}
+const MESSAGE_MAX = 150;
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -36,10 +28,7 @@ function timeAgo(dateStr: string): string {
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 const SECONDARY_BTN =
-    "rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary";
-// Connect uses the primary brand green, consistent with every other bottom-sheet CTA.
-const CONNECT_BTN =
-    "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
+    "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Spinner tuned for the brand button (dark strokes on green). */
 const ButtonSpinner = () => (
@@ -50,22 +39,51 @@ interface GroupDetailSheetProps {
     post: FeedPost;
     currentUserId?: string | null;
     onClose: () => void;
-    /** Called after a successful connect request so the feed can refresh. */
-    onConnected?: (claimId: string) => void;
+    /** Refresh the caller's feed/lists after connecting or sending a message. */
+    onChange?: () => void;
+    /** Existing conversation on this connection (shown once connected). */
+    messages?: ClaimMessage[];
+    /** The current user's profile, used to render their own messages immediately. */
+    currentUser?: { first_name: string; last_name: string | null; photo_url: string | null };
 }
 
 /**
- * Detail bottom sheet for a regular-play (blue) post. Same styling as the claim
- * sheet, but a poster-first layout and a "Connect" action (contact details are
- * shared once the poster approves the request).
+ * Detail bottom sheet for a regular-play (blue) post. A regular post is from one
+ * person looking to join a group; tapping "Connect" starts a direct conversation
+ * with them (no approval). Once connected the sheet becomes a message thread. Same
+ * styling as the sub claim sheet.
  */
-export function GroupDetailSheet({ post, currentUserId, onClose, onConnected }: GroupDetailSheetProps) {
+export function GroupDetailSheet({ post, currentUserId, onClose, onChange, messages, currentUser }: GroupDetailSheetProps) {
     const [loading, setLoading] = useState(false);
-    const [conflict, setConflict] = useState<{ date: string; time: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [notifyState, setNotifyState] = useState<"idle" | "loading" | "done">(post.user_notify_me ? "done" : "idle");
     const [showReport, setShowReport] = useState(false);
+    // Connection state is tracked locally so the sheet can transition in place
+    // (connectable → connected) without closing after the user connects.
+    const [claimStatus, setClaimStatus] = useState(post.user_claim_status);
+    const [claimId, setClaimId] = useState(post.user_claim_id);
+    // Opening/reply message field.
+    const [message, setMessage] = useState("");
+    const [sending, setSending] = useState(false);
+    // Messages sent optimistically this session, shown immediately; the refetch reconciles them.
+    const [localSent, setLocalSent] = useState<ClaimMessage[]>([]);
     const { shareData, handleShare, closeShareModal } = useShare();
+
+    const makeLocalMessage = useCallback(
+        (body: string): ClaimMessage => ({
+            id: `local-${Date.now()}-${Math.round(Math.random() * 1e6)}`,
+            sender_id: currentUserId ?? "me",
+            body,
+            created_at: new Date().toISOString(),
+            first_name: currentUser?.first_name ?? "You",
+            last_name: currentUser?.last_name ?? "",
+            photo_url: currentUser?.photo_url ?? null,
+        }),
+        [currentUserId, currentUser],
+    );
+
+    const baseMessages = messages ?? [];
+    const seenBodies = new Set(baseMessages.map((m) => `${m.sender_id}|${m.body}`));
+    const threadMessages = [...baseMessages, ...localSent.filter((m) => !seenBodies.has(`${m.sender_id}|${m.body}`))];
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
@@ -76,16 +94,21 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onConnected }: 
     }, [onClose]);
 
     const isOwnPost = currentUserId === post.author_id;
-    const activeConnect = post.user_claim_status === "pending" || post.user_claim_status === "approved";
-    const isFull = post.spots_available <= 0;
-    const isExpired = post.status === "expired";
+    const isConnected = claimStatus === "pending" || claimStatus === "approved";
+    // The seeker filled their spot (post removed) or it aged out — the thread goes read-only.
+    const postClosed = post.status !== "active";
 
+    // Connect: create the connection with an optional opening message, then
+    // transition the sheet to the connected/thread state in place.
     const handleConnect = useCallback(async () => {
+        const body = message.trim();
         setLoading(true);
         setError(null);
-        setConflict(null);
 
-        const { data, error: rpcError } = await supabase.rpc("submit_claim", { p_post_id: post.id });
+        const { data, error: rpcError } = await supabase.rpc("submit_claim", {
+            p_post_id: post.id,
+            p_message: body || null,
+        });
         setLoading(false);
 
         if (rpcError) {
@@ -93,33 +116,47 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onConnected }: 
             return;
         }
         if (!data.success) {
-            if (data.conflict) {
-                setConflict({ date: data.conflict_date, time: data.conflict_time });
-            } else {
-                setError(data.error ?? "Could not connect to this group.");
-            }
+            setError(data.error ?? "Could not connect to this group.");
             return;
         }
 
         sendNotification({
             user_id: post.author_id,
-            notification_type: "claim_submitted",
+            notification_type: "connection_request",
             post_id: post.id,
             claim_id: data.claim_id as string,
         });
-        onConnected?.(data.claim_id as string);
-    }, [post.id, post.author_id, onConnected]);
+        if (body) setLocalSent((prev) => [...prev, makeLocalMessage(body)]);
+        setMessage("");
+        setClaimId(data.claim_id as string);
+        setClaimStatus("pending");
+        onChange?.();
+    }, [message, post.id, post.author_id, makeLocalMessage, onChange]);
 
-    const handleNotifyMe = useCallback(async () => {
-        if (notifyState !== "idle") return;
-        setNotifyState("loading");
-        await supabase.rpc("add_notify_me", { p_post_id: post.id });
-        setNotifyState("done");
-    }, [post.id, notifyState]);
+    // Send a follow-up message once connected.
+    const handleSend = useCallback(async () => {
+        const body = message.trim();
+        if (!body || !claimId || sending) return;
+        setSending(true);
+        setLocalSent((prev) => [...prev, makeLocalMessage(body)]);
+        setMessage("");
+        await supabase.rpc("send_claim_message", { p_claim_id: claimId, p_body: body });
+        setSending(false);
+        onChange?.();
+    }, [message, claimId, sending, makeLocalMessage, onChange]);
 
     const posterName = post.last_name ? `${post.first_name} ${post.last_name.charAt(0).toUpperCase()}.` : post.first_name;
     const title = ["Tennis, Regular Play", post.skill_level ? `NTRP ${post.skill_level}` : null].filter(Boolean).join(" · ");
     const location = post.location ?? post.custom_court;
+
+    // A message field is shown when connecting (compose opener) or when connected on
+    // an active post (send a reply). A closed post's thread is read-only.
+    const showMessageField = !isOwnPost && (!isConnected || (isConnected && !postClosed));
+    const statusLine = isConnected
+        ? postClosed
+            ? `${post.first_name} found a spot — this post is now closed.`
+            : `You're connected — message ${post.first_name} to sort out the details.`
+        : null;
 
     return (
         <div
@@ -136,22 +173,23 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onConnected }: 
                 animate={{ y: 0 }}
                 transition={{ type: "spring", damping: 38, stiffness: 420 }}
             >
-                {/* Header: title + location + close (title-first, matching the claim sheet) */}
-                <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 flex-col gap-1">
-                        <h2 id="group-sheet-title" className="text-md font-semibold text-primary">
-                            {title}
-                        </h2>
-                        {location && <p className="text-sm text-secondary">{location}</p>}
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        aria-label="Close"
-                        className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
-                    >
-                        <XClose className="size-5" />
-                    </button>
+                {/* Close button — absolute so it doesn't affect content spacing. */}
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Close"
+                    className="absolute top-4 right-3 z-10 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                >
+                    <XClose className="size-5" />
+                </button>
+
+                {/* Header — status line once connected, otherwise just the title. */}
+                {statusLine && <p className="pr-8 text-sm text-brand-500">{statusLine}</p>}
+                <div className="flex min-w-0 flex-col gap-1 pr-8">
+                    <h2 id="group-sheet-title" className="text-md font-semibold text-primary">
+                        {title}
+                    </h2>
+                    {location && <p className="text-sm text-secondary">{location}</p>}
                 </div>
 
                 {/* Poster */}
@@ -175,21 +213,50 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onConnected }: 
                     </div>
                 )}
 
-                {/* Conflict / error */}
-                {conflict && (
-                    <div className="rounded-lg bg-warning-primary p-3 text-sm text-primary">
-                        You already have a pending claim on{" "}
-                        <span className="font-semibold">{formatDateLong(conflict.date)}</span> at{" "}
-                        <span className="font-semibold">{formatTime12(conflict.time)}</span>. Back out of that claim first.
-                    </div>
-                )}
+                {/* Conversation thread, once connected. */}
+                {isConnected && threadMessages.map((m) => <ThreadMessage key={m.id} msg={m} />)}
+
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                {/* Helper text — only when connecting is possible. */}
-                {!isOwnPost && !activeConnect && !isFull && !isExpired && (
-                    // mb-[11px] + the gap-4 (16px) below puts 32px from the text baseline to the button top.
-                    <p className="mb-[11px] text-xs text-tertiary">
-                        * Contact details for {post.first_name} will be shared after connecting.
+                {/* Message field — compose an opener (connecting) or a reply (connected). */}
+                {showMessageField && (
+                    <div className="flex h-9 w-full items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600 ring-inset">
+                        <input
+                            aria-label="Message"
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value.slice(0, MESSAGE_MAX))}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey && isConnected) {
+                                    e.preventDefault();
+                                    handleSend();
+                                }
+                            }}
+                            disabled={sending || loading}
+                            placeholder={
+                                isConnected
+                                    ? `${threadMessages.length === 0 ? "Message" : "Reply"} ${post.first_name}…`
+                                    : `Message ${post.first_name}… (optional)`
+                            }
+                            className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-placeholder disabled:opacity-50"
+                        />
+                        {isConnected && (
+                            <button
+                                type="button"
+                                onClick={handleSend}
+                                disabled={!message.trim() || sending}
+                                aria-label="Send message"
+                                className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-secondary disabled:opacity-40"
+                            >
+                                <ArrowCircleRight className="size-6" aria-hidden="true" />
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Helper text */}
+                {!isOwnPost && !isConnected && !postClosed && (
+                    <p className={cx("text-xs text-tertiary", showMessageField && "-mt-1")}>
+                        * Connecting starts a conversation with {post.first_name}.
                         {currentUserId && (
                             <>
                                 {" "}
@@ -210,43 +277,29 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onConnected }: 
                 <div className="flex flex-col gap-3">
                     {isOwnPost ? (
                         <p className="text-center text-sm text-tertiary">This is your post.</p>
-                    ) : activeConnect ? (
-                        <p className="text-center text-sm text-tertiary">
-                            {post.user_claim_status === "pending"
-                                ? "Awaiting poster approval"
-                                : "You're connected — check My Activity for details."}
-                        </p>
-                    ) : isExpired ? (
-                        <p className="text-center text-sm text-tertiary">This post has expired.</p>
-                    ) : isFull ? (
-                        notifyState === "done" ? (
-                            <p className="text-center text-sm text-success-primary">We'll notify you if a spot opens up.</p>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={handleNotifyMe}
-                                disabled={notifyState === "loading"}
-                                className={PRIMARY_BTN}
-                            >
-                                {notifyState === "loading" ? <ButtonSpinner /> : "Notify me if a spot opens"}
-                            </button>
-                        )
-                    ) : (
-                        <button type="button" onClick={handleConnect} disabled={loading || !!conflict} className={CONNECT_BTN}>
-                            {loading ? (
-                                <span
-                                    className="size-5 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                                    aria-hidden="true"
-                                />
-                            ) : (
-                                "Connect"
-                            )}
+                    ) : isConnected ? (
+                        // Connected: the thread + message field above are the interaction;
+                        // no primary CTA. Closed posts show only Share.
+                        <button type="button" onClick={() => handleShare(post)} className={SECONDARY_BTN}>
+                            Share with a friend
                         </button>
+                    ) : postClosed ? (
+                        <>
+                            <p className="text-center text-sm text-tertiary">This post is no longer active.</p>
+                            <button type="button" onClick={() => handleShare(post)} className={SECONDARY_BTN}>
+                                Share with a friend
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button type="button" onClick={handleConnect} disabled={loading} className={PRIMARY_BTN}>
+                                {loading ? <ButtonSpinner /> : "Connect"}
+                            </button>
+                            <button type="button" onClick={() => handleShare(post)} className={SECONDARY_BTN}>
+                                Share with a friend
+                            </button>
+                        </>
                     )}
-
-                    <button type="button" onClick={() => handleShare(post)} className={SECONDARY_BTN}>
-                        Share with a friend
-                    </button>
                 </div>
             </motion.div>
 

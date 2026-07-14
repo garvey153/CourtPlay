@@ -3,9 +3,10 @@ import { useNavigate } from "react-router";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
 import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
+import { RegularConnectionsSheet } from "@/components/app/regular-connections-sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
-import { sendNotification } from "@/lib/notifications";
+import { sendNotification, sendNotificationBatch } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { REJECTION_REASONS } from "@/types/claims";
 import type { ClaimRow, MyClaim, MyPost } from "@/types/activity";
@@ -33,6 +34,8 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
 
     const [detailPost, setDetailPost] = useState<FeedPost | null>(null);
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null);
+    // The seeker's own regular-play post → conversation-list sheet (not the sub creator sheet).
+    const [regularSheet, setRegularSheet] = useState<MyPost | null>(null);
     const [claimContact, setClaimContact] = useState<{ venmoHandle: string | null; phone: string | null } | null>(null);
     const [claimMessages, setClaimMessages] = useState<MyClaim["messages"] | undefined>(undefined);
     const [createdActionLoading, setCreatedActionLoading] = useState<string | null>(null);
@@ -53,11 +56,14 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
                 setDetailPost(post);
                 return;
             }
-            // My own post → creator sheet (needs the post's claims).
+            // My own post → creator sheet (needs the post's claims). Regular-play
+            // posts (many responders, no approval) use the conversation-list sheet.
             const { data } = await supabase.rpc("get_my_posts_with_claims");
             const mine = ((data as MyPost[]) ?? []).find((p) => p.id === post.id);
-            if (mine) setCreatedSheet(mine);
-            else setDetailPost(post);
+            if (mine) {
+                if (mine.post_type === "regular_game") setRegularSheet(mine);
+                else setCreatedSheet(mine);
+            } else setDetailPost(post);
         },
         [user],
     );
@@ -66,6 +72,20 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
         const { data } = await supabase.rpc("get_my_posts_with_claims");
         setCreatedSheet(((data as MyPost[]) ?? []).find((p) => p.id === postId) ?? null);
     }, []);
+
+    const refreshRegular = useCallback(async (postId: string) => {
+        const { data } = await supabase.rpc("get_my_posts_with_claims");
+        setRegularSheet(((data as MyPost[]) ?? []).find((p) => p.id === postId) ?? null);
+    }, []);
+
+    // Seeker replies in one responder's thread on their regular post.
+    const handleRegularReply = useCallback(
+        async (post: MyPost, claimId: string, body: string) => {
+            await supabase.rpc("send_claim_message", { p_claim_id: claimId, p_body: body });
+            await refreshRegular(post.id);
+        },
+        [refreshRegular],
+    );
 
     const handleApprove = useCallback(
         async (claim: ClaimRow, post: MyPost) => {
@@ -128,16 +148,26 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
                 .eq("id", post.id);
             setDeletingCreated(false);
             if (!error) {
+                // A seeker removing their regular post = they found a spot. Let the
+                // responders they were talking to know the conversation is closed.
+                if (post.post_type === "regular_game" && post.claims.length > 0) {
+                    const responderIds = [...new Set(post.claims.map((c) => c.claimer_id))];
+                    sendNotificationBatch(responderIds, "connection_closed", post.id, {
+                        poster_name: profile?.first_name ?? "",
+                    });
+                }
                 setCreatedSheet(null);
+                setRegularSheet(null);
                 onChanged?.();
             }
         },
-        [user, onChanged],
+        [user, profile, onChanged],
     );
 
     const closeSheets = useCallback(() => {
         setDetailPost(null);
         setCreatedSheet(null);
+        setRegularSheet(null);
         setClaimContact(null);
         setClaimMessages(undefined);
     }, []);
@@ -174,11 +204,17 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
                     <GroupDetailSheet
                         post={detailPost}
                         currentUserId={user?.id}
-                        onClose={() => setDetailPost(null)}
-                        onConnected={() => {
+                        messages={claimMessages}
+                        currentUser={
+                            profile
+                                ? { first_name: profile.first_name, last_name: profile.last_name, photo_url: profile.photo_url }
+                                : undefined
+                        }
+                        onClose={() => {
                             setDetailPost(null);
-                            onChanged?.();
+                            setClaimMessages(undefined);
                         }}
+                        onChange={() => onChanged?.()}
                     />
                 ))}
 
@@ -195,6 +231,18 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
                     onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: editReturnTo } })}
                     onDelete={() => handleDelete(createdSheet)}
                     onReply={(body) => handleReply(createdSheet, body)}
+                />
+            )}
+
+            {regularSheet && profile && (
+                <RegularConnectionsSheet
+                    post={regularSheet}
+                    poster={{ first_name: profile.first_name, last_name: profile.last_name, photo_url: profile.photo_url }}
+                    deleting={deletingCreated}
+                    onClose={() => setRegularSheet(null)}
+                    onEdit={() => navigate(`/post/new?edit=${regularSheet.id}`, { state: { returnTo: editReturnTo } })}
+                    onDelete={() => handleDelete(regularSheet)}
+                    onReply={(claimId, body) => handleRegularReply(regularSheet, claimId, body)}
                 />
             )}
         </>

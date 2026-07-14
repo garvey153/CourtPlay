@@ -4,6 +4,8 @@ import { SubCard, gameEndMs, type CardKind } from "@/components/app/sub-card";
 import { GroupCard } from "@/components/app/group-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
+import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
+import { RegularConnectionsSheet } from "@/components/app/regular-connections-sheet";
 import { PostDeletedBanner } from "@/components/app/post-deleted-banner";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -38,7 +40,10 @@ export function Activity() {
     // Overlays
     // Claimer's detail sheet; contact is attached once the claim is approved.
     const [claimSheet, setClaimSheet] = useState<{ post: FeedPost; contact?: { venmoHandle: string | null; phone: string | null }; messages?: MyClaim["messages"] } | null>(null);
-    const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null); // creator view
+    const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null); // creator view (subs)
+    const [regularSheet, setRegularSheet] = useState<MyPost | null>(null); // seeker's regular-post conversations
+    // Responder's conversation on a regular post they connected to.
+    const [groupThread, setGroupThread] = useState<{ post: FeedPost; messages: MyClaim["messages"] } | null>(null);
     const [deletedPost, setDeletedPost] = useState<MyPost | null>(null); // undo banner
     const [deletingPost, setDeletingPost] = useState(false);
     const [undoingDelete, setUndoingDelete] = useState(false);
@@ -197,11 +202,32 @@ export function Activity() {
                 setActionError("Failed to delete post. Please try again.");
                 return;
             }
+            // A seeker removing their regular post = they found a spot. Notify the
+            // responders they were talking to that the conversation is closed.
+            if (post.post_type === "regular_game" && post.claims.length > 0) {
+                const responderIds = [...new Set(post.claims.map((c) => c.claimer_id))];
+                sendNotificationBatch(responderIds, "connection_closed", post.id, {
+                    poster_name: profile?.first_name ?? "",
+                });
+            }
             setCreatedSheet(null);
+            setRegularSheet(null);
             setDeletedPost(post); // drives the undo banner
             fetchData();
         },
-        [fetchData, user],
+        [fetchData, user, profile],
+    );
+
+    // Seeker replies in one responder's thread; keep the sheet open on the refreshed post.
+    const handleRegularReply = useCallback(
+        async (post: MyPost, claimId: string, body: string) => {
+            await supabase.rpc("send_claim_message", { p_claim_id: claimId, p_body: body });
+            const { data } = await supabase.rpc("get_my_posts_with_claims");
+            const list = (data as MyPost[]) ?? [];
+            setMyPosts(list);
+            setRegularSheet(list.find((pp) => pp.id === post.id) ?? post);
+        },
+        [],
     );
 
     const handleUndoDelete = useCallback(
@@ -233,9 +259,10 @@ export function Activity() {
     };
 
     const renderClaims = () => {
-        // Three sections only: Pending (awaiting approval), Approved, Declined.
-        // Backed-out/cancelled claims are hidden; approved + declined drop once the
-        // event time has passed. Pending stays until resolved.
+        // Sub claims: Pending (awaiting approval), Approved, Declined. Backed-out/
+        // cancelled are hidden; approved + declined drop once the event has passed.
+        // Regular-play "connections" (no approval) are a separate section below.
+        const isSub = (c: MyClaim) => c.post_type !== "regular_game";
         const allSections: Array<{
             label: string;
             kind: CardKind;
@@ -245,13 +272,13 @@ export function Activity() {
             {
                 label: "Pending",
                 kind: "pending",
-                claims: myClaims.filter((c) => c.status === "pending"),
+                claims: myClaims.filter((c) => isSub(c) && c.status === "pending"),
                 onTap: (claim) => setClaimSheet({ post: claimToFeedPost(claim), messages: claim.messages }),
             },
             {
                 label: "Approved",
                 kind: "approved",
-                claims: myClaims.filter((c) => c.status === "approved" && !isPast(c.game_date, c.game_time)),
+                claims: myClaims.filter((c) => isSub(c) && c.status === "approved" && !isPast(c.game_date, c.game_time)),
                 onTap: (claim) =>
                     setClaimSheet({
                         post: claimToFeedPost(claim),
@@ -262,12 +289,14 @@ export function Activity() {
             {
                 label: "Declined",
                 kind: "rejected",
-                claims: myClaims.filter((c) => c.status === "rejected" && !isPast(c.game_date, c.game_time)),
+                claims: myClaims.filter((c) => isSub(c) && c.status === "rejected" && !isPast(c.game_date, c.game_time)),
             },
         ];
         const sections = allSections.filter((s) => s.claims.length > 0);
+        // Regular connections I started — opens the responder-side conversation thread.
+        const connections = myClaims.filter((c) => c.post_type === "regular_game" && c.status !== "cancelled");
 
-        if (sections.length === 0) {
+        if (sections.length === 0 && connections.length === 0) {
             return (
                 <EmptyState
                     title="No claims yet"
@@ -280,6 +309,23 @@ export function Activity() {
 
         return (
             <div className="flex flex-col gap-5">
+                {connections.length > 0 && (
+                    <div>
+                        <p className="mb-2 text-xs font-medium text-tertiary">Connections</p>
+                        <ul className="flex flex-col gap-3">
+                            {connections.map((claim) => (
+                                <li key={claim.id}>
+                                    <GroupCard
+                                        post={claimToFeedPost(claim)}
+                                        profileComplete
+                                        currentUserId={user?.id}
+                                        onOpenDetail={() => setGroupThread({ post: claimToFeedPost(claim), messages: claim.messages })}
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
                 {sections.map((section) => (
                     <div key={section.label}>
                         <p className="mb-2 text-xs font-medium text-tertiary">{section.label}</p>
@@ -311,8 +357,10 @@ export function Activity() {
             return end === null || end >= graceCutoff;
         });
 
-        const hasPending = (p: MyPost) => p.claims.some((c) => c.status === "pending");
-        const hasApproved = (p: MyPost) => p.claims.some((c) => c.status === "approved");
+        // Regular-play posts have no approval, so they never sit in Pending/Approved —
+        // they stay under Active (with their conversation-list sheet) until removed.
+        const hasPending = (p: MyPost) => p.post_type !== "regular_game" && p.claims.some((c) => c.status === "pending");
+        const hasApproved = (p: MyPost) => p.post_type !== "regular_game" && p.claims.some((c) => c.status === "approved");
 
         // Group into the same section style as the Claimed tab.
         const allSections: Array<{ label: string; kind: CardKind; posts: MyPost[] }> = [
@@ -338,7 +386,7 @@ export function Activity() {
         const renderCard = (post: MyPost, kind: CardKind) => {
             const feedPost = postToFeedPost(post, me ?? { id: "", first_name: "", last_name: "", photo_url: null });
             return post.post_type === "regular_game" ? (
-                <GroupCard post={feedPost} profileComplete currentUserId={user?.id} onOpenDetail={() => setCreatedSheet(post)} />
+                <GroupCard post={feedPost} profileComplete currentUserId={user?.id} onOpenDetail={() => setRegularSheet(post)} />
             ) : (
                 <SubCard post={feedPost} currentUserId={user?.id} kindOverride={kind} onOpenDetail={() => setCreatedSheet(post)} />
             );
@@ -473,6 +521,33 @@ export function Activity() {
                     onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/activity?tab=created" } })}
                     onDelete={() => handleDeletePost(createdSheet)}
                     onReply={(body) => handleSendClaimMessage(createdSheet, body)}
+                />
+            )}
+
+            {regularSheet && me && (
+                <RegularConnectionsSheet
+                    post={regularSheet}
+                    poster={me}
+                    deleting={deletingPost}
+                    onClose={() => setRegularSheet(null)}
+                    onEdit={() => navigate(`/post/new?edit=${regularSheet.id}`, { state: { returnTo: "/activity?tab=created" } })}
+                    onDelete={() => handleDeletePost(regularSheet)}
+                    onReply={(claimId, body) => handleRegularReply(regularSheet, claimId, body)}
+                />
+            )}
+
+            {groupThread && (
+                <GroupDetailSheet
+                    post={groupThread.post}
+                    currentUserId={user?.id}
+                    messages={groupThread.messages}
+                    currentUser={
+                        profile
+                            ? { first_name: profile.first_name, last_name: profile.last_name, photo_url: profile.photo_url }
+                            : undefined
+                    }
+                    onClose={() => setGroupThread(null)}
+                    onChange={fetchData}
                 />
             )}
         </AppLayout>
