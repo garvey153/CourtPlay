@@ -321,9 +321,10 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
                     </p>
                 )}
 
-                {/* Primary action. Connected + active puts 32px above the Cancel button
-                    (mt-4 on top of the parent's 16px gap = 32px from the message field). */}
-                <div className={cx("flex flex-col gap-3", isConnected && !postClosed && "mt-4")}>
+                {/* Primary action. When there's a message field (connected) or the
+                    helper sub-text (connectable) directly above, mt-4 on top of the
+                    parent's 16px gap puts 32px from that element to the button. */}
+                <div className={cx("flex flex-col gap-3", !isOwnPost && !postClosed && "mt-4")}>
                     {isOwnPost ? (
                         <p className="text-center text-sm text-tertiary">This is your post.</p>
                     ) : isConnected ? (
