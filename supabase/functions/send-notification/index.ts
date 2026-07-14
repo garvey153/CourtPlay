@@ -33,17 +33,17 @@ interface TemplateConfig {
 // Notification content templates
 const TEMPLATES: Record<NotificationType, TemplateConfig> = {
     claim_submitted: {
-        title: "New claim on your post",
+        title: "Someone claimed your post!",
         body: (d) => d.claimer_name
-            ? `${d.claimer_name} wants to claim a spot on your post${d.post_summary ? ` — ${d.post_summary}` : ""}. Review it now.`
-            : "Someone wants to claim a spot on your post. Review it now.",
+            ? `${d.claimer_name} wants to claim your open spot${d.post_summary ? ` — ${d.post_summary}` : ""}. Review it now.`
+            : "Someone wants to claim your open spot. Review it now.",
         subject: (d) => d.post_summary
             ? `Someone claimed your spot at ${d.post_summary}`
             : "Someone claimed your CourtPlay spot",
         deepLink: () => "https://courtplay.app/activity",
     },
     claim_approved: {
-        title: "Your claim was approved!",
+        title: "Claim approved!",
         body: (d) => {
             let msg = d.poster_name
                 ? `${d.poster_name} approved your claim`
@@ -58,7 +58,7 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
         deepLink: () => "https://courtplay.app/activity",
     },
     claim_rejected: {
-        title: "Claim update",
+        title: "Claim not approved.",
         body: (d) => {
             let msg = "Your claim was not approved";
             if (d.post_summary) msg += ` for ${d.post_summary}`;
@@ -72,7 +72,7 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
         deepLink: () => "https://courtplay.app/activity",
     },
     claimer_backed_out: {
-        title: "A claimer backed out",
+        title: "Someone backed out of their spot.",
         body: (d) => d.claimer_name
             ? `${d.claimer_name} backed out of their approved claim${d.post_summary ? ` on ${d.post_summary}` : ""}. The spot is now open again.`
             : "A player backed out of their claim on your post. The spot is now open again.",
@@ -82,7 +82,7 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
         deepLink: () => "https://courtplay.app/activity",
     },
     cost_changed: {
-        title: "Cost updated on a post you claimed",
+        title: "Cost updated on a post you claimed.",
         body: (d) => {
             let msg = "The cost on a post you claimed changed";
             if (d.old_cost && d.new_cost) msg = `Cost changed from $${d.old_cost} to $${d.new_cost}`;
@@ -96,7 +96,7 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
         deepLink: (postId) => postId ? `https://courtplay.app/post/${postId}` : "https://courtplay.app/activity",
     },
     nudge_no_response: {
-        title: "Pending claims waiting",
+        title: "Reminder that you have pending claims waiting.",
         body: (d) => d.post_summary
             ? `You have claims waiting for your response on ${d.post_summary}. Review them now.`
             : "You have claims waiting for your response. Review them now.",
@@ -104,7 +104,7 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
         deepLink: () => "https://courtplay.app/activity",
     },
     claimer_cancelled: {
-        title: "A claimer cancelled",
+        title: "Someone cancelled their claim.",
         body: (d) => d.claimer_name
             ? `${d.claimer_name} cancelled their pending claim${d.post_summary ? ` on ${d.post_summary}` : ""}.`
             : "A player cancelled their pending claim on your post.",
@@ -134,7 +134,7 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
         deepLink: (postId) => postId ? `https://courtplay.app/post/${postId}` : "https://courtplay.app/feed",
     },
     "48h_unfilled": {
-        title: "Your post still needs a sub",
+        title: "Your post is still open.",
         body: (d) => d.post_summary
             ? `Your post for ${d.post_summary} has been up for 48 hours with no claims. Consider lowering the price to attract interest.`
             : "Your post has been up for 48 hours with no claims. Consider lowering the price to attract interest.",
@@ -154,7 +154,7 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
         deepLink: (postId) => postId ? `https://courtplay.app/post/${postId}` : "https://courtplay.app/activity",
     },
     friend_expiry: {
-        title: "Friend's game filling up",
+        title: "Your friend's game still has an open spot!",
         body: (d) => {
             if (d.poster_name && d.location) {
                 return `${d.poster_name}'s spot at ${d.location} is still open \u2014 game starts in 4 hours.`;
@@ -167,7 +167,7 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
         deepLink: (postId) => postId ? `https://courtplay.app/post/${postId}` : "https://courtplay.app/feed",
     },
     friend_new_post: {
-        title: "Friend posted a new sub need",
+        title: "Your friend posted an open spot!",
         body: (d) => d.poster_name
             ? `${d.poster_name} just posted a new sub need${d.post_summary ? ` — ${d.post_summary}` : ""}. Check it out!`
             : "A friend just posted a new sub need. Check it out!",
