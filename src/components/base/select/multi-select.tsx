@@ -1,5 +1,5 @@
 import type { ReactNode, RefAttributes } from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, SearchLg } from "@untitledui/icons";
 import { useFilter } from "react-aria";
 import type { Selection } from "react-aria-components";
@@ -125,6 +125,12 @@ interface MultiSelectProps extends RefAttributes<HTMLDivElement>, CommonProps {
     isRequired?: boolean;
     /** Whether the select is in an invalid state. */
     isInvalid?: boolean;
+    /**
+     * Render the menu non-modally as an in-flow dropdown so the page keeps
+     * scrolling while it's open (like the non-modal single Selects on the post form).
+     * @default false
+     */
+    isNonModal?: boolean;
     /** Additional class name for the popover. */
     popoverClassName?: string;
     /** Additional class name for the trigger button. */
@@ -159,6 +165,9 @@ interface MultiSelectProps extends RefAttributes<HTMLDivElement>, CommonProps {
     supportingText?: ReactNode;
 }
 
+const TRIGGER_CLASSES =
+    "relative flex w-full cursor-pointer items-center rounded-lg bg-primary shadow-xs ring-1 ring-primary outline-hidden transition duration-100 ease-linear ring-inset";
+
 const MultiSelectRoot = ({
     items,
     children,
@@ -169,6 +178,7 @@ const MultiSelectRoot = ({
     isDisabled,
     isRequired,
     isInvalid,
+    isNonModal,
     placeholder = "Select",
     label,
     hint,
@@ -192,7 +202,13 @@ const MultiSelectRoot = ({
     const [searchValue, setSearchValue] = useState("");
 
     const triggerRef = useRef<HTMLButtonElement>(null);
+    const rootRef = useRef<HTMLDivElement>(null);
     const [popoverWidth, setPopoverWidth] = useState("");
+    // Non-modal open state — lets the page scroll while the menu is open.
+    const [open, setOpen] = useState(false);
+    // Non-modal menu width — matched to the trigger (which may be sized to its
+    // content via triggerStyle), so the in-flow dropdown isn't full field width.
+    const [menuWidth, setMenuWidth] = useState<number>();
 
     const onResize = useCallback(() => {
         if (!triggerRef.current) return;
@@ -200,12 +216,101 @@ const MultiSelectRoot = ({
         setPopoverWidth(rect.width + "px");
     }, []);
 
+    useEffect(() => {
+        if (isNonModal && open && triggerRef.current) setMenuWidth(triggerRef.current.offsetWidth);
+    }, [isNonModal, open]);
+
+    // Close the in-flow menu when clicking outside it — react-aria doesn't dismiss
+    // non-modal menus on outside pointer interaction. Capture phase so it also
+    // closes when another field is opened.
+    useEffect(() => {
+        if (!isNonModal || !open) return;
+        const onDown = (e: PointerEvent) => {
+            if (rootRef.current?.contains(e.target as Node)) return;
+            setOpen(false);
+        };
+        document.addEventListener("pointerdown", onDown, true);
+        return () => document.removeEventListener("pointerdown", onDown, true);
+    }, [isNonModal, open]);
+
     const selectedCount = selectedKeys instanceof Set ? selectedKeys.size : selectedKeys === "all" ? (items?.length ?? 0) : 0;
     const hasSelection = selectedCount > 0;
 
     const handleClearSearch = useCallback(() => {
         setSearchValue("");
     }, []);
+
+    const triggerInner = (
+        <span
+            className={cx(
+                "flex w-full items-center truncate text-left",
+                sizes[size].root,
+                "*:data-icon:shrink-0 *:data-icon:text-fg-quaternary",
+            )}
+        >
+            {hasSelection ? (
+                <span className={cx("flex items-center", sizes[size].textContainer)}>
+                    <span className={cx("font-medium text-primary", sizes[size].text)}>
+                        {selectedCountFormatter ? selectedCountFormatter(selectedCount) : `${selectedCount} selected`}
+                    </span>
+                    {supportingText && <span className={cx("text-tertiary", sizes[size].text)}>{supportingText}</span>}
+                </span>
+            ) : (
+                <span className={cx("text-placeholder", sizes[size].text)}>{placeholder}</span>
+            )}
+
+            <ChevronDown
+                aria-hidden="true"
+                className={cx("ml-auto shrink-0 text-fg-quaternary", size === "lg" ? "size-5" : "size-4 stroke-[2.25px]")}
+            />
+        </span>
+    );
+
+    // The menu body (search + option list + footer) is shared by the modal popover
+    // and the non-modal in-flow dropdown.
+    const menuBody = (
+        <>
+            <AriaAutocomplete filter={contains} inputValue={searchValue} onInputChange={setSearchValue}>
+                {showSearch && (
+                    <div className={cx("border-b border-secondary", searchSizes[size].wrapper)}>
+                        <AriaSearchField aria-label="Search" value={searchValue} onChange={setSearchValue} autoFocus>
+                            <div className={cx("flex items-center", searchSizes[size].root)}>
+                                <SearchLg data-icon aria-hidden="true" className="shrink-0 text-fg-quaternary" />
+                                <AriaInput
+                                    placeholder="Search"
+                                    className={cx(
+                                        "w-full appearance-none bg-transparent text-primary caret-alpha-black/90 outline-hidden placeholder:text-placeholder",
+                                        searchSizes[size].text,
+                                    )}
+                                />
+                            </div>
+                        </AriaSearchField>
+                    </div>
+                )}
+
+                <AriaListBox
+                    aria-label={label || "Options"}
+                    items={items}
+                    selectionMode="multiple"
+                    selectedKeys={selectedKeys}
+                    defaultSelectedKeys={defaultSelectedKeys}
+                    onSelectionChange={onSelectionChange}
+                    renderEmptyState={() => (
+                        <MultiSelectEmptyState
+                            title={emptyStateTitle}
+                            description={emptyStateDescription}
+                            onClearSearch={searchValue ? handleClearSearch : undefined}
+                        />
+                    )}
+                    className={cx("overflow-y-auto py-1 outline-hidden", popoverMaxHeights[size])}
+                >
+                    {children}
+                </AriaListBox>
+            </AriaAutocomplete>
+
+            {showFooter && <MultiSelectFooter size={size} onReset={onReset} onSelectAll={onSelectAll} />}
+        </>
+    );
 
     return (
         <SelectContext.Provider value={{ size }}>
@@ -216,105 +321,77 @@ const MultiSelectRoot = ({
                     </Label>
                 )}
 
-                <AriaDialogTrigger>
-                    <AriaButton
-                        ref={triggerRef}
-                        isDisabled={isDisabled}
-                        style={triggerStyle}
-                        onClick={onResize}
-                        className={(state) =>
-                            cx(
-                                "relative flex w-full cursor-pointer items-center rounded-lg bg-primary shadow-xs ring-1 ring-primary outline-hidden transition duration-100 ease-linear ring-inset",
-                                (state.isFocusVisible || state.isPressed) && "ring-2 ring-brand",
-                                state.isDisabled && "cursor-not-allowed opacity-50",
-                                triggerClassName,
-                            )
-                        }
-                    >
-                        <span
+                {isNonModal ? (
+                    // In-flow dropdown: renders below the field so it stays anchored to
+                    // the field while the page scrolls (matches the non-modal Selects).
+                    <div ref={rootRef} className="relative">
+                        <button
+                            type="button"
+                            ref={triggerRef}
+                            disabled={isDisabled}
+                            style={triggerStyle}
+                            onClick={() => setOpen((o) => !o)}
                             className={cx(
-                                "flex w-full items-center truncate text-left",
-                                sizes[size].root,
-                                "*:data-icon:shrink-0 *:data-icon:text-fg-quaternary",
+                                TRIGGER_CLASSES,
+                                "focus-visible:ring-2 focus-visible:ring-brand",
+                                open && "ring-2 ring-brand",
+                                isDisabled && "cursor-not-allowed opacity-50",
+                                triggerClassName,
                             )}
                         >
-                            {hasSelection ? (
-                                <span className={cx("flex items-center", sizes[size].textContainer)}>
-                                    <span className={cx("font-medium text-primary", sizes[size].text)}>
-                                        {selectedCountFormatter ? selectedCountFormatter(selectedCount) : `${selectedCount} selected`}
-                                    </span>
-                                    {supportingText && <span className={cx("text-tertiary", sizes[size].text)}>{supportingText}</span>}
-                                </span>
-                            ) : (
-                                <span className={cx("text-placeholder", sizes[size].text)}>{placeholder}</span>
-                            )}
-
-                            <ChevronDown
-                                aria-hidden="true"
-                                className={cx("ml-auto shrink-0 text-fg-quaternary", size === "lg" ? "size-5" : "size-4 stroke-[2.25px]")}
-                            />
-                        </span>
-                    </AriaButton>
-
-                    <AriaPopover
-                        placement="bottom"
-                        offset={4}
-                        containerPadding={0}
-                        style={{ width: popoverWidth || undefined }}
-                        className={(state) =>
-                            cx(
-                                "w-(--trigger-width) origin-(--trigger-anchor-point) overflow-hidden rounded-lg bg-primary shadow-lg ring-1 ring-secondary_alt outline-hidden will-change-transform",
-                                state.isEntering &&
-                                    "duration-150 ease-out animate-in fade-in placement-top:slide-in-from-bottom-0.5 placement-bottom:slide-in-from-top-0.5",
-                                state.isExiting &&
-                                    "duration-100 ease-in animate-out fade-out placement-top:slide-out-to-bottom-0.5 placement-bottom:slide-out-to-top-0.5",
-                                popoverClassName,
-                            )
-                        }
-                    >
-                        <AriaDialog className="outline-hidden">
-                            <AriaAutocomplete filter={contains} inputValue={searchValue} onInputChange={setSearchValue}>
-                                {showSearch && (
-                                    <div className={cx("border-b border-secondary", searchSizes[size].wrapper)}>
-                                        <AriaSearchField aria-label="Search" value={searchValue} onChange={setSearchValue} autoFocus>
-                                            <div className={cx("flex items-center", searchSizes[size].root)}>
-                                                <SearchLg data-icon aria-hidden="true" className="shrink-0 text-fg-quaternary" />
-                                                <AriaInput
-                                                    placeholder="Search"
-                                                    className={cx(
-                                                        "w-full appearance-none bg-transparent text-primary caret-alpha-black/90 outline-hidden placeholder:text-placeholder",
-                                                        searchSizes[size].text,
-                                                    )}
-                                                />
-                                            </div>
-                                        </AriaSearchField>
-                                    </div>
+                            {triggerInner}
+                        </button>
+                        {open && (
+                            <div
+                                style={{ width: menuWidth }}
+                                className={cx(
+                                    "absolute top-full left-0 z-40 mt-1 w-full overflow-hidden rounded-lg bg-primary shadow-lg ring-1 ring-secondary_alt outline-hidden",
+                                    popoverClassName,
                                 )}
+                            >
+                                {menuBody}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <AriaDialogTrigger>
+                        <AriaButton
+                            ref={triggerRef}
+                            isDisabled={isDisabled}
+                            style={triggerStyle}
+                            onClick={onResize}
+                            className={(state) =>
+                                cx(
+                                    TRIGGER_CLASSES,
+                                    (state.isFocusVisible || state.isPressed) && "ring-2 ring-brand",
+                                    state.isDisabled && "cursor-not-allowed opacity-50",
+                                    triggerClassName,
+                                )
+                            }
+                        >
+                            {triggerInner}
+                        </AriaButton>
 
-                                <AriaListBox
-                                    aria-label={label || "Options"}
-                                    items={items}
-                                    selectionMode="multiple"
-                                    selectedKeys={selectedKeys}
-                                    defaultSelectedKeys={defaultSelectedKeys}
-                                    onSelectionChange={onSelectionChange}
-                                    renderEmptyState={() => (
-                                        <MultiSelectEmptyState
-                                            title={emptyStateTitle}
-                                            description={emptyStateDescription}
-                                            onClearSearch={searchValue ? handleClearSearch : undefined}
-                                        />
-                                    )}
-                                    className={cx("overflow-y-auto py-1 outline-hidden", popoverMaxHeights[size])}
-                                >
-                                    {children}
-                                </AriaListBox>
-                            </AriaAutocomplete>
-
-                            {showFooter && <MultiSelectFooter size={size} onReset={onReset} onSelectAll={onSelectAll} />}
-                        </AriaDialog>
-                    </AriaPopover>
-                </AriaDialogTrigger>
+                        <AriaPopover
+                            placement="bottom"
+                            offset={4}
+                            containerPadding={0}
+                            style={{ width: popoverWidth || undefined }}
+                            className={(state) =>
+                                cx(
+                                    "w-(--trigger-width) origin-(--trigger-anchor-point) overflow-hidden rounded-lg bg-primary shadow-lg ring-1 ring-secondary_alt outline-hidden will-change-transform",
+                                    state.isEntering &&
+                                        "duration-150 ease-out animate-in fade-in placement-top:slide-in-from-bottom-0.5 placement-bottom:slide-in-from-top-0.5",
+                                    state.isExiting &&
+                                        "duration-100 ease-in animate-out fade-out placement-top:slide-out-to-bottom-0.5 placement-bottom:slide-out-to-top-0.5",
+                                    popoverClassName,
+                                )
+                            }
+                        >
+                            <AriaDialog className="outline-hidden">{menuBody}</AriaDialog>
+                        </AriaPopover>
+                    </AriaDialogTrigger>
+                )}
 
                 {hint && (
                     <HintText isInvalid={isInvalid} className={cx(size === "sm" && "text-xs")}>
