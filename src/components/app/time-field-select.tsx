@@ -20,7 +20,8 @@ interface Indices {
 }
 
 function parse(value: string | null): Indices {
-    const [h, m] = (value ?? "09:00").split(":").map(Number);
+    // Empty/unset falls back to 9:00 so the wheel has a sensible starting position.
+    const [h, m] = (value || "09:00").split(":").map(Number);
     const meridiem = h >= 12 ? 1 : 0;
     const hour = HOURS.indexOf(h % 12 || 12);
     // Snap the minute to the nearest quarter.
@@ -120,6 +121,8 @@ interface TimeFieldSelectProps {
     onChange: (value: string) => void;
     isDisabled?: boolean;
     "aria-label"?: string;
+    /** Shown (greyed) when no time is selected yet. */
+    placeholder?: string;
     /** Applied to the field container (e.g. width). */
     className?: string;
 }
@@ -128,7 +131,7 @@ interface TimeFieldSelectProps {
  * A time field that opens a wheel picker (hour / minute / AM-PM) below it. Same field
  * and menu surface as the other dropdowns; stays open + fixed to the field on page scroll.
  */
-export function TimeFieldSelect({ value, onChange, isDisabled, className, ...props }: TimeFieldSelectProps) {
+export function TimeFieldSelect({ value, onChange, isDisabled, className, placeholder = "--:-- --", ...props }: TimeFieldSelectProps) {
     const [open, setOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
     const [idx, setIdx] = useState<Indices>(() => parse(value));
@@ -180,7 +183,7 @@ export function TimeFieldSelect({ value, onChange, isDisabled, className, ...pro
                 onClick={() => !isDisabled && setOpen((o) => !o)}
                 className="flex h-9 w-full cursor-pointer items-center rounded-lg bg-tertiary px-3 text-sm text-primary shadow-xs outline-hidden ring-1 ring-neutral-600 transition duration-100 ease-linear ring-inset disabled:cursor-not-allowed disabled:opacity-50"
             >
-                <span className="truncate">{label(value)}</span>
+                <span className={cx("truncate", !value && "text-placeholder")}>{value ? label(value) : placeholder}</span>
             </button>
 
             {open && (

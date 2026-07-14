@@ -304,7 +304,7 @@ describe("PostNew — regular game form", () => {
         const submit = () => screen.getByRole("button", { name: /^Create post$/i });
         expect(submit()).toBeDisabled();
 
-        await pickMulti(user, "Select", "Doubles");
+        await pickMulti(user, "Select type", "Doubles");
         await pickMulti(user, "Select level", /NTRP 4\.0/);
         await user.type(screen.getByPlaceholderText(/tell the group/i), "Looking for a weekly game");
 
@@ -325,7 +325,7 @@ describe("PostNew — regular game form", () => {
         await user.click(screen.getByText("Find a regular game"));
         await waitFor(() => screen.getByText("Play type"));
 
-        await pickMulti(user, "Select", "Doubles");
+        await pickMulti(user, "Select type", "Doubles");
         await pickMulti(user, "Any size", "4");
         await pickMulti(user, "Select level", /NTRP 4\.0/);
         await user.type(screen.getByPlaceholderText(/tell the group/i), "Weekly game");

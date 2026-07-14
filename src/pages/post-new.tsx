@@ -177,7 +177,7 @@ export function PostNew() {
     const [playType, setPlayType] = useState("");
     const [duration, setDuration] = useState<number | null>(null);
     const [gameDate, setGameDate] = useState<DateValue | null>(null);
-    const [gameTime, setGameTime] = useState("09:00");
+    const [gameTime, setGameTime] = useState("");
     const [skillLevel, setSkillLevel] = useState("");
     const [courtId, setCourtId] = useState<string | null>(null);
     const [showCustomCourt, setShowCustomCourt] = useState(false);
@@ -240,7 +240,7 @@ export function PostNew() {
                 setPlayType(post.play_type ?? "");
                 setDuration(post.duration != null ? Number(post.duration) : null);
                 setGameDate(post.game_date ? parseDate(post.game_date) : null);
-                setGameTime(post.game_time ? post.game_time.slice(0, 5) : "09:00");
+                setGameTime(post.game_time ? post.game_time.slice(0, 5) : "");
                 setSkillLevel(post.skill_level ?? "");
                 setCourtId(post.court_id ?? null);
                 setCustomCourt(post.custom_court ?? "");
@@ -269,7 +269,7 @@ export function PostNew() {
                               playType: post.play_type ?? "",
                               duration: post.duration != null ? Number(post.duration) : null,
                               gameDate: post.game_date ?? null,
-                              gameTime: post.game_time ? post.game_time.slice(0, 5) : "09:00",
+                              gameTime: post.game_time ? post.game_time.slice(0, 5) : "",
                               skillLevel: post.skill_level ?? "",
                               courtId: post.court_id ?? null,
                               showCustomCourt: !!post.custom_court && !post.court_id,
@@ -290,7 +290,7 @@ export function PostNew() {
                               playType: "",
                               duration: null,
                               gameDate: null,
-                              gameTime: "09:00",
+                              gameTime: "",
                               skillLevel: "",
                               courtId: null,
                               showCustomCourt: false,
@@ -804,15 +804,16 @@ export function PostNew() {
                     <div className="flex flex-col gap-5">
                         <MultiSelect
                             label="Play type"
-                            placeholder="Select"
+                            placeholder="Select type"
                             items={PLAY_TYPES}
-                            triggerStyle={multiMenuWidth(PLAY_TYPES, "Select")}
+                            triggerStyle={multiMenuWidth(PLAY_TYPES, "Select type")}
                             selectedKeys={rgPlayTypes}
                             onSelectionChange={(k) => setRgPlayTypes(k)}
                             isRequired
                             size="sm"
                             showSearch={false}
                             showFooter={false}
+                            isNonModal
                             triggerClassName={FIELD_SELECT}
                         >
                             {(item) => (
@@ -832,6 +833,7 @@ export function PostNew() {
                             size="sm"
                             showSearch={false}
                             showFooter={false}
+                            isNonModal
                             triggerClassName={FIELD_SELECT}
                         >
                             {(item) => (
@@ -852,6 +854,7 @@ export function PostNew() {
                             size="sm"
                             showSearch={false}
                             showFooter={false}
+                            isNonModal
                             triggerClassName={FIELD_SELECT}
                         >
                             {(item) => (
@@ -871,6 +874,7 @@ export function PostNew() {
                             size="sm"
                             showSearch={false}
                             showFooter={false}
+                            isNonModal
                             triggerClassName={FIELD_SELECT}
                         >
                             {(item) => (
@@ -890,6 +894,7 @@ export function PostNew() {
                             size="sm"
                             showSearch={false}
                             showFooter={false}
+                            isNonModal
                             triggerClassName={FIELD_SELECT}
                         >
                             {(item) => (
@@ -908,6 +913,7 @@ export function PostNew() {
                             size="sm"
                             showSearch={false}
                             showFooter={false}
+                            isNonModal
                             triggerClassName={FIELD_SELECT}
                         >
                             {(item) => (
