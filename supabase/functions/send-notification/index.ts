@@ -21,7 +21,9 @@ type NotificationType =
     | "48h_unfilled"
     | "game_reminder"
     | "friend_expiry"
-    | "friend_new_post";
+    | "friend_new_post"
+    | "connection_request"
+    | "connection_closed";
 
 interface TemplateConfig {
     title: string;
@@ -176,6 +178,26 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
             : "A friend needs a sub on CourtPlay",
         deepLink: (postId) => postId ? `https://courtplay.app/post/${postId}` : "https://courtplay.app/feed",
     },
+    connection_request: {
+        title: "Someone wants to connect!",
+        body: (d) => d.claimer_name
+            ? `${d.claimer_name} reached out about your regular play post. Open the conversation to reply.`
+            : "Someone reached out about your regular play post. Open the conversation to reply.",
+        subject: (d) => d.claimer_name
+            ? `${d.claimer_name} wants to connect on CourtPlay`
+            : "Someone wants to connect on CourtPlay",
+        deepLink: () => "https://courtplay.app/activity?tab=created",
+    },
+    connection_closed: {
+        title: "A group filled up",
+        body: (d) => d.poster_name
+            ? `${d.poster_name} found a spot, so their regular play post is now closed.`
+            : "The player found a spot, so their regular play post is now closed.",
+        subject: (d) => d.poster_name
+            ? `${d.poster_name} found a spot on CourtPlay`
+            : "A CourtPlay player found a spot",
+        deepLink: () => "https://courtplay.app/activity",
+    },
 };
 
 // Default channels per notification type
@@ -194,6 +216,8 @@ const DEFAULT_CHANNELS: Record<NotificationType, { push: boolean; email: boolean
     game_reminder:      { push: false, email: true },
     friend_expiry:      { push: false, email: true },
     friend_new_post:    { push: false, email: false }, // N13 defaults to off
+    connection_request: { push: true, email: true },   // N14 — like a new claim
+    connection_closed:  { push: false, email: true },  // N15
 };
 
 function buildEmailHtml(template: TemplateConfig, d: Record<string, string>, postId?: string, venmoLink?: string): string {
