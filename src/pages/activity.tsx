@@ -438,7 +438,7 @@ export function Activity() {
                 <div className="flex shrink-0 gap-2 bg-primary px-5 pt-0.5 pb-2">
                     {(
                         [
-                            { id: "claims", label: "Claimed posts" },
+                            { id: "claims", label: "Answered posts" },
                             { id: "created", label: "Created posts" },
                         ] as const
                     ).map((t) => (

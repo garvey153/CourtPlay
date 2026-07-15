@@ -58,7 +58,7 @@ describe("Activity redesign", () => {
     it("renders pill tabs and claimed-post cards", async () => {
         setup([], [myClaim]);
         render(<MemoryRouter><Activity /></MemoryRouter>);
-        expect(await screen.findByRole("button", { name: "Claimed posts" })).toBeInTheDocument();
+        expect(await screen.findByRole("button", { name: "Answered posts" })).toBeInTheDocument();
         expect(screen.getByRole("button", { name: "Created posts" })).toBeInTheDocument();
         // Feed-style card title
         expect(await screen.findByText(/Doubles Tennis/)).toBeInTheDocument();
