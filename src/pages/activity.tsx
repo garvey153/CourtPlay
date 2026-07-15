@@ -461,7 +461,7 @@ export function Activity() {
                 )}
 
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
-                    <PullToRefresh onRefresh={fetchData} className="flex min-h-full flex-col" contentClassName="flex min-h-full flex-col">
+                    <PullToRefresh onRefresh={fetchData} className="flex min-h-full flex-col" contentClassName="flex min-h-full flex-1 flex-col">
                     <div className="flex flex-1 flex-col px-5 pt-2 pb-4">
                         {loading ? (
                             <ul aria-label="Loading" className="flex flex-col gap-3">
