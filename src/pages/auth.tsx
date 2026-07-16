@@ -167,8 +167,9 @@ export function AuthScreen() {
                     </p>
                 </div>
 
-                {/* Sign up | Sign in toggle */}
-                <div className="flex w-full gap-0.5 rounded-lg bg-secondary p-0.5 ring-1 ring-secondary ring-inset">
+                {/* Sign up | Sign in toggle — 36px tall (design), tabs flush; the
+                    container clips the active pill's outer corners. */}
+                <div className="flex w-full gap-0.5 overflow-hidden rounded-lg bg-secondary ring-1 ring-secondary ring-inset">
                     {(["signup", "signin"] as const).map((m) => (
                         <button
                             key={m}
@@ -176,7 +177,7 @@ export function AuthScreen() {
                             onClick={() => switchMode(m)}
                             aria-pressed={mode === m}
                             className={cx(
-                                "flex h-9 flex-1 items-center justify-center rounded-md text-sm font-semibold transition duration-100 ease-linear",
+                                "flex h-9 flex-1 items-center justify-center text-sm font-semibold transition duration-100 ease-linear",
                                 mode === m ? "bg-brand-500 text-neutral-950" : "text-tertiary hover:text-secondary",
                             )}
                         >
