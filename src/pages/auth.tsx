@@ -155,14 +155,18 @@ export function AuthScreen() {
     }
 
     return (
-        <div className="flex min-h-dvh flex-col items-center justify-center bg-primary px-9 py-12">
+        // Top-anchored (not vertically centered) so the toggle stays at a fixed Y when
+        // switching states — the two states differ in height (confirm field vs the
+        // remember/forgot row), which would otherwise re-center and shift the toggle.
+        <div className="flex min-h-dvh flex-col items-center bg-primary px-9 pt-[17dvh] pb-12">
             <div className="flex w-full max-w-sm flex-col items-center gap-6">
-                {/* Header */}
+                {/* Header — the subtitle reserves two lines (min-h-10) so the header
+                    height is constant across states, keeping the toggle fixed. */}
                 <div className="flex flex-col items-center gap-2.5 px-5 text-center">
                     <h1 className="text-display-sm font-semibold text-primary">
                         {isSignup ? "Create your account" : "Welcome back"}
                     </h1>
-                    <p className="text-sm text-secondary">
+                    <p className="flex min-h-10 items-center justify-center text-sm text-secondary">
                         {isSignup ? "Join CourtPlay – find a sub for your court in under 10 minutes" : "Sign in to CourtPlay"}
                     </p>
                 </div>
