@@ -233,7 +233,8 @@ export function AuthScreen() {
 
                     {error && <p className="text-sm text-error-primary">{error}</p>}
 
-                    <button type="submit" disabled={loading} className={PRIMARY_BTN}>
+                    {/* 32px above the CTA (mt-2 on top of the form's 24px gap). */}
+                    <button type="submit" disabled={loading} className={cx(PRIMARY_BTN, "mt-2")}>
                         {loading ? <ButtonSpinner /> : isSignup ? "Sign up" : "Sign in"}
                     </button>
                 </form>
