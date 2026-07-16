@@ -18,8 +18,7 @@ import { PostNew } from "@/pages/post-new";
 import { EditProfile } from "@/pages/edit-profile";
 import { Profile } from "@/pages/profile";
 import { Privacy } from "@/pages/privacy";
-import { SignIn } from "@/pages/sign-in";
-import { SignUp } from "@/pages/sign-up";
+import { AuthScreen } from "@/pages/auth";
 import { Terms } from "@/pages/terms";
 
 createRoot(document.getElementById("root")!).render(
@@ -31,8 +30,8 @@ createRoot(document.getElementById("root")!).render(
                     <Routes>
                         {/* Public */}
                         <Route path="/" element={<Landing />} />
-                        <Route path="/signin" element={<SignIn />} />
-                        <Route path="/signup" element={<SignUp />} />
+                        <Route path="/signin" element={<AuthScreen />} />
+                        <Route path="/signup" element={<AuthScreen />} />
                         <Route path="/auth/callback" element={<AuthCallback />} />
                         <Route path="/post/:id" element={<PostDetail />} />
                         <Route path="/terms" element={<Terms />} />
