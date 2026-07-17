@@ -1,0 +1,6 @@
+project_id = "uheeddmtntnlgrpzfjph"
+
+[functions.send-notification]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-notification/index.ts"

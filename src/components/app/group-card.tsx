@@ -1,5 +1,4 @@
 import { memo, useEffect, useRef } from "react";
-import { Link } from "react-router";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
@@ -20,10 +19,12 @@ interface GroupCardProps {
     profileComplete: boolean;
     currentUserId?: string | null;
     onViewed?: (postId: string) => void;
+    /** Tapping the card opens the regular-play detail bottom sheet. */
+    onOpenDetail?: (post: FeedPost) => void;
 }
 
-export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed }: GroupCardProps) {
-    const cardRef = useRef<HTMLDivElement>(null);
+export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed, onOpenDetail }: GroupCardProps) {
+    const cardRef = useRef<HTMLButtonElement>(null);
     const didTrack = useRef(false);
 
     useEffect(() => {
@@ -55,7 +56,12 @@ export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed
         .join(" · ");
 
     return (
-        <div ref={cardRef} className="flex w-full overflow-hidden rounded text-left">
+        <button
+            ref={cardRef}
+            type="button"
+            onClick={() => onOpenDetail?.(post)}
+            className="flex w-full overflow-hidden rounded text-left"
+        >
             {/* Left accent bar — blue for regular play, gradient when featured (pro/club) */}
             <span
                 className={cx(
@@ -65,8 +71,15 @@ export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed
                 aria-hidden="true"
             />
 
-            {/* Card body */}
-            <div className="flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4">
+            {/* Card body — title-first layout, matching the green (sub) card */}
+            <div className="flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4 transition duration-100 ease-linear hover:bg-secondary_hover">
+                {/* Title + supporting info */}
+                <div className="flex min-w-0 flex-col gap-1">
+                    <p className="text-md font-semibold text-primary">{title}</p>
+                    {post.location && <p className="text-xs text-secondary">{post.location}</p>}
+                    {schedule && <p className="text-xs text-tertiary">{schedule}</p>}
+                </div>
+
                 {/* Poster row: avatar + name/time (+ friend) */}
                 <div className="flex min-w-0 items-center gap-2 pt-1">
                     <Avatar
@@ -77,13 +90,10 @@ export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed
                         className="shrink-0 bg-white p-px shadow-xs"
                     />
                     <span className="truncate text-xs text-tertiary">
-                        <Link
-                            to={`/profile/${post.author_id}`}
-                            className="font-medium text-tertiary hover:text-secondary hover:underline"
-                        >
+                        <span className="font-medium">
                             {post.first_name}
                             {post.last_name ? ` ${post.last_name.charAt(0).toUpperCase()}.` : ""}
-                        </Link>
+                        </span>
                         {" · "}
                         {timeAgo(post.created_at)}
                     </span>
@@ -94,13 +104,6 @@ export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed
                     )}
                 </div>
 
-                {/* Title + supporting info */}
-                <div className="flex min-w-0 flex-col gap-1">
-                    <p className="text-md font-semibold text-primary">{title}</p>
-                    {post.location && <p className="text-xs text-secondary">{post.location}</p>}
-                    {schedule && <p className="text-xs text-tertiary">{schedule}</p>}
-                </div>
-
                 {/* Notes speech-bubble (only when the poster added a note) */}
                 {post.notes && (
                     <div className="w-full rounded-lg rounded-tl-none border border-neutral-600 px-3 py-2.5">
@@ -108,6 +111,6 @@ export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed
                     </div>
                 )}
             </div>
-        </div>
+        </button>
     );
 });

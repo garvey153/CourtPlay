@@ -29,7 +29,9 @@ export const Label = ({ isInvalid, isRequired, tooltip, tooltipDescription, clas
 
             <span
                 className={cx(
-                    "hidden text-brand-tertiary",
+                    // Inherit the label color (text-secondary) so the required asterisk
+                    // matches the label text; only turns red in the invalid state.
+                    "hidden",
                     isRequired && "block",
                     typeof isRequired === "undefined" && "group-required:block",
 

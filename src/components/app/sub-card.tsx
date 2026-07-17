@@ -3,7 +3,17 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
 
-type CardKind = "open" | "approved" | "claimed" | "pending" | "expired";
+export type CardKind =
+    | "open"
+    | "approved"
+    | "claimed"
+    | "pending"
+    | "expired"
+    | "filled"
+    | "completed"
+    | "cancelled"
+    | "rejected"
+    | "backed_out";
 
 interface KindConfig {
     bar: string;
@@ -19,14 +29,34 @@ const KIND_CONFIG: Record<CardKind, KindConfig> = {
     approved: { bar: "bg-brand-500", label: "Approved", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", dot: "bg-brand-500", dim: false },
     claimed: { bar: "bg-neutral-400", label: "Claimed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: true },
     pending: { bar: "bg-neutral-400", label: "Pending", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: false },
-    expired: { bar: "bg-red-500", label: "Expired", badgeBg: "bg-red-500", badgeFg: "text-white", dot: null, dim: true },
+    expired: { bar: "bg-red-500", label: "Expired", badgeBg: "bg-red-900", badgeFg: "text-red-400", dot: "bg-red-400", dim: true },
+    filled: { bar: "bg-neutral-400", label: "Filled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: true },
+    completed: { bar: "bg-neutral-400", label: "Completed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
+    cancelled: { bar: "bg-neutral-400", label: "Cancelled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
+    rejected: { bar: "bg-red-500", label: "Declined", badgeBg: "bg-red-900", badgeFg: "text-red-400", dot: "bg-red-400", dim: true },
+    backed_out: { bar: "bg-neutral-400", label: "Backed out", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
 };
 
+/** Epoch ms of a dated post's end (game date + time). Null for undated posts. */
+export function gameEndMs(post: Pick<FeedPost, "game_date" | "game_time">): number | null {
+    if (!post.game_date) return null;
+    // game_time comes from Postgres as "HH:MM:SS"; keep just HH:MM so the ISO
+    // string stays valid ("…THH:MM:00"). Fall back to null on any parse failure
+    // so a bad value never drops the post from the feed.
+    const time = (post.game_time ?? "23:59").slice(0, 5);
+    const ms = new Date(`${post.game_date}T${time}:00`).getTime();
+    return Number.isNaN(ms) ? null : ms;
+}
+
 function getCardKind(post: FeedPost): CardKind {
-    if (post.status === "expired") return "expired";
+    // The viewer's own claim takes precedence so their card reflects their state.
     if (post.user_claim_status === "approved") return "approved";
     if (post.user_claim_status === "pending") return "pending";
+    // A filled spot stays "Claimed" even once the game date/time has passed.
     if (post.spots_available <= 0) return "claimed";
+    // An unclaimed post whose game date/time has passed is "Expired".
+    const end = gameEndMs(post);
+    if (post.status === "expired" || (end !== null && end < Date.now())) return "expired";
     return "open";
 }
 
@@ -76,9 +106,11 @@ interface SubCardProps {
     onViewed?: (postId: string) => void;
     /** Tapping the card opens the claim-detail bottom sheet. */
     onOpenDetail?: (post: FeedPost) => void;
+    /** Force the card state (Activity uses this from the claim/post display state). */
+    kindOverride?: CardKind;
 }
 
-export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, onOpenDetail }: SubCardProps) {
+export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, onOpenDetail, kindOverride }: SubCardProps) {
     const cardRef = useRef<HTMLButtonElement>(null);
     const didTrack = useRef(false);
 
@@ -100,8 +132,11 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
         return () => observer.disconnect();
     }, [post.id, post.author_id, currentUserId, onViewed]);
 
-    const kind = getCardKind(post);
+    const kind = kindOverride ?? getCardKind(post);
     const config = KIND_CONFIG[kind];
+
+    // Expired posts are dead — tapping them opens nothing.
+    const isExpired = kind === "expired";
 
     const playType = formatPlayType(post.play_type);
     const title = [playType, "Tennis"].filter(Boolean).join(" ");
@@ -118,14 +153,20 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
         <button
             ref={cardRef}
             type="button"
-            onClick={() => onOpenDetail?.(post)}
-            className="flex w-full overflow-hidden rounded text-left"
+            onClick={isExpired ? undefined : () => onOpenDetail?.(post)}
+            aria-disabled={isExpired || undefined}
+            className={cx("flex w-full overflow-hidden rounded text-left", isExpired && "cursor-default")}
         >
             {/* Left status accent bar */}
             <span className={cx("w-1 shrink-0 self-stretch", config.bar)} aria-hidden="true" />
 
             {/* Card body */}
-            <div className="flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4 transition duration-100 ease-linear hover:bg-secondary_hover">
+            <div
+                className={cx(
+                    "flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4 transition duration-100 ease-linear",
+                    !isExpired && "hover:bg-secondary_hover",
+                )}
+            >
                 {/* Top row: title/subtitle + status badge */}
                 <div className="flex w-full items-start gap-3">
                     <div className="flex min-w-0 flex-1 flex-col gap-1">

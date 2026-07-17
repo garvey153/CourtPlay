@@ -16,12 +16,12 @@ const HISTORY_STATES: PostDisplayState[] = ["completed", "expired", "cancelled"]
 describe("My Activity edge cases", () => {
     it("My Posts empty state shows CTA to create post", () => {
         const posts: unknown[] = [];
-        const emptyMessage = "You haven't posted any sub needs yet.";
-        const ctaText = "Create a post";
+        const emptyMessage = "You haven't posted any openings yet.";
+        const ctaText = "Find a sub";
 
         expect(posts).toHaveLength(0);
-        expect(emptyMessage).toBe("You haven't posted any sub needs yet.");
-        expect(ctaText).toBe("Create a post");
+        expect(emptyMessage).toBe("You haven't posted any openings yet.");
+        expect(ctaText).toBe("Find a sub");
     });
 
     it("My Claims empty state shows CTA to browse feed", () => {

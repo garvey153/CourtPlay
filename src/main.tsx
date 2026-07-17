@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { ProfileProvider } from "@/providers/profile-provider";
 import { RouteProvider } from "@/providers/router-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
@@ -15,12 +15,12 @@ import { NotFound } from "@/pages/not-found";
 import { Onboarding } from "@/pages/onboarding";
 import { PostDetail } from "@/pages/post-detail";
 import { PostNew } from "@/pages/post-new";
+import { EditProfile } from "@/pages/edit-profile";
 import { Profile } from "@/pages/profile";
-import { Settings } from "@/pages/settings";
 import { Privacy } from "@/pages/privacy";
-import { SignIn } from "@/pages/sign-in";
-import { SignUp } from "@/pages/sign-up";
+import { AuthScreen } from "@/pages/auth";
 import { Terms } from "@/pages/terms";
+import { isStandalone } from "@/utils/is-standalone";
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
@@ -29,10 +29,11 @@ createRoot(document.getElementById("root")!).render(
                 <RouteProvider>
                 <ProfileProvider>
                     <Routes>
-                        {/* Public */}
-                        <Route path="/" element={<Landing />} />
-                        <Route path="/signin" element={<SignIn />} />
-                        <Route path="/signup" element={<SignUp />} />
+                        {/* Public. The installed PWA skips the marketing landing and
+                            opens straight to Create account. */}
+                        <Route path="/" element={isStandalone() ? <Navigate to="/signup" replace /> : <Landing />} />
+                        <Route path="/signin" element={<AuthScreen />} />
+                        <Route path="/signup" element={<AuthScreen />} />
                         <Route path="/auth/callback" element={<AuthCallback />} />
                         <Route path="/post/:id" element={<PostDetail />} />
                         <Route path="/terms" element={<Terms />} />
@@ -66,6 +67,14 @@ createRoot(document.getElementById("root")!).render(
                             }
                         />
                         <Route
+                            path="/profile/edit"
+                            element={
+                                <ProtectedRoute>
+                                    <EditProfile />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
                             path="/profile/me"
                             element={
                                 <ProtectedRoute>
@@ -86,14 +95,6 @@ createRoot(document.getElementById("root")!).render(
                             element={
                                 <ProtectedRoute>
                                     <Activity />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/settings"
-                            element={
-                                <ProtectedRoute>
-                                    <Settings />
                                 </ProtectedRoute>
                             }
                         />

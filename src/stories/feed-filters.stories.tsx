@@ -7,7 +7,7 @@ interface FilterState {
     formats: string[];
     dateFrom: string | null;
     dateTo: string | null;
-    courtId: string | null;
+    courtIds: string[];
 }
 
 const mockCourts = [
@@ -21,7 +21,7 @@ const emptyFilters: FilterState = {
     formats: [],
     dateFrom: null,
     dateTo: null,
-    courtId: null,
+    courtIds: [],
 };
 
 type WrapperArgs = {
@@ -83,7 +83,7 @@ export const OpenWithFilters: Story = {
             formats: ["point_play"],
             dateFrom: null,
             dateTo: null,
-            courtId: "1",
+            courtIds: ["1"],
         },
         isOpen: true,
         courts: mockCourts,

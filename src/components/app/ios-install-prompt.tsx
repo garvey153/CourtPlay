@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Share07, X } from "@untitledui/icons";
+import { X } from "@untitledui/icons";
 import { useAuth } from "@/hooks/use-auth";
 
 const STORAGE_KEY = "cs_ios_prompt_dismissed";
@@ -30,18 +30,48 @@ export function IosInstallPrompt() {
         setVisible(false);
     };
 
+    const share = async () => {
+        // Opens the native share sheet, where "Add to Home Screen" lives.
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: "CourtPlay", url: window.location.origin });
+            }
+        } catch {
+            // User cancelled the share sheet — no-op.
+        }
+    };
+
+    // Matches the post create/delete confirmation banners. Rendered inside the feed
+    // list so it scrolls and pulls with the posts (spacing comes from the feed's gap).
     return (
-        <div className="mx-4 mt-3 flex items-start gap-3 rounded-lg border border-secondary bg-primary p-3 shadow-sm">
-            <Share07 className="mt-0.5 size-5 shrink-0 text-brand-primary" aria-hidden="true" />
-            <p className="flex-1 text-sm text-secondary">
-                <span className="font-semibold text-primary">Add CourtPlay to your home screen</span>
-                <br />
-                Tap <Share07 className="inline size-3.5 text-secondary" aria-hidden="true" /> then "Add to Home Screen" for the best experience.
-            </p>
-            <button onClick={dismiss} className="mt-0.5 shrink-0 rounded p-0.5 text-quaternary hover:text-secondary">
+        <div className="relative rounded-lg bg-brand-800 p-4">
+            <button
+                onClick={dismiss}
+                aria-label="Dismiss"
+                className="absolute right-3 top-3 rounded p-0.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
+            >
                 <X className="size-4" aria-hidden="true" />
-                <span className="sr-only">Dismiss</span>
             </button>
+
+            <p className="pr-6 text-sm font-semibold text-primary">Add CourtPlay to your home screen</p>
+            <p className="mt-1 text-sm text-secondary">Tap Share, then "Add to Home Screen" for the best experience.</p>
+
+            <div className="mt-3 flex items-center gap-3">
+                <button
+                    type="button"
+                    onClick={dismiss}
+                    className="text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary"
+                >
+                    Dismiss
+                </button>
+                <button
+                    type="button"
+                    onClick={share}
+                    className="text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
+                >
+                    Share
+                </button>
+            </div>
         </div>
     );
 }

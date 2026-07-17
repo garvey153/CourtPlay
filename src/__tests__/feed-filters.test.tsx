@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { FeedFilters } from "@/components/app/feed-filters";
@@ -14,7 +14,7 @@ const defaultFilters: FilterState = {
     formats: [],
     dateFrom: null,
     dateTo: null,
-    courtId: null,
+    courtIds: [],
 };
 
 const mockCourts = [
@@ -61,10 +61,10 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
 function applyFilters(posts: FeedPost[], f: FilterState): FeedPost[] {
     return posts.filter((p) => {
         if (f.skillLevels.length > 0 && !f.skillLevels.includes(p.skill_level ?? "")) return false;
-        if (f.formats.length > 0 && !f.formats.includes(p.format ?? "")) return false;
+        if (f.formats.length > 0 && !f.formats.includes(p.play_type ?? p.format ?? "")) return false;
         if (f.dateFrom && p.game_date && p.game_date < f.dateFrom) return false;
         if (f.dateTo && p.game_date && p.game_date > f.dateTo) return false;
-        if (f.courtId && p.court_id !== f.courtId) return false;
+        if (f.courtIds.length > 0 && !f.courtIds.includes(p.court_id ?? "")) return false;
         return true;
     });
 }
@@ -89,13 +89,17 @@ function FiltersWrapper({
     };
 
     return (
-        <FeedFilters
-            filters={filters}
-            onChange={handleChange}
-            courts={mockCourts}
-            isOpen={isOpen}
-            onToggle={() => setIsOpen((v) => !v)}
-        />
+        <>
+            {/* The real trigger lives in the header (TopNav); simulate it here. */}
+            <button onClick={() => setIsOpen((v) => !v)}>Filters</button>
+            <FeedFilters
+                filters={filters}
+                onChange={handleChange}
+                courts={mockCourts}
+                isOpen={isOpen}
+                onToggle={() => setIsOpen((v) => !v)}
+            />
+        </>
     );
 }
 
@@ -126,15 +130,25 @@ describe("applyFilters — skill level", () => {
     });
 });
 
-describe("applyFilters — format", () => {
-    it("format filter works correctly", () => {
+describe("applyFilters — format / play type", () => {
+    it("format filter works correctly for regular_game posts", () => {
         const posts = [
-            makePost({ id: "pp", format: "point_play" }),
-            makePost({ id: "cl", format: "clinic" }),
+            makePost({ id: "pp", format: "point_play", play_type: null }),
+            makePost({ id: "cl", format: "clinic", play_type: null }),
         ];
         const result = applyFilters(posts, { ...defaultFilters, formats: ["point_play"] });
         expect(result).toHaveLength(1);
         expect(result[0].id).toBe("pp");
+    });
+
+    it("play_type filter works for sub_need posts (format is null)", () => {
+        const posts = [
+            makePost({ id: "d", format: null, play_type: "doubles" }),
+            makePost({ id: "c", format: null, play_type: "clinic" }),
+        ];
+        const result = applyFilters(posts, { ...defaultFilters, formats: ["doubles"] });
+        expect(result).toHaveLength(1);
+        expect(result[0].id).toBe("d");
     });
 });
 
@@ -144,7 +158,7 @@ describe("applyFilters — location", () => {
             makePost({ id: "c1", court_id: "court-1" }),
             makePost({ id: "c2", court_id: "court-2" }),
         ];
-        const result = applyFilters(posts, { ...defaultFilters, courtId: "court-1" });
+        const result = applyFilters(posts, { ...defaultFilters, courtIds: ["court-1"] });
         expect(result).toHaveLength(1);
         expect(result[0].id).toBe("c1");
     });
@@ -163,48 +177,96 @@ describe("applyFilters — empty state", () => {
 // ---------------------------------------------------------------------------
 
 describe("FeedFilters UI", () => {
-    it("Clear filters resets all selections", async () => {
+    it("drills into a category to reveal its checkbox options", async () => {
+        const user = userEvent.setup();
+        render(<FiltersWrapper />);
+
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        // Base view shows category rows, not checkboxes
+        expect(screen.queryByRole("checkbox", { name: /NTRP 4\.0/ })).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole("button", { name: /All skill levels/i }));
+        expect(screen.getByRole("checkbox", { name: /NTRP 4\.0/ })).toBeInTheDocument();
+    });
+
+    it("checkbox toggles its checked state", async () => {
+        const user = userEvent.setup();
+        render(<FiltersWrapper />);
+
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        await user.click(screen.getByRole("button", { name: /All skill levels/i }));
+
+        const cb = screen.getByRole("checkbox", { name: /NTRP 4\.0/ });
+        expect(cb).toHaveAttribute("aria-checked", "false");
+        await user.click(cb);
+        expect(screen.getByRole("checkbox", { name: /NTRP 4\.0/ })).toHaveAttribute("aria-checked", "true");
+        await user.click(screen.getByRole("checkbox", { name: /NTRP 4\.0/ }));
+        expect(screen.getByRole("checkbox", { name: /NTRP 4\.0/ })).toHaveAttribute("aria-checked", "false");
+    });
+
+    it("Apply is disabled until an option is selected", async () => {
+        const user = userEvent.setup();
+        render(<FiltersWrapper />);
+
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        await user.click(screen.getByRole("button", { name: /All play types/i }));
+
+        const apply = screen.getByRole("button", { name: /^Apply$/i });
+        expect(apply).toBeDisabled();
+
+        await user.click(screen.getByRole("checkbox", { name: "Point play" }));
+        expect(screen.getByRole("button", { name: /^Apply$/i })).toBeEnabled();
+    });
+
+    it("Show results is disabled until a filter is applied", async () => {
+        const user = userEvent.setup();
+        render(<FiltersWrapper />);
+
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        expect(screen.getByRole("button", { name: /Show results/i })).toBeDisabled();
+
+        await user.click(screen.getByRole("button", { name: /All play types/i }));
+        await user.click(screen.getByRole("checkbox", { name: "Point play" }));
+        await user.click(screen.getByRole("button", { name: /^Apply$/i }));
+
+        expect(screen.getByRole("button", { name: /Show results/i })).toBeEnabled();
+    });
+
+    it("Show results applies the draft selections", async () => {
         const user = userEvent.setup();
         const onChange = vi.fn();
-
         render(<FiltersWrapper onChange={onChange} />);
 
-        // Open filters panel
-        const filtersBtn = screen.getByRole("button", { name: /Filters/i });
-        await user.click(filtersBtn);
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        await user.click(screen.getByRole("button", { name: /All play types/i }));
+        await user.click(screen.getByRole("checkbox", { name: "Point play" }));
+        await user.click(screen.getByRole("button", { name: /^Apply$/i })); // back to base
+        await user.click(screen.getByRole("button", { name: /Show results/i }));
 
-        // Select a skill level chip
-        const chip35 = screen.getByRole("button", { name: "3.5" });
-        await user.click(chip35);
+        const lastCall = onChange.mock.calls.at(-1)?.[0] as FilterState;
+        expect(lastCall.formats).toContain("point_play");
+    });
 
-        // Now a "Clear" button should appear
-        const clearBtn = screen.getByRole("button", { name: /Clear/i });
-        await user.click(clearBtn);
+    it("Clear all applies empty filters and closes the sheet", async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<FiltersWrapper onChange={onChange} />);
 
-        // The last onChange call should have empty filters
+        await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+        await user.click(screen.getByRole("button", { name: /All skill levels/i }));
+        await user.click(screen.getByRole("checkbox", { name: /NTRP 3\.5/ }));
+        await user.click(screen.getByRole("button", { name: /^Apply$/i }));
+        await user.click(screen.getByRole("button", { name: /Clear all/i }));
+
+        // Clear all applies an empty filter set...
         const lastCall = onChange.mock.calls.at(-1)?.[0] as FilterState;
         expect(lastCall.skillLevels).toHaveLength(0);
         expect(lastCall.formats).toHaveLength(0);
-        expect(lastCall.courtId).toBeNull();
-    });
+        expect(lastCall.courtIds).toHaveLength(0);
+        expect(lastCall.dateFrom).toBeNull();
+        expect(lastCall.dateTo).toBeNull();
 
-    it("skill level chip toggles on and off", async () => {
-        const user = userEvent.setup();
-        const onChange = vi.fn();
-
-        render(<FiltersWrapper onChange={onChange} />);
-
-        // Open filters panel
-        await user.click(screen.getByRole("button", { name: /Filters/i }));
-
-        // Select 4.0
-        await user.click(screen.getByRole("button", { name: "4.0" }));
-        const afterSelect = onChange.mock.calls.at(-1)?.[0] as FilterState;
-        expect(afterSelect.skillLevels).toContain("4.0");
-
-        // Deselect 4.0
-        await user.click(screen.getByRole("button", { name: "4.0" }));
-        const afterDeselect = onChange.mock.calls.at(-1)?.[0] as FilterState;
-        expect(afterDeselect.skillLevels).not.toContain("4.0");
+        // ...and closes the sheet.
+        await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     });
 });

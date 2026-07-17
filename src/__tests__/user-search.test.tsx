@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { Profile } from "@/pages/profile";
@@ -9,6 +9,14 @@ vi.mock("@/lib/supabase", () => ({ supabase: { rpc: vi.fn() } }));
 vi.mock("@/hooks/use-auth", () => ({
     useAuth: () => ({ user: { id: "aaaaaaaa-0000-0000-0000-000000000001" }, loading: false }),
 }));
+
+class MockIntersectionObserver {
+    observe = vi.fn();
+    disconnect = vi.fn();
+    unobserve = vi.fn();
+    constructor(_cb: IntersectionObserverCallback, _opts?: IntersectionObserverInit) {}
+}
+vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
 
 const rpc = vi.mocked(supabase.rpc);
 
@@ -23,6 +31,8 @@ const searchResults = [
     { id: "bbbbbbbb-0000-0000-0000-000000000002", first_name: "Mike", last_name: "Chen", photo_url: null, skill_level: "4.0", new_to_westport: true, is_following: false },
     { id: "cccccccc-0000-0000-0000-000000000003", first_name: "Sarah", last_name: "Johnson", photo_url: null, skill_level: "3.5", new_to_westport: false, is_following: true },
 ];
+
+const SEARCH_PLACEHOLDER = "Search for players to follow...";
 
 function setupMock(results: unknown[] = searchResults) {
     rpc.mockImplementation(((fn: string) => {
@@ -43,80 +53,55 @@ function renderProfile() {
 beforeEach(() => { rpc.mockReset(); });
 
 describe("user search", () => {
-    it("search by first name returns matching users", async () => {
+    it("search by name returns matching users with skill descriptor", async () => {
         setupMock();
         const user = userEvent.setup();
         renderProfile();
         await screen.findByText("Jane Doe");
-        const input = screen.getByPlaceholderText("Search by name…");
-        await user.type(input, "Mi");
+        await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "Mi");
+        // "Mike Chen" + skill 4.0 -> "Mike C. · Intermediate+"
         await waitFor(() => {
-            expect(screen.getByText("Mike Chen")).toBeInTheDocument();
+            expect(screen.getByText("Mike C. · Intermediate+")).toBeInTheDocument();
         });
     });
 
-    it("search results show skill level", async () => {
+    it("search result shows Follow action for unfollowed users", async () => {
         setupMock();
         const user = userEvent.setup();
         renderProfile();
         await screen.findByText("Jane Doe");
-        await user.type(screen.getByPlaceholderText("Search by name…"), "Mi");
+        await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "Mi");
         await waitFor(() => {
-            expect(screen.getByText("4.0 NTRP")).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Follow" })).toBeInTheDocument();
         });
     });
 
-    it("search result shows New to Westport tag", async () => {
+    it("search result shows Following for already-followed users", async () => {
         setupMock();
         const user = userEvent.setup();
         renderProfile();
         await screen.findByText("Jane Doe");
-        await user.type(screen.getByPlaceholderText("Search by name…"), "Mi");
-        await waitFor(() => {
-            expect(screen.getByText("New")).toBeInTheDocument();
-        });
+        await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "Sa");
+        const row = (await screen.findByText("Sarah J. · Intermediate")).closest("div")!;
+        expect(within(row).getByText("Following")).toBeInTheDocument();
     });
 
-    it("search result shows Follow button for unfollowed users", async () => {
-        setupMock();
-        const user = userEvent.setup();
-        renderProfile();
-        await screen.findByText("Jane Doe");
-        await user.type(screen.getByPlaceholderText("Search by name…"), "Mi");
-        await waitFor(() => {
-            expect(screen.getByText("Follow")).toBeInTheDocument();
-        });
-    });
-
-    it("search result shows Following for followed users", async () => {
-        setupMock();
-        const user = userEvent.setup();
-        renderProfile();
-        await screen.findByText("Jane Doe");
-        await user.type(screen.getByPlaceholderText("Search by name…"), "Sa");
-        await waitFor(() => {
-            expect(screen.getByText("Following")).toBeInTheDocument();
-        });
-    });
-
-    it("empty search returns no results", async () => {
+    it("no results shows the empty message", async () => {
         setupMock([]);
-        renderProfile();
-        await screen.findByText("Jane Doe");
-        // No search input typed — no results should be rendered
-        expect(screen.queryByText("Mike Chen")).not.toBeInTheDocument();
-    });
-
-    it("search does not return current user", async () => {
-        // The RPC excludes current user server-side
-        setupMock([{ id: "bbbbbbbb-0000-0000-0000-000000000002", first_name: "Mike", last_name: "Chen", photo_url: null, skill_level: "4.0", new_to_westport: false, is_following: false }]);
         const user = userEvent.setup();
         renderProfile();
         await screen.findByText("Jane Doe");
-        await user.type(screen.getByPlaceholderText("Search by name…"), "Ja");
+        await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "Zz");
         await waitFor(() => {
-            // Only Mike appears, not Jane (current user)
-            expect(screen.queryByText("Mike Chen")).toBeInTheDocument();
+            expect(screen.getByText("No players found.")).toBeInTheDocument();
         });
+    });
+
+    it("shows the following list when not searching", async () => {
+        setupMock();
+        renderProfile();
+        await screen.findByText("Jane Doe");
+        // Nothing typed → search results not shown
+        expect(screen.queryByText("Mike C. · Intermediate+")).not.toBeInTheDocument();
     });
 });

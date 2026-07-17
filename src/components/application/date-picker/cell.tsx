@@ -19,88 +19,78 @@ export const CalendarCell = ({ date, isHighlighted, showOutOfRangeDates = false,
 
     const isRangeCalendar = !!rangeCalendarContext;
 
-    const start = rangeCalendarContext?.value?.start;
-    const end = rangeCalendarContext?.value?.end;
-
-    const isAfterStart = start ? date.compare(start) > 0 : true;
-    const isBeforeEnd = end ? date.compare(end) < 0 : true;
-
-    const isAfterOrOnStart = start && date.compare(start) >= 0;
-    const isBeforeOrOnEnd = end && date.compare(end) <= 0;
-    const isInRange = isAfterOrOnStart && isBeforeOrOnEnd;
-
-    const lastDayOfMonth = new Date(date.year, date.month, 0).getDate();
-    const isLastDayOfMonth = date.day === lastDayOfMonth;
-    const isFirstDayOfMonth = date.day === 1;
-
     const isTodayDate = isToday(date, getLocalTimeZone());
+
+    // Cap the range at month boundaries so a cross-month range rounds on each month's edge.
+    const isFirstDayOfMonth = date.day === 1;
+    const isLastDayOfMonth = date.day === new Date(date.year, date.month, 0).getDate();
 
     return (
         <AriaCalendarCell
             {...props}
             date={date}
-            className={({ isDisabled, isFocusVisible, isSelectionStart, isSelectionEnd, isSelected, isOutsideMonth }) => {
-                const isRoundedLeft = isSelectionStart || dayOfWeek === 0;
-                const isRoundedRight = isSelectionEnd || dayOfWeek === 6;
-
-                return cx(
-                    "relative size-10 focus:outline-hidden",
-                    isRoundedLeft && "rounded-l-full",
-                    isRoundedRight && "rounded-r-full",
-                    isInRange && isDisabled && "bg-active",
-                    isSelected && isRangeCalendar && "bg-active",
+            className={({ isDisabled, isFocusVisible, isOutsideMonth }) =>
+                cx(
+                    "relative h-10 w-full focus:outline-hidden",
                     isDisabled ? "pointer-events-none" : "cursor-pointer",
                     isFocusVisible ? "z-10" : "z-0",
                     isOutsideMonth && "opacity-50",
                     isRangeCalendar && isOutsideMonth && !showOutOfRangeDates && "hidden",
-
-                    // Show gradient on last day of month if it's within the selected range.
-                    isLastDayOfMonth &&
-                        isSelected &&
-                        isBeforeEnd &&
-                        isRangeCalendar &&
-                        "after:absolute after:inset-0 after:translate-x-full after:bg-gradient-to-l after:from-transparent after:to-bg-active in-[[role=gridcell]:last-child]:after:hidden",
-
-                    // Show gradient on first day of month if it's within the selected range.
-                    isFirstDayOfMonth &&
-                        isSelected &&
-                        isAfterStart &&
-                        isRangeCalendar &&
-                        "after:absolute after:inset-0 after:-translate-x-full after:bg-gradient-to-r after:from-transparent after:to-bg-active in-[[role=gridcell]:first-child]:after:hidden",
-                );
-            }}
+                )
+            }
         >
-            {({ isDisabled, isFocusVisible, isSelectionStart, isSelectionEnd, isSelected, formattedDate }) => {
+            {({ isDisabled, isFocusVisible, isSelectionStart, isSelectionEnd, isSelected, isOutsideMonth, formattedDate }) => {
                 const markedAsSelected = isSelectionStart || isSelectionEnd || (isSelected && !isDisabled && !isRangeCalendar);
+                const isSingleSelection = isSelectionStart && isSelectionEnd;
+                // The range bar sits behind the circle: right half on the start day, left half on the
+                // end day, and the full column for days in between — so it never spills past the end circles.
+                // Skip out-of-month days so a cross-month range caps at each month's edge.
+                const showRangeBar = isSelected && isRangeCalendar && !isSingleSelection && !isOutsideMonth;
+                const leftCap = isSelectionStart || isFirstDayOfMonth || dayOfWeek === 0;
+                const rightCap = isSelectionEnd || isLastDayOfMonth || dayOfWeek === 6;
 
                 return (
-                    <div
-                        className={cx(
-                            "relative flex size-full items-center justify-center rounded-full text-sm text-secondary hover:text-secondary_hover",
-                            // Disabled state.
-                            isDisabled && "text-secondary/50",
-                            // Focus ring, visible while the cell has keyboard focus.
-                            isFocusVisible ? "outline-2 outline-offset-2 outline-focus-ring" : "",
-                            // Hover state for cells in the middle of the range.
-                            isSelected && !isDisabled && isRangeCalendar ? "font-medium" : "",
-                            markedAsSelected && "bg-brand-solid font-medium text-white hover:bg-brand-solid_hover hover:text-white",
-                            // Hover state for non-selected cells.
-                            !isSelected && !isDisabled ? "hover:bg-primary_hover hover:font-medium!" : "",
-                            !isSelected && isTodayDate ? "bg-active font-medium hover:bg-secondary_hover" : "",
-                        )}
-                    >
-                        {formattedDate}
-
-                        {(isHighlighted || isTodayDate) && (
+                    <>
+                        {showRangeBar && (
                             <div
                                 className={cx(
-                                    "absolute bottom-1 left-1/2 size-1.25 -translate-x-1/2 rounded-full",
-                                    markedAsSelected ? "bg-fg-white" : "bg-fg-brand-primary",
-                                    isDisabled && "opacity-50",
+                                    "absolute inset-y-0 bg-neutral-600",
+                                    // Cap the segment at the centered 40px circle (calc(50%-20px) aligns on
+                                    // Su/Sa and month edges too); fill to the column edge on the connecting side.
+                                    leftCap ? "left-[calc(50%-20px)] rounded-l-full" : "left-0",
+                                    rightCap ? "right-[calc(50%-20px)] rounded-r-full" : "right-0",
                                 )}
                             />
                         )}
-                    </div>
+                        <div
+                            data-today-cell={!isSelected && isTodayDate ? true : undefined}
+                            className={cx(
+                                "relative z-10 mx-auto flex size-10 items-center justify-center rounded-full text-sm text-secondary hover:text-secondary_hover",
+                                // Disabled state.
+                                isDisabled && "text-secondary/50",
+                                // Focus ring, visible while the cell has keyboard focus.
+                                isFocusVisible ? "outline-2 outline-offset-2 outline-focus-ring" : "",
+                                // Hover state for cells in the middle of the range.
+                                isSelected && !isDisabled && isRangeCalendar ? "font-medium" : "",
+                                markedAsSelected && "bg-brand-solid font-medium text-white hover:bg-brand-solid_hover hover:text-white",
+                                // Hover state for non-selected cells.
+                                !isSelected && !isDisabled ? "hover:bg-primary_hover hover:font-medium!" : "",
+                                !isSelected && isTodayDate ? "bg-neutral-600 font-medium text-white" : "",
+                            )}
+                        >
+                            {formattedDate}
+
+                            {(isHighlighted || isTodayDate) && (
+                                <div
+                                    className={cx(
+                                        "absolute bottom-1 left-1/2 size-1.25 -translate-x-1/2 rounded-full",
+                                        markedAsSelected ? "bg-fg-white" : "bg-fg-brand-primary",
+                                        isDisabled && "opacity-50",
+                                    )}
+                                />
+                            )}
+                        </div>
+                    </>
                 );
             }}
         </AriaCalendarCell>
