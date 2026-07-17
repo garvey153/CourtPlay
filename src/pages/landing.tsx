@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { Avatar } from "@/components/base/avatar/avatar";
 import { cx } from "@/utils/cx";
 
 // Green CTA (dark on-brand text), matching the app's other primary buttons.
@@ -11,15 +12,16 @@ interface SamplePost {
     title: string;
     subtitle: string;
     poster: string;
+    avatar: string;
     when: string;
     price: string;
     claimed?: boolean;
 }
 
 const POSTS: SamplePost[] = [
-    { title: "Doubles Tennis · Sat 9:00am", subtitle: "Longshore Club · NTRP 3.5 · 2 hrs", poster: "Chris B.", when: "20m ago", price: "$25" },
-    { title: "Singles Tennis · Sun 4:30pm", subtitle: "Westport Tennis Club · NTRP 4.0 · 1.5 hrs", poster: "Maria L.", when: "1h ago", price: "$18" },
-    { title: "Mixed Doubles · Wed 6:00pm", subtitle: "Compo Beach Courts · NTRP 3.0 · 1 hr", poster: "Dan K.", when: "3h ago", price: "$15", claimed: true },
+    { title: "Doubles Tennis · Sat 9:00am", subtitle: "Longshore Club · NTRP 3.5 · 2 hrs", poster: "Chris B.", avatar: "/avatars/chris.jpg", when: "20m ago", price: "$25" },
+    { title: "Singles Tennis · Sun 4:30pm", subtitle: "Westport Tennis Club · NTRP 4.0 · 1.5 hrs", poster: "Maria L.", avatar: "/avatars/maria.jpg", when: "1h ago", price: "$18" },
+    { title: "Point Play · Wed 6:00pm", subtitle: "Compo Beach Courts · NTRP 3.0 · 1 hr", poster: "Dan K.", avatar: "/avatars/dan.jpg", when: "3h ago", price: "$15", claimed: true },
 ];
 
 function PreviewCard({ post }: { post: SamplePost }) {
@@ -51,9 +53,13 @@ function PreviewCard({ post }: { post: SamplePost }) {
                 </div>
                 <div className="flex w-full items-center justify-between pt-1">
                     <div className="flex min-w-0 items-center gap-2">
-                        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[10px] font-semibold text-neutral-950 shadow-xs">
-                            {post.poster.charAt(0)}
-                        </span>
+                        <Avatar
+                            size="xs"
+                            src={post.avatar}
+                            alt={post.poster}
+                            initials={post.poster.charAt(0)}
+                            className="shrink-0 bg-white p-px shadow-xs"
+                        />
                         <span className="truncate text-xs text-tertiary">
                             {post.poster} · {post.when}
                         </span>
