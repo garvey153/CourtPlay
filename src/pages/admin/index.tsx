@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cx } from "@/utils/cx";
 import { AppLayout } from "@/components/layout/app-layout";
 import { AdminPosts } from "./admin-posts";
 import { AdminUsers } from "./admin-users";
@@ -23,26 +24,25 @@ export function Admin() {
 
     return (
         <AppLayout>
-            {/* Tab bar */}
-            <div className="sticky top-0 z-10 border-b border-secondary bg-primary">
-                <div className="flex gap-0 overflow-x-auto px-2">
+            {/* Tab bar — active tab gets a green underline bar (design 350:5076). */}
+            <div className="sticky top-0 z-10 bg-primary">
+                <div className="flex gap-5 overflow-x-auto px-5">
                     {TABS.map((t) => (
                         <button
                             key={t.key}
                             onClick={() => setTab(t.key)}
-                            className={`shrink-0 whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors ${
-                                tab === t.key
-                                    ? "border-b-2 border-brand text-brand-secondary"
-                                    : "text-tertiary"
-                            }`}
+                            className="flex shrink-0 flex-col gap-2 pt-2"
                         >
-                            {t.label}
+                            <span className={cx("whitespace-nowrap text-sm", tab === t.key ? "text-primary" : "text-secondary")}>
+                                {t.label}
+                            </span>
+                            <span className={cx("h-1 w-full rounded-full", tab === t.key ? "bg-brand-500" : "bg-transparent")} />
                         </button>
                     ))}
                 </div>
             </div>
 
-            <div className="px-4 py-4">
+            <div className="px-5 py-4">
                 {tab === "analytics" && <AdminAnalytics />}
                 {tab === "posts" && <AdminPosts />}
                 {tab === "users" && <AdminUsers />}
