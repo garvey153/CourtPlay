@@ -169,7 +169,7 @@ export function AuthScreen() {
                     </h1>
                     <p className="text-sm text-balance text-secondary">
                         {isSignup
-                            ? "Join CourtPlay – find a sub for your court in under 10 minutes"
+                            ? "Create an account to find subs, fill open courts, and never sit one out."
                             : "Sign in to find a last-minute sub, snag an open spot, and never miss game day."}
                     </p>
                 </div>
