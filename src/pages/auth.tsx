@@ -155,18 +155,19 @@ export function AuthScreen() {
     }
 
     return (
-        // Top-anchored (not vertically centered) so the toggle stays at a fixed Y when
-        // switching states — the two states differ in height (confirm field vs the
-        // remember/forgot row), which would otherwise re-center and shift the toggle.
-        <div className="flex min-h-dvh flex-col items-center bg-primary px-9 pt-[17dvh] pb-12">
-            <div className="flex w-full max-w-sm flex-col items-center gap-6">
-                {/* Header — the subtitle reserves two lines (min-h-10) so the header
-                    height is constant across states, keeping the toggle fixed. */}
-                <div className="flex flex-col items-center gap-2.5 px-5 text-center">
+        // my-auto vertically centers the block and degrades gracefully (scrolls) on
+        // short screens. The sign-in state reserves the height of the extra sign-up
+        // field (see footer) so both states center to the same headline/toggle Y.
+        <div className="flex min-h-dvh flex-col items-center bg-primary px-9 py-12">
+            <div className="my-auto flex w-full max-w-sm flex-col items-center gap-6">
+                {/* Header — full block width (no extra px) so "Create your account"
+                    stays on one line at common phone widths, keeping the header height
+                    equal to the sign-in state so the toggle aligns. */}
+                <div className="flex flex-col items-center gap-2.5 text-center">
                     <h1 className="text-display-sm font-semibold text-primary">
                         {isSignup ? "Create your account" : "Ready to play?"}
                     </h1>
-                    <p className="flex min-h-10 items-center justify-center text-sm text-secondary">
+                    <p className="text-sm text-balance text-secondary">
                         {isSignup
                             ? "Join CourtPlay – find a sub for your court in under 10 minutes"
                             : "Sign in to find a last-minute sub, snag an open spot, and never miss game day."}
@@ -257,8 +258,10 @@ export function AuthScreen() {
                     {isSignup ? "Sign up with Google" : "Sign in with Google"}
                 </SocialButton>
 
-                {/* Footer — switches state in place */}
-                <p className="flex items-baseline justify-center gap-1 text-sm text-tertiary">
+                {/* Footer — switches state in place. In sign-in, reserve the height of
+                    the sign-up's extra Confirm field (64px field − 20px row = 44px) so
+                    both states center to the same headline/toggle position. */}
+                <p className={cx("flex items-baseline justify-center gap-1 text-sm text-tertiary", !isSignup && "mb-11")}>
                     {isSignup ? "Already have an account?" : "Don't have an account?"}
                     <button
                         type="button"
