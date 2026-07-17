@@ -123,7 +123,13 @@ export function AuthScreen() {
         setError(null);
         await supabase.auth.signInWithOAuth({
             provider: "google",
-            options: { redirectTo: `${window.location.origin}/auth/callback` },
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+                // Always show Google's account chooser so users can pick which account
+                // to use (e.g. a separate admin account) instead of being auto-signed
+                // into whichever Google account is already active.
+                queryParams: { prompt: "select_account" },
+            },
         });
     };
 
