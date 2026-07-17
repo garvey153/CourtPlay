@@ -164,10 +164,12 @@ export function AuthScreen() {
                     height is constant across states, keeping the toggle fixed. */}
                 <div className="flex flex-col items-center gap-2.5 px-5 text-center">
                     <h1 className="text-display-sm font-semibold text-primary">
-                        {isSignup ? "Create your account" : "Welcome back"}
+                        {isSignup ? "Create your account" : "Ready to play?"}
                     </h1>
                     <p className="flex min-h-10 items-center justify-center text-sm text-secondary">
-                        {isSignup ? "Join CourtPlay – find a sub for your court in under 10 minutes" : "Sign in to CourtPlay"}
+                        {isSignup
+                            ? "Join CourtPlay – find a sub for your court in under 10 minutes"
+                            : "Sign in to find a sub or grab an open spot."}
                     </p>
                 </div>
 
