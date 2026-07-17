@@ -11,13 +11,13 @@ export function NotFound() {
     const navigate = useNavigate();
 
     return (
-        <div className="flex min-h-dvh flex-col items-center justify-center bg-primary px-9 py-12 text-center">
+        <div className="flex min-h-dvh flex-col items-center justify-center bg-primary px-5 py-12 text-center">
             <div className="flex w-full max-w-sm flex-col items-center gap-6">
                 <div className="flex flex-col items-center gap-2.5">
                     <span className="text-sm font-semibold text-brand-500">404 error</span>
-                    <h1 className="text-display-sm font-semibold text-primary">We can't find that page</h1>
+                    <h1 className="text-display-sm font-semibold text-primary">Out of bounds</h1>
                     <p className="text-sm text-secondary">
-                        Sorry, the page you're looking for doesn't exist or has been moved.
+                        That page landed outside the lines — it doesn't exist or has moved. Let's get you back on the court.
                     </p>
                 </div>
 
