@@ -3,8 +3,6 @@ import { Link } from "react-router";
 // Green CTA (dark on-brand text), matching the app's other primary buttons.
 const PRIMARY_BTN =
     "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600";
-const SECONDARY_BTN =
-    "flex w-full items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary";
 
 // Static preview cards for the hero — mirrors the feed SubCard styling.
 const SAMPLE = {
@@ -88,14 +86,9 @@ export function Landing() {
                         <h2 className="text-display-sm font-semibold text-balance text-primary">Ready to find your next match?</h2>
                         <p className="text-sm text-secondary">Join players near you already using CourtPlay.</p>
                     </div>
-                    <div className="flex w-full flex-col gap-3">
-                        <Link to="/signup" className={PRIMARY_BTN}>
-                            Get started – it's free!
-                        </Link>
-                        <Link to="/signup" className={SECONDARY_BTN}>
-                            Learn more
-                        </Link>
-                    </div>
+                    <Link to="/signup" className={PRIMARY_BTN}>
+                        Get started – it's free!
+                    </Link>
                 </section>
 
                 {/* Footer */}
