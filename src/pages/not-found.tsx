@@ -1,32 +1,36 @@
 import { ArrowLeft } from "@untitledui/icons";
 import { useNavigate } from "react-router";
-import { Button } from "@/components/base/buttons/button";
+
+// Shared button styles, matching the auth / landing CTAs (green with dark on-brand text).
+const PRIMARY_BTN =
+    "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600";
+const SECONDARY_BTN =
+    "flex w-full items-center justify-center gap-2 rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary";
 
 export function NotFound() {
-    const router = useNavigate();
+    const navigate = useNavigate();
 
     return (
-        <section className="flex min-h-screen items-start bg-primary py-16 md:items-center md:py-24">
-            <div className="mx-auto max-w-container grow px-4 md:px-8">
-                <div className="flex w-full max-w-3xl flex-col gap-8 md:gap-12">
-                    <div className="flex flex-col gap-4 md:gap-6">
-                        <div className="flex flex-col gap-3">
-                            <span className="text-md font-semibold text-brand-secondary">404 error</span>
-                            <h1 className="text-display-md font-semibold text-primary md:text-display-lg lg:text-display-xl">We can’t find that page</h1>
-                        </div>
-                        <p className="text-lg text-tertiary md:text-xl">Sorry, the page you are looking for doesn't exist or has been moved.</p>
-                    </div>
+        <div className="flex min-h-dvh flex-col items-center justify-center bg-primary px-9 py-12 text-center">
+            <div className="flex w-full max-w-sm flex-col items-center gap-6">
+                <div className="flex flex-col items-center gap-2.5">
+                    <span className="text-sm font-semibold text-brand-500">404 error</span>
+                    <h1 className="text-display-sm font-semibold text-primary">We can't find that page</h1>
+                    <p className="text-sm text-secondary">
+                        Sorry, the page you're looking for doesn't exist or has been moved.
+                    </p>
+                </div>
 
-                    <div className="flex flex-col-reverse gap-3 sm:flex-row">
-                        <Button color="secondary" size="xl" iconLeading={ArrowLeft} onClick={() => router(-1)}>
-                            Go back
-                        </Button>
-                        <Button size="xl" onClick={() => router(-1)}>
-                            Take me home
-                        </Button>
-                    </div>
+                <div className="flex w-full flex-col gap-3">
+                    <button type="button" onClick={() => navigate("/feed")} className={PRIMARY_BTN}>
+                        Take me home
+                    </button>
+                    <button type="button" onClick={() => navigate(-1)} className={SECONDARY_BTN}>
+                        <ArrowLeft className="size-4" aria-hidden="true" />
+                        Go back
+                    </button>
                 </div>
             </div>
-        </section>
+        </div>
     );
 }
