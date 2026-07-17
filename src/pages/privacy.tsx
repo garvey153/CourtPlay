@@ -1,94 +1,230 @@
-import { Link } from "react-router";
+import { XClose } from "@untitledui/icons";
+import { Link, useNavigate } from "react-router";
+
+// Green section header, grey sub-label, white body paragraph, and bullet list —
+// matching the design's type hierarchy.
+function Heading({ children }: { children: React.ReactNode }) {
+    return <h2 className="text-sm font-semibold text-brand-500">{children}</h2>;
+}
+function Label({ children }: { children: React.ReactNode }) {
+    return <p className="text-sm text-tertiary">{children}</p>;
+}
+function Body({ children }: { children: React.ReactNode }) {
+    return <p className="text-sm text-primary">{children}</p>;
+}
+function Bullets({ items }: { items: string[] }) {
+    return (
+        <ul className="list-disc space-y-1 pl-5 text-sm text-primary">
+            {items.map((item) => (
+                <li key={item}>{item}</li>
+            ))}
+        </ul>
+    );
+}
 
 export function Privacy() {
+    const navigate = useNavigate();
+
     return (
-        <div className="mx-auto max-w-lg px-6 py-12">
-            <Link to="/" className="text-sm text-brand-secondary hover:underline">&larr; Back to CourtPlay</Link>
+        <div className="min-h-dvh bg-primary">
+            <div className="mx-auto flex min-h-dvh max-w-md flex-col">
+                {/* Nav */}
+                <header className="flex items-center justify-between px-5 py-4">
+                    <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto" />
+                    <Link
+                        to="/signup"
+                        className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600"
+                    >
+                        Sign up
+                    </Link>
+                </header>
 
-            <h1 className="mt-6 text-xl font-semibold text-primary">Privacy Policy</h1>
-            <p className="mt-1 text-xs text-tertiary">Last updated: April 2026</p>
+                {/* Content sheet */}
+                <div className="relative flex-1 rounded-t-2xl bg-secondary px-5 pt-4 pb-14 shadow-xl">
+                    <button
+                        type="button"
+                        onClick={() => navigate(-1)}
+                        aria-label="Close"
+                        className="absolute top-3 right-3 flex size-9 items-center justify-center rounded-lg text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                    >
+                        <XClose className="size-5" />
+                    </button>
 
-            <div className="mt-6 space-y-6 text-sm leading-relaxed text-secondary">
-                <section>
-                    <h2 className="font-semibold text-primary">1. Information We Collect</h2>
-                    <p className="mt-2">When you create a CourtPlay account, we collect:</p>
-                    <ul className="mt-2 list-disc space-y-1 pl-5">
-                        <li><strong>Email address</strong> — for authentication and notifications.</li>
-                        <li><strong>Name</strong> — displayed to other users on your profile and posts.</li>
-                        <li><strong>Phone number</strong> (optional) — shared only with approved claimers for game coordination. Encrypted at rest.</li>
-                        <li><strong>Venmo handle</strong> (optional) — shared only with approved claimers for payment coordination. Encrypted at rest.</li>
-                        <li><strong>Skill level and court preferences</strong> — used for matching and displayed on your profile.</li>
-                        <li><strong>Profile photo</strong> — from your Google account if you sign in with Google.</li>
-                    </ul>
-                </section>
+                    <h1 className="pr-10 text-lg font-semibold text-primary">Privacy policy</h1>
 
-                <section>
-                    <h2 className="font-semibold text-primary">2. How We Use Your Information</h2>
-                    <ul className="mt-2 list-disc space-y-1 pl-5">
-                        <li>To provide the CourtPlay service: matching posters with claimers.</li>
-                        <li>To send notifications about claims, approvals, and game reminders (email and push).</li>
-                        <li>To display your public profile to other authenticated users.</li>
-                        <li>To detect and prevent abuse via the reporting system.</li>
-                    </ul>
-                </section>
+                    <div className="mt-5 flex flex-col gap-5">
+                        <Label>Last updated: June 2026</Label>
 
-                <section>
-                    <h2 className="font-semibold text-primary">3. Information Sharing</h2>
-                    <p className="mt-2">We do not sell your personal information. We share data only in these cases:</p>
-                    <ul className="mt-2 list-disc space-y-1 pl-5">
-                        <li><strong>With other users</strong> — your name, skill level, and profile photo are visible to authenticated users. Your phone and Venmo handle are shared only with users whose claims you approve.</li>
-                        <li><strong>With service providers</strong> — we use Supabase (database), Resend (email), and OneSignal (push notifications) to operate the platform.</li>
-                        <li><strong>As required by law</strong> — we may disclose information in response to legal requests.</li>
-                    </ul>
-                </section>
+                        <section className="flex flex-col gap-2">
+                            <Heading>The short version</Heading>
+                            <Body>
+                                CourtPlay collects the minimum information needed to connect players with subs in their local racquet
+                                sports community. We don't sell your data. We don't share it with advertisers. We use it to run the app
+                                and make it better.
+                            </Body>
+                        </section>
 
-                <section>
-                    <h2 className="font-semibold text-primary">4. Data Security</h2>
-                    <p className="mt-2">
-                        Sensitive fields (phone number, Venmo handle) are encrypted at rest using AES encryption. Authentication is handled by Supabase Auth with secure session management. All data is transmitted over HTTPS.
-                    </p>
-                </section>
+                        <section className="flex flex-col gap-2">
+                            <Heading>What we collect</Heading>
+                            <Label>Information you give us</Label>
+                            <Bullets
+                                items={[
+                                    "Name and email address when you create an account",
+                                    "Your location or home court (to show you relevant nearby games)",
+                                    "Sport, skill level, and availability preferences",
+                                    "Posts you create (sub requests and regular game listings)",
+                                ]}
+                            />
+                            <Label>Information we collect automatically</Label>
+                            <Bullets
+                                items={[
+                                    "Basic usage data (which features you use, when you open the app)",
+                                    "Device type and operating system",
+                                    "Push notification tokens (to send you sub alerts)",
+                                ]}
+                            />
+                            <Label>Information from others</Label>
+                            <Bullets items={["If another player follows you or claims your sub request, we record that connection"]} />
+                        </section>
 
-                <section>
-                    <h2 className="font-semibold text-primary">5. Your Rights</h2>
-                    <p className="mt-2">You can:</p>
-                    <ul className="mt-2 list-disc space-y-1 pl-5">
-                        <li>Update your profile information at any time.</li>
-                        <li>Manage your notification preferences in Settings.</li>
-                        <li>Request deletion of your account and personal data by emailing us.</li>
-                    </ul>
-                </section>
+                        <section className="flex flex-col gap-2">
+                            <Heading>What we don't collect</Heading>
+                            <Bullets
+                                items={[
+                                    "Payment information (Venmo handles payments directly)",
+                                    "Precise real-time GPS location",
+                                    "Contacts from your phone",
+                                    "Any data from third-party advertisers",
+                                ]}
+                            />
+                        </section>
 
-                <section>
-                    <h2 className="font-semibold text-primary">6. Data Retention</h2>
-                    <p className="mt-2">
-                        We retain your data for as long as your account is active. Post and claim history is preserved for community trust purposes even after account deletion, but personal details (name, phone, Venmo) are anonymized.
-                    </p>
-                </section>
+                        <section className="flex flex-col gap-2">
+                            <Heading>How we use it</Heading>
+                            <Bullets
+                                items={[
+                                    "To match sub requests with available players in your area",
+                                    "To send you notifications when a spot is posted or claimed",
+                                    "To let you follow other players and see their activity in your feed",
+                                    "To improve the app based on how people use it",
+                                    "To communicate with you about your account",
+                                ]}
+                            />
+                            <Body>
+                                We do not use your data to train AI models. We do not sell it. We do not share it with third parties
+                                except as described below.
+                            </Body>
+                        </section>
 
-                <section>
-                    <h2 className="font-semibold text-primary">7. Cookies and Analytics</h2>
-                    <p className="mt-2">
-                        CourtPlay uses essential cookies for authentication. We do not use third-party tracking or advertising cookies.
-                    </p>
-                </section>
+                        <section className="flex flex-col gap-2">
+                            <Heading>Who we share it with</Heading>
+                            <Label>Service providers</Label>
+                            <Body>We use a small number of third-party services to run CourtPlay:</Body>
+                            <Bullets
+                                items={[
+                                    "Supabase — database and authentication",
+                                    "Resend — transactional email",
+                                    "OneSignal — push notifications",
+                                    "Vercel — hosting",
+                                ]}
+                            />
+                            <Body>
+                                Each provider only receives the data needed to do their job. They are contractually prohibited from
+                                using it for any other purpose.
+                            </Body>
+                            <Label>Legal requirements</Label>
+                            <Body>
+                                We will disclose information if required by law or to protect the safety of our users or the public.
+                            </Body>
+                            <Label>Business transfers</Label>
+                            <Body>
+                                If CourtPlay is acquired or merges with another company, your data may transfer as part of that
+                                transaction. We will notify you before that happens.
+                            </Body>
+                        </section>
 
-                <section>
-                    <h2 className="font-semibold text-primary">8. Changes to This Policy</h2>
-                    <p className="mt-2">
-                        We may update this policy from time to time. We will notify you of significant changes via email.
-                    </p>
-                </section>
+                        <section className="flex flex-col gap-2">
+                            <Heading>Your profile and visibility</Heading>
+                            <Body>
+                                By default your name, sport, skill level, and court activity are visible to other CourtPlay users in
+                                your community. You can adjust this in your account settings.
+                            </Body>
+                            <Body>
+                                Sub requests you post are visible to anyone in your CourtPlay community. Claimed or expired posts are no
+                                longer visible in the public feed.
+                            </Body>
+                        </section>
 
-                <section>
-                    <h2 className="font-semibold text-primary">9. Contact</h2>
-                    <p className="mt-2">
-                        Questions about your data? Email us at{" "}
-                        <a href="mailto:hello@courtplay.app" className="text-brand-secondary underline underline-offset-2">
-                            hello@courtplay.app
-                        </a>.
-                    </p>
-                </section>
+                        <section className="flex flex-col gap-2">
+                            <Heading>Data retention</Heading>
+                            <Body>
+                                We keep your account data for as long as your account is active. If you delete your account we remove
+                                your personal information within 30 days. Anonymised usage data may be retained longer for product
+                                improvement.
+                            </Body>
+                        </section>
+
+                        <section className="flex flex-col gap-2">
+                            <Heading>Your rights</Heading>
+                            <Body>You can:</Body>
+                            <Bullets
+                                items={[
+                                    "Access a copy of your data at any time by emailing us",
+                                    "Correct inaccurate information in your account settings",
+                                    "Delete your account and associated data from the app",
+                                    "Opt out of marketing emails via the unsubscribe link in any email",
+                                    "Opt out of push notifications in your device settings",
+                                ]}
+                            />
+                            <Body>
+                                If you are in the EU or UK, you have additional rights under GDPR including the right to data
+                                portability and the right to object to processing. Contact us to exercise these rights.
+                            </Body>
+                        </section>
+
+                        <section className="flex flex-col gap-2">
+                            <Heading>Cookies and tracking</Heading>
+                            <Body>
+                                CourtPlay uses minimal cookies necessary to keep you logged in and remember your preferences. We do not
+                                use advertising cookies or third-party tracking pixels.
+                            </Body>
+                        </section>
+
+                        <section className="flex flex-col gap-2">
+                            <Heading>Children</Heading>
+                            <Body>
+                                CourtPlay is not intended for users under 13. We do not knowingly collect data from children under 13.
+                                If you believe a child has created an account, contact us and we will delete it promptly.
+                            </Body>
+                        </section>
+
+                        <section className="flex flex-col gap-2">
+                            <Heading>Changes to this policy</Heading>
+                            <Body>
+                                If we make material changes we will notify you by email or in-app notification before they take effect.
+                                The date at the top of this page always reflects the most recent update.
+                            </Body>
+                        </section>
+
+                        <section className="flex flex-col gap-2">
+                            <Heading>Contact</Heading>
+                            <p className="text-sm text-primary">
+                                Questions about this policy or your data:{" "}
+                                <a
+                                    href="mailto:privacy@courtplay.app"
+                                    className="underline underline-offset-2 hover:text-secondary"
+                                >
+                                    privacy@courtplay.app
+                                </a>
+                            </p>
+                        </section>
+
+                        <Body>
+                            This privacy policy is provided for informational purposes. For a production app handling real user data,
+                            have it reviewed by a qualified attorney.
+                        </Body>
+                    </div>
+                </div>
             </div>
         </div>
     );
