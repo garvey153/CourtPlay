@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { ProfileProvider } from "@/providers/profile-provider";
 import { RouteProvider } from "@/providers/router-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
@@ -20,6 +20,7 @@ import { Profile } from "@/pages/profile";
 import { Privacy } from "@/pages/privacy";
 import { AuthScreen } from "@/pages/auth";
 import { Terms } from "@/pages/terms";
+import { isStandalone } from "@/utils/is-standalone";
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
@@ -28,8 +29,9 @@ createRoot(document.getElementById("root")!).render(
                 <RouteProvider>
                 <ProfileProvider>
                     <Routes>
-                        {/* Public */}
-                        <Route path="/" element={<Landing />} />
+                        {/* Public. The installed PWA skips the marketing landing and
+                            opens straight to Create account. */}
+                        <Route path="/" element={isStandalone() ? <Navigate to="/signup" replace /> : <Landing />} />
                         <Route path="/signin" element={<AuthScreen />} />
                         <Route path="/signup" element={<AuthScreen />} />
                         <Route path="/auth/callback" element={<AuthCallback />} />
