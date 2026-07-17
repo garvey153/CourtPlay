@@ -85,7 +85,7 @@ export function Landing() {
                 {/* CTA */}
                 <section className="mt-8 flex flex-col items-center gap-6 bg-secondary px-5 py-8 text-center">
                     <div className="flex flex-col items-center gap-2.5 px-7">
-                        <h2 className="text-display-sm font-semibold text-primary">Ready to find your next match?</h2>
+                        <h2 className="text-display-sm font-semibold text-balance text-primary">Ready to find your next match?</h2>
                         <p className="text-sm text-secondary">Join players near you already using CourtPlay.</p>
                     </div>
                     <div className="flex w-full flex-col gap-3">
