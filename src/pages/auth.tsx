@@ -169,7 +169,7 @@ export function AuthScreen() {
                     <p className="flex min-h-10 items-center justify-center text-sm text-secondary">
                         {isSignup
                             ? "Join CourtPlay – find a sub for your court in under 10 minutes"
-                            : "Sign in to find a sub or grab an open spot."}
+                            : "Sign in to find a last-minute sub, snag an open spot, and never miss game day."}
                     </p>
                 </div>
 
