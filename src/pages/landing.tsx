@@ -1,43 +1,64 @@
 import { Link } from "react-router";
+import { cx } from "@/utils/cx";
 
 // Green CTA (dark on-brand text), matching the app's other primary buttons.
 const PRIMARY_BTN =
     "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600";
 
-// Static preview cards for the hero — mirrors the feed SubCard styling.
-const SAMPLE = {
-    title: "Doubles Tennis · Sat 9:00am",
-    subtitle: "Longshore Club · NTRP 2.5 · 2 hrs",
-    poster: "Chris B.",
-    when: "20m ago",
-    price: "$25",
-};
+// Static preview cards for the hero — mirrors the feed SubCard styling, with a
+// mix of open games and one already claimed (dimmed, grey) for variety.
+interface SamplePost {
+    title: string;
+    subtitle: string;
+    poster: string;
+    when: string;
+    price: string;
+    claimed?: boolean;
+}
 
-function PreviewCard() {
+const POSTS: SamplePost[] = [
+    { title: "Doubles Tennis · Sat 9:00am", subtitle: "Longshore Club · NTRP 3.5 · 2 hrs", poster: "Chris B.", when: "20m ago", price: "$25" },
+    { title: "Singles Tennis · Sun 4:30pm", subtitle: "Westport Tennis Club · NTRP 4.0 · 1.5 hrs", poster: "Maria L.", when: "1h ago", price: "$18" },
+    { title: "Mixed Doubles · Wed 6:00pm", subtitle: "Compo Beach Courts · NTRP 3.0 · 1 hr", poster: "Dan K.", when: "3h ago", price: "$15", claimed: true },
+];
+
+function PreviewCard({ post }: { post: SamplePost }) {
+    const { claimed } = post;
+    const bar = claimed ? "bg-neutral-400" : "bg-brand-500";
+    const strong = claimed ? "text-tertiary" : "text-primary";
+    const sub = claimed ? "text-tertiary" : "text-secondary";
+
     return (
         <div className="flex overflow-hidden rounded">
-            <span className="w-1 shrink-0 self-stretch bg-brand-500" aria-hidden="true" />
+            <span className={cx("w-1 shrink-0 self-stretch", bar)} aria-hidden="true" />
             <div className="flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4">
                 <div className="flex w-full items-start gap-3">
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
-                        <p className="text-md font-semibold text-primary">{SAMPLE.title}</p>
-                        <p className="text-xs text-secondary">{SAMPLE.subtitle}</p>
+                        <p className={cx("text-md font-semibold", strong)}>{post.title}</p>
+                        <p className={cx("text-xs", sub)}>{post.subtitle}</p>
                     </div>
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-brand-800 px-2 py-1 text-xs font-semibold text-brand-500">
-                        <span className="size-1.5 rounded-full bg-brand-500" aria-hidden="true" />
-                        Open
-                    </span>
+                    {claimed ? (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-neutral-800 px-2 py-1 text-xs font-semibold text-neutral-400">
+                            <span className="size-1.5 rounded-full bg-neutral-400" aria-hidden="true" />
+                            Claimed
+                        </span>
+                    ) : (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-brand-800 px-2 py-1 text-xs font-semibold text-brand-500">
+                            <span className="size-1.5 rounded-full bg-brand-500" aria-hidden="true" />
+                            Open
+                        </span>
+                    )}
                 </div>
                 <div className="flex w-full items-center justify-between pt-1">
                     <div className="flex min-w-0 items-center gap-2">
                         <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[10px] font-semibold text-neutral-950 shadow-xs">
-                            {SAMPLE.poster.charAt(0)}
+                            {post.poster.charAt(0)}
                         </span>
                         <span className="truncate text-xs text-tertiary">
-                            {SAMPLE.poster} · {SAMPLE.when}
+                            {post.poster} · {post.when}
                         </span>
                     </div>
-                    <span className="shrink-0 text-sm font-semibold text-primary">{SAMPLE.price}</span>
+                    <span className={cx("shrink-0 text-sm font-semibold", strong)}>{post.price}</span>
                 </div>
             </div>
         </div>
@@ -75,9 +96,9 @@ export function Landing() {
 
                 {/* Preview cards */}
                 <section className="mt-8 flex flex-col gap-3 px-5">
-                    <PreviewCard />
-                    <PreviewCard />
-                    <PreviewCard />
+                    {POSTS.map((post) => (
+                        <PreviewCard key={post.title} post={post} />
+                    ))}
                 </section>
 
                 {/* CTA */}
