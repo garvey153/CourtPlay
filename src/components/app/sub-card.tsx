@@ -24,7 +24,7 @@ interface KindConfig {
     dim: boolean;
 }
 
-const KIND_CONFIG: Record<CardKind, KindConfig> = {
+export const KIND_CONFIG: Record<CardKind, KindConfig> = {
     open: { bar: "bg-brand-500", label: "Open", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", dot: "bg-brand-500", dim: false },
     approved: { bar: "bg-brand-500", label: "Approved", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", dot: "bg-brand-500", dim: false },
     claimed: { bar: "bg-neutral-400", label: "Claimed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: true },
@@ -60,7 +60,7 @@ function getCardKind(post: FeedPost): CardKind {
     return "open";
 }
 
-function timeAgo(dateStr: string): string {
+export function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return "just now";
@@ -71,7 +71,7 @@ function timeAgo(dateStr: string): string {
 }
 
 /** "Sat 9:00am" — weekday + start time, matching the GameCard title. */
-function formatWhen(gameDate: string | null, gameTime: string | null): string {
+export function formatWhen(gameDate: string | null, gameTime: string | null): string {
     const parts: string[] = [];
     if (gameDate) {
         const d = new Date(gameDate + "T12:00:00");
@@ -87,7 +87,7 @@ function formatWhen(gameDate: string | null, gameTime: string | null): string {
     return parts.join(" ");
 }
 
-function formatPlayType(playType: string | null): string {
+export function formatPlayType(playType: string | null): string {
     if (!playType) return "";
     return playType
         .split("_")
@@ -95,7 +95,7 @@ function formatPlayType(playType: string | null): string {
         .join(" ");
 }
 
-function formatDuration(duration: number | null): string | null {
+export function formatDuration(duration: number | null): string | null {
     if (duration == null) return null;
     return duration === 1 ? "1 hr" : `${duration} hrs`;
 }
