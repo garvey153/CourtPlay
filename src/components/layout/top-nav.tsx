@@ -12,7 +12,7 @@ export function TopNav({ onOpenFilters, filtersActive }: TopNavProps) {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     // On the post-creation and edit-profile screens the CTA is redundant, so it's shown disabled.
-    const postCtaDisabled = pathname === "/post/new" || pathname === "/profile/edit";
+    const postCtaDisabled = pathname === "/post/new" || pathname === "/profile/edit" || pathname === "/admin";
 
     return (
         <header className="sticky top-0 z-40 flex items-center justify-between bg-primary px-5 py-4">

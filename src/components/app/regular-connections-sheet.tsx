@@ -108,7 +108,7 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
             aria-label="Close"
             className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
         >
-            <XClose className="size-5" />
+            <XClose className="size-5" strokeWidth={1} />
         </button>
     );
 

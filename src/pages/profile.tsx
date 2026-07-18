@@ -377,8 +377,8 @@ export function Profile() {
                         </p>
 
                         {/* Search field — matches the filter sheet's location search */}
-                        <div className="mb-4 flex h-9 items-center gap-2 rounded-lg border border-neutral-600 bg-tertiary px-3 shadow-xs">
-                            <SearchSm className="size-6 shrink-0 text-neutral-600" aria-hidden="true" />
+                        <div className="mb-4 flex h-9 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
+                            <SearchSm className="size-6 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
                             <input
                                 className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
                                 placeholder="Search for players to follow..."
@@ -391,9 +391,9 @@ export function Profile() {
                                     type="button"
                                     aria-label="Clear search"
                                     onClick={() => setSearchQuery("")}
-                                    className="shrink-0 text-neutral-600 transition duration-100 ease-linear hover:text-primary"
+                                    className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-primary"
                                 >
-                                    <XClose className="size-5" />
+                                    <XClose className="size-5" strokeWidth={1} />
                                 </button>
                             )}
                         </div>

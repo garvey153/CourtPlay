@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { X } from "@untitledui/icons";
+import { XClose } from "@untitledui/icons";
 import { usePush } from "@/hooks/use-push";
 
 const DISMISSED_KEY = "courtsub_push_prompt_dismissed";
@@ -41,7 +41,7 @@ export function PushEnableBanner() {
                 aria-label="Dismiss"
                 className="absolute right-3 top-3 rounded p-0.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
             >
-                <X className="size-4" aria-hidden="true" />
+                <XClose className="size-5" strokeWidth={1} aria-hidden="true" />
             </button>
 
             <p className="pr-6 text-sm font-semibold text-primary">Turn on notifications.</p>

@@ -261,7 +261,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                                 aria-label="Close"
                                 className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-lg text-quaternary hover:text-tertiary"
                             >
-                                <XClose className="size-5" />
+                                <XClose className="size-5" strokeWidth={1} />
                             </button>
                         </div>
 
@@ -327,14 +327,24 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                             {view === "location" && (
                                 <>
                                     {/* Search — pinned above the scrolling list */}
-                                    <div className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-neutral-600 bg-tertiary px-3 shadow-xs">
-                                        <SearchSm className="size-6 shrink-0 text-neutral-600" aria-hidden="true" />
+                                    <div className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
+                                        <SearchSm className="size-6 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
                                         <input
                                             value={locQuery}
                                             onChange={(e) => setLocQuery(e.target.value)}
                                             placeholder="Search locations"
                                             className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
                                         />
+                                        {locQuery && (
+                                            <button
+                                                type="button"
+                                                aria-label="Clear search"
+                                                onClick={() => setLocQuery("")}
+                                                className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-primary"
+                                            >
+                                                <XClose className="size-5" strokeWidth={1} />
+                                            </button>
+                                        )}
                                     </div>
                                     <p className="mb-2 mt-4 shrink-0 text-sm font-medium text-secondary">Nearby courts</p>
                                     {/* Court list — scrolls vertically when it overflows */}

@@ -285,7 +285,7 @@ export function ClaimDetailSheet({
                     aria-label="Close"
                     className="absolute top-4 right-3 z-10 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
                 >
-                    <XClose className="size-5" />
+                    <XClose className="size-5" strokeWidth={1} />
                 </button>
 
                 {/* Header — claim-status text once claimed, otherwise just the title. */}

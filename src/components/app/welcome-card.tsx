@@ -1,4 +1,4 @@
-import { X } from "@untitledui/icons";
+import { XClose } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 
 interface WelcomeCardProps {
@@ -14,7 +14,7 @@ export function WelcomeCard({ onDismiss, onPost }: WelcomeCardProps) {
                 className="absolute right-3 top-3 rounded p-0.5 text-brand-tertiary hover:text-brand-secondary"
                 aria-label="Dismiss"
             >
-                <X className="size-4" />
+                <XClose className="size-5" strokeWidth={1} />
             </button>
 
             <p className="pr-6 text-sm font-semibold text-brand-primary">Welcome to CourtPlay 🎾</p>
