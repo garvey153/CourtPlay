@@ -209,7 +209,7 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
                                 aria-label="Close"
                                 className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
                             >
-                                <XClose className="size-5" />
+                                <XClose className="size-5" strokeWidth={1} />
                             </button>
                         </div>
                         {error && <p className="text-sm text-error-primary">{error}</p>}
@@ -236,7 +236,7 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
                     aria-label="Close"
                     className="absolute top-4 right-3 z-10 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
                 >
-                    <XClose className="size-5" />
+                    <XClose className="size-5" strokeWidth={1} />
                 </button>
 
                 {/* Header — status line once connected, otherwise just the title. */}

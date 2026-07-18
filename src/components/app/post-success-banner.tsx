@@ -1,4 +1,4 @@
-import { X } from "@untitledui/icons";
+import { XClose } from "@untitledui/icons";
 
 interface PostSuccessBannerProps {
     /** Which kind of post was just created — drives the confirmation copy. */
@@ -23,7 +23,7 @@ export function PostSuccessBanner({ postType, onDismiss, onEdit }: PostSuccessBa
                 aria-label="Dismiss"
                 className="absolute right-3 top-3 rounded p-0.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
             >
-                <X className="size-4" />
+                <XClose className="size-5" strokeWidth={1} />
             </button>
 
             <p className="pr-6 text-sm font-semibold text-primary">Post successful!</p>

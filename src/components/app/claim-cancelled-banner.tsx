@@ -1,4 +1,4 @@
-import { X } from "@untitledui/icons";
+import { XClose } from "@untitledui/icons";
 import type { FeedPost } from "@/types/feed";
 
 function formatWhen(gameDate: string | null, gameTime: string | null): string {
@@ -36,7 +36,7 @@ export function ClaimCancelledBanner({ post, onDismiss, onUndo }: ClaimCancelled
                 aria-label="Dismiss"
                 className="absolute right-3 top-3 rounded p-0.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
             >
-                <X className="size-4" />
+                <XClose className="size-5" strokeWidth={1} />
             </button>
 
             <p className="pr-6 text-sm font-semibold text-primary">Cancellation successful!</p>

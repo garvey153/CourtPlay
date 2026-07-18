@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X } from "@untitledui/icons";
+import { XClose } from "@untitledui/icons";
 import { useAuth } from "@/hooks/use-auth";
 
 const STORAGE_KEY = "cs_ios_prompt_dismissed";
@@ -50,7 +50,7 @@ export function IosInstallPrompt() {
                 aria-label="Dismiss"
                 className="absolute right-3 top-3 rounded p-0.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
             >
-                <X className="size-4" aria-hidden="true" />
+                <XClose className="size-5" strokeWidth={1} aria-hidden="true" />
             </button>
 
             <p className="pr-6 text-sm font-semibold text-primary">Add CourtPlay to your home screen</p>
