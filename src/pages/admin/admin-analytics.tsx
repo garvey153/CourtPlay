@@ -163,21 +163,21 @@ export function AdminAnalytics() {
             {/* User funnel */}
             <div className="mt-2 flex flex-col gap-2">
                 <h3 className="text-sm font-semibold text-tertiary">User funnel</h3>
-                <div className="overflow-hidden rounded-lg border border-neutral-600 bg-secondary">
+                <div className="overflow-hidden rounded-lg border border-neutral-600 bg-secondary px-2">
                     <table className="w-full text-sm">
                         <thead>
                             <tr>
-                                <th className="px-3 py-3 text-left font-normal text-tertiary">Step</th>
-                                <th className="px-3 py-3 text-right font-normal text-tertiary">Count</th>
-                                <th className="px-3 py-3 text-right font-normal text-tertiary">% of Previous</th>
+                                <th className="px-2 py-3 text-left font-normal text-tertiary">Step</th>
+                                <th className="px-2 py-3 text-right font-normal text-tertiary">Count</th>
+                                <th className="px-2 py-3 text-right font-normal text-tertiary">% of Previous</th>
                             </tr>
                         </thead>
                         <tbody>
                             {funnel.map((step) => (
-                                <tr key={step.label} className="border-t border-neutral-700">
-                                    <td className="px-3 py-3 text-secondary">{step.label}</td>
-                                    <td className="px-3 py-3 text-right text-secondary">{step.count.toLocaleString()}</td>
-                                    <td className="px-3 py-3 text-right text-secondary">
+                                <tr key={step.label} className="border-t border-neutral-600">
+                                    <td className="px-2 py-3 text-secondary">{step.label}</td>
+                                    <td className="px-2 py-3 text-right text-secondary">{step.count.toLocaleString()}</td>
+                                    <td className="px-2 py-3 text-right text-secondary">
                                         {step.pctOfPrevious !== null ? `${step.pctOfPrevious}%` : "--"}
                                     </td>
                                 </tr>

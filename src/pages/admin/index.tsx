@@ -26,7 +26,7 @@ export function Admin() {
         <AppLayout>
             {/* Tab bar — active tab gets a green underline bar (design 350:5076). */}
             <div className="sticky top-0 z-10 bg-primary">
-                <div className="flex gap-5 overflow-x-auto px-5">
+                <div className="flex justify-between gap-5 overflow-x-auto px-5">
                     {TABS.map((t) => (
                         <button
                             key={t.key}
