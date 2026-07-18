@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router";
-import { Activity, Home01, User01 } from "@untitledui/icons";
+import { Activity, Atom01, Home01, User01 } from "@untitledui/icons";
 import { useAuth } from "@/hooks/use-auth";
+import { useProfile } from "@/hooks/use-profile";
 import { cx } from "@/utils/cx";
 
-const tabs = [
+const baseTabs = [
     { label: "Feed", href: "/feed", icon: Home01 },
     { label: "Activity", href: "/activity", icon: Activity },
     { label: "Profile", href: "/profile/me", icon: User01 },
@@ -12,6 +13,12 @@ const tabs = [
 export function BottomNav() {
     const { pathname } = useLocation();
     const { user } = useAuth();
+    const { profile } = useProfile();
+
+    // Admins get a fourth tab that opens the admin view (defaults to Analytics).
+    const tabs = profile?.is_admin
+        ? [...baseTabs, { label: "Admin", href: "/admin", icon: Atom01 }]
+        : baseTabs;
 
     // Profile highlights only for the logged-in user's own profile — not other
     // players' profiles (/profile/{uuid}).
