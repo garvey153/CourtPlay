@@ -1,344 +1,203 @@
-import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { sendNotification } from "@/lib/notifications";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { FilterLines, SearchSm, XClose } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
-import { Badge } from "@/components/base/badges/badges";
-import { Input } from "@/components/base/input/input";
-import { SearchLg } from "@untitledui/icons";
+import { supabase } from "@/lib/supabase";
+import { AdminClaimCard, claimerName, type AdminClaimRow } from "./admin-claim-card";
+import { AdminClaimDetailSheet } from "./admin-claim-detail-sheet";
+import { AdminClaimFilterSheet, EMPTY_CLAIM_FILTERS, claimFilterCount, type ClaimFilters } from "./admin-claim-filter-sheet";
 
-const PAGE_SIZE = 20;
+const FETCH_LIMIT = 500;
 
-type ClaimStatus = "pending" | "approved" | "rejected" | "unclaimed" | "cancelled";
-
-const STATUS_OPTIONS: Array<{ value: ClaimStatus | "all"; label: string }> = [
-    { value: "all", label: "All" },
-    { value: "pending", label: "Pending" },
-    { value: "approved", label: "Approved" },
-    { value: "rejected", label: "Rejected" },
-    { value: "unclaimed", label: "Unclaimed" },
-    { value: "cancelled", label: "Cancelled" },
-];
-
-const STATUS_BADGE_COLOR: Record<ClaimStatus, "gray" | "brand" | "success" | "error" | "warning"> = {
-    pending: "warning",
-    approved: "success",
-    rejected: "error",
-    unclaimed: "gray",
-    cancelled: "gray",
-};
-
-interface ClaimRow {
+interface ClaimQueryRow {
     id: string;
-    status: ClaimStatus;
+    status: string;
     created_at: string;
     claimer_id: string;
     post_id: string;
-    users: { first_name: string; last_name: string; email: string } | null;
+    users: { first_name: string | null; last_name: string | null; email: string | null; photo_url: string | null } | null;
     posts: {
-        location: string;
+        location: string | null;
         custom_court: string | null;
-        game_date: string;
-        game_time: string;
-        author_id: string;
+        game_date: string | null;
+        game_time: string | null;
+        play_type: string | null;
+        format: string | null;
+        skill_level: string | null;
+        duration: number | null;
+        cost: number | null;
+        author_id: string | null;
     } | null;
 }
 
-interface ResponsivenessData {
-    poster_id: string;
-    avg_response_seconds: number;
+function matchesFilters(claim: AdminClaimRow, f: ClaimFilters): boolean {
+    return f.status === "all" || claim.status === f.status;
 }
 
-function formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-    });
-}
-
-function formatResponseTime(seconds: number): string {
-    if (seconds < 60) return `${Math.round(seconds)}s`;
-    if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
-    return `${(seconds / 3600).toFixed(1)}h`;
+function matchesSearch(claim: AdminClaimRow, query: string): boolean {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return [claimerName(claim), claim.claimer_email, claim.location, claim.custom_court]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q);
 }
 
 export function AdminClaims() {
-    const [claims, setClaims] = useState<ClaimRow[]>([]);
-    const [totalCount, setTotalCount] = useState(0);
-    const [page, setPage] = useState(0);
-    const [statusFilter, setStatusFilter] = useState<ClaimStatus | "all">("all");
-    const [search, setSearch] = useState("");
+    const [claims, setClaims] = useState<AdminClaimRow[]>([]);
     const [loading, setLoading] = useState(true);
-    const [cancellingId, setCancellingId] = useState<string | null>(null);
-    const [responsivenessMap, setResponsivenessMap] = useState<Record<string, number>>({});
+    const [error, setError] = useState<string | null>(null);
+
+    const [search, setSearch] = useState("");
+    const [filters, setFilters] = useState<ClaimFilters>(EMPTY_CLAIM_FILTERS);
+    const [filtersOpen, setFiltersOpen] = useState(false);
+
+    const [detailClaim, setDetailClaim] = useState<AdminClaimRow | null>(null);
 
     const fetchClaims = useCallback(async () => {
         setLoading(true);
-        const offset = page * PAGE_SIZE;
+        setError(null);
 
-        let query = supabase
+        const claimsRes = await supabase
             .from("claims")
             .select(
-                `
-                id, status, created_at, claimer_id, post_id,
-                users!claimer_id(first_name, last_name, email),
-                posts!post_id(location, custom_court, game_date, game_time, author_id)
-            `,
-                { count: "exact" },
+                `id, status, created_at, claimer_id, post_id,
+                 users!claimer_id(first_name, last_name, email, photo_url),
+                 posts!post_id(location, custom_court, game_date, game_time, play_type, format, skill_level, duration, cost, author_id)`,
             )
             .order("created_at", { ascending: false })
-            .range(offset, offset + PAGE_SIZE - 1);
+            .limit(FETCH_LIMIT);
 
-        if (statusFilter !== "all") {
-            query = query.eq("status", statusFilter);
-        }
-
-        const { data, count, error } = await query;
-
-        if (error) {
-            console.error("Failed to fetch claims:", error);
+        if (claimsRes.error) {
+            setError(claimsRes.error.message);
+            setClaims([]);
             setLoading(false);
             return;
         }
 
-        const rows = (data ?? []) as unknown as ClaimRow[];
-        setClaims(rows);
-        setTotalCount(count ?? 0);
+        const rows = (claimsRes.data as unknown as ClaimQueryRow[]) ?? [];
 
-        // Fetch responsiveness data for all poster IDs in this page
-        const posterIds = [
-            ...new Set(rows.map((c) => c.posts?.author_id).filter(Boolean) as string[]),
-        ];
+        // Poster responsiveness (avg seconds to respond) for the posters in this set.
+        const posterIds = [...new Set(rows.map((c) => c.posts?.author_id).filter(Boolean) as string[])];
+        const responseMap = new Map<string, number>();
         if (posterIds.length > 0) {
-            const { data: respData } = await supabase
+            const { data: resp } = await supabase
                 .from("responsiveness_log")
                 .select("poster_id, avg_response_seconds")
                 .in("poster_id", posterIds);
-
-            if (respData) {
-                const map: Record<string, number> = {};
-                for (const row of respData as ResponsivenessData[]) {
-                    map[row.poster_id] = row.avg_response_seconds;
-                }
-                setResponsivenessMap(map);
+            for (const r of (resp as { poster_id: string; avg_response_seconds: number }[]) ?? []) {
+                responseMap.set(r.poster_id, r.avg_response_seconds);
             }
         }
 
+        setClaims(
+            rows.map<AdminClaimRow>((c) => ({
+                id: c.id,
+                status: c.status,
+                created_at: c.created_at,
+                claimer_id: c.claimer_id,
+                post_id: c.post_id,
+                post_author_id: c.posts?.author_id ?? null,
+                play_type: c.posts?.play_type ?? null,
+                format: c.posts?.format ?? null,
+                game_date: c.posts?.game_date ?? null,
+                game_time: c.posts?.game_time ?? null,
+                skill_level: c.posts?.skill_level ?? null,
+                duration: c.posts?.duration ?? null,
+                location: c.posts?.location ?? null,
+                custom_court: c.posts?.custom_court ?? null,
+                cost: c.posts?.cost ?? null,
+                claimer_first_name: c.users?.first_name ?? null,
+                claimer_last_name: c.users?.last_name ?? null,
+                claimer_email: c.users?.email ?? null,
+                claimer_photo_url: c.users?.photo_url ?? null,
+                poster_avg_response_seconds: c.posts?.author_id ? (responseMap.get(c.posts.author_id) ?? null) : null,
+            })),
+        );
         setLoading(false);
-    }, [page, statusFilter]);
+    }, []);
 
     useEffect(() => {
         fetchClaims();
     }, [fetchClaims]);
 
-    // Reset to page 0 when filters change
-    useEffect(() => {
-        setPage(0);
-    }, [statusFilter, search]);
+    const visibleClaims = useMemo(
+        () => claims.filter((c) => matchesFilters(c, filters) && matchesSearch(c, search)),
+        [claims, filters, search],
+    );
 
-    const handleCancelClaim = async (claim: ClaimRow) => {
-        setCancellingId(claim.id);
-        try {
-            const { error } = await supabase
-                .from("claims")
-                .update({ status: "cancelled" })
-                .eq("id", claim.id);
-
-            if (error) {
-                console.error("Failed to cancel claim:", error);
-                return;
-            }
-
-            // Notify claimer
-            await sendNotification({
-                user_id: claim.claimer_id,
-                notification_type: "claimer_cancelled",
-                post_id: claim.post_id,
-                claim_id: claim.id,
-            });
-
-            // Notify poster
-            if (claim.posts?.author_id) {
-                await sendNotification({
-                    user_id: claim.posts.author_id,
-                    notification_type: "claimer_cancelled",
-                    post_id: claim.post_id,
-                    claim_id: claim.id,
-                });
-            }
-
-            await fetchClaims();
-        } finally {
-            setCancellingId(null);
-        }
+    const handleSaved = () => {
+        setDetailClaim(null);
+        fetchClaims();
     };
 
-    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-
-    // Client-side text search filtering
-    const filteredClaims = search.trim()
-        ? claims.filter((c) => {
-              const term = search.toLowerCase();
-              const claimerName = `${c.users?.first_name ?? ""} ${c.users?.last_name ?? ""}`.toLowerCase();
-              const email = (c.users?.email ?? "").toLowerCase();
-              const location = (c.posts?.location ?? "").toLowerCase();
-              const customCourt = (c.posts?.custom_court ?? "").toLowerCase();
-              return (
-                  claimerName.includes(term) ||
-                  email.includes(term) ||
-                  location.includes(term) ||
-                  customCourt.includes(term)
-              );
-          })
-        : claims;
-
     return (
-        <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-primary">Claims Management</h2>
-
-            {/* Filter bar */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div className="min-w-0 flex-1">
-                    <Input
-                        label="Search"
-                        placeholder="Search by name, email, or location..."
-                        icon={SearchLg}
+        <div className="flex flex-col gap-4">
+            {/* Search + filter row (design 348:4863) */}
+            <div className="flex items-center gap-3">
+                <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
+                    <SearchSm className="size-6 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
+                    <input
                         value={search}
-                        onChange={(e) => setSearch(e.toString())}
-                        size="sm"
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search claims"
+                        className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
                     />
+                    {search && (
+                        <button
+                            type="button"
+                            aria-label="Clear search"
+                            onClick={() => setSearch("")}
+                            className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-primary"
+                        >
+                            <XClose className="size-5" strokeWidth={1} />
+                        </button>
+                    )}
                 </div>
-                <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium text-secondary">Status</label>
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value as ClaimStatus | "all")}
-                        className="rounded-lg border border-primary bg-primary px-3 py-2 text-sm text-primary shadow-xs outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-                    >
-                        {STATUS_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <button
+                    type="button"
+                    onClick={() => setFiltersOpen((v) => !v)}
+                    aria-label="Filter claims"
+                    className="relative shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                >
+                    <FilterLines className="size-6" aria-hidden="true" />
+                    {claimFilterCount(filters) > 0 && (
+                        <span className="absolute right-1 top-[7px] size-1.5 rounded-full bg-brand-solid ring-2 ring-bg-primary" />
+                    )}
+                </button>
             </div>
 
-            {/* Results count */}
-            <p className="text-sm text-tertiary">
-                {totalCount} claim{totalCount !== 1 ? "s" : ""} found
-            </p>
-
-            {/* Claims list — mobile card layout */}
+            {/* Content */}
             {loading ? (
-                <div className="py-12 text-center text-tertiary">Loading claims...</div>
-            ) : filteredClaims.length === 0 ? (
-                <div className="py-12 text-center text-tertiary">No claims found.</div>
+                <div className="flex items-center justify-center py-16">
+                    <div className="size-6 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
+                </div>
+            ) : error ? (
+                <div className="flex flex-col items-center gap-4 py-16 text-center">
+                    <p className="text-sm text-error-primary">{error}</p>
+                    <Button size="sm" color="primary" onClick={fetchClaims}>
+                        Retry
+                    </Button>
+                </div>
+            ) : visibleClaims.length === 0 ? (
+                <p className="py-16 text-center text-sm text-tertiary">No claims match your filters.</p>
             ) : (
-                <div className="space-y-3">
-                    {filteredClaims.map((claim) => {
-                        const claimerName = claim.users
-                            ? `${claim.users.first_name} ${claim.users.last_name}`
-                            : "Unknown";
-                        const courtDisplay =
-                            claim.posts?.custom_court ?? claim.posts?.location ?? "Unknown";
-                        const gameDate = claim.posts?.game_date
-                            ? formatDate(claim.posts.game_date)
-                            : "N/A";
-                        const gameTime = claim.posts?.game_time ?? "";
-                        const posterId = claim.posts?.author_id;
-                        const avgResponse =
-                            posterId && responsivenessMap[posterId] != null
-                                ? responsivenessMap[posterId]
-                                : null;
-
-                        return (
-                            <div
-                                key={claim.id}
-                                className="rounded-xl border border-secondary bg-primary p-4 shadow-xs"
-                            >
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate font-medium text-primary">
-                                            {claimerName}
-                                        </p>
-                                        <p className="mt-0.5 text-sm text-secondary">
-                                            {claim.users?.email}
-                                        </p>
-                                    </div>
-                                    <Badge
-                                        size="sm"
-                                        color={STATUS_BADGE_COLOR[claim.status]}
-                                    >
-                                        {claim.status}
-                                    </Badge>
-                                </div>
-
-                                <div className="mt-3 space-y-1 text-sm text-tertiary">
-                                    <p>
-                                        <span className="font-medium text-secondary">Court:</span>{" "}
-                                        {courtDisplay}
-                                    </p>
-                                    <p>
-                                        <span className="font-medium text-secondary">Game:</span>{" "}
-                                        {gameDate} {gameTime}
-                                    </p>
-                                    <p>
-                                        <span className="font-medium text-secondary">Claimed:</span>{" "}
-                                        {formatDate(claim.created_at)}
-                                    </p>
-                                    {avgResponse != null && (
-                                        <p>
-                                            <span className="font-medium text-secondary">
-                                                Poster Avg Response:
-                                            </span>{" "}
-                                            {formatResponseTime(avgResponse)}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {claim.status !== "cancelled" && (
-                                    <div className="mt-3 flex justify-end">
-                                        <Button
-                                            size="sm"
-                                            color="primary-destructive"
-                                            isLoading={cancellingId === claim.id}
-                                            isDisabled={cancellingId != null}
-                                            onClick={() => handleCancelClaim(claim)}
-                                        >
-                                            Cancel Claim
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
+                <div className="flex flex-col gap-3">
+                    {visibleClaims.map((claim) => (
+                        <AdminClaimCard key={claim.id} claim={claim} onOpen={setDetailClaim} />
+                    ))}
                 </div>
             )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-2">
-                    <Button
-                        size="sm"
-                        color="secondary"
-                        isDisabled={page === 0}
-                        onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    >
-                        Previous
-                    </Button>
-                    <span className="text-sm text-tertiary">
-                        Page {page + 1} of {totalPages}
-                    </span>
-                    <Button
-                        size="sm"
-                        color="secondary"
-                        isDisabled={page >= totalPages - 1}
-                        onClick={() => setPage((p) => p + 1)}
-                    >
-                        Next
-                    </Button>
-                </div>
+            <AdminClaimFilterSheet
+                filters={filters}
+                onChange={setFilters}
+                isOpen={filtersOpen}
+                onToggle={() => setFiltersOpen((v) => !v)}
+            />
+
+            {detailClaim && (
+                <AdminClaimDetailSheet claim={detailClaim} onClose={() => setDetailClaim(null)} onSaved={handleSaved} />
             )}
         </div>
     );
