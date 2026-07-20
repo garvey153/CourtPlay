@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 
-/** Threshold at which the court is flagged for admin review. */
+/** Threshold at which the court is flagged for admin review. Mirrors the RPC's logic. */
 export const ALERT_THRESHOLD = 3;
 
 export interface CustomCourtRow {
@@ -8,41 +8,22 @@ export interface CustomCourtRow {
     court_name: string;
     submission_count: number;
     alerted: boolean;
+    area?: string | null;
     last_submitted_at?: string | null;
 }
 
 /**
- * Upsert a custom court submission.
- * - If the court name is new: insert with submission_count = 1.
- * - If the court already exists: increment submission_count.
- * - When submission_count reaches ALERT_THRESHOLD and alerted is false:
- *   set alerted = true (admin email wired in Phase 7).
+ * Record a custom court submission.
+ *
+ * custom_court_submissions is admin-only under RLS, so regular users can't write it
+ * directly. This calls the `record_custom_court_submission` SECURITY DEFINER RPC, which
+ * upserts the row server-side (insert with count 1, or increment; flags for review at
+ * ALERT_THRESHOLD) and records the poster's `area` so an admin can pre-fill it on approval.
  */
-export async function upsertCustomCourt(name: string): Promise<void> {
-    const { data: existing } = await supabase
-        .from("custom_court_submissions")
-        .select("id, submission_count, alerted")
-        .eq("court_name", name)
-        .maybeSingle();
-
-    if (existing) {
-        const newCount = (existing as CustomCourtRow).submission_count + 1;
-        const shouldAlert =
-            newCount >= ALERT_THRESHOLD && !(existing as CustomCourtRow).alerted;
-
-        await supabase
-            .from("custom_court_submissions")
-            .update({
-                submission_count: newCount,
-                alerted: shouldAlert ? true : (existing as CustomCourtRow).alerted,
-                last_submitted_at: new Date().toISOString(),
-            })
-            .eq("id", (existing as CustomCourtRow).id);
-    } else {
-        await supabase.from("custom_court_submissions").insert({
-            court_name: name,
-            submission_count: 1,
-            alerted: false,
-        });
-    }
+export async function upsertCustomCourt(name: string, area?: string | null): Promise<void> {
+    const { error } = await supabase.rpc("record_custom_court_submission", {
+        p_name: name,
+        p_area: area?.trim() || null,
+    });
+    if (error) console.warn("Failed to record custom court submission:", error.message);
 }

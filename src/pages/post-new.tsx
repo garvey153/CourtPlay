@@ -130,6 +130,7 @@ interface FormFields {
     courtId: string | null;
     showCustomCourt: boolean;
     customCourt: string;
+    customArea: string;
     proName: string;
     cost: number | null;
     notes: string;
@@ -143,6 +144,9 @@ interface FormFields {
 }
 
 const keysOf = (s: Selection): string[] => (s instanceof Set ? [...s].map(String) : []);
+
+// CourtPlay is a Westport-scoped app, so a custom court's area defaults to the town.
+const DEFAULT_CUSTOM_AREA = "Westport";
 
 // Order-independent signature of the form's values (multi-selects are sorted).
 const buildFormSig = (v: FormFields): string =>
@@ -182,6 +186,9 @@ export function PostNew() {
     const [courtId, setCourtId] = useState<string | null>(null);
     const [showCustomCourt, setShowCustomCourt] = useState(false);
     const [customCourt, setCustomCourt] = useState("");
+    const [customArea, setCustomArea] = useState(DEFAULT_CUSTOM_AREA);
+    // The court name the post was saved with — used to name it if it's since been removed.
+    const [savedCourtName, setSavedCourtName] = useState<string | null>(null);
     const [proName, setProName] = useState("");
     const [cost, setCost] = useState<number | null>(null);
     const [notes, setNotes] = useState("");
@@ -244,6 +251,8 @@ export function PostNew() {
                 setSkillLevel(post.skill_level ?? "");
                 setCourtId(post.court_id ?? null);
                 setCustomCourt(post.custom_court ?? "");
+                setCustomArea(DEFAULT_CUSTOM_AREA);
+                setSavedCourtName(post.location ?? null);
                 setShowCustomCourt(!!post.custom_court && !post.court_id);
                 setProName(post.pro_name ?? "");
                 const postCost = post.cost ? Number(post.cost) : null;
@@ -274,6 +283,7 @@ export function PostNew() {
                               courtId: post.court_id ?? null,
                               showCustomCourt: !!post.custom_court && !post.court_id,
                               customCourt: post.custom_court ?? "",
+                              customArea: DEFAULT_CUSTOM_AREA,
                               proName: post.pro_name ?? "",
                               cost: post.cost ? Number(post.cost) : null,
                               notes: post.notes ?? "",
@@ -295,6 +305,7 @@ export function PostNew() {
                               courtId: null,
                               showCustomCourt: false,
                               customCourt: "",
+                              customArea: DEFAULT_CUSTOM_AREA,
                               proName: "",
                               cost: null,
                               notes: "",
@@ -328,8 +339,17 @@ export function PostNew() {
         }
     };
 
-    const validateSubNeed = () =>
-        !!(playType && gameDate && gameTime && duration != null && skillLevel && (courtId || customCourt.trim()) && cost !== null && notes.trim());
+    // In edit mode the post's saved court may have been deactivated/removed since posting —
+    // it won't be in the active courts list, so the Location field shows blank and the poster
+    // must pick another court (or add a custom one) before saving.
+    const courtMissing =
+        isEditing && !showCustomCourt && courtId != null && courts.length > 0 && !courts.some((c) => c.id === courtId);
+
+    const validateSubNeed = () => {
+        // Custom courts require both a name and an area; listed courts just need a valid selection.
+        const courtOk = showCustomCourt ? !!(customCourt.trim() && customArea.trim()) : !!courtId && !courtMissing;
+        return !!(playType && gameDate && gameTime && duration != null && skillLevel && courtOk && cost !== null && notes.trim());
+    };
 
     const setSize = (s: Selection) => (s instanceof Set ? s.size : 0);
     const validateRegularGame = () =>
@@ -350,6 +370,7 @@ export function PostNew() {
                 courtId,
                 showCustomCourt,
                 customCourt,
+                customArea,
                 proName,
                 cost,
                 notes,
@@ -361,7 +382,7 @@ export function PostNew() {
                 rgCourts: keysOf(rgCourts),
                 rgNote,
             }),
-        [postType, playType, duration, gameDate, gameTime, skillLevel, courtId, showCustomCourt, customCourt, proName, cost, notes, rgPlayTypes, rgGroupSizes, rgSkillLevels, rgDays, rgTimes, rgCourts, rgNote],
+        [postType, playType, duration, gameDate, gameTime, skillLevel, courtId, showCustomCourt, customCourt, customArea, proName, cost, notes, rgPlayTypes, rgGroupSizes, rgSkillLevels, rgDays, rgTimes, rgCourts, rgNote],
     );
     // Baseline captured directly from the loaded post (in the load effect), so it's
     // race-free — no dependency on when state/effects flush.
@@ -394,7 +415,6 @@ export function PostNew() {
 
             if (postType === "sub_need") {
                 const usedCustomCourt = showCustomCourt && customCourt.trim();
-                if (usedCustomCourt) await upsertCustomCourt(customCourt.trim());
                 const location = usedCustomCourt ? customCourt.trim() : courts.find((c) => c.id === courtId)?.name ?? null;
 
                 if (isEditing && editPostId) {
@@ -414,6 +434,9 @@ export function PostNew() {
                         notes: notes || null,
                     }).eq("id", editPostId);
                     if (updateError) throw updateError;
+
+                    // A custom court lives only on this post; record its name for the admin Custom list.
+                    if (usedCustomCourt && !existingClaims) await upsertCustomCourt(customCourt.trim(), customArea.trim());
 
                     // N5: Cost changed — notify active claimers
                     const activeClaimerIds = new Set<string>();
@@ -472,6 +495,10 @@ export function PostNew() {
                     }).select("id");
                     if (insertError) throw insertError;
                     newPostId = inserted?.[0]?.id ?? null;
+
+                    // A custom court lives only on this post; record its name so it shows in the
+                    // admin Custom list. The post itself goes live in the feed immediately.
+                    if (usedCustomCourt) await upsertCustomCourt(customCourt.trim(), customArea.trim());
 
                     // N13: Friend new post — notify followers (opt-in only)
                     const { data: followers } = await supabase
@@ -550,7 +577,15 @@ export function PostNew() {
                 navigate("/feed");
             }
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Something went wrong.");
+            // Supabase/PostgREST errors are plain objects ({ message, code, ... }), not Error
+            // instances, so surface their message instead of masking it as "Something went wrong".
+            const msg =
+                e instanceof Error
+                    ? e.message
+                    : e && typeof e === "object" && typeof (e as { message?: unknown }).message === "string"
+                      ? (e as { message: string }).message
+                      : "Something went wrong.";
+            setError(msg);
         } finally {
             setSaving(false);
         }
@@ -661,12 +696,14 @@ export function PostNew() {
                         {!showCustomCourt ? (
                             <Select
                                 label="Location"
-                                placeholder="Select court"
+                                placeholder={courtMissing ? "Select a new court" : "Select court"}
                                 isNonModal
                                 items={courtItems}
-                                selectedKey={courtId}
+                                selectedKey={courtMissing ? null : courtId}
                                 onSelectionChange={(k) => handleCourtSelect(k as string)}
                                 isRequired
+                                isInvalid={courtMissing}
+                                hint={courtMissing ? `${savedCourtName ?? "Your court"} has been removed by the admin. Please select another court or add a custom court.` : undefined}
                                 isDisabled={lockedField}
                                 tooltip={lockedField ? lockedTitle : undefined}
                                 size="sm"
@@ -685,8 +722,17 @@ export function PostNew() {
                                     size="sm"
                                     wrapperClassName={FIELD}
                                 />
+                                <Input
+                                    label="Area"
+                                    placeholder="e.g. Westport"
+                                    value={customArea}
+                                    onChange={(v) => setCustomArea(v)}
+                                    isRequired
+                                    size="sm"
+                                    wrapperClassName={FIELD}
+                                />
                                 <button
-                                    onClick={() => { setShowCustomCourt(false); setCustomCourt(""); }}
+                                    onClick={() => { setShowCustomCourt(false); setCustomCourt(""); setCustomArea(DEFAULT_CUSTOM_AREA); }}
                                     className="self-start text-sm text-brand-secondary"
                                 >
                                     ← Back to court list

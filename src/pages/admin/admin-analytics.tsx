@@ -8,7 +8,7 @@ interface Metrics {
     matches: number | null;
     pushOptIn: number | null;
     pendingClaims: number | null;
-    pendingCourts: number | null;
+    customCourts: number | null;
     pendingReports: number | null;
 }
 
@@ -35,7 +35,7 @@ export function AdminAnalytics() {
         matches: null,
         pushOptIn: null,
         pendingClaims: null,
-        pendingCourts: null,
+        customCourts: null,
         pendingReports: null,
     });
     const [funnel, setFunnel] = useState<FunnelStep[]>([]);
@@ -64,7 +64,7 @@ export function AdminAnalytics() {
             recentMatchesRes,
             pushUsersRes,
             pendingClaimsRes,
-            pendingCourtsRes,
+            customCourtsRes,
             pendingReportsRes,
             activePostAuthorsRes,
             activeClaimersRes,
@@ -74,7 +74,7 @@ export function AdminAnalytics() {
             supabase.from("claims").select("id", { count: "exact", head: true }).eq("status", "approved").gte("created_at", sevenDaysAgo),
             supabase.from("users").select("id", { count: "exact", head: true }).not("onesignal_player_id", "is", null).is("deleted_at", null),
             supabase.from("claims").select("id", { count: "exact", head: true }).eq("status", "pending"),
-            supabase.from("custom_courts").select("id", { count: "exact", head: true }).eq("status", "pending"),
+            supabase.from("custom_court_submissions").select("id", { count: "exact", head: true }),
             supabase.from("reports").select("id", { count: "exact", head: true }).eq("status", "pending"),
             supabase.from("posts").select("author_id").gte("created_at", sevenDaysAgo),
             supabase.from("claims").select("claimer_id").gte("created_at", sevenDaysAgo),
@@ -92,7 +92,7 @@ export function AdminAnalytics() {
             matches: recentMatchesRes.count ?? 0,
             pushOptIn: pushUsersRes.count ?? 0,
             pendingClaims: pendingClaimsRes.count ?? 0,
-            pendingCourts: pendingCourtsRes.count ?? 0,
+            customCourts: customCourtsRes.count ?? 0,
             pendingReports: pendingReportsRes.count ?? 0,
         });
     }
@@ -143,7 +143,7 @@ export function AdminAnalytics() {
         { label: "Matches", value: fmt(metrics.matches) },
         { label: "Push opt-in", value: fmt(metrics.pushOptIn) },
         { label: "Pending claims", value: fmt(metrics.pendingClaims) },
-        { label: "Pending courts", value: fmt(metrics.pendingCourts) },
+        { label: "Custom courts", value: fmt(metrics.customCourts) },
         { label: "Pending reports", value: fmt(metrics.pendingReports) },
     ];
 

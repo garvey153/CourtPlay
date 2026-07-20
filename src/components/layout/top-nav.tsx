@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { FilterLines } from "@untitledui/icons";
 
 interface TopNavProps {
@@ -16,7 +16,9 @@ export function TopNav({ onOpenFilters, filtersActive }: TopNavProps) {
 
     return (
         <header className="sticky top-0 z-40 flex items-center justify-between bg-primary px-5 py-4">
-            <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto" />
+            <Link to="/feed" aria-label="Go to feed" className="transition duration-100 ease-linear hover:opacity-80">
+                <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto" />
+            </Link>
             <div className="flex items-center gap-3">
                 {onOpenFilters && (
                     <button
