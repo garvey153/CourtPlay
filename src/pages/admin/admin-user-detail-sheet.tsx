@@ -44,7 +44,7 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
 
     const name = userDisplayName(user);
     const skill = skillLabel(user.skill_level);
-    const statusLabel = user.is_suspended ? "Suspended" : "Active";
+    const statusLabel = user.is_suspended ? "Deactivated" : "Active";
 
     const runUpdate = async (patch: Record<string, unknown>, failVerb: string) => {
         setLoading(true);
@@ -77,15 +77,15 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
             <>
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 flex-col gap-1">
-                        <h2 className="text-md font-semibold text-primary">Suspend this user?</h2>
-                        <p className="text-sm text-secondary">They won&apos;t be able to post or claim spots until reinstated.</p>
+                        <h2 className="text-md font-semibold text-primary">Deactivate this user?</h2>
+                        <p className="text-sm text-secondary">They won&apos;t be able to post or claim spots until reactivated.</p>
                     </div>
                     {closeBtn}
                 </div>
                 {errorLine}
                 <div className="mt-2 flex flex-col gap-3">
-                    <button type="button" onClick={() => runUpdate({ is_suspended: true }, "suspend")} disabled={loading} className={PRIMARY_BTN}>
-                        {loading ? <ButtonSpinner /> : "Yes, suspend"}
+                    <button type="button" onClick={() => runUpdate({ is_suspended: true }, "deactivate")} disabled={loading} className={PRIMARY_BTN}>
+                        {loading ? <ButtonSpinner /> : "Yes, deactivate"}
                     </button>
                     <button type="button" onClick={() => setMode("view")} disabled={loading} className={SECONDARY_BTN}>
                         Cancel
@@ -146,12 +146,12 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
 
                 <div className="mt-2 flex flex-col gap-3">
                     {user.is_suspended ? (
-                        <button type="button" onClick={() => runUpdate({ is_suspended: false }, "unsuspend")} disabled={loading} className={PRIMARY_BTN}>
-                            {loading ? <ButtonSpinner /> : "Unsuspend user"}
+                        <button type="button" onClick={() => runUpdate({ is_suspended: false }, "reactivate")} disabled={loading} className={PRIMARY_BTN}>
+                            {loading ? <ButtonSpinner /> : "Reactivate user"}
                         </button>
                     ) : (
-                        <button type="button" onClick={() => setMode("confirmSuspend")} disabled={loading} className={SECONDARY_BTN}>
-                            Suspend user
+                        <button type="button" onClick={() => setMode("confirmSuspend")} disabled={loading} className={PRIMARY_BTN}>
+                            Deactivate user
                         </button>
                     )}
                     <button type="button" onClick={() => runUpdate({ is_admin: !user.is_admin }, "update admin")} disabled={loading} className={SECONDARY_BTN}>

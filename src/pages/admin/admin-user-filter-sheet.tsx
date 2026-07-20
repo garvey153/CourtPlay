@@ -21,7 +21,7 @@ export function userFilterCount(f: UserFilters): number {
 const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
     { value: "all", label: "All" },
     { value: "active", label: "Active" },
-    { value: "suspended", label: "Suspended" },
+    { value: "suspended", label: "Deactivated" },
 ];
 
 const PRIMARY_BTN =
