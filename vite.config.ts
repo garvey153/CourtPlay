@@ -10,15 +10,17 @@ export default defineConfig({
         tailwindcss(),
         VitePWA({
             registerType: "autoUpdate",
-            includeAssets: ["favicon.ico", "apple-touch-icon.png"],
+            includeAssets: ["apple-touch-icon.png", "icons/icon-192.png", "icons/icon-512.png"],
             manifest: {
                 name: "CourtPlay",
                 short_name: "CourtPlay",
                 description: "Find a tennis sub in Westport in under 10 minutes.",
-                theme_color: "#2D6A4F",
-                background_color: "#FFFFFF",
+                // Dark-only app — keep the splash/chrome dark so it doesn't flash white.
+                theme_color: "#08180e",
+                background_color: "#08180e",
                 display: "standalone",
                 start_url: "/",
+                scope: "/",
                 icons: [
                     {
                         src: "/icons/icon-192.png",

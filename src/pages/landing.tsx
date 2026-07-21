@@ -1,10 +1,24 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import { Avatar } from "@/components/base/avatar/avatar";
+import { InstallAppButton } from "@/components/app/install-app-button";
 import { cx } from "@/utils/cx";
 
-// Green CTA (dark on-brand text), matching the app's other primary buttons.
+// Hero headlines, rendered as two lines. One is picked at random on each page load.
+const HEADLINES: [string, string][] = [
+    ["Every match.", "No empty courts."],
+    ["Love means nothing.", "Showing up means everything."],
+    ["No-shows happen.", "Empty courts don't."],
+    ["Rain checks, yes.", "Empty courts, no."],
+    ["Nothing to love", "about a no-show."],
+    ["The only thing unforced", "should be errors."],
+];
+
+// Design-system Primary button (Figma node 32:86, size M): bg/brand fill with
+// on-brand text. Width is set per-usage. Token mapping: bg/brand #1ab363 →
+// brand-500, bg/brand-hover #118c4a → brand-600, text/on-brand #08180e → neutral-950.
 const PRIMARY_BTN =
-    "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600";
+    "flex items-center justify-center gap-1 rounded-lg bg-brand-500 px-5 py-3 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600";
 
 // Static preview cards for the hero — mirrors the feed SubCard styling, with a
 // mix of open games and one already claimed (dimmed, grey) for variety.
@@ -77,49 +91,73 @@ function PreviewCard({ post }: { post: SamplePost }) {
  * running standalone.
  */
 export function Landing() {
+    // Pick once on load so it stays stable across re-renders.
+    const [headline] = useState(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
+
     return (
-        <div className="min-h-dvh bg-primary">
-            <div className="mx-auto flex min-h-dvh max-w-md flex-col">
+        <div className="min-h-dvh overflow-x-clip bg-primary">
+            {/* Mobile keeps the narrow phone column; md widens to a roomier single
+                column for tablets; from lg the container widens further and the hero
+                splits into two columns so the page fills desktop screens. */}
+            <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col md:max-w-2xl lg:max-w-6xl">
                 {/* Nav */}
-                <header className="flex items-center justify-between px-5 py-4">
-                    <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto" />
+                <header className="flex items-center justify-between px-5 py-4 md:px-8 lg:py-6">
+                    <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto lg:h-7" />
                     <Link to="/signup" className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600">
                         Sign up
                     </Link>
                 </header>
 
-                {/* Hero */}
-                <section className="mt-8 flex flex-col gap-2.5 px-5">
-                    <h1 className="text-display-md font-semibold tracking-tight text-primary">
-                        All racquets.
-                        <br />
-                        No empty courts.
-                    </h1>
-                    <p className="text-sm text-secondary">
-                        CourtPlay instantly connects you with available players in your area. No more group texts.
-                    </p>
-                </section>
-
-                {/* Preview cards */}
-                <section className="mt-8 flex flex-col gap-3 px-5">
-                    {POSTS.map((post) => (
-                        <PreviewCard key={post.title} post={post} />
-                    ))}
-                </section>
-
-                {/* CTA */}
-                <section className="mt-8 flex flex-col items-center gap-6 bg-secondary px-5 py-8 text-center">
-                    <div className="flex flex-col items-center gap-2.5 px-7">
-                        <h2 className="text-display-sm font-semibold text-balance text-primary">Ready to find your next match?</h2>
-                        <p className="text-sm text-secondary">Join players near you already using CourtPlay.</p>
+                {/* Hero — stacked on mobile/tablet, two columns (copy + preview cards) on desktop */}
+                <section className="mt-8 px-5 md:mt-12 md:px-8 lg:grid lg:grid-cols-2 lg:items-center lg:gap-8 lg:py-12">
+                    <div className="flex flex-col gap-2.5 lg:gap-4">
+                        <h1 className="text-balance text-display-md font-semibold tracking-tight text-primary md:text-display-lg lg:text-display-xl">
+                            {headline[0]}
+                            <br />
+                            {headline[1]}
+                        </h1>
+                        <p className="text-sm text-secondary md:text-base lg:max-w-md lg:text-lg">
+                            CourtPlay instantly connects you with available players in your area. No more group texts.
+                        </p>
+                        {/* Desktop only: both CTAs sit side by side in the hero. On mobile/tablet
+                            the Download button moves down beside Get started in the CTA band below. */}
+                        <div className="mt-2 hidden items-center gap-3 lg:flex">
+                            <Link to="/signup" className={PRIMARY_BTN}>
+                                Get started – it's free!
+                            </Link>
+                            <InstallAppButton />
+                        </div>
                     </div>
-                    <Link to="/signup" className={PRIMARY_BTN}>
-                        Get started – it's free!
-                    </Link>
+
+                    {/* Preview cards */}
+                    <div className="mt-8 flex flex-col gap-3 md:mt-10 lg:mt-0">
+                        {POSTS.map((post) => (
+                            <PreviewCard key={post.title} post={post} />
+                        ))}
+                    </div>
+                </section>
+
+                {/* CTA — full-bleed band at every breakpoint: breaks out of the centered
+                    column to span the full viewport width with square edges. */}
+                <section className="mt-8 mx-[calc(50%-50vw)] flex w-screen flex-col items-center gap-6 bg-secondary px-5 py-8 text-center md:mt-12 md:py-12 lg:mt-16 lg:py-14">
+                    <div className="flex flex-col items-center gap-2.5 px-7">
+                        <h2 className="text-display-sm font-semibold text-balance text-primary md:text-display-md lg:text-display-lg">Ready to find your next match?</h2>
+                        <p className="text-sm text-secondary md:text-base lg:text-lg">Join players near you already using CourtPlay.</p>
+                    </div>
+                    {/* Get started, with the Download button beside it on mobile/tablet
+                        (on desktop the Download button lives in the hero, so it's hidden here).
+                        On the narrowest widths the two share the row equally; from sm up they
+                        sit at their natural content width. */}
+                    <div className="flex w-full items-stretch justify-center gap-3 sm:w-auto">
+                        <Link to="/signup" className={cx(PRIMARY_BTN, "flex-1 sm:flex-none")}>
+                            Get started – it's free!
+                        </Link>
+                        <InstallAppButton className="flex-1 sm:flex-none lg:hidden" />
+                    </div>
                 </section>
 
                 {/* Footer */}
-                <footer className="mt-8 flex flex-col items-center gap-2.5 px-5 pt-6 pb-8">
+                <footer className="mt-8 flex flex-col items-center gap-2.5 px-5 pt-6 pb-8 lg:mt-16">
                     <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-3.5 w-auto opacity-90" />
                     <div className="flex items-center gap-2 text-xs text-tertiary">
                         <Link to="/privacy" className="hover:text-secondary">
