@@ -146,13 +146,13 @@ export function Landing() {
                     </div>
                     {/* Get started, with the Download button beside it on mobile/tablet
                         (on desktop the Download button lives in the hero, so it's hidden here).
-                        On the narrowest widths the two share the row equally; from sm up they
-                        sit at their natural content width. */}
-                    <div className="flex w-full items-stretch justify-center gap-3 sm:w-auto">
-                        <Link to="/signup" className={cx(PRIMARY_BTN, "flex-1 sm:flex-none")}>
+                        Narrow widths stack the two (Download second) rather than wrapping the
+                        button text; from sm up they sit side by side at content width. */}
+                    <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                        <Link to="/signup" className={PRIMARY_BTN}>
                             Get started – it's free!
                         </Link>
-                        <InstallAppButton className="flex-1 sm:flex-none lg:hidden" />
+                        <InstallAppButton className="lg:hidden" />
                     </div>
                 </section>
 
