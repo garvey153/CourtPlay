@@ -146,9 +146,9 @@ export function Landing() {
                     </div>
                     {/* Get started, with the Download button beside it on mobile/tablet
                         (on desktop the Download button lives in the hero, so it's hidden here).
-                        Narrow widths stack the two (Download second) rather than wrapping the
-                        button text; from sm up they sit side by side at content width. */}
-                    <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                        Below 480px they stack full-width (Download second); from 480px up they
+                        sit side by side at content width. */}
+                    <div className="flex w-full flex-col items-stretch gap-3 min-[480px]:w-auto min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-center">
                         <Link to="/signup" className={PRIMARY_BTN}>
                             Get started – it's free!
                         </Link>
