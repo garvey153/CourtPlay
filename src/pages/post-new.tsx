@@ -17,6 +17,7 @@ import { sendNotificationBatch } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import type { Selection } from "react-aria-components";
 import { cx } from "@/utils/cx";
+import { menuWidth, multiMenuWidth } from "@/utils/menu-width";
 
 // Field surface per the design: text inputs get a bg/tertiary fill with a
 // border/tertiary outline; dropdowns get the fill only (no border).
@@ -29,31 +30,6 @@ const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 const SECONDARY_BTN =
     "rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800";
-
-// A dropdown is sized to fit its longest option (and its placeholder, so the
-// resting text never clips), capped to the sheet width. Measured with canvas so
-// the width tracks the real glyph widths of the font, not a per-char estimate.
-let _measureCanvas: HTMLCanvasElement | null = null;
-// extraPx reserves room for a left checkbox in the option rows (24 ≈ box + gap),
-// since the options popover is the same width as the trigger.
-function menuWidth(items: { label: string }[], placeholder = "", extraPx = 0) {
-    if (typeof document === "undefined") return undefined;
-    _measureCanvas ??= document.createElement("canvas");
-    const ctx = _measureCanvas.getContext("2d");
-    if (!ctx) return undefined;
-    ctx.font = "500 14px Inter, system-ui, sans-serif";
-    const texts = [placeholder, ...items.map((i) => i.label)];
-    const max = texts.reduce((m, t) => Math.max(m, ctx.measureText(t).width), 0);
-    if (!max) return undefined;
-    // + padding (px-3 ×2 = 24) + chevron (16) + gaps/buffer + optional checkbox room.
-    return { width: `${Math.ceil(max) + 44 + extraPx}px`, maxWidth: "100%" as const };
-}
-
-// Width for a checkbox multi-select: fits the longest option (with checkbox room)
-// and the "N selected" summary the trigger shows once items are picked.
-function multiMenuWidth(items: { label: string }[], placeholder = "") {
-    return menuWidth([...items, { label: `${items.length} selected` }], placeholder, 24);
-}
 
 // Play type supersedes `format` for sub_need posts; drives the feed card title.
 const PLAY_TYPES = [

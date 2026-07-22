@@ -84,6 +84,10 @@ interface MultiSelectEmptyStateProps {
     onClearSearch?: () => void;
     /** Additional class name. */
     className?: string;
+    /** Hide the search icon. */
+    hideIcon?: boolean;
+    /** Alignment of the content. @default "center" */
+    align?: "center" | "left";
 }
 
 const MultiSelectEmptyState = ({
@@ -91,22 +95,27 @@ const MultiSelectEmptyState = ({
     description = "Please try a different search term.",
     onClearSearch,
     className,
-}: MultiSelectEmptyStateProps) => (
-    <div className={cx("flex flex-col items-center gap-3 px-4 py-4", className)}>
-        <div className="flex flex-col items-center gap-3">
-            <FeaturedIcon icon={SearchLg} size="sm" color="gray" theme="modern" />
-            <div className="flex flex-col items-center gap-0.5 text-center text-sm">
-                <p className="font-semibold text-primary">{title}</p>
-                <p className="text-tertiary">{description}</p>
+    hideIcon = false,
+    align = "center",
+}: MultiSelectEmptyStateProps) => {
+    const alignItems = align === "left" ? "items-start" : "items-center";
+    return (
+        <div className={cx("flex flex-col gap-3 px-4 py-4", alignItems, className)}>
+            <div className={cx("flex flex-col gap-3", alignItems)}>
+                {!hideIcon && <FeaturedIcon icon={SearchLg} size="sm" color="gray" theme="modern" />}
+                <div className={cx("flex flex-col gap-0.5 text-sm", alignItems, align === "left" ? "text-left" : "text-center")}>
+                    <p className="font-semibold text-primary">{title}</p>
+                    <p className="text-tertiary">{description}</p>
+                </div>
             </div>
+            {onClearSearch && (
+                <Button size="sm" color="link-color" onClick={onClearSearch}>
+                    Clear search
+                </Button>
+            )}
         </div>
-        {onClearSearch && (
-            <Button size="sm" color="link-color" onClick={onClearSearch}>
-                Clear search
-            </Button>
-        )}
-    </div>
-);
+    );
+};
 
 interface MultiSelectProps extends RefAttributes<HTMLDivElement>, CommonProps {
     /** The items to display in the listbox. */
@@ -159,6 +168,10 @@ interface MultiSelectProps extends RefAttributes<HTMLDivElement>, CommonProps {
     emptyStateTitle?: string;
     /** The description to display when no items match the search. */
     emptyStateDescription?: string;
+    /** Hide the search icon in the empty state. */
+    emptyStateHideIcon?: boolean;
+    /** Alignment of the empty state content. @default "center" */
+    emptyStateAlign?: "center" | "left";
     /** Custom formatter for the selected count text in the trigger. */
     selectedCountFormatter?: (count: number) => ReactNode;
     /** Supporting text displayed next to the selected count in the trigger. */
@@ -195,6 +208,8 @@ const MultiSelectRoot = ({
     showSearch = true,
     emptyStateTitle,
     emptyStateDescription,
+    emptyStateHideIcon,
+    emptyStateAlign,
     selectedCountFormatter,
     supportingText,
 }: MultiSelectProps) => {
@@ -300,6 +315,8 @@ const MultiSelectRoot = ({
                             title={emptyStateTitle}
                             description={emptyStateDescription}
                             onClearSearch={searchValue ? handleClearSearch : undefined}
+                            hideIcon={emptyStateHideIcon}
+                            align={emptyStateAlign}
                         />
                     )}
                     className={cx("overflow-y-auto py-1 outline-hidden", popoverMaxHeights[size])}
