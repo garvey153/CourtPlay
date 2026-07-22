@@ -36,3 +36,5 @@ Docs/Expenses.rtf
 
 *storybook.log
 storybook-static
+.vercel
+.env*
