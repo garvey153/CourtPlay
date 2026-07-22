@@ -93,7 +93,7 @@ export const TextArea = ({
         <AriaTextField
             {...props}
             className={(state) =>
-                cx("group flex h-max w-full flex-col items-start justify-start gap-1.5", typeof className === "function" ? className(state) : className)
+                cx("group flex h-max w-full flex-col items-start justify-start gap-2", typeof className === "function" ? className(state) : className)
             }
         >
             {({ isInvalid, isRequired }) => (

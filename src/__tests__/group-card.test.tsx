@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render as rtlRender, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { GroupCard } from "@/components/app/group-card";
 import type { FeedPost } from "@/types/feed";
@@ -26,6 +27,8 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
         post_type: "regular_game",
         status: "active",
         format: "point_play",
+        play_type: null,
+        duration: null,
         total_players: null,
         game_date: null,
         game_time: null,
@@ -49,6 +52,9 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
         last_name: "Smith",
         photo_url: null,
         is_friend: false,
+        user_claim_status: null,
+        user_claim_id: null,
+        user_notify_me: false,
         ...overrides,
     };
 }
@@ -59,44 +65,37 @@ beforeEach(() => {
 });
 
 describe("GroupCard", () => {
-    it("renders all required fields", () => {
+    it("renders the Regular Play card with all required fields", () => {
         render(<GroupCard post={makePost()} profileComplete={false} />);
-        // Format badge
-        expect(screen.getByText("Regular game")).toBeInTheDocument();
-        // Skill level
-        expect(screen.getByText(/3\.5 NTRP/i)).toBeInTheDocument();
-        // Preferred days
+        // Title folds the play type + skill level
+        expect(screen.getByText(/Tennis, Regular Play · NTRP 3\.5/i)).toBeInTheDocument();
+        // Preferred days + times share a line
         expect(screen.getByText(/Monday/i)).toBeInTheDocument();
-        // Preferred times
         expect(screen.getByText(/Morning/i)).toBeInTheDocument();
-        // Preferred courts / location
+        // Location
         expect(screen.getByText("Longshore Club")).toBeInTheDocument();
-        // Poster name
-        expect(screen.getByText(/Alice Smith/i)).toBeInTheDocument();
+        // Poster name (first name + last initial)
+        expect(screen.getByText(/Alice S\./i)).toBeInTheDocument();
         // Brief note
         expect(screen.getByText(/Looking for consistent group/i)).toBeInTheDocument();
     });
 
-    it("shows contact info section for users with complete profiles", () => {
-        render(<GroupCard post={makePost()} profileComplete={true} />);
-        // The card should NOT show the "complete your profile" prompt
-        expect(
-            screen.queryByText(/Complete your profile to see contact details/i),
-        ).not.toBeInTheDocument();
-        // Contact details placeholder should be shown
-        expect(screen.getByText(/Contact details shared after connecting/i)).toBeInTheDocument();
+    it("opens the detail sheet when the card is tapped", async () => {
+        const onOpenDetail = vi.fn();
+        const post = makePost();
+        render(<GroupCard post={post} profileComplete={false} onOpenDetail={onOpenDetail} />);
+        await userEvent.click(screen.getByRole("button"));
+        expect(onOpenDetail).toHaveBeenCalledWith(post);
     });
 
-    it("hides contact info for users without complete profiles", () => {
-        render(<GroupCard post={makePost()} profileComplete={false} />);
-        expect(
-            screen.getByText(/Complete your profile to see contact details/i),
-        ).toBeInTheDocument();
+    it("shows the friend badge for friends' posts", () => {
+        render(<GroupCard post={makePost({ is_friend: true })} profileComplete={false} />);
+        expect(screen.getByText("Friend")).toBeInTheDocument();
     });
 
-    it("shows share and report buttons", () => {
+    it("renders no actions menu (clean Regular Play card)", () => {
         render(<GroupCard post={makePost()} profileComplete={false} currentUserId="viewer-1" />);
-        expect(screen.getByRole("button", { name: /Share/i })).toBeInTheDocument();
-        expect(screen.getByRole("button", { name: /More options/i })).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: /More options/i })).not.toBeInTheDocument();
+        expect(screen.queryByText(/Report issue/i)).not.toBeInTheDocument();
     });
 });

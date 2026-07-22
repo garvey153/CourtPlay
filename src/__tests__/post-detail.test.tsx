@@ -25,10 +25,14 @@ vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
 
 const rpc = vi.mocked(supabase.rpc);
 
+// A future game date so the post reads as open (not expired). SubCard blocks taps
+// on expired cards, so a past date would prevent the claim sheet from opening.
+const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
 const activeSubNeed = {
     id: "aaaaaaaa-0000-0000-0000-000000000001",
     author_id: "author-1", author_type: "player", post_type: "sub_need",
-    format: "point_play", play_type: "point_play", duration: 2, total_players: 4, game_date: "2026-04-10", game_time: "09:00",
+    format: "point_play", play_type: "point_play", duration: 2, total_players: 4, game_date: futureDate, game_time: "09:00",
     skill_level: "3.5", location: "Longshore Club", court_id: null, custom_court: null,
     pro_name: null, cost: 25, original_cost: null, spots_total: 4, spots_available: 3,
     series_id: null, notes: null, status: "active", view_count: 10, expires_at: null,
@@ -73,7 +77,7 @@ describe("PostDetail", () => {
         mockUseProfile.mockReturnValue({ profile: { skill_level: "3.5" }, loading: false });
         rpc.mockResolvedValueOnce({ data: regularGame, error: null } as never);
         renderWithRoute(regularGame.id);
-        expect(await screen.findByText("Regular game")).toBeInTheDocument();
+        expect(await screen.findByText(/Tennis, Regular Play/)).toBeInTheDocument();
     });
 
     it("renders preview for unauthenticated user viewing active sub_need", async () => {

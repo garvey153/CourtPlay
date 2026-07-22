@@ -1,17 +1,36 @@
 import { useEffect, useRef, useState } from "react";
-import type { Selection } from "react-aria-components";
+import { Checkbox as AriaCheckbox, Switch as AriaSwitch, type Selection } from "react-aria-components";
 import { useNavigate } from "react-router";
 import { ArrowLeft, Check, SearchLg } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
-import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Input } from "@/components/base/input/input";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
 import { SelectItem } from "@/components/base/select/select-item";
-import { Toggle } from "@/components/base/toggle/toggle";
+import { Toggle, ToggleBase } from "@/components/base/toggle/toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/lib/supabase";
+import { cx } from "@/utils/cx";
+import { menuWidth } from "@/utils/menu-width";
+
+// Field styling shared with the create-post sheet (see post-new.tsx): inputs get a
+// tertiary fill with a neutral border; dropdown triggers get the fill only (no ring).
+// The autofill overrides keep Chrome from painting the input white (and highlighting
+// the related name field) when a phone number is autofilled.
+const FIELD =
+    "bg-tertiary ring-neutral-600 [&_input:-webkit-autofill]:[-webkit-box-shadow:inset_0_0_0_1000px_var(--color-bg-tertiary)] [&_input:-webkit-autofill]:[-webkit-text-fill-color:var(--color-text-primary)]";
+const FIELD_SELECT = "bg-tertiary ring-0 shadow-none";
+
+// Design-system Secondary button (Figma node 32:542, mirrors post-new.tsx's SECONDARY_BTN):
+// tertiary fill, no ring/border, secondary text — used for the Back buttons.
+const SECONDARY_BTN =
+    "flex items-center justify-center gap-1 rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800";
+
+// Design-system Primary button (Figma node 32:506, mirrors post-new.tsx's PRIMARY_BTN):
+// brand fill with dark on-brand text — used for Continue / Get started.
+const PRIMARY_BTN =
+    "flex items-center justify-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 
 const SKILL_LEVELS = [
     { id: "2.5", label: "2.5 — Beginner" },
@@ -41,7 +60,6 @@ interface FormData {
     last_name: string;
     skill_level: string;
     tos_accepted: boolean;
-    headline: string;
     photo_file: File | null;
     photo_url: string;
     court_preferences: Selection;
@@ -97,7 +115,6 @@ export function Onboarding() {
         last_name: "",
         skill_level: "",
         tos_accepted: false,
-        headline: "",
         photo_file: null,
         photo_url: "",
         court_preferences: new Set<string>(),
@@ -190,13 +207,21 @@ export function Onboarding() {
         return () => clearTimeout(t);
     }, [memberQuery, user]);
 
-    // Fetch suggested follows when entering step 5
+    // Suggest the 5 most recently joined players when entering the invite step.
     useEffect(() => {
-        if (step !== 5) return;
-        supabase.rpc("get_suggested_follows").then(({ data }) => {
-            if (data) setSuggestedFollows(data as MemberResult[]);
-        });
-    }, [step]);
+        if (step !== 3 || !user) return;
+        supabase
+            .from("users")
+            .select("id, first_name, last_name, photo_url, skill_level, headline")
+            .neq("id", user.id)
+            .is("deleted_at", null)
+            .eq("is_suspended", false)
+            .order("created_at", { ascending: false })
+            .limit(5)
+            .then(({ data }) => {
+                if (data) setSuggestedFollows(data as MemberResult[]);
+            });
+    }, [step, user]);
 
     const handleFollow = async (memberId: string) => {
         if (!user || followedIds.has(memberId)) return;
@@ -259,7 +284,6 @@ export function Onboarding() {
                 first_name: form.first_name.trim(),
                 last_name: form.last_name.trim(),
                 skill_level: form.skill_level || null,
-                headline: form.headline.trim() || null,
                 photo_url: form.photo_url || null,
                 court_preferences: courtPrefs.length > 0 ? courtPrefs : null,
                 pro_preference: form.pro_preference.trim() || null,
@@ -298,10 +322,10 @@ export function Onboarding() {
     const courtItems = courts.map((c) => ({ id: c.id, label: c.name, supportingText: c.area ?? undefined }));
 
     return (
-        <div className="flex min-h-dvh flex-col bg-primary">
+        <div className="flex min-h-dvh flex-col bg-secondary">
             {/* Progress bar */}
             <div className="flex gap-1 px-4 pt-6">
-                {[1, 2, 3, 4, 5].map((s) => (
+                {[1, 2, 3].map((s) => (
                     <div
                         key={s}
                         className={`h-1 flex-1 rounded-pill transition-colors ${s <= step ? "bg-brand-solid" : "bg-tertiary"}`}
@@ -314,18 +338,22 @@ export function Onboarding() {
                 {step === 1 && (
                     <div className="flex flex-col gap-5">
                         <div className="flex items-center gap-4">
-                            {form.photo_url ? (
-                                <img
-                                    src={form.photo_url}
-                                    alt="Profile photo"
-                                    referrerPolicy="no-referrer"
-                                    className="size-16 shrink-0 rounded-full object-cover ring-2 ring-brand-solid"
-                                />
-                            ) : (
-                                <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-tertiary text-xl font-semibold text-quaternary">
-                                    {form.first_name.charAt(0).toUpperCase() || "?"}
-                                </div>
-                            )}
+                            {/* Design-system "Avatar profile photo" — matches the Profile tab (see profile.tsx):
+                                72px circle with a 3px white ring + subtle border around the photo. */}
+                            <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full border border-secondary_alt bg-white p-[3px] shadow-xs">
+                                {form.photo_url ? (
+                                    <img
+                                        src={form.photo_url}
+                                        alt="Profile photo"
+                                        referrerPolicy="no-referrer"
+                                        className="size-full rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex size-full items-center justify-center rounded-full bg-tertiary text-2xl font-semibold text-secondary">
+                                        {form.first_name.charAt(0).toUpperCase() || "?"}
+                                    </div>
+                                )}
+                            </div>
                             <div>
                                 <h1 className="text-xl font-semibold text-primary">Create your profile</h1>
 <label className="mt-1.5 inline-block cursor-pointer text-sm font-semibold text-brand-secondary hover:text-brand-secondary_hover">
@@ -340,6 +368,8 @@ export function Onboarding() {
                             value={form.first_name}
                             onChange={(v) => set("first_name", v)}
                             isRequired
+                            size="sm"
+                            wrapperClassName={FIELD}
                         />
                         <Input
                             label="Last name"
@@ -347,81 +377,23 @@ export function Onboarding() {
                             value={form.last_name}
                             onChange={(v) => set("last_name", v)}
                             isRequired
+                            size="sm"
+                            wrapperClassName={FIELD}
                         />
                         <Select
                             label="Skill level (NTRP)"
                             placeholder="Select your level"
                             items={SKILL_LEVELS}
+                            triggerStyle={menuWidth(SKILL_LEVELS, "Select your level")}
                             selectedKey={form.skill_level || null}
                             onSelectionChange={(k) => set("skill_level", k as string)}
                             isRequired
+                            isNonModal
+                            size="sm"
+                            triggerClassName={FIELD_SELECT}
                         >
                             {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
                         </Select>
-                        <Checkbox
-                            label={
-                                <span className="text-sm text-secondary">
-                                    I agree to the{" "}
-                                    <a href="/terms" target="_blank" className="text-brand-secondary underline">Terms of Service</a>
-                                    {" "}and{" "}
-                                    <a href="/privacy" target="_blank" className="text-brand-secondary underline">Privacy Policy</a>
-                                </span>
-                            }
-                            isSelected={form.tos_accepted}
-                            onChange={(v) => set("tos_accepted", v)}
-                        />
-                    </div>
-                )}
-
-                {/* Step 2: Optional profile fields */}
-                {step === 2 && (
-                    <div className="flex flex-col gap-5">
-                        <div>
-                            <h1 className="text-xl font-semibold text-primary">Add more about you</h1>
-                            <p className="mt-1 text-sm text-tertiary">Optional — helps others find the right match.</p>
-                        </div>
-
-                        <Input
-                            label="Headline"
-                            placeholder="e.g. 4.0 player, Saugatuck Shores regular"
-                            value={form.headline}
-                            onChange={(v) => set("headline", v)}
-                        />
-
-                        <MultiSelect
-                            label="Preferred courts"
-                            placeholder="Select courts"
-                            items={courtItems.length > 0 ? courtItems : [{ id: "_empty", label: "No courts listed yet" }]}
-                            selectedKeys={form.court_preferences}
-                            onSelectionChange={(keys) => set("court_preferences", keys)}
-                        >
-                            {(item) => <SelectItem id={item.id} supportingText={item.supportingText}>{item.label}</SelectItem>}
-                        </MultiSelect>
-
-                        <Input
-                            label="Preferred pro / instructor"
-                            placeholder="e.g. Mike at Longshore"
-                            value={form.pro_preference}
-                            onChange={(v) => set("pro_preference", v)}
-                        />
-
-                        <Toggle
-                            size="sm"
-                            label="New to Westport"
-                            hint="I'm new to the Westport tennis scene"
-                            isSelected={form.new_to_westport}
-                            onChange={(v) => set("new_to_westport", v)}
-                        />
-                    </div>
-                )}
-
-                {/* Step 3: Contact + payment */}
-                {step === 3 && (
-                    <div className="flex flex-col gap-5">
-                        <div>
-                            <h1 className="text-xl font-semibold text-primary">Contact & payment</h1>
-                            <p className="mt-1 text-sm text-tertiary">Only shared with your approved match partner.</p>
-                        </div>
                         <Input
                             label="Phone number"
                             type="tel"
@@ -429,19 +401,109 @@ export function Onboarding() {
                             value={form.phone}
                             onChange={(v) => set("phone", v)}
                             hint="Encrypted and only visible after a claim is approved."
+                            size="sm"
+                            wrapperClassName={FIELD}
+                            className="mt-4"
                         />
                         <Input
-                            label="Venmo handle"
+                            label="Venmo handle (optional)"
                             placeholder="@yourhandle"
                             value={form.venmo_handle}
                             onChange={(v) => set("venmo_handle", v)}
                             hint="Used to generate payment requests. Encrypted and only visible after approval."
+                            size="sm"
+                            wrapperClassName={FIELD}
                         />
+                        <MultiSelect
+                            label="Preferred courts (optional)"
+                            placeholder="Any court"
+                            items={courtItems}
+                            selectedKeys={form.court_preferences}
+                            onSelectionChange={(keys) => set("court_preferences", keys)}
+                            size="sm"
+                            showSearch={false}
+                            showFooter={false}
+                            isNonModal
+                            triggerClassName={FIELD_SELECT}
+                            emptyStateTitle="No courts available"
+                            emptyStateDescription="Courts will appear here once they've been added."
+                            emptyStateHideIcon
+                            emptyStateAlign="left"
+                            className="mt-4"
+                        >
+                            {(item) => (
+                                <SelectItem
+                                    id={item.id}
+                                    supportingText={item.supportingText}
+                                    selectionIndicator="checkbox"
+                                    selectionIndicatorAlign="left"
+                                >
+                                    {item.label}
+                                </SelectItem>
+                            )}
+                        </MultiSelect>
+                        <Input
+                            label="Preferred pro / instructor (optional)"
+                            placeholder="e.g. Mike at Longshore"
+                            value={form.pro_preference}
+                            onChange={(v) => set("pro_preference", v)}
+                            size="sm"
+                            wrapperClassName={FIELD}
+                        />
+                        {/* Switch on the left; the combined label sits in a flex-1 column so it
+                            wraps within the same left/right margins as the fields above. */}
+                        <AriaSwitch
+                            isSelected={form.new_to_westport}
+                            onChange={(v) => set("new_to_westport", v)}
+                            className="flex w-full items-start gap-2"
+                        >
+                            {({ isSelected, isHovered, isDisabled, isFocusVisible }) => (
+                                <>
+                                    <ToggleBase
+                                        size="sm"
+                                        isSelected={isSelected}
+                                        isHovered={isHovered}
+                                        isDisabled={isDisabled}
+                                        isFocusVisible={isFocusVisible}
+                                        className="mt-0.5"
+                                    />
+                                    <span className="min-w-0 flex-1 text-sm text-secondary select-none">
+                                        <span className="font-medium">New to the area:</span>{" "}
+                                        <span className="text-tertiary">Let players know that you've recently joined the community</span>
+                                    </span>
+                                </>
+                            )}
+                        </AriaSwitch>
+                        {/* Checkbox styled to match the feed filter sheet's CheckRow (see feed-filters.tsx). */}
+                        <AriaCheckbox
+                            isSelected={form.tos_accepted}
+                            onChange={(v) => set("tos_accepted", v)}
+                            className="mt-4 flex items-start gap-2"
+                        >
+                            {({ isSelected }) => (
+                                <>
+                                    <span
+                                        className={cx(
+                                            "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded",
+                                            isSelected ? "bg-brand-500" : "border border-neutral-200",
+                                        )}
+                                    >
+                                        {isSelected && <Check className="size-3 text-white" strokeWidth={3} aria-hidden="true" />}
+                                    </span>
+                                    <span className="text-sm text-secondary">
+                                        I agree to the{" "}
+                                        <a href="/terms" target="_blank" className="text-brand-secondary underline">Terms of Service</a>
+                                        {" "}and{" "}
+                                        <a href="/privacy" target="_blank" className="text-brand-secondary underline">Privacy Policy</a>
+                                    </span>
+                                </>
+                            )}
+                        </AriaCheckbox>
                     </div>
                 )}
 
-                {/* Step 4: Notification preferences */}
-                {step === 4 && (
+                {/* Step 2: Notification preferences */}
+                {step === 2 && (
                     <div className="flex flex-col gap-5">
                         <div>
                             <h1 className="text-xl font-semibold text-primary">Notifications</h1>
@@ -467,15 +529,16 @@ export function Onboarding() {
                     </div>
                 )}
 
-                {/* Step 5: Invite players */}
-                {step === 5 && (
+                {/* Step 3: Invite players */}
+                {step === 3 && (
                     <div className="flex flex-col gap-5">
                         {step5View === "invite" ? (
                             /* ── Invite sub-view ── */
                             <>
                                 <button
-                                    className="flex items-center gap-1.5 text-sm font-medium text-secondary hover:text-primary"
+                                    type="button"
                                     onClick={() => setStep5View("search")}
+                                    className={cx(SECONDARY_BTN, "self-start")}
                                 >
                                     <ArrowLeft className="size-4" aria-hidden="true" />
                                     Back to search
@@ -491,6 +554,8 @@ export function Onboarding() {
                                     value={inviteEmail}
                                     onChange={(v) => setInviteEmail(v)}
                                     isRequired
+                                    size="sm"
+                                    wrapperClassName={FIELD}
                                 />
                                 <Button
                                     color="primary"
@@ -523,7 +588,8 @@ export function Onboarding() {
 
                                 {/* Typeahead search */}
                                 <div className="relative" ref={searchContainerRef}>
-                                    <div className="flex items-center gap-2 rounded-lg border border-primary bg-primary px-3 py-2.5 ring-1 ring-inset ring-primary focus-within:ring-2 focus-within:ring-brand">
+                                    {/* Search field styled to match the Profile page's follow search (see profile.tsx). */}
+                                    <div className="flex h-9 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
                                         <SearchLg className="size-4 shrink-0 text-fg-quaternary" aria-hidden="true" />
                                         <input
                                             className="w-full bg-transparent text-sm text-primary outline-none placeholder:text-placeholder"
@@ -609,10 +675,10 @@ export function Onboarding() {
                                     </div>
                                 )}
 
-                                {/* Suggested follows */}
+                                {/* Recently joined players */}
                                 {suggestedFollows.length > 0 && memberQuery.trim().length < 2 && (
                                     <div className="flex flex-col gap-2">
-                                        <p className="text-sm font-medium text-secondary">People you might know</p>
+                                        <p className="text-sm font-medium text-secondary">Recently joined</p>
                                         <ul className="flex flex-col gap-1">
                                             {suggestedFollows.filter((s) => !followedIds.has(s.id)).map((su) => (
                                                 <li key={su.id} className="flex items-center gap-3 py-1.5">
@@ -636,8 +702,6 @@ export function Onboarding() {
                                     </div>
                                 )}
 
-                                <p className="text-center text-xs text-tertiary">Optional — you can follow players and send invites any time from your profile.</p>
-
                                 {error && <p className="text-sm text-error-primary">{error}</p>}
                             </>
                         )}
@@ -646,34 +710,39 @@ export function Onboarding() {
             </div>
 
             {/* Footer navigation */}
-            <div className="sticky bottom-0 flex items-center justify-between border-t border-secondary bg-primary px-4 py-3">
+            <div className="sticky bottom-0 flex items-center justify-between bg-secondary px-4 py-3">
                 {step > 1 ? (
-                    <Button color="secondary" size="md" onClick={() => setStep((s) => s - 1)}>
+                    <button type="button" className={SECONDARY_BTN} onClick={() => setStep((s) => s - 1)}>
                         Back
-                    </Button>
+                    </button>
                 ) : (
                     <div />
                 )}
 
-                {step < 5 ? (
-                    <Button
-                        color="primary"
-                        size="md"
-                        isDisabled={!canProceed()}
+                {step < 3 ? (
+                    <button
+                        type="button"
+                        className={PRIMARY_BTN}
+                        disabled={!canProceed()}
                         onClick={() => canProceed() && setStep((s) => s + 1)}
                     >
                         Continue
-                    </Button>
+                    </button>
                 ) : (
-                    <Button
-                        color="primary"
-                        size="md"
-                        isLoading={saving}
-                        showTextWhileLoading
+                    <button
+                        type="button"
+                        className={PRIMARY_BTN}
+                        disabled={saving}
                         onClick={handleFinish}
                     >
+                        {saving && (
+                            <span
+                                className="size-4 animate-spin rounded-full border-2 border-neutral-950/30 border-t-neutral-950"
+                                aria-hidden="true"
+                            />
+                        )}
                         Get started
-                    </Button>
+                    </button>
                 )}
             </div>
         </div>

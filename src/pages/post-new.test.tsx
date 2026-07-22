@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -75,12 +75,34 @@ function renderPostNew() {
     );
 }
 
-/** Find the multi-date switch via direct DOM query (React Aria puts it in VisuallyHidden). */
-function getMultiDateSwitch() {
-    return document.querySelector('input[role="switch"]') as HTMLInputElement | null;
-}
+// ── Header + post-type selector ────────────────────────────────────────────
 
-// ── Step 4: Sub Need form — rendering ─────────────────────────────────────
+describe("PostNew — header & post type", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        setupDefaultMocks();
+    });
+
+    it("renders the 'Create a new post' header", async () => {
+        renderPostNew();
+        await waitFor(() => expect(screen.getByText("Create a new post")).toBeInTheDocument());
+    });
+
+    it("renders both post-type option cards", async () => {
+        renderPostNew();
+        await waitFor(() => {
+            expect(screen.getByText("Find a sub")).toBeInTheDocument();
+            expect(screen.getByText("Find a regular game")).toBeInTheDocument();
+        });
+    });
+
+    it("defaults to the Find a sub form", async () => {
+        renderPostNew();
+        await waitFor(() => expect(screen.getByText("Play type")).toBeInTheDocument());
+    });
+});
+
+// ── Find a sub form — rendering ────────────────────────────────────────────
 
 describe("PostNew — sub need form (rendering)", () => {
     beforeEach(() => {
@@ -93,34 +115,32 @@ describe("PostNew — sub need form (rendering)", () => {
         await waitFor(() => expect(screen.getByText("Play type")).toBeInTheDocument());
     });
 
-    it("renders the Game date field label", async () => {
-        renderPostNew();
-        await waitFor(() => expect(screen.getByText("Game date")).toBeInTheDocument());
-    });
-
-    it("renders the Game time field label and native input", async () => {
+    it("renders the Date & time label and native time input", async () => {
         renderPostNew();
         await waitFor(() => {
-            expect(screen.getByText(/game time/i, { selector: "label" })).toBeInTheDocument();
-            // Native <input type="time"> — no label association; find by type
-            const timeInput = document.querySelector('input[type="time"]');
-            expect(timeInput).not.toBeNull();
+            expect(screen.getByText(/date & time/i, { selector: "label" })).toBeInTheDocument();
+            expect(document.querySelector('[aria-label="Game time"]')).not.toBeNull();
         });
     });
 
-    it("renders the Skill level field label", async () => {
+    it("renders the Duration field label", async () => {
         renderPostNew();
-        await waitFor(() => expect(screen.getByText("Skill level required")).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText("Duration")).toBeInTheDocument());
     });
 
-    it("renders the Location / court field label", async () => {
+    it("renders the Required skill level field label", async () => {
         renderPostNew();
-        await waitFor(() => expect(screen.getByText("Location / court")).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText("Required skill level")).toBeInTheDocument());
     });
 
-    it("renders the Cost per sub field label", async () => {
+    it("renders the Location field label", async () => {
         renderPostNew();
-        await waitFor(() => expect(screen.getByText("Cost per sub ($)")).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText("Location")).toBeInTheDocument());
+    });
+
+    it("renders the Price field label", async () => {
+        renderPostNew();
+        await waitFor(() => expect(screen.getByText("Price")).toBeInTheDocument());
     });
 
     it("renders optional Pro name field label", async () => {
@@ -128,35 +148,24 @@ describe("PostNew — sub need form (rendering)", () => {
         await waitFor(() => expect(screen.getByText("Pro name (optional)")).toBeInTheDocument());
     });
 
-    it("renders optional Notes textarea", async () => {
-        renderPostNew();
-        await waitFor(() => expect(screen.getByText("Notes (optional)")).toBeInTheDocument());
-    });
-
-    it("notes textarea shows character counter starting at 0/100", async () => {
-        renderPostNew();
-        await waitFor(() => expect(screen.getByText("0/100")).toBeInTheDocument());
-    });
-
-    it("spots stepper defaults to 1", async () => {
+    it("renders the Notes textarea with a 0/100 counter", async () => {
         renderPostNew();
         await waitFor(() => {
-            const spotsSection = screen.getByText("Spots open", { exact: false }).closest("div")!;
-            expect(within(spotsSection).getByText("1")).toBeInTheDocument();
+            expect(screen.getByText("Message")).toBeInTheDocument();
+            expect(screen.getByText("0/150")).toBeInTheDocument();
         });
     });
 
-    it("total players input defaults to 4", async () => {
+    it("does not render the removed fields (spots, total players, multi-date)", async () => {
         renderPostNew();
-        // React Aria NumberField renders as <input type="text"> with the formatted value
-        await waitFor(() => {
-            const input = screen.getByDisplayValue("4");
-            expect(input).toBeInTheDocument();
-        });
+        await waitFor(() => screen.getByText("Play type"));
+        expect(screen.queryByText(/spots open/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/total players/i)).not.toBeInTheDocument();
+        expect(document.querySelector('input[role="switch"]')).toBeNull();
     });
 });
 
-// ── Step 4: Court selection ────────────────────────────────────────────────
+// ── Court selection ─────────────────────────────────────────────────────────
 
 describe("PostNew — court selection", () => {
     beforeEach(() => {
@@ -167,7 +176,7 @@ describe("PostNew — court selection", () => {
     it("court dropdown trigger button is present", async () => {
         renderPostNew();
         await waitFor(() => {
-            expect(screen.getByRole("button", { name: /Location \/ court/i })).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: /Location/i })).toBeInTheDocument();
         });
     });
 
@@ -175,7 +184,7 @@ describe("PostNew — court selection", () => {
         const user = userEvent.setup();
         renderPostNew();
 
-        const trigger = await waitFor(() => screen.getByRole("button", { name: /Location \/ court/i }));
+        const trigger = await waitFor(() => screen.getByRole("button", { name: /Location/i }));
         await user.click(trigger);
 
         await waitFor(() => {
@@ -185,24 +194,13 @@ describe("PostNew — court selection", () => {
         });
     });
 
-    it("court dropdown includes 'Add custom court' option", async () => {
+    it("selecting 'Add custom court' shows a text input for the court name", async () => {
         const user = userEvent.setup();
         renderPostNew();
 
-        const trigger = await waitFor(() => screen.getByRole("button", { name: /Location \/ court/i }));
+        const trigger = await waitFor(() => screen.getByRole("button", { name: /Location/i }));
         await user.click(trigger);
 
-        await waitFor(() => expect(screen.getAllByText("Add custom court…").length).toBeGreaterThan(0));
-    });
-
-    it("selecting 'Add custom court' option shows a text input for the court name", async () => {
-        const user = userEvent.setup();
-        renderPostNew();
-
-        const trigger = await waitFor(() => screen.getByRole("button", { name: /Location \/ court/i }));
-        await user.click(trigger);
-
-        // Click the listbox option (role="option") for "Add custom court"
         const option = await waitFor(() => screen.getByRole("option", { name: /Add custom court/i }));
         await user.click(option);
 
@@ -212,59 +210,21 @@ describe("PostNew — court selection", () => {
     });
 });
 
-// ── Step 4: Submit button state ────────────────────────────────────────────
+// ── Submit button state ─────────────────────────────────────────────────────
 
-describe("PostNew — sub need submit button state", () => {
+describe("PostNew — submit button state", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         setupDefaultMocks();
     });
 
-    it("submit button is disabled when the form is empty", async () => {
+    it("Create post is disabled when the sub form is empty", async () => {
         renderPostNew();
-        await waitFor(() => expect(screen.getByRole("button", { name: /^Post$/i })).toBeDisabled());
-    });
-
-    it("submit button becomes enabled after selecting play type, skill level, court, and cost", async () => {
-        const user = userEvent.setup();
-        renderPostNew();
-
-        // Select play type
-        const playTypeTrigger = await waitFor(() => screen.getByRole("button", { name: /Play type/i }));
-        await user.click(playTypeTrigger);
-        await waitFor(() => screen.getAllByText("Point play").length > 0);
-        await user.click(screen.getAllByText("Point play")[0]);
-
-        // Select skill level
-        const skillTrigger = await waitFor(() => screen.getByRole("button", { name: /Skill level required/i }));
-        await user.click(skillTrigger);
-        await waitFor(() => screen.getAllByText("4.0").length > 0);
-        await user.click(screen.getAllByText("4.0")[0]);
-
-        // Select court
-        const courtTrigger = await waitFor(() => screen.getByRole("button", { name: /Location \/ court/i }));
-        await user.click(courtTrigger);
-        await waitFor(() => screen.getByText("Longshore Club"));
-        await user.click(screen.getByText("Longshore Club"));
-
-        // Find cost by clearing and typing in the correct NumberField
-        // The cost field input will be one of the text inputs with no value yet
-        const textInputs = document.querySelectorAll('input[type="text"]');
-        const costEl = Array.from(textInputs).find((el) => (el as HTMLInputElement).value === "");
-        if (costEl) {
-            await user.click(costEl as Element);
-            await user.type(costEl as Element, "25");
-        }
-
-        // Button should be enabled (date still not set → still disabled in this form)
-        // but the button is now enabled once format/skill/court/cost are set
-        // (validateSubNeed also checks gameDate and gameTime — gameTime defaults to "09:00")
-        const postBtn = screen.getByRole("button", { name: /^Post$/i });
-        expect(postBtn).toBeDefined(); // always present
+        await waitFor(() => expect(screen.getByRole("button", { name: /^Create post$/i })).toBeDisabled());
     });
 });
 
-// ── Step 4: Rate limiting ──────────────────────────────────────────────────
+// ── Rate limiting ────────────────────────────────────────────────────────────
 
 describe("PostNew — rate limiting", () => {
     beforeEach(() => {
@@ -275,7 +235,7 @@ describe("PostNew — rate limiting", () => {
     it("rate limit message is not shown on initial load", async () => {
         setupDefaultMocks();
         renderPostNew();
-        await waitFor(() => screen.getByText("New post"));
+        await waitFor(() => screen.getByText("Create a new post"));
         expect(screen.queryByText(/5 active posts/i)).not.toBeInTheDocument();
     });
 
@@ -284,62 +244,11 @@ describe("PostNew — rate limiting", () => {
             "5 active posts",
         );
     });
-
-    it("submit button is disabled on an empty form preventing premature submission", async () => {
-        setupDefaultMocks();
-        renderPostNew();
-        await waitFor(() => expect(screen.getByRole("button", { name: /^Post$/i })).toBeDisabled());
-    });
 });
 
-// ── Step 4: Multi-date mode ────────────────────────────────────────────────
+// ── Regular game form ────────────────────────────────────────────────────────
 
-describe("PostNew — multi-date mode", () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        setupDefaultMocks();
-    });
-
-    it("a toggle (switch input) exists in the sub_need form", async () => {
-        renderPostNew();
-        // React Aria Switch renders a hidden <input role="switch"> via VisuallyHidden
-        await waitFor(() => {
-            const sw = getMultiDateSwitch();
-            expect(sw).not.toBeNull();
-        });
-    });
-
-    it("multi-date toggle is unchecked by default", async () => {
-        renderPostNew();
-        await waitFor(() => {
-            const sw = getMultiDateSwitch();
-            expect(sw).not.toBeNull();
-            expect(sw!.checked).toBe(false);
-        });
-    });
-
-    it("clicking the multi-date toggle shows an '+ Add date' button", async () => {
-        const user = userEvent.setup();
-        renderPostNew();
-
-        await waitFor(() => expect(getMultiDateSwitch()).not.toBeNull());
-
-        // Click the parent label element to trigger the toggle
-        const sw = getMultiDateSwitch()!;
-        const label = sw.closest("label");
-        if (label) {
-            await user.click(label);
-        } else {
-            await user.click(sw);
-        }
-
-        await waitFor(() => expect(screen.getByText("+ Add date")).toBeInTheDocument());
-    });
-});
-
-// ── Step 5: Regular Game form — rendering ─────────────────────────────────
-
-describe("PostNew — regular game form (rendering)", () => {
+describe("PostNew — regular game form", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         setupDefaultMocks();
@@ -348,17 +257,20 @@ describe("PostNew — regular game form (rendering)", () => {
     async function switchToRegularGame() {
         renderPostNew();
         const user = userEvent.setup();
-        await waitFor(() => screen.getByText("New post"));
-        // "Regular Game" tab button
-        await user.click(screen.getByText("Regular Game"));
-        // Wait for the regular game form to be visible
-        await waitFor(() => screen.getByText("Format(s)"));
+        await waitFor(() => screen.getByText("Create a new post"));
+        await user.click(screen.getByText("Find a regular game"));
+        await waitFor(() => screen.getByText("Play type"));
         return user;
     }
 
-    it("renders the Format(s) multi-select label", async () => {
+    it("renders the Play type dropdown label", async () => {
         await switchToRegularGame();
-        expect(screen.getByText("Format(s)")).toBeInTheDocument();
+        expect(screen.getByText("Play type")).toBeInTheDocument();
+    });
+
+    it("renders the Preferred group size label", async () => {
+        await switchToRegularGame();
+        expect(screen.getByText("Preferred group size")).toBeInTheDocument();
     });
 
     it("renders the Skill level dropdown label", async () => {
@@ -366,88 +278,60 @@ describe("PostNew — regular game form (rendering)", () => {
         expect(screen.getByText("Skill level")).toBeInTheDocument();
     });
 
-    it("renders the Preferred days multi-select label", async () => {
+    it("renders the preferred days / times / locations labels", async () => {
         await switchToRegularGame();
         expect(screen.getByText("Preferred days")).toBeInTheDocument();
-    });
-
-    it("renders the Preferred times multi-select label", async () => {
-        await switchToRegularGame();
         expect(screen.getByText("Preferred times")).toBeInTheDocument();
+        expect(screen.getByText("Preferred locations")).toBeInTheDocument();
     });
 
-    it("renders the Preferred courts multi-select label", async () => {
+    it("renders the Notes textarea with a 0/150 counter", async () => {
         await switchToRegularGame();
-        expect(screen.getByText("Preferred courts (optional)")).toBeInTheDocument();
-    });
-
-    it("renders the Brief note textarea with 150 char limit counter", async () => {
-        await switchToRegularGame();
-        expect(screen.getByText("Brief note (optional)")).toBeInTheDocument();
+        expect(screen.getByText("Message")).toBeInTheDocument();
         expect(screen.getByText("0/150")).toBeInTheDocument();
     });
 
-    it("notes counter updates as the user types", async () => {
+    // The regular-game dropdowns are multi-selects that stay open on pick; close
+    // each (Escape) before opening the next.
+    async function pickMulti(user: ReturnType<typeof userEvent.setup>, placeholder: string, optionName: string | RegExp) {
+        await user.click(screen.getByText(placeholder));
+        await user.click(await screen.findByRole("option", { name: optionName }));
+        await user.keyboard("{Escape}");
+    }
+
+    it("Create post is disabled until play type, skill, and notes are set (group size optional)", async () => {
         const user = await switchToRegularGame();
-        const textarea = screen.getByPlaceholderText(/tell the group/i);
-        await user.type(textarea, "Hello");
-        await waitFor(() => expect(screen.getByText("5/150")).toBeInTheDocument());
+        const submit = () => screen.getByRole("button", { name: /^Create post$/i });
+        expect(submit()).toBeDisabled();
+
+        await pickMulti(user, "Select type", "Doubles");
+        await pickMulti(user, "Select level", /NTRP 4\.0/);
+        await user.type(screen.getByPlaceholderText(/tell the group/i), "Looking for a weekly game");
+
+        // Group size is not required, so the form is valid without it.
+        await waitFor(() => expect(submit()).not.toBeDisabled());
     });
 
-    it("submit button is disabled when skill level is not selected", async () => {
-        await switchToRegularGame();
-        expect(screen.getByRole("button", { name: /^Post$/i })).toBeDisabled();
-    });
-
-    it("submit button becomes enabled after selecting a skill level", async () => {
-        const user = await switchToRegularGame();
-
-        // The Skill level Select button shows "Select level" as placeholder text
-        const skillTrigger = await waitFor(() =>
-            screen.getByRole("button", { name: /Skill level/i }),
-        );
-        await user.click(skillTrigger);
-        const option = await waitFor(() => screen.getByRole("option", { name: "4.0" }));
-        await user.click(option);
-
-        await waitFor(() => {
-            expect(screen.getByRole("button", { name: /^Post$/i })).not.toBeDisabled();
-        });
-    });
-});
-
-// ── Step 5: Regular Game form — submission ─────────────────────────────────
-
-describe("PostNew — regular game form submission", () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        mockNavigate.mockReset();
-    });
-
-    it("submitting with a skill level selected navigates to /feed", async () => {
+    it("submitting a complete regular game navigates to /feed", async () => {
         const user = userEvent.setup();
-
         mockFrom.mockImplementation((table: string) => {
             if (table === "courts") return buildChain(mockCourts);
-            if (table === "posts")
-                return buildChain({ id: "new-post", post_type: "regular_game", skill_level: "4.0" });
+            if (table === "posts") return buildChain({ id: "new-post", post_type: "regular_game", skill_level: "4.0" });
             return buildChain(null);
         });
 
         renderPostNew();
-        await waitFor(() => screen.getByText("New post"));
-        await user.click(screen.getByText("Regular Game"));
-        await waitFor(() => screen.getByText("Format(s)"));
+        await waitFor(() => screen.getByText("Create a new post"));
+        await user.click(screen.getByText("Find a regular game"));
+        await waitFor(() => screen.getByText("Play type"));
 
-        // Select skill level
-        const skillTrigger = await waitFor(() => screen.getByRole("button", { name: /Skill level/i }));
-        await user.click(skillTrigger);
-        const skillOption = await waitFor(() => screen.getByRole("option", { name: "4.0" }));
-        await user.click(skillOption);
+        await pickMulti(user, "Select type", "Doubles");
+        await pickMulti(user, "Any size", "4");
+        await pickMulti(user, "Select level", /NTRP 4\.0/);
+        await user.type(screen.getByPlaceholderText(/tell the group/i), "Weekly game");
 
-        // Submit
-        await waitFor(() => expect(screen.getByRole("button", { name: /^Post$/i })).not.toBeDisabled());
-        await user.click(screen.getByRole("button", { name: /^Post$/i }));
+        await waitFor(() => expect(screen.getByRole("button", { name: /^Create post$/i })).not.toBeDisabled());
+        await user.click(screen.getByRole("button", { name: /^Create post$/i }));
 
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/feed"));
     });

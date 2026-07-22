@@ -1,115 +1,179 @@
+import { useState } from "react";
 import { Link } from "react-router";
-import { Button } from "@/components/base/buttons/button";
+import { Avatar } from "@/components/base/avatar/avatar";
+import { InstallAppButton } from "@/components/app/install-app-button";
+import { cx } from "@/utils/cx";
 
-const STEPS = [
-    {
-        number: "1",
-        title: "Post your spot",
-        description: "Need a sub for your game? Post the details — date, time, court, cost — and let the group know.",
-    },
-    {
-        number: "2",
-        title: "Browse open games",
-        description: "Looking to play? Browse sub needs at your level, at courts near you, on dates that work.",
-    },
-    {
-        number: "3",
-        title: "Claim and play",
-        description: "Claim a spot, get approved, coordinate payment via Venmo, and show up ready to play.",
-    },
+// Hero headlines, rendered as two lines. One is picked at random on each page load.
+const HEADLINES: [string, string][] = [
+    ["Every match.", "No empty courts."],
+    ["Love means nothing.", "Showing up means everything."],
+    ["No-shows happen.", "Empty courts don't."],
+    ["Rain checks, yes.", "Empty courts, no."],
+    ["Nothing to love", "about a no-show."],
+    ["The only thing unforced", "should be errors."],
 ];
 
-export function Landing() {
+// Design-system Primary button (Figma node 32:86, size M): bg/brand fill with
+// on-brand text. Width is set per-usage. Token mapping: bg/brand #1ab363 →
+// brand-500, bg/brand-hover #118c4a → brand-600, text/on-brand #08180e → neutral-950.
+const PRIMARY_BTN =
+    "flex items-center justify-center gap-1 rounded-lg bg-brand-500 px-5 py-3 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600";
+
+// Static preview cards for the hero — mirrors the feed SubCard styling, with a
+// mix of open games and one already claimed (dimmed, grey) for variety.
+interface SamplePost {
+    title: string;
+    subtitle: string;
+    poster: string;
+    avatar: string;
+    when: string;
+    price: string;
+    claimed?: boolean;
+}
+
+const POSTS: SamplePost[] = [
+    { title: "Doubles Tennis · Sat 9:00am", subtitle: "Longshore Club · NTRP 3.5 · 2 hrs", poster: "Chris B.", avatar: "/avatars/chris.jpg", when: "20m ago", price: "$25" },
+    { title: "Singles Tennis · Sun 4:30pm", subtitle: "Westport Tennis Club · NTRP 4.0 · 1.5 hrs", poster: "Maria L.", avatar: "/avatars/maria.jpg", when: "1h ago", price: "$18" },
+    { title: "Point Play · Wed 6:00pm", subtitle: "Compo Beach Courts · NTRP 3.0 · 1 hr", poster: "Dan K.", avatar: "/avatars/dan.jpg", when: "3h ago", price: "$15", claimed: true },
+];
+
+function PreviewCard({ post }: { post: SamplePost }) {
+    const { claimed } = post;
+    const bar = claimed ? "bg-neutral-400" : "bg-brand-500";
+    const strong = claimed ? "text-tertiary" : "text-primary";
+    const sub = claimed ? "text-tertiary" : "text-secondary";
+
     return (
-        <div className="flex min-h-dvh flex-col bg-primary">
-            {/* Hero */}
-            <section className="flex flex-col items-center px-6 pt-16 pb-12 text-center">
-                <p className="text-sm font-semibold uppercase tracking-wider text-brand-secondary">CourtPlay</p>
-                <h1 className="mt-3 max-w-md text-display-sm font-semibold text-primary sm:text-display-md">
-                    Find a tennis sub in Westport in under 10 minutes.
-                </h1>
-                <p className="mt-4 max-w-sm text-lg text-tertiary">
-                    Post your open spot or browse games at your level. Claim, coordinate, and play — all from your phone.
-                </p>
-                <div className="mt-8 flex gap-3">
-                    <Button color="primary" size="lg" href="/signup">
-                        Get started
-                    </Button>
-                    <Button color="secondary" size="lg" href="/signin">
-                        Sign in
-                    </Button>
+        <div className="flex overflow-hidden rounded">
+            <span className={cx("w-1 shrink-0 self-stretch", bar)} aria-hidden="true" />
+            <div className="flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4">
+                <div className="flex w-full items-start gap-3">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <p className={cx("text-md font-semibold", strong)}>{post.title}</p>
+                        <p className={cx("text-xs", sub)}>{post.subtitle}</p>
+                    </div>
+                    {claimed ? (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-neutral-800 px-2 py-1 text-xs font-semibold text-neutral-400">
+                            <span className="size-1.5 rounded-full bg-neutral-400" aria-hidden="true" />
+                            Claimed
+                        </span>
+                    ) : (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-brand-800 px-2 py-1 text-xs font-semibold text-brand-500">
+                            <span className="size-1.5 rounded-full bg-brand-500" aria-hidden="true" />
+                            Open
+                        </span>
+                    )}
                 </div>
-            </section>
+                <div className="flex w-full items-center justify-between pt-1">
+                    <div className="flex min-w-0 items-center gap-2">
+                        <Avatar
+                            size="xs"
+                            src={post.avatar}
+                            alt={post.poster}
+                            initials={post.poster.charAt(0)}
+                            className="shrink-0 bg-white p-px shadow-xs"
+                        />
+                        <span className="truncate text-xs text-tertiary">
+                            {post.poster} · {post.when}
+                        </span>
+                    </div>
+                    <span className={cx("shrink-0 text-sm font-semibold", strong)}>{post.price}</span>
+                </div>
+            </div>
+        </div>
+    );
+}
 
-            {/* How it works */}
-            <section className="bg-secondary px-6 py-12">
-                <h2 className="text-center text-lg font-semibold text-primary">How it works</h2>
-                <div className="mx-auto mt-8 grid max-w-lg gap-8 sm:grid-cols-3 sm:max-w-3xl">
-                    {STEPS.map((step) => (
-                        <div key={step.number} className="flex flex-col items-center text-center">
-                            <div className="flex size-10 items-center justify-center rounded-full bg-brand-solid text-lg font-bold text-white">
-                                {step.number}
-                            </div>
-                            <h3 className="mt-3 text-base font-semibold text-primary">{step.title}</h3>
-                            <p className="mt-1 text-sm text-tertiary">{step.description}</p>
+/**
+ * Marketing landing page shown when visiting CourtPlay on the web (design 149:1164).
+ * The installed PWA skips this — see the "/" route, which redirects to /signup when
+ * running standalone.
+ */
+export function Landing() {
+    // Pick once on load so it stays stable across re-renders.
+    const [headline] = useState(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
+
+    return (
+        <div className="min-h-dvh overflow-x-clip bg-primary">
+            {/* Mobile keeps the narrow phone column; md widens to a roomier single
+                column for tablets; from lg the container widens further and the hero
+                splits into two columns so the page fills desktop screens. */}
+            <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col md:max-w-2xl lg:max-w-6xl">
+                {/* Nav */}
+                <header className="flex items-center justify-between px-5 py-4 md:px-8 lg:py-6">
+                    <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto lg:h-7" />
+                    <Link to="/signup" className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600">
+                        Sign up
+                    </Link>
+                </header>
+
+                {/* Hero — stacked on mobile/tablet, two columns (copy + preview cards) on desktop */}
+                <section className="mt-8 px-5 md:mt-12 md:px-8 lg:grid lg:grid-cols-2 lg:items-center lg:gap-8 lg:py-12">
+                    <div className="flex flex-col gap-2.5 lg:gap-4">
+                        <h1 className="text-balance text-display-md font-semibold tracking-tight text-primary md:text-display-lg lg:text-display-xl">
+                            {headline[0]}
+                            <br />
+                            {headline[1]}
+                        </h1>
+                        <p className="text-sm text-secondary md:text-base lg:max-w-md lg:text-lg">
+                            CourtPlay instantly connects you with available players in your area. No more group texts.
+                        </p>
+                        {/* Desktop only: both CTAs sit side by side in the hero. On mobile/tablet
+                            the Download button moves down beside Get started in the CTA band below. */}
+                        <div className="mt-2 hidden items-center gap-3 lg:flex">
+                            <Link to="/signup" className={PRIMARY_BTN}>
+                                Get started – it's free!
+                            </Link>
+                            <InstallAppButton />
                         </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* Social proof */}
-            <section className="px-6 py-12">
-                <h2 className="text-center text-lg font-semibold text-primary">Trusted by Westport tennis players</h2>
-                <div className="mx-auto mt-6 grid max-w-lg gap-4 sm:grid-cols-2">
-                    <div className="rounded-xl border border-secondary bg-primary p-5 shadow-xs">
-                        <p className="text-sm text-secondary italic">
-                            "Found a sub for my regular game in 5 minutes. Total game changer for our group."
-                        </p>
-                        <p className="mt-3 text-xs font-semibold text-tertiary">— Early member, Longshore Club</p>
                     </div>
-                    <div className="rounded-xl border border-secondary bg-primary p-5 shadow-xs">
-                        <p className="text-sm text-secondary italic">
-                            "Moved to Westport and had no one to play with. CourtPlay connected me with a regular doubles group in a week."
-                        </p>
-                        <p className="mt-3 text-xs font-semibold text-tertiary">— New resident, 4.0 NTRP</p>
+
+                    {/* Preview cards */}
+                    <div className="mt-8 flex flex-col gap-3 md:mt-10 lg:mt-0">
+                        {POSTS.map((post) => (
+                            <PreviewCard key={post.title} post={post} />
+                        ))}
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* CTA banner */}
-            <section className="bg-brand-section px-6 py-12 text-center">
-                <h2 className="text-lg font-semibold text-primary_on-brand">Ready to play?</h2>
-                <p className="mt-2 text-sm text-secondary_on-brand">
-                    Join CourtPlay and never miss an open court again.
-                </p>
-                <div className="mt-6">
-                    <Button color="primary" size="lg" href="/signup">
-                        Get started — it's free
-                    </Button>
-                </div>
-            </section>
+                {/* CTA — full-bleed band at every breakpoint: breaks out of the centered
+                    column to span the full viewport width with square edges. */}
+                <section className="mt-8 mx-[calc(50%-50vw)] flex w-screen flex-col items-center gap-6 bg-secondary px-5 py-8 text-center md:mt-12 md:py-12 lg:mt-16 lg:py-14">
+                    <div className="flex flex-col items-center gap-2.5 px-7">
+                        <h2 className="text-display-sm font-semibold text-balance text-primary md:text-display-md lg:text-display-lg">Ready to find your next match?</h2>
+                        <p className="text-sm text-secondary md:text-base lg:text-lg">Join players near you already using CourtPlay.</p>
+                    </div>
+                    {/* Get started, with the Download button beside it on mobile/tablet
+                        (on desktop the Download button lives in the hero, so it's hidden here).
+                        Below 480px they stack full-width (Download second); from 480px up they
+                        sit side by side at content width. */}
+                    <div className="flex w-full flex-col items-stretch gap-3 min-[480px]:w-auto min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-center">
+                        <Link to="/signup" className={PRIMARY_BTN}>
+                            Get started – it's free!
+                        </Link>
+                        <InstallAppButton className="lg:hidden" />
+                    </div>
+                </section>
 
-            {/* Footer */}
-            <footer className="border-t border-secondary px-6 py-8 text-center">
-                <p className="text-sm font-semibold text-secondary">CourtPlay</p>
-                <div className="mt-3 flex justify-center gap-4">
-                    <Link to="/terms" className="text-xs text-tertiary hover:text-secondary underline underline-offset-2">
-                        Terms of Service
-                    </Link>
-                    <Link to="/privacy" className="text-xs text-tertiary hover:text-secondary underline underline-offset-2">
-                        Privacy Policy
-                    </Link>
-                </div>
-                <p className="mt-3 text-xs text-quaternary">
-                    Questions? Email{" "}
-                    <a href="mailto:hello@courtplay.app" className="underline underline-offset-2">
-                        hello@courtplay.app
-                    </a>
-                </p>
-                <p className="mt-2 text-xs text-quaternary">
-                    &copy; {new Date().getFullYear()} CourtPlay. All rights reserved.
-                </p>
-            </footer>
+                {/* Footer */}
+                <footer className="mt-8 flex flex-col items-center gap-2.5 px-5 pt-6 pb-8 lg:mt-16">
+                    <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-3.5 w-auto opacity-90" />
+                    <div className="flex items-center gap-2 text-xs text-tertiary">
+                        <Link to="/privacy" className="hover:text-secondary">
+                            Privacy
+                        </Link>
+                        <span aria-hidden="true">·</span>
+                        <Link to="/terms" className="hover:text-secondary">
+                            Terms
+                        </Link>
+                        <span aria-hidden="true">·</span>
+                        <a href="mailto:hello@courtplay.app" className="hover:text-secondary">
+                            Contact
+                        </a>
+                    </div>
+                </footer>
+            </div>
         </div>
     );
 }

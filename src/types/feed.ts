@@ -40,5 +40,5 @@ export interface FilterState {
     formats: string[];
     dateFrom: string | null;
     dateTo: string | null;
-    courtId: string | null;
+    courtIds: string[];
 }

@@ -1,37 +1,56 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render as rtlRender, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import userEvent from "@testing-library/user-event";
-import { Settings } from "@/pages/settings";
+import { EditProfile } from "@/pages/edit-profile";
 import { supabase } from "@/lib/supabase";
 
+// The notification prefs now live in the Edit profile page. Changes are staged
+// locally and persisted together on "Save changes" (not per-toggle), and there
+// is no SMS column.
+
+const USER_ROW = {
+    first_name: "Kate",
+    last_name: "Garvey",
+    email: "kate@example.com",
+    skill_level: "4.0",
+    court_preferences: [],
+    new_to_westport: false,
+    phone: null,
+    venmo_handle: null,
+    photo_url: null,
+};
+
+const usersSingle = vi.fn().mockResolvedValue({ data: USER_ROW, error: null });
+const usersUpdateEq = vi.fn().mockResolvedValue({ error: null });
+const usersUpdate = vi.fn().mockReturnValue({ eq: usersUpdateEq });
+const notifSelectEq = vi.fn().mockResolvedValue({ data: [], error: null });
 const mockUpsert = vi.fn().mockResolvedValue({ error: null });
-const mockEq = vi.fn().mockResolvedValue({ data: [], error: null });
-const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
 
 vi.mock("@/lib/supabase", () => ({
     supabase: {
         from: vi.fn((table: string) => {
+            if (table === "courts") {
+                return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [], error: null }) }) }) };
+            }
+            if (table === "users") {
+                return { select: () => ({ eq: () => ({ single: usersSingle }) }), update: usersUpdate };
+            }
             if (table === "notification_preferences") {
-                return {
-                    select: mockSelect,
-                    upsert: mockUpsert,
-                };
+                return { select: () => ({ eq: notifSelectEq }), upsert: mockUpsert };
             }
             return { select: vi.fn(), upsert: vi.fn() };
         }),
+        rpc: vi.fn().mockResolvedValue({ data: null }),
+        storage: { from: () => ({ upload: vi.fn(), getPublicUrl: () => ({ data: { publicUrl: "" } }) }) },
     },
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
-    useAuth: () => ({ user: { id: "test-user-id" }, loading: false }),
+    useAuth: () => ({ user: { id: "test-user-id", email: "kate@example.com" }, loading: false }),
 }));
 
-// Stub window.Notification so pushSupported = true
-Object.defineProperty(window, "Notification", { value: {}, configurable: true });
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const render = (ui: any) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
+const renderPage = () => render(<EditProfile />, { wrapper: MemoryRouter });
 
 const ALL_LABELS = [
     "New claim on your post",
@@ -51,138 +70,82 @@ const ALL_LABELS = [
 
 beforeEach(() => {
     mockUpsert.mockClear();
-    mockEq.mockClear();
-    mockSelect.mockClear();
+    usersUpdate.mockClear();
+    usersUpdateEq.mockClear();
     vi.mocked(supabase.from).mockClear();
 });
 
-describe("notification preferences", () => {
-    it("preferences screen lists all notification types", async () => {
-        render(<Settings />);
+describe("edit profile — notification preferences", () => {
+    it("lists all 13 notification types", async () => {
+        renderPage();
         for (const label of ALL_LABELS) {
             expect(await screen.findByText(label)).toBeInTheDocument();
         }
     });
 
-    it("each type has push and email toggles", async () => {
-        render(<Settings />);
+    it("each type has email and push toggles, and no SMS column", async () => {
+        renderPage();
         await screen.findByText(ALL_LABELS[0]);
         for (const label of ALL_LABELS) {
             expect(screen.getByLabelText(`${label} email`)).toBeInTheDocument();
             expect(screen.getByLabelText(`${label} push`)).toBeInTheDocument();
+            expect(screen.queryByLabelText(`${label} SMS (coming soon)`)).not.toBeInTheDocument();
         }
+        expect(screen.queryByText("Soon")).not.toBeInTheDocument();
     });
 
-    it("default state: email on, push off for all types", async () => {
-        render(<Settings />);
+    it("default state: email on everywhere; push on only for claim lifecycle", async () => {
+        renderPage();
         await screen.findByText(ALL_LABELS[0]);
 
+        const pushOnByDefault = ["New claim on your post", "Claim approved", "Claim rejected"];
         for (const label of ALL_LABELS) {
             const pushToggle = screen.getByLabelText(`${label} push`);
-            expect(pushToggle).not.toBeChecked();
+            if (pushOnByDefault.includes(label)) expect(pushToggle).toBeChecked();
+            else expect(pushToggle).not.toBeChecked();
 
             if (label === "Friend posts new sub need") continue; // email also off for this one
-
-            const emailToggle = screen.getByLabelText(`${label} email`);
-            expect(emailToggle).toBeChecked();
+            expect(screen.getByLabelText(`${label} email`)).toBeChecked();
         }
-    });
-
-    it("toggling push on saves to notification_preferences", async () => {
-        const user = userEvent.setup();
-        render(<Settings />);
-        await screen.findByText(ALL_LABELS[0]);
-
-        const pushToggle = screen.getByLabelText("New claim on your post push");
-        await user.click(pushToggle);
-
-        expect(supabase.from).toHaveBeenCalledWith("notification_preferences");
-        expect(mockUpsert).toHaveBeenCalledWith(
-            { user_id: "test-user-id", notification_type: "claim_submitted", push_enabled: true },
-            { onConflict: "user_id,notification_type" },
-        );
-    });
-
-    it("toggling email off saves to notification_preferences", async () => {
-        const user = userEvent.setup();
-        render(<Settings />);
-        await screen.findByText(ALL_LABELS[0]);
-
-        const emailToggle = screen.getByLabelText("Claim approved email");
-        await user.click(emailToggle);
-
-        expect(supabase.from).toHaveBeenCalledWith("notification_preferences");
-        expect(mockUpsert).toHaveBeenCalledWith(
-            { user_id: "test-user-id", notification_type: "claim_approved", email_enabled: false },
-            { onConflict: "user_id,notification_type" },
-        );
-    });
-
-    it("toggling shows optimistic UI", async () => {
-        // Make upsert hang so we can check intermediate state
-        let resolveUpsert!: (val: { error: null }) => void;
-        mockUpsert.mockImplementationOnce(() => new Promise((resolve) => { resolveUpsert = resolve; }));
-
-        const user = userEvent.setup();
-        render(<Settings />);
-        await screen.findByText(ALL_LABELS[0]);
-
-        const pushToggle = screen.getByLabelText("New claim on your post push");
-        expect(pushToggle).not.toBeChecked();
-
-        await user.click(pushToggle);
-
-        // Toggle should reflect the new state immediately (optimistic update)
-        // even though the upsert hasn't resolved yet
-        await waitFor(() => expect(mockUpsert).toHaveBeenCalled());
-
-        // The toggle state was applied optimistically before the server responded
-        // Now resolve the upsert to confirm it stays
-        resolveUpsert({ error: null });
     });
 
     it("friend new post notification defaults to off", async () => {
-        render(<Settings />);
+        renderPage();
         await screen.findByText("Friend posts new sub need");
-
-        const emailToggle = screen.getByLabelText("Friend posts new sub need email");
-        const pushToggle = screen.getByLabelText("Friend posts new sub need push");
-
-        expect(emailToggle).not.toBeChecked();
-        expect(pushToggle).not.toBeChecked();
+        expect(screen.getByLabelText("Friend posts new sub need email")).not.toBeChecked();
+        expect(screen.getByLabelText("Friend posts new sub need push")).not.toBeChecked();
     });
 
-    it("sms_enabled is never set to true", async () => {
+    it("Save is disabled until something changes", async () => {
         const user = userEvent.setup();
-        render(<Settings />);
+        renderPage();
         await screen.findByText(ALL_LABELS[0]);
 
-        // Toggle a few things
-        await user.click(screen.getByLabelText("New claim on your post push"));
-        await user.click(screen.getByLabelText("Claim approved email"));
+        const save = screen.getByRole("button", { name: "Save changes" });
+        expect(save).toBeDisabled();
 
-        // Verify no upsert ever included sms_enabled = true
-        for (const call of mockUpsert.mock.calls) {
-            const payload = call[0] as Record<string, unknown>;
-            expect(payload).not.toHaveProperty("sms_enabled", true);
-        }
+        await user.click(screen.getByLabelText("Cost changed push"));
+        expect(save).toBeEnabled();
     });
 
-    it("SMS column shown as disabled", async () => {
-        render(<Settings />);
+    it("saving upserts all 13 preferences including the toggled change, never SMS", async () => {
+        const user = userEvent.setup();
+        renderPage();
         await screen.findByText(ALL_LABELS[0]);
 
-        // Each notification type has a disabled SMS toggle
-        const smsToggles = ALL_LABELS.map((label) =>
-            screen.getByLabelText(`${label} SMS (coming soon)`),
-        );
+        const save = screen.getByRole("button", { name: "Save changes" });
+        await user.click(screen.getByLabelText("Cost changed push"));
+        await user.click(save);
 
-        for (const toggle of smsToggles) {
-            expect(toggle).toBeDisabled();
+        await waitFor(() => expect(mockUpsert).toHaveBeenCalled());
+        const payload = mockUpsert.mock.calls[0][0] as Array<Record<string, unknown>>;
+        expect(payload).toHaveLength(13);
+        const changed = payload.find((p) => p.notification_type === "cost_changed");
+        expect(changed?.push_enabled).toBe(true);
+        for (const p of payload) {
+            expect(p).not.toHaveProperty("sms_enabled");
         }
-
-        // "Soon" labels are displayed
-        const soonLabels = screen.getAllByText("Soon");
-        expect(soonLabels).toHaveLength(13);
+        // The user row is persisted too.
+        expect(usersUpdate).toHaveBeenCalled();
     });
 });

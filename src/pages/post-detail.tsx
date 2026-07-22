@@ -185,7 +185,7 @@ export function PostDetail() {
                         post={post}
                         currentUserId={user.id}
                         onClose={() => setClaimOpen(false)}
-                        onClaimed={() => setClaimOpen(false)}
+                        onClaimChange={fetchPost}
                     />
                 )}
             </AppLayout>

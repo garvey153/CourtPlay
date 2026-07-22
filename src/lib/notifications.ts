@@ -13,7 +13,9 @@ export type NotificationType =
     | "48h_unfilled"          // N10
     | "game_reminder"         // N11
     | "friend_expiry"         // N12
-    | "friend_new_post";      // N13
+    | "friend_new_post"       // N13
+    | "connection_request"    // N14 — responder taps Connect on a regular post
+    | "connection_closed";    // N15 — seeker removes their regular post (spot found)
 
 export type NotificationChannel = "push" | "email";
 
