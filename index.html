@@ -4,7 +4,11 @@
         <meta charset="UTF-8" />
         <link rel="icon" type="image/png" href="/icons/icon-192.png?v=5" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <!-- maximum-scale=1 stops iOS Safari auto-zooming the viewport when a form
+             control below 16px takes focus. Our sm-size fields are 14px, and bumping
+             them to 16px would break the sm type scale across buttons, tabs and labels.
+             Trade-off: in the installed PWA this also disables pinch-to-zoom. -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
         <meta name="description" content="CourtPlay — find a tennis sub in Westport in under 10 minutes." />
         <meta name="theme-color" content="#08180e" />
 
