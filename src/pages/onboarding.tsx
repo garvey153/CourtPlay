@@ -104,6 +104,9 @@ export function Onboarding() {
     const [searchLoading, setSearchLoading] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
+    // The actual member objects followed (from search OR the recent list), so the
+    // "Following" list renders regardless of source or the current search query.
+    const [followedMembers, setFollowedMembers] = useState<MemberResult[]>([]);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteSending, setInviteSending] = useState(false);
     const [inviteConfirmEmail, setInviteConfirmEmail] = useState<string | null>(null);
@@ -223,10 +226,11 @@ export function Onboarding() {
             });
     }, [step, user]);
 
-    const handleFollow = async (memberId: string) => {
-        if (!user || followedIds.has(memberId)) return;
-        await supabase.from("follows").insert({ follower_id: user.id, following_id: memberId });
-        setFollowedIds((prev) => new Set([...prev, memberId]));
+    const handleFollow = async (member: MemberResult) => {
+        if (!user || followedIds.has(member.id)) return;
+        await supabase.from("follows").insert({ follower_id: user.id, following_id: member.id });
+        setFollowedIds((prev) => new Set([...prev, member.id]));
+        setFollowedMembers((prev) => (prev.some((m) => m.id === member.id) ? prev : [...prev, member]));
     };
 
     const handleSendInvite = async () => {
@@ -636,7 +640,7 @@ export function Onboarding() {
                                                                 size="xs"
                                                                 color={followedIds.has(member.id) ? "secondary" : "primary"}
                                                                 isDisabled={followedIds.has(member.id)}
-                                                                onClick={() => handleFollow(member.id)}
+                                                                onClick={() => handleFollow(member)}
                                                             >
                                                                 {followedIds.has(member.id) ? "Added" : "Follow"}
                                                             </Button>
@@ -659,18 +663,16 @@ export function Onboarding() {
                                     )}
                                 </div>
 
-                                {/* Followed players list */}
-                                {followedIds.size > 0 && (
+                                {/* Followed players list — sourced from search AND the recent list */}
+                                {followedMembers.length > 0 && (
                                     <div className="flex flex-col gap-1.5">
-                                        <p className="text-sm font-medium text-secondary">Following ({followedIds.size})</p>
+                                        <p className="text-sm font-medium text-secondary">Following ({followedMembers.length})</p>
                                         <div className="flex flex-wrap gap-2">
-                                            {memberResults
-                                                .filter((m) => followedIds.has(m.id))
-                                                .map((m) => (
-                                                    <span key={m.id} className="flex items-center gap-1.5 rounded-full bg-brand-secondary px-2.5 py-1 text-sm font-medium text-brand-primary">
-                                                        {m.first_name} {m.last_name}
-                                                    </span>
-                                                ))}
+                                            {followedMembers.map((m) => (
+                                                <span key={m.id} className="flex items-center gap-1.5 rounded-full bg-brand-secondary px-2.5 py-1 text-sm font-medium text-brand-primary">
+                                                    {m.first_name} {m.last_name}
+                                                </span>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
@@ -693,7 +695,7 @@ export function Onboarding() {
                                                         <p className="truncate text-sm font-medium text-primary">{su.first_name} {su.last_name}</p>
                                                         {su.skill_level && <p className="text-xs text-tertiary">{su.skill_level} NTRP</p>}
                                                     </div>
-                                                    <Button size="xs" color="primary" onClick={() => handleFollow(su.id)}>
+                                                    <Button size="xs" color="primary" onClick={() => handleFollow(su)}>
                                                         Follow
                                                     </Button>
                                                 </li>
