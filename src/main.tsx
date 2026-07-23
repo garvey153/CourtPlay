@@ -10,11 +10,13 @@ import { Activity } from "@/pages/activity";
 import { Admin } from "@/pages/admin/index";
 import { AuthCallback } from "@/pages/auth-callback";
 import { Feed } from "@/pages/feed";
+import { ForgotPassword } from "@/pages/forgot-password";
 import { Landing } from "@/pages/landing";
 import { NotFound } from "@/pages/not-found";
 import { Onboarding } from "@/pages/onboarding";
 import { PostDetail } from "@/pages/post-detail";
 import { PostNew } from "@/pages/post-new";
+import { ResetPassword } from "@/pages/reset-password";
 import { EditProfile } from "@/pages/edit-profile";
 import { Profile } from "@/pages/profile";
 import { Privacy } from "@/pages/privacy";
@@ -34,6 +36,8 @@ createRoot(document.getElementById("root")!).render(
                         <Route path="/" element={isStandalone() ? <Navigate to="/signup" replace /> : <Landing />} />
                         <Route path="/signin" element={<AuthScreen />} />
                         <Route path="/signup" element={<AuthScreen />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/auth/callback" element={<AuthCallback />} />
                         <Route path="/post/:id" element={<PostDetail />} />
                         <Route path="/terms" element={<Terms />} />
