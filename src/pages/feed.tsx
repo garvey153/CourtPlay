@@ -369,7 +369,10 @@ export function Feed() {
             .sort((a, b) => Number(isPast(a.p)) - Number(isPast(b.p)) || a.i - b.i)
             .map(({ p }) => p);
     }, [posts, filters]);
-    const showWelcome = !welcomeDismissed && !loading && filteredPosts.length < 3;
+    // First-run welcome: shown once to users who haven't posted yet (until they
+    // dismiss it). Deliberately independent of the feed/filter count — an empty or
+    // filtered feed is handled by the "No open spots" state below, not this card.
+    const showWelcome = !welcomeDismissed && !loading && myPosts.length === 0;
 
     return (
         <AppLayout onOpenFilters={handleToggleFilters} filtersActive={activeCount(filters) > 0}>

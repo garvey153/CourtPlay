@@ -119,13 +119,13 @@ export function Landing() {
                         <p className="text-sm text-secondary md:text-base lg:max-w-md lg:text-lg">
                             CourtPlay instantly connects you with available players in your area. No more group texts.
                         </p>
-                        {/* Desktop only: both CTAs sit side by side in the hero. On mobile/tablet
-                            the Download button moves down beside Get started in the CTA band below. */}
+                        {/* Desktop only: Get started sits in the hero. The Download button is
+                            mobile-only (installing to a home screen is a phone/tablet action), so it
+                            lives solely in the CTA band below, which hides it on desktop. */}
                         <div className="mt-2 hidden items-center gap-3 lg:flex">
                             <Link to="/signup" className={PRIMARY_BTN}>
                                 Get started – it's free!
                             </Link>
-                            <InstallAppButton />
                         </div>
                     </div>
 
