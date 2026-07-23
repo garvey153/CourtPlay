@@ -347,7 +347,7 @@ export function Onboarding() {
     return (
         <div className="flex min-h-dvh flex-col bg-secondary">
             {/* Progress bar */}
-            <div className="flex gap-1 px-4 pt-6">
+            <div className="flex gap-1 px-4 pt-[calc(env(safe-area-inset-top)_+_1.5rem)]">
                 {[1, 2, 3].map((s) => (
                     <div
                         key={s}
@@ -699,12 +699,15 @@ export function Onboarding() {
                                                     <span className="min-w-0 flex-1 truncate text-sm text-primary">
                                                         {rowName(m.first_name, m.last_name, m.skill_level)}
                                                     </span>
-                                                    <button
-                                                        onClick={() => handleUnfollow(m.id)}
-                                                        className="shrink-0 px-2.5 py-1.5 text-sm font-medium text-brand-secondary hover:text-brand-secondary_hover"
-                                                    >
-                                                        Unfollow
-                                                    </button>
+                                                    {/* Fixed-width centered slot so the action lines up with the Follow buttons below */}
+                                                    <div className="flex w-24 shrink-0 justify-center">
+                                                        <button
+                                                            onClick={() => handleUnfollow(m.id)}
+                                                            className="text-sm font-medium text-brand-secondary hover:text-brand-secondary_hover"
+                                                        >
+                                                            Unfollow
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
@@ -729,9 +732,11 @@ export function Onboarding() {
                                                         <p className="truncate text-sm font-medium text-primary">{su.first_name} {su.last_name}</p>
                                                         {su.skill_level && <p className="text-xs text-tertiary">{su.skill_level} NTRP</p>}
                                                     </div>
-                                                    <Button size="xs" color="primary" onClick={() => handleFollow(su)}>
-                                                        Follow
-                                                    </Button>
+                                                    <div className="flex w-24 shrink-0 justify-center">
+                                                        <Button size="xs" color="primary" onClick={() => handleFollow(su)}>
+                                                            Follow
+                                                        </Button>
+                                                    </div>
                                                 </li>
                                             ))}
                                         </ul>
@@ -746,7 +751,7 @@ export function Onboarding() {
             </div>
 
             {/* Footer navigation */}
-            <div className="sticky bottom-0 flex items-center justify-between bg-secondary px-4 py-3">
+            <div className="sticky bottom-0 flex items-center justify-between bg-secondary px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)_+_0.75rem)]">
                 {step > 1 ? (
                     <button type="button" className={SECONDARY_BTN} onClick={() => setStep((s) => s - 1)}>
                         Back
