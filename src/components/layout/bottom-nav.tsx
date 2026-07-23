@@ -26,7 +26,7 @@ export function BottomNav() {
         pathname === "/profile/me" || pathname === "/profile" || (!!user && pathname === `/profile/${user.id}`);
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-[68px] items-center bg-primary pb-safe">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-[calc(68px_+_env(safe-area-inset-bottom))] items-center bg-primary pb-safe">
             {tabs.map(({ label, href, icon: Icon }) => {
                 const active =
                     href === "/profile/me"
