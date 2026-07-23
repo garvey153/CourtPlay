@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Checkbox as AriaCheckbox, Switch as AriaSwitch, type Selection } from "react-aria-components";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Check, SearchLg } from "@untitledui/icons";
+import { ArrowLeft, Check, SearchSm, XClose } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { MultiSelect } from "@/components/base/select/multi-select";
@@ -611,17 +611,27 @@ export function Onboarding() {
 
                                 {/* Typeahead search */}
                                 <div className="relative" ref={searchContainerRef}>
-                                    {/* Search field styled to match the Profile page's follow search (see profile.tsx). */}
+                                    {/* Search field matches the filter sheet + Profile search (see feed-filters.tsx / profile.tsx). */}
                                     <div className="flex h-9 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
-                                        <SearchLg className="size-4 shrink-0 text-fg-quaternary" aria-hidden="true" />
+                                        <SearchSm className="size-6 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
                                         <input
-                                            className="w-full bg-transparent text-sm text-primary outline-none placeholder:text-placeholder"
+                                            className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
                                             placeholder="Search by name…"
                                             value={memberQuery}
                                             onChange={(e) => setMemberQuery(e.target.value)}
                                             onFocus={() => memberQuery.trim().length >= 2 && setShowDropdown(true)}
                                             autoComplete="off"
                                         />
+                                        {memberQuery && (
+                                            <button
+                                                type="button"
+                                                aria-label="Clear search"
+                                                onClick={() => setMemberQuery("")}
+                                                className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-primary"
+                                            >
+                                                <XClose className="size-5" strokeWidth={1} />
+                                            </button>
+                                        )}
                                     </div>
 
                                     {/* Results overlay */}
@@ -655,14 +665,13 @@ export function Onboarding() {
                                                                     <p className="text-xs text-tertiary">{member.skill_level} NTRP</p>
                                                                 )}
                                                             </div>
-                                                            <Button
-                                                                size="xs"
-                                                                color={followedIds.has(member.id) ? "secondary" : "primary"}
-                                                                isDisabled={followedIds.has(member.id)}
-                                                                onClick={() => handleFollow(member)}
-                                                            >
-                                                                {followedIds.has(member.id) ? "Added" : "Follow"}
-                                                            </Button>
+                                                            {followedIds.has(member.id) ? (
+                                                                <span className={cx(SECONDARY_BTN, "cursor-default")}>Added</span>
+                                                            ) : (
+                                                                <button type="button" className={PRIMARY_BTN} onClick={() => handleFollow(member)}>
+                                                                    Follow
+                                                                </button>
+                                                            )}
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -733,9 +742,9 @@ export function Onboarding() {
                                                         {su.skill_level && <p className="text-xs text-tertiary">{su.skill_level} NTRP</p>}
                                                     </div>
                                                     <div className="flex w-24 shrink-0 justify-center">
-                                                        <Button size="xs" color="primary" onClick={() => handleFollow(su)}>
+                                                        <button type="button" className={PRIMARY_BTN} onClick={() => handleFollow(su)}>
                                                             Follow
-                                                        </Button>
+                                                        </button>
                                                     </div>
                                                 </li>
                                             ))}
