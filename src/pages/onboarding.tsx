@@ -13,6 +13,14 @@ import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { menuWidth } from "@/utils/menu-width";
+import { skillLabel } from "@/utils/skill-label";
+
+// Matches the Profile page's follow rows: "First L." plus the skill label.
+function rowName(first: string, last: string, level: string | null): string {
+    const name = last ? `${first} ${last.charAt(0)}.` : first;
+    const skill = skillLabel(level);
+    return skill ? `${name} · ${skill}` : name;
+}
 
 // Field styling shared with the create-post sheet (see post-new.tsx): inputs get a
 // tertiary fill with a neutral border; dropdown triggers get the fill only (no ring).
@@ -231,6 +239,17 @@ export function Onboarding() {
         await supabase.from("follows").insert({ follower_id: user.id, following_id: member.id });
         setFollowedIds((prev) => new Set([...prev, member.id]));
         setFollowedMembers((prev) => (prev.some((m) => m.id === member.id) ? prev : [...prev, member]));
+    };
+
+    const handleUnfollow = async (memberId: string) => {
+        if (!user) return;
+        await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", memberId);
+        setFollowedIds((prev) => {
+            const next = new Set(prev);
+            next.delete(memberId);
+            return next;
+        });
+        setFollowedMembers((prev) => prev.filter((m) => m.id !== memberId));
     };
 
     const handleSendInvite = async () => {
@@ -663,15 +682,30 @@ export function Onboarding() {
                                     )}
                                 </div>
 
-                                {/* Followed players list — sourced from search AND the recent list */}
+                                {/* Followed players — same row design as the Profile page (see profile.tsx) */}
                                 {followedMembers.length > 0 && (
                                     <div className="flex flex-col gap-1.5">
                                         <p className="text-sm font-medium text-secondary">Following ({followedMembers.length})</p>
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-col">
                                             {followedMembers.map((m) => (
-                                                <span key={m.id} className="flex items-center gap-1.5 rounded-full bg-brand-secondary px-2.5 py-1 text-sm font-medium text-brand-primary">
-                                                    {m.first_name} {m.last_name}
-                                                </span>
+                                                <div key={m.id} className="flex items-center gap-2 py-2.5">
+                                                    {m.photo_url ? (
+                                                        <img src={m.photo_url} alt="" referrerPolicy="no-referrer" className="size-6 shrink-0 rounded-full object-cover" />
+                                                    ) : (
+                                                        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-tertiary text-xs font-semibold text-secondary">
+                                                            {m.first_name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                    <span className="min-w-0 flex-1 truncate text-sm text-primary">
+                                                        {rowName(m.first_name, m.last_name, m.skill_level)}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handleUnfollow(m.id)}
+                                                        className="shrink-0 text-sm font-medium text-brand-secondary hover:text-brand-secondary_hover"
+                                                    >
+                                                        Unfollow
+                                                    </button>
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
