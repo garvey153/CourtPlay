@@ -666,9 +666,9 @@ export function Onboarding() {
                                                                 )}
                                                             </div>
                                                             {followedIds.has(member.id) ? (
-                                                                <span className={cx(SECONDARY_BTN, "cursor-default")}>Added</span>
+                                                                <span className={cx(SECONDARY_BTN, "cursor-default px-2.5 py-1.5 opacity-60")}>Added</span>
                                                             ) : (
-                                                                <button type="button" className={PRIMARY_BTN} onClick={() => handleFollow(member)}>
+                                                                <button type="button" className={cx(SECONDARY_BTN, "px-2.5 py-1.5")} onClick={() => handleFollow(member)}>
                                                                     Follow
                                                                 </button>
                                                             )}
@@ -742,7 +742,7 @@ export function Onboarding() {
                                                         {su.skill_level && <p className="text-xs text-tertiary">{su.skill_level} NTRP</p>}
                                                     </div>
                                                     <div className="flex w-24 shrink-0 justify-center">
-                                                        <button type="button" className={PRIMARY_BTN} onClick={() => handleFollow(su)}>
+                                                        <button type="button" className={cx(SECONDARY_BTN, "px-2.5 py-1.5")} onClick={() => handleFollow(su)}>
                                                             Follow
                                                         </button>
                                                     </div>
