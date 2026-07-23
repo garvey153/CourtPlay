@@ -701,7 +701,7 @@ export function Onboarding() {
                                                     </span>
                                                     <button
                                                         onClick={() => handleUnfollow(m.id)}
-                                                        className="shrink-0 text-sm font-medium text-brand-secondary hover:text-brand-secondary_hover"
+                                                        className="shrink-0 px-2.5 py-1.5 text-sm font-medium text-brand-secondary hover:text-brand-secondary_hover"
                                                     >
                                                         Unfollow
                                                     </button>
