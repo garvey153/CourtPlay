@@ -15,7 +15,7 @@ export function TopNav({ onOpenFilters, filtersActive }: TopNavProps) {
     const postCtaDisabled = pathname === "/post/new" || pathname === "/profile/edit" || pathname === "/admin";
 
     return (
-        <header className="sticky top-0 z-40 flex items-center justify-between bg-primary px-5 py-4">
+        <header className="sticky top-0 z-40 flex items-center justify-between bg-primary px-5 pb-4 pt-[calc(env(safe-area-inset-top)_+_1rem)]">
             <Link to="/feed" aria-label="Go to feed" className="transition duration-100 ease-linear hover:opacity-80">
                 <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto" />
             </Link>

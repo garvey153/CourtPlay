@@ -28,6 +28,17 @@
     transition-timing-function: inherit;
 }
 
+/* iOS safe-area insets — the installed PWA runs viewport-fit=cover with a
+   translucent status bar, so content extends under the notch/Dynamic Island
+   (top) and home indicator (bottom). These reserve space for the header and
+   any bottom bar so the hardware never covers them. */
+@utility pt-safe {
+    padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
 html,
 body {
     font-family: var(--font-body);
