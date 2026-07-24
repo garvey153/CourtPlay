@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router";
-import { FilterLines } from "@untitledui/icons";
+import { FilterButton } from "@/components/app/filter-button";
 
 interface TopNavProps {
     /** When provided (feed only), shows a filter icon that opens the feed filters. */
@@ -21,17 +21,7 @@ export function TopNav({ onOpenFilters, filtersActive }: TopNavProps) {
             </Link>
             <div className="flex items-center gap-3">
                 {onOpenFilters && (
-                    <button
-                        type="button"
-                        onClick={onOpenFilters}
-                        aria-label="Filter posts"
-                        className="relative rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
-                    >
-                        <FilterLines className="size-6" aria-hidden="true" />
-                        {filtersActive && (
-                            <span className="absolute right-1 top-1 size-2 rounded-full bg-brand-solid ring-2 ring-primary" />
-                        )}
-                    </button>
+                    <FilterButton onClick={onOpenFilters} isActive={!!filtersActive} label="Filter posts" />
                 )}
                 <button
                     type="button"

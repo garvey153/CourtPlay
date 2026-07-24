@@ -25,7 +25,9 @@ describe("WelcomeCard", () => {
     it("calls onDismiss when dismiss button is clicked", async () => {
         const user = userEvent.setup();
         render(<WelcomeCard onDismiss={onDismiss} onPost={onPost} />);
-        const dismissBtn = screen.getByRole("button", { name: /Dismiss/i });
+        // Exact name: the card has both a "Dismiss" text button and a
+        // "Dismiss welcome" icon button, and a loose regex matches both.
+        const dismissBtn = screen.getByRole("button", { name: "Dismiss" });
         await user.click(dismissBtn);
         expect(onDismiss).toHaveBeenCalledOnce();
     });
@@ -64,7 +66,7 @@ describe("welcome card dismissed state", () => {
         });
 
         render(<WelcomeCard onDismiss={handleDismiss} onPost={vi.fn()} />);
-        await user.click(screen.getByRole("button", { name: /Dismiss/i }));
+        await user.click(screen.getByRole("button", { name: "Dismiss" }));
 
         expect(localStorage.getItem(WELCOME_KEY)).toBe("1");
     });

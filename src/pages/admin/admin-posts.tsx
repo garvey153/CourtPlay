@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FilterLines, SearchSm, XClose } from "@untitledui/icons";
+import { SearchSm, XClose } from "@untitledui/icons";
+import { FilterButton } from "@/components/app/filter-button";
 import { Button } from "@/components/base/buttons/button";
 import { FeedFilters, activeCount } from "@/components/app/feed-filters";
 import { formatPlayType } from "@/components/app/sub-card";
@@ -179,17 +180,11 @@ export function AdminPosts() {
                         </button>
                     )}
                 </div>
-                <button
-                    type="button"
+                <FilterButton
                     onClick={() => setFiltersOpen((v) => !v)}
-                    aria-label="Filter posts"
-                    className="relative shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
-                >
-                    <FilterLines className="size-6" aria-hidden="true" />
-                    {activeCount(filters) > 0 && (
-                        <span className="absolute right-1 top-[7px] size-1.5 rounded-full bg-brand-solid ring-2 ring-bg-primary" />
-                    )}
-                </button>
+                    isActive={activeCount(filters) > 0}
+                    label="Filter posts"
+                />
             </div>
 
             {/* Content */}

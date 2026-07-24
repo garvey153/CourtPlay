@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FilterLines, SearchSm, XClose } from "@untitledui/icons";
+import { SearchSm, XClose } from "@untitledui/icons";
+import { FilterButton } from "@/components/app/filter-button";
 import { Button } from "@/components/base/buttons/button";
 import { supabase } from "@/lib/supabase";
 import { AdminClaimCard, claimerName, type AdminClaimRow } from "./admin-claim-card";
@@ -154,17 +155,11 @@ export function AdminClaims() {
                         </button>
                     )}
                 </div>
-                <button
-                    type="button"
+                <FilterButton
                     onClick={() => setFiltersOpen((v) => !v)}
-                    aria-label="Filter claims"
-                    className="relative shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
-                >
-                    <FilterLines className="size-6" aria-hidden="true" />
-                    {claimFilterCount(filters) > 0 && (
-                        <span className="absolute right-1 top-[7px] size-1.5 rounded-full bg-brand-solid ring-2 ring-bg-primary" />
-                    )}
-                </button>
+                    isActive={claimFilterCount(filters) > 0}
+                    label="Filter claims"
+                />
             </div>
 
             {/* Content */}
