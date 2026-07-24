@@ -24,8 +24,10 @@ import { AuthScreen } from "@/pages/auth";
 import { Terms } from "@/pages/terms";
 import { isStandalone } from "@/utils/is-standalone";
 import { registerServiceWorker } from "@/lib/register-sw";
+import { settleViewport } from "@/lib/settle-viewport";
 
 registerServiceWorker();
+settleViewport();
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
