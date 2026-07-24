@@ -1,10 +1,33 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { execSync } from "child_process";
 import path from "path";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+/**
+ * Short commit SHA of the build, surfaced in the UI (Profile screen) so it's
+ * possible to tell from a device which build it is actually running. The service
+ * worker can keep a client on an old bundle, which makes "is this fix deployed to
+ * me?" otherwise very hard to answer.
+ */
+function buildId(): string {
+    // Vercel exposes the commit SHA at build time.
+    const fromCi = process.env.VERCEL_GIT_COMMIT_SHA;
+    if (fromCi) return fromCi.slice(0, 7);
+    try {
+        return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+            .toString()
+            .trim();
+    } catch {
+        return "dev";
+    }
+}
+
 export default defineConfig({
+    define: {
+        __BUILD_ID__: JSON.stringify(buildId()),
+    },
     plugins: [
         react(),
         tailwindcss(),

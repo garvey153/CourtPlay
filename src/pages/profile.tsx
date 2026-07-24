@@ -458,6 +458,13 @@ export function Profile() {
                         )}
                     </div>
                 )}
+
+                {/* Build stamp (own profile only). The service worker can keep a client
+                    on an older bundle, which makes "is this fix actually on my device?"
+                    hard to answer — this makes it readable from the device itself. */}
+                {profile.is_own_profile && (
+                    <p className="mt-8 text-center text-xs text-quaternary">Build {__BUILD_ID__}</p>
+                )}
             </div>
 
             {showReportModal && profile && (

@@ -5,6 +5,11 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
     plugins: [react(), tailwindcss()],
+    // This config doesn't inherit vite.config.ts, so build-time constants defined
+    // there have to be repeated or components referencing them throw at test time.
+    define: {
+        __BUILD_ID__: JSON.stringify("test"),
+    },
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
