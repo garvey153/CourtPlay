@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { cx } from "@/utils/cx";
 import { BottomNav } from "./bottom-nav";
 import { TopNav } from "./top-nav";
 
@@ -20,8 +19,8 @@ export function AppLayout({ children, onOpenFilters, filtersActive, footer }: Ap
         // refresh so the feed can own that gesture.
         <div className="flex h-dvh flex-col overflow-hidden bg-primary">
             <TopNav onOpenFilters={onOpenFilters} filtersActive={filtersActive} />
-            {/* The fixed BottomNav sits outside the flow, so content needs bottom
-                padding to clear it. A custom footer is in-flow, so it doesn't.
+            {/* The bottom nav and any custom footer are both in-flow flex children, so
+                they occupy real space and content needs no padding to clear them.
                 - min-h-0 lets this flex child shrink so its own content scrolls.
                 - relative makes this the containing block for descendants' absolute
                   positioning. react-aria form controls (toggles, checkboxes) render
@@ -30,9 +29,7 @@ export function AppLayout({ children, onOpenFilters, filtersActive, footer }: Ap
                   scroll height — which lets the page (and the footer) scroll and,
                   on focus, jump the whole shell out of view. Containing it here
                   keeps all scrolling inside <main>. */}
-            {/* Clearance must track BottomNav's total height: the 68px tab row plus its
-                clamped safe-area inset (see bottom-nav.tsx). */}
-            <main className={cx("relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain", footer ? "" : "pb-[calc(68px_+_var(--safe-bottom))]")}>
+            <main className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
                 {children}
             </main>
             {footer ?? <BottomNav />}

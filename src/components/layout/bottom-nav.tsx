@@ -26,13 +26,17 @@ export function BottomNav() {
         pathname === "/profile/me" || pathname === "/profile" || (!!user && pathname === `/profile/${user.id}`);
 
     return (
-        // The bar is full-bleed to the bottom edge so its background sits behind the
-        // home indicator, while the 68px tab row stays a fixed height on every device.
-        // The safe-area inset is clamped to 16px: the design's 68px row already carries
-        // its own bottom breathing room, so adding the full ~34px inset on top of it
-        // left the tabs floating well above the screen edge. Devices with no inset
-        // (older iPhones, Android, desktop) resolve to 0 and get exactly 68px.
-        <nav className="fixed inset-x-0 bottom-0 z-40 bg-primary pb-[var(--safe-bottom)]">
+        // In-flow (not fixed) so it sits at the bottom of the h-dvh shell as a flex
+        // child. It used to be `fixed bottom-0`, but in the installed iOS PWA the
+        // first paint anchors fixed elements to a viewport that hasn't applied
+        // viewport-fit=cover yet, leaving the bar floating ~40px above the screen
+        // edge until a gesture forced re-layout. Laying it out in flow — the same way
+        // the Edit-profile action bar already works — sidesteps that entirely.
+        //
+        // The inset is clamped to 16px: the 68px row already carries its own bottom
+        // breathing room, so the full ~34px home-indicator inset on top of it pushed
+        // the tabs too high. Devices with no inset resolve to 0 and get exactly 68px.
+        <nav className="shrink-0 bg-primary pb-[var(--safe-bottom)]">
             <div className="flex h-[68px] items-center">
                 {tabs.map(({ label, href, icon: Icon }) => {
                     const active =
