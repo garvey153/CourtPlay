@@ -23,7 +23,7 @@ export function WelcomeCard({ onDismiss, onPost }: WelcomeCardProps) {
                 <XClose className="size-5" strokeWidth={1} aria-hidden="true" />
             </button>
 
-            <p className="pr-6 text-sm font-semibold text-primary">Welcome to CourtPlay 🎾</p>
+            <p className="pr-6 text-sm font-semibold text-primary">Welcome to CourtPlay</p>
             <p className="mt-1 text-sm text-secondary">
                 This is the Westport tennis sub feed. When you need a sub for your game, post here and
                 available players will claim your spot. You can also claim spots others have posted.
@@ -46,7 +46,7 @@ export function WelcomeCard({ onDismiss, onPost }: WelcomeCardProps) {
                     onClick={onPost}
                     className="text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
                 >
-                    Post your first game
+                    Create your first post
                 </button>
             </div>
         </div>

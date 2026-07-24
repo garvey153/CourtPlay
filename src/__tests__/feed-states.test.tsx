@@ -19,7 +19,7 @@ describe("WelcomeCard", () => {
     it("renders the welcome message and CTA button", () => {
         render(<WelcomeCard onDismiss={onDismiss} onPost={onPost} />);
         expect(screen.getByText(/Welcome to CourtPlay/i)).toBeInTheDocument();
-        expect(screen.getByRole("button", { name: /Post your first game/i })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: /Create your first post/i })).toBeInTheDocument();
     });
 
     it("calls onDismiss when dismiss button is clicked", async () => {
@@ -35,7 +35,7 @@ describe("WelcomeCard", () => {
     it("calls onPost when CTA button is clicked", async () => {
         const user = userEvent.setup();
         render(<WelcomeCard onDismiss={onDismiss} onPost={onPost} />);
-        const postBtn = screen.getByRole("button", { name: /Post your first game/i });
+        const postBtn = screen.getByRole("button", { name: /Create your first post/i });
         await user.click(postBtn);
         expect(onPost).toHaveBeenCalledOnce();
     });
