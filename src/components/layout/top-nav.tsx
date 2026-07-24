@@ -16,9 +16,19 @@ export function TopNav({ onOpenFilters, filtersActive }: TopNavProps) {
 
     return (
         <header className="sticky top-0 z-40 flex items-center justify-between bg-primary px-5 pb-4 pt-[calc(env(safe-area-inset-top)_+_1rem)]">
-            <Link to="/feed" aria-label="Go to feed" className="transition duration-100 ease-linear hover:opacity-80">
-                <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto" />
-            </Link>
+            {/* Logo + Beta tag (Figma 528:1739). The logo's viewBox is tight to the
+                "y" — its right edge is exactly x=102 of 102 — so gap-2 lands the tag
+                8px from the "y" as specced. The tag is nudged up 1px because the "P"
+                spans y 3.25–18.86 in the 24px logo, centering ~0.95px above the
+                logo's midpoint; that lines the tag's top and bottom up with the "P". */}
+            <div className="flex items-center gap-2">
+                <Link to="/feed" aria-label="Go to feed" className="transition duration-100 ease-linear hover:opacity-80">
+                    <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto" />
+                </Link>
+                <span className="inline-flex h-4 shrink-0 -translate-y-px items-center rounded bg-white px-1.5 text-xs font-semibold text-neutral-950">
+                    Beta
+                </span>
+            </div>
             <div className="flex items-center gap-3">
                 {onOpenFilters && (
                     <FilterButton onClick={onOpenFilters} isActive={!!filtersActive} label="Filter posts" />
