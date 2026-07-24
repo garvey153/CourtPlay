@@ -15,7 +15,9 @@ export function WelcomeCard({ onDismiss, onPost }: WelcomeCardProps) {
             <button
                 type="button"
                 onClick={onDismiss}
-                aria-label="Dismiss"
+                // Distinct from the "Dismiss" text button below so the two controls
+                // don't announce identically to screen readers.
+                aria-label="Dismiss welcome"
                 className="absolute right-3 top-3 rounded p-0.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
             >
                 <XClose className="size-5" strokeWidth={1} aria-hidden="true" />
