@@ -39,6 +39,14 @@
     padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Clamped bottom inset for bottom bars (nav, action bars) and the content
+   clearance that has to match them. Bar designs already carry their own bottom
+   breathing room, so adding the full ~34px home-indicator inset on top left them
+   floating well above the screen edge. Devices without an inset resolve to 0. */
+:root {
+    --safe-bottom: min(env(safe-area-inset-bottom), 16px);
+}
+
 html,
 body {
     font-family: var(--font-body);

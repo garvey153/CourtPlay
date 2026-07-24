@@ -760,7 +760,7 @@ export function Onboarding() {
             </div>
 
             {/* Footer navigation */}
-            <div className="sticky bottom-0 flex items-center justify-between bg-secondary px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)_+_0.75rem)]">
+            <div className="sticky bottom-0 flex items-center justify-between bg-secondary px-4 pt-3 pb-[calc(0.75rem_+_var(--safe-bottom))]">
                 {step > 1 ? (
                     <button type="button" className={SECONDARY_BTN} onClick={() => setStep((s) => s - 1)}>
                         Back
