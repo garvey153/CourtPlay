@@ -30,7 +30,9 @@ export function AppLayout({ children, onOpenFilters, filtersActive, footer }: Ap
                   scroll height — which lets the page (and the footer) scroll and,
                   on focus, jump the whole shell out of view. Containing it here
                   keeps all scrolling inside <main>. */}
-            <main className={cx("relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain", footer ? "" : "pb-[calc(68px_+_env(safe-area-inset-bottom))]")}>
+            {/* Clearance must track BottomNav's total height: the 68px tab row plus its
+                clamped safe-area inset (see bottom-nav.tsx). */}
+            <main className={cx("relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain", footer ? "" : "pb-[calc(68px_+_var(--safe-bottom))]")}>
                 {children}
             </main>
             {footer ?? <BottomNav />}

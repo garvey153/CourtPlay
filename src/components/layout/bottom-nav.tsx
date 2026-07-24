@@ -26,28 +26,36 @@ export function BottomNav() {
         pathname === "/profile/me" || pathname === "/profile" || (!!user && pathname === `/profile/${user.id}`);
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-[calc(68px_+_env(safe-area-inset-bottom))] items-center bg-primary pb-safe">
-            {tabs.map(({ label, href, icon: Icon }) => {
-                const active =
-                    href === "/profile/me"
-                        ? isOwnProfile
-                        : pathname === href || (href !== "/feed" && pathname.startsWith(href));
-                return (
-                    <Link
-                        key={href}
-                        to={href}
-                        className="flex flex-1 flex-col items-center justify-center gap-1 py-2"
-                    >
-                        <Icon
-                            className={cx("size-5", active ? "text-primary" : "text-secondary")}
-                            aria-hidden="true"
-                        />
-                        <span className={cx("text-xs", active ? "font-medium text-primary" : "text-secondary")}>
-                            {label}
-                        </span>
-                    </Link>
-                );
-            })}
+        // The bar is full-bleed to the bottom edge so its background sits behind the
+        // home indicator, while the 68px tab row stays a fixed height on every device.
+        // The safe-area inset is clamped to 16px: the design's 68px row already carries
+        // its own bottom breathing room, so adding the full ~34px inset on top of it
+        // left the tabs floating well above the screen edge. Devices with no inset
+        // (older iPhones, Android, desktop) resolve to 0 and get exactly 68px.
+        <nav className="fixed inset-x-0 bottom-0 z-40 bg-primary pb-[var(--safe-bottom)]">
+            <div className="flex h-[68px] items-center">
+                {tabs.map(({ label, href, icon: Icon }) => {
+                    const active =
+                        href === "/profile/me"
+                            ? isOwnProfile
+                            : pathname === href || (href !== "/feed" && pathname.startsWith(href));
+                    return (
+                        <Link
+                            key={href}
+                            to={href}
+                            className="flex flex-1 flex-col items-center justify-center gap-1 py-2"
+                        >
+                            <Icon
+                                className={cx("size-5", active ? "text-primary" : "text-secondary")}
+                                aria-hidden="true"
+                            />
+                            <span className={cx("text-xs", active ? "font-medium text-primary" : "text-secondary")}>
+                                {label}
+                            </span>
+                        </Link>
+                    );
+                })}
+            </div>
         </nav>
     );
 }

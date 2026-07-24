@@ -10,6 +10,11 @@ export default defineConfig({
         tailwindcss(),
         VitePWA({
             registerType: "autoUpdate",
+            // We register the worker ourselves (src/lib/register-sw.ts) so we can
+            // reload on controllerchange and poll for new builds. The plugin's
+            // injected registerSW.js does neither, which left open sessions running
+            // stale assets under a newly-activated worker.
+            injectRegister: null,
             includeAssets: ["apple-touch-icon.png", "icons/icon-192.png", "icons/icon-512.png"],
             manifest: {
                 name: "CourtPlay",

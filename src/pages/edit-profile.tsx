@@ -320,7 +320,7 @@ export function EditProfile() {
 
     // Cancel / Save action bar — replaces the bottom nav on this screen.
     const footer = (
-        <div className="flex shrink-0 items-center justify-between gap-3 bg-primary px-5 py-4 pb-safe">
+        <div className="flex shrink-0 items-center justify-between gap-3 bg-primary px-5 py-4 pb-[calc(1rem_+_var(--safe-bottom))]">
             <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_BTN}>
                 Cancel
             </button>
