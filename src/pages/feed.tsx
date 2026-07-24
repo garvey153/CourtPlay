@@ -114,9 +114,21 @@ export function Feed() {
 
     const fetchPosts = useCallback(async () => {
         setError(null);
-        const { data, error: rpcError } = await supabase.rpc("get_feed");
+        let { data, error: rpcError } = await supabase.rpc("get_feed");
+
+        // The first load straight out of onboarding can land while the session is
+        // still settling, which fails the call once and then succeeds. get_feed is
+        // security definer and read-only, so retrying it is safe.
         if (rpcError) {
-            setError("Failed to load the feed. Please try again.");
+            await new Promise((resolve) => setTimeout(resolve, 600));
+            ({ data, error: rpcError } = await supabase.rpc("get_feed"));
+        }
+
+        if (rpcError) {
+            // Keep the underlying reason — the generic message alone made this
+            // impossible to diagnose from a device.
+            console.error("get_feed failed:", rpcError);
+            setError(rpcError.message || "Failed to load the feed. Please try again.");
         } else if (data) {
             setPosts(data as FeedPost[]);
         }
