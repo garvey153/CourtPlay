@@ -23,6 +23,9 @@ import { Privacy } from "@/pages/privacy";
 import { AuthScreen } from "@/pages/auth";
 import { Terms } from "@/pages/terms";
 import { isStandalone } from "@/utils/is-standalone";
+import { registerServiceWorker } from "@/lib/register-sw";
+
+registerServiceWorker();
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
