@@ -463,7 +463,7 @@ export function Profile() {
                     on an older bundle, which makes "is this fix actually on my device?"
                     hard to answer — this makes it readable from the device itself. */}
                 {profile.is_own_profile && (
-                    <p className="mt-8 text-center text-xs text-quaternary">Build {__BUILD_ID__}</p>
+                    <p className="mt-8 text-center text-xs text-quaternary">Version {__BUILD_ID__}</p>
                 )}
             </div>
 
