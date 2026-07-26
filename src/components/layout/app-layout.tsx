@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
+import { scheduleSettle } from "@/lib/settle-viewport";
 import { BottomNav } from "./bottom-nav";
 import { TopNav } from "./top-nav";
 
@@ -13,6 +14,14 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, onOpenFilters, filtersActive, footer }: AppLayoutProps) {
+    // Re-settle the iOS viewport whenever the app shell mounts. The one-time pass in
+    // main.tsx runs at document load, which misses entering the shell via client-side
+    // navigation — e.g. logging in on the sign-in page then routing to /feed, where
+    // the bottom nav would otherwise sit ~40px high until a swipe.
+    useEffect(() => {
+        scheduleSettle();
+    }, []);
+
     return (
         // Fixed-height app shell: the header and bottom nav stay put while only
         // <main> scrolls. overscroll-contain stops the browser's native pull-to-
