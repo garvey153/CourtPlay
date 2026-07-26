@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { Avatar } from "@/components/base/avatar/avatar";
+import { BetaTag } from "@/components/app/beta-tag";
 import { InstallAppButton } from "@/components/app/install-app-button";
 import { cx } from "@/utils/cx";
 
@@ -102,7 +103,10 @@ export function Landing() {
             <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col md:max-w-2xl lg:max-w-6xl">
                 {/* Nav */}
                 <header className="flex items-center justify-between px-5 py-4 md:px-8 lg:py-6">
-                    <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto lg:h-7" />
+                    <div className="flex items-center gap-2">
+                        <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto lg:h-7" />
+                        <BetaTag />
+                    </div>
                     <Link to="/signup" className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600">
                         Sign up
                     </Link>

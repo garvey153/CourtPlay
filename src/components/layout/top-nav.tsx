@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router";
+import { BetaTag } from "@/components/app/beta-tag";
 import { FilterButton } from "@/components/app/filter-button";
 
 interface TopNavProps {
@@ -25,9 +26,7 @@ export function TopNav({ onOpenFilters, filtersActive }: TopNavProps) {
                 <Link to="/feed" aria-label="Go to feed" className="transition duration-100 ease-linear hover:opacity-80">
                     <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto" />
                 </Link>
-                <span className="inline-flex h-4 shrink-0 -translate-y-px items-center rounded bg-white px-1.5 text-xs font-semibold text-neutral-950">
-                    Beta
-                </span>
+                <BetaTag />
             </div>
             <div className="flex items-center gap-3">
                 {onOpenFilters && (
