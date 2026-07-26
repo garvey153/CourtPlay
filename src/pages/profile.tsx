@@ -136,6 +136,8 @@ export function Profile() {
     const [error, setError] = useState<string | null>(null);
     const [showReport, setShowReport] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+    // Temporary: toggles the viewport debug overlay (see viewport-debug.tsx).
+    const [vpDebug, setVpDebug] = useState(() => localStorage.getItem("cs_vp_debug") === "1");
 
     // Search state (own profile only)
     const [searchQuery, setSearchQuery] = useState("");
@@ -461,9 +463,21 @@ export function Profile() {
 
                 {/* Build stamp (own profile only). The service worker can keep a client
                     on an older bundle, which makes "is this fix actually on my device?"
-                    hard to answer — this makes it readable from the device itself. */}
+                    hard to answer — this makes it readable from the device itself.
+                    Tapping it toggles the temporary viewport debug overlay. */}
                 {profile.is_own_profile && (
-                    <p className="mt-8 text-center text-xs text-quaternary">Version {__BUILD_ID__}</p>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const on = localStorage.getItem("cs_vp_debug") === "1";
+                            localStorage.setItem("cs_vp_debug", on ? "0" : "1");
+                            setVpDebug(!on);
+                        }}
+                        className="mt-8 w-full text-center text-xs text-quaternary"
+                    >
+                        Version {__BUILD_ID__}
+                        {vpDebug ? " · debug on" : ""}
+                    </button>
                 )}
             </div>
 
