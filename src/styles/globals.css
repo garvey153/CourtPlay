@@ -47,6 +47,22 @@
     --safe-bottom: min(env(safe-area-inset-bottom), 16px);
 }
 
+/* Installed-PWA app-shell height. In standalone, iOS measures the FIRST PAINT
+   against the dynamic viewport (100dvh) before viewport-fit=cover applies, so
+   it comes back ~60px short of the screen — the h-dvh shell ends above the
+   physical bottom and the bottom nav floats there until a scroll gesture forces
+   a re-measure (confirmed on device: innerHeight 812 -> 874 after a swipe).
+   The large viewport (100vh / lvh) is the full screen and does not shrink with
+   scroll state, and there is no URL bar in standalone, so it is correct from the
+   first paint. Scoped to standalone so browser tabs keep 100dvh, where the URL
+   bar still needs the dynamic value. Unlayered, so it overrides the h-dvh
+   utility. */
+@media all and (display-mode: standalone) {
+    [data-app-shell] {
+        height: 100vh;
+    }
+}
+
 html,
 body {
     font-family: var(--font-body);
