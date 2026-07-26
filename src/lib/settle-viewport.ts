@@ -1,50 +1,58 @@
 import { isStandalone } from "@/utils/is-standalone";
 
 /**
- * Forces iOS to re-evaluate the viewport shortly after launch.
+ * Forces iOS to re-evaluate the viewport.
  *
- * In the installed PWA the first paint can be laid out against a viewport that
- * hasn't applied `viewport-fit=cover` yet, so it is ~40px shorter than the screen.
- * Everything measured from it lands high — the `h-dvh` app shell, and with it the
- * bottom nav, which sits above the screen edge until the user swipes. The swipe is
- * what makes Safari re-measure; this does the same thing without the gesture.
+ * In the installed PWA the layout can be measured against a viewport that hasn't
+ * applied `viewport-fit=cover` yet, so it is ~40px shorter than the screen and the
+ * `h-dvh` shell (and its bottom nav) sits high until a gesture forces a re-measure.
+ * Re-writing the viewport meta makes WebKit re-parse and re-apply it (viewport-fit
+ * included); the scroll nudge mimics the gesture. Both are cheap and invisible.
  *
- * Re-writing the viewport meta makes Safari re-parse and re-apply it (including
- * viewport-fit), and the scroll nudge mimics the gesture that was working. Both are
- * cheap and invisible, so we do both rather than bet on one.
- *
- * Standalone only — this doesn't reproduce in a normal Safari tab, and there's no
- * reason to touch the viewport there.
+ * Standalone only — this doesn't reproduce in a normal Safari tab.
  */
-export function settleViewport() {
+function settleNow() {
     if (typeof document === "undefined" || !isStandalone()) return;
 
     const meta = document.querySelector('meta[name="viewport"]');
+    if (meta) {
+        const original = meta.getAttribute("content") ?? "";
+        meta.setAttribute("content", `${original}, user-scalable=no`);
+        requestAnimationFrame(() => meta.setAttribute("content", original));
+    }
 
-    const settle = () => {
-        // Re-apply the viewport meta: toggling the attribute is what makes WebKit
-        // re-parse it. Restore the original on the next frame so the declared
-        // behaviour (maximum-scale, viewport-fit) is unchanged.
-        if (meta) {
-            const original = meta.getAttribute("content") ?? "";
-            meta.setAttribute("content", `${original}, user-scalable=no`);
-            requestAnimationFrame(() => meta.setAttribute("content", original));
-        }
+    const main = document.querySelector("main");
+    if (main && main.scrollHeight > main.clientHeight) {
+        main.scrollTop = 1;
+        main.scrollTop = 0;
+    }
+}
 
-        // Nudge the scroll container by a pixel and back — the programmatic
-        // equivalent of the swipe that currently fixes it.
-        const main = document.querySelector("main");
-        if (main && main.scrollHeight > main.clientHeight) {
-            main.scrollTop = 1;
-            main.scrollTop = 0;
-        }
-    };
+/**
+ * Run a settle pass after the next paint, and once more after a short delay since
+ * the viewport can settle late enough that a single pass misses it. Safe to call
+ * repeatedly — call it whenever a screen that anchors to the viewport bottom (the
+ * app shell / bottom nav) mounts, not only at first load. A client-side login
+ * navigates into the shell without a new document load, so the initial pass from
+ * main.tsx doesn't cover it.
+ */
+export function scheduleSettle() {
+    if (typeof document === "undefined" || !isStandalone()) return;
+    requestAnimationFrame(() => requestAnimationFrame(settleNow));
+    setTimeout(settleNow, 250);
+}
 
-    // After the first paint, and once more after layout has had a beat — the
-    // viewport can settle late enough that a single pass misses it.
-    requestAnimationFrame(() => requestAnimationFrame(settle));
-    setTimeout(settle, 250);
+let listenersBound = false;
 
-    // Rotating changes the insets, so re-settle then too.
-    window.addEventListener("orientationchange", () => setTimeout(settle, 100));
+/**
+ * One-time startup entry (main.tsx): run the initial settle passes and bind the
+ * orientation listener (rotating changes the insets).
+ */
+export function settleViewport() {
+    if (typeof document === "undefined" || !isStandalone()) return;
+    scheduleSettle();
+    if (!listenersBound) {
+        listenersBound = true;
+        window.addEventListener("orientationchange", () => setTimeout(settleNow, 100));
+    }
 }
