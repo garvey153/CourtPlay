@@ -12,10 +12,12 @@ interface Snap {
     vvH: number; // visualViewport height
     vvTop: number; // visualViewport offsetTop
     dvh: number; // rendered height of a 100dvh element
+    svh: number; // rendered height of a 100svh element (small viewport)
+    lvh: number; // rendered height of a 100lvh element (large viewport)
     cH: number; // documentElement.clientHeight
     sc: number; // screen.height
     sab: number; // resolved env(safe-area-inset-bottom)
-    shell: number; // app shell (h-dvh) rendered height
+    shell: number; // app shell rendered height
     navB: number; // bottom nav's rect.bottom
     gap: number; // iH - navB (px the nav bottom sits above the viewport bottom)
 }
@@ -27,12 +29,16 @@ function read(): Snap {
     const navEl = document.querySelector("nav") as HTMLElement | null;
     const sabEl = document.getElementById("vp-sab-probe");
     const dvhEl = document.getElementById("vp-dvh-probe");
+    const svhEl = document.getElementById("vp-svh-probe");
+    const lvhEl = document.getElementById("vp-lvh-probe");
     const navB = navEl ? Math.round(navEl.getBoundingClientRect().bottom) : 0;
     return {
         iH,
         vvH: vv ? Math.round(vv.height) : 0,
         vvTop: vv ? Math.round(vv.offsetTop) : 0,
         dvh: dvhEl ? Math.round(dvhEl.getBoundingClientRect().height) : 0,
+        svh: svhEl ? Math.round(svhEl.getBoundingClientRect().height) : 0,
+        lvh: lvhEl ? Math.round(lvhEl.getBoundingClientRect().height) : 0,
         cH: Math.round(document.documentElement.clientHeight),
         sc: Math.round(window.screen.height),
         sab: sabEl ? Math.round(parseFloat(getComputedStyle(sabEl).paddingBottom) || 0) : 0,
@@ -44,7 +50,7 @@ function read(): Snap {
 
 const fmt = (s: Snap | null) =>
     s
-        ? `iH${s.iH} vv${s.vvH}@${s.vvTop} dvh${s.dvh} cH${s.cH} sc${s.sc} sab${s.sab} shell${s.shell} navB${s.navB} gap${s.gap}`
+        ? `iH${s.iH} vv${s.vvH}@${s.vvTop} dvh${s.dvh} svh${s.svh} lvh${s.lvh} cH${s.cH} sc${s.sc} sab${s.sab} shell${s.shell} navB${s.navB} gap${s.gap}`
         : "…";
 
 export function ViewportDebug() {
@@ -76,6 +82,8 @@ export function ViewportDebug() {
         <>
             <div id="vp-sab-probe" style={{ position: "fixed", paddingBottom: "env(safe-area-inset-bottom)", visibility: "hidden", pointerEvents: "none" }} />
             <div id="vp-dvh-probe" style={{ position: "fixed", top: 0, height: "100dvh", width: 0, visibility: "hidden", pointerEvents: "none" }} />
+            <div id="vp-svh-probe" style={{ position: "fixed", top: 0, height: "100svh", width: 0, visibility: "hidden", pointerEvents: "none" }} />
+            <div id="vp-lvh-probe" style={{ position: "fixed", top: 0, height: "100lvh", width: 0, visibility: "hidden", pointerEvents: "none" }} />
             <div
                 style={{
                     position: "fixed",
