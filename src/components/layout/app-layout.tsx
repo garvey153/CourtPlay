@@ -1,6 +1,4 @@
-import { type ReactNode, useEffect } from "react";
-import { scheduleSettle } from "@/lib/settle-viewport";
-import { ViewportDebug } from "@/components/app/viewport-debug";
+import type { ReactNode } from "react";
 import { BottomNav } from "./bottom-nav";
 import { TopNav } from "./top-nav";
 
@@ -15,20 +13,13 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, onOpenFilters, filtersActive, footer }: AppLayoutProps) {
-    // Re-settle the iOS viewport whenever the app shell mounts. The one-time pass in
-    // main.tsx runs at document load, which misses entering the shell via client-side
-    // navigation — e.g. logging in on the sign-in page then routing to /feed, where
-    // the bottom nav would otherwise sit ~40px high until a swipe.
-    useEffect(() => {
-        scheduleSettle();
-    }, []);
-
     return (
         // Fixed-height app shell: the header and bottom nav stay put while only
         // <main> scrolls. overscroll-contain stops the browser's native pull-to-
-        // refresh so the feed can own that gesture.
+        // refresh so the feed can own that gesture. data-app-shell is the hook for
+        // the standalone 100vh height override (see globals.css) that keeps the
+        // shell full-height on the installed-PWA first paint.
         <div data-app-shell className="flex h-dvh flex-col overflow-hidden bg-primary">
-            {typeof localStorage !== "undefined" && localStorage.getItem("cs_vp_debug") === "1" && <ViewportDebug />}
             <TopNav onOpenFilters={onOpenFilters} filtersActive={filtersActive} />
             {/* The bottom nav and any custom footer are both in-flow flex children, so
                 they occupy real space and content needs no padding to clear them.
