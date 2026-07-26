@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect } from "react";
 import { scheduleSettle } from "@/lib/settle-viewport";
+import { ViewportDebug } from "@/components/app/viewport-debug";
 import { BottomNav } from "./bottom-nav";
 import { TopNav } from "./top-nav";
 
@@ -26,7 +27,8 @@ export function AppLayout({ children, onOpenFilters, filtersActive, footer }: Ap
         // Fixed-height app shell: the header and bottom nav stay put while only
         // <main> scrolls. overscroll-contain stops the browser's native pull-to-
         // refresh so the feed can own that gesture.
-        <div className="flex h-dvh flex-col overflow-hidden bg-primary">
+        <div data-app-shell className="flex h-dvh flex-col overflow-hidden bg-primary">
+            {typeof localStorage !== "undefined" && localStorage.getItem("cs_vp_debug") === "1" && <ViewportDebug />}
             <TopNav onOpenFilters={onOpenFilters} filtersActive={filtersActive} />
             {/* The bottom nav and any custom footer are both in-flow flex children, so
                 they occupy real space and content needs no padding to clear them.
