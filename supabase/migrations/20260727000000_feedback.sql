@@ -3,9 +3,11 @@
 -- from the Profile screen. Admins review it in the Reports tab's
 -- Feedback section and can delete entries. New submissions notify
 -- admins (in-feed banner + push + email).
+--
+-- Written idempotently so it's safe to re-run against the SQL editor.
 -- ============================================================
 
-create table public.feedback (
+create table if not exists public.feedback (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.users not null,
   title text not null,
@@ -16,14 +18,17 @@ create table public.feedback (
 alter table public.feedback enable row level security;
 
 -- Players may submit their own feedback...
+drop policy if exists "Users insert own feedback" on public.feedback;
 create policy "Users insert own feedback" on public.feedback
   for insert with check (auth.uid() = user_id);
 
 -- ...and read it back (harmless; there is no player-facing list yet).
+drop policy if exists "Users read own feedback" on public.feedback;
 create policy "Users read own feedback" on public.feedback
   for select using (auth.uid() = user_id);
 
 -- Admins see everything and can delete.
+drop policy if exists "Admins full access feedback" on public.feedback;
 create policy "Admins full access feedback" on public.feedback
   for all using (
     exists (select 1 from public.users where id = auth.uid() and is_admin = true)
