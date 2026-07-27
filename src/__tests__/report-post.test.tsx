@@ -232,9 +232,9 @@ describe("ReportModal — post reporting", () => {
         await user.click(screen.getByLabelText("Spam"));
         await user.click(screen.getByRole("button", { name: /submit report/i }));
 
-        // During submission the button should be effectively disabled (React Aria uses aria-disabled)
+        // During submission the button is natively disabled (plain <button disabled>).
         const submitBtn = screen.getByRole("button", { name: /submit report/i });
-        expect(submitBtn).toHaveAttribute("aria-disabled", "true");
+        expect(submitBtn).toBeDisabled();
 
         // Resolve to clean up
         resolveInsert({ error: null });

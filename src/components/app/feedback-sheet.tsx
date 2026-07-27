@@ -73,15 +73,17 @@ export function FeedbackSheet({ onClose }: FeedbackSheetProps) {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-[8px] sm:items-center"
             role="dialog"
             aria-modal="true"
             aria-labelledby="feedback-sheet-title"
+            onMouseDown={(e) => {
+                if (e.target === e.currentTarget) onClose();
+            }}
         >
-            <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
-
-            {/* Full-width on mobile (no side margins), capped and centered on larger screens. */}
-            <div className="relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary p-5 shadow-xl sm:rounded-2xl">
+            {/* Full-width on mobile (no side margins), capped and centered on larger
+                screens. pb-8 matches the filter sheets' footer spacing. */}
+            <div className="relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl">
                 <button
                     type="button"
                     onClick={onClose}
@@ -122,6 +124,7 @@ export function FeedbackSheet({ onClose }: FeedbackSheetProps) {
                                 value={details}
                                 onChange={(v) => setDetails(v)}
                                 rows={4}
+                                size="sm"
                                 textAreaClassName={FIELD}
                             />
                         </div>
