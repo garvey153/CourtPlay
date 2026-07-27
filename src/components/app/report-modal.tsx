@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,7 +38,8 @@ interface ReportModalProps {
 
 export function ReportModal({ targetType, targetId, onClose }: ReportModalProps) {
     const { user } = useAuth();
-    const [reason, setReason] = useState<ReportReason | null>(null);
+    // Spam is preselected so the form is submittable by default.
+    const [reason, setReason] = useState<ReportReason>("spam");
     const [note, setNote] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
@@ -76,7 +79,10 @@ export function ReportModal({ targetType, targetId, onClose }: ReportModalProps)
 
     const label = targetType === "post" ? "post" : "user";
 
-    return (
+    // Portaled to <body> so the fixed overlay + backdrop-blur escape any sheet this
+    // is opened from (the detail sheets are transformed motion.div's, which break
+    // position:fixed and backdrop-filter). Slides up like the other bottom sheets.
+    return createPortal(
         <div
             className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-[8px] sm:items-center"
             role="dialog"
@@ -88,7 +94,12 @@ export function ReportModal({ targetType, targetId, onClose }: ReportModalProps)
         >
             {/* Full-width on mobile, capped and centered on larger screens. pb-8 matches
                 the filter sheets' footer spacing. */}
-            <div className="relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl">
+            <motion.div
+                className="relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ type: "spring", damping: 38, stiffness: 420 }}
+            >
                 <button
                     type="button"
                     onClick={onClose}
@@ -113,32 +124,35 @@ export function ReportModal({ targetType, targetId, onClose }: ReportModalProps)
                         </h2>
                         <p className="mt-1 text-sm text-tertiary">Select a reason for your report. Reports are anonymous.</p>
 
-                        <fieldset className="mt-4 flex flex-col gap-3">
+                        {/* Rows match the filter sheet's checkbox rows: h-9 bg-tertiary rows
+                            grouped with 4px gaps and only the outer corners rounded. The
+                            indicator is a radio dot (single-select), not a checkbox. */}
+                        <fieldset className="mt-4">
                             <legend className="sr-only">Report reason</legend>
-                            {REASON_OPTIONS.map((opt) => {
-                                const selected = reason === opt.value;
-                                return (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => setReason(opt.value)}
-                                        aria-pressed={selected}
-                                        // Card border stays neutral on selection (no green stroke); the
-                                        // selected state shows in the radio dot only. Matches create-post.
-                                        className="flex w-full items-center gap-2 rounded-lg border-2 border-neutral-600 bg-tertiary p-4 text-left transition duration-100 ease-linear hover:border-neutral-500"
-                                    >
-                                        <span
-                                            className={cx(
-                                                "flex size-4 shrink-0 items-center justify-center rounded-full",
-                                                selected ? "bg-brand-solid" : "border border-neutral-600",
-                                            )}
+                            <div className="flex flex-col gap-1 overflow-hidden rounded-lg">
+                                {REASON_OPTIONS.map((opt) => {
+                                    const selected = reason === opt.value;
+                                    return (
+                                        <button
+                                            key={opt.value}
+                                            type="button"
+                                            onClick={() => setReason(opt.value)}
+                                            aria-pressed={selected}
+                                            className="flex h-9 w-full items-center gap-2 bg-tertiary px-3 text-left transition duration-100 ease-linear hover:brightness-110"
                                         >
-                                            {selected && <span className="size-1.5 rounded-full bg-white" />}
-                                        </span>
-                                        <span className="text-sm font-medium text-primary">{opt.label}</span>
-                                    </button>
-                                );
-                            })}
+                                            <span
+                                                className={cx(
+                                                    "flex size-4 shrink-0 items-center justify-center rounded-full",
+                                                    selected ? "bg-brand-500" : "border border-neutral-200",
+                                                )}
+                                            >
+                                                {selected && <span className="size-1.5 rounded-full bg-white" />}
+                                            </span>
+                                            <span className="min-w-0 truncate text-sm text-secondary">{opt.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </fieldset>
 
                         <div className="mt-4 flex flex-col gap-2">
@@ -167,7 +181,7 @@ export function ReportModal({ targetType, targetId, onClose }: ReportModalProps)
                                 aria-label="Submit report"
                                 className={PRIMARY_BTN}
                                 onClick={handleSubmit}
-                                disabled={submitting || !reason}
+                                disabled={submitting}
                             >
                                 {submitting ? <ButtonSpinner /> : "Submit report"}
                             </button>
@@ -177,7 +191,8 @@ export function ReportModal({ targetType, targetId, onClose }: ReportModalProps)
                         </div>
                     </>
                 )}
-            </div>
-        </div>
+            </motion.div>
+        </div>,
+        document.body,
     );
 }

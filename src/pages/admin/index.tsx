@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { cx } from "@/utils/cx";
 import { AppLayout } from "@/components/layout/app-layout";
 import { AdminPosts } from "./admin-posts";
@@ -20,7 +21,10 @@ const TABS = [
 type AdminTab = (typeof TABS)[number]["key"];
 
 export function Admin() {
-    const [tab, setTab] = useState<AdminTab>("analytics");
+    // Deep-link support: /admin?tab=reports (e.g. the feed's "View feedback" banner).
+    const [searchParams] = useSearchParams();
+    const initialTab = TABS.find((t) => t.key === searchParams.get("tab"))?.key ?? "analytics";
+    const [tab, setTab] = useState<AdminTab>(initialTab);
 
     return (
         <AppLayout>

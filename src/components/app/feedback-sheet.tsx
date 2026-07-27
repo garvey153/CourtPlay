@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
@@ -71,7 +73,8 @@ export function FeedbackSheet({ onClose }: FeedbackSheetProps) {
         setSubmitted(true);
     }, [title, details]);
 
-    return (
+    // Portaled to <body> and slides up, consistent with the report/detail sheets.
+    return createPortal(
         <div
             className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-[8px] sm:items-center"
             role="dialog"
@@ -83,7 +86,12 @@ export function FeedbackSheet({ onClose }: FeedbackSheetProps) {
         >
             {/* Full-width on mobile (no side margins), capped and centered on larger
                 screens. pb-8 matches the filter sheets' footer spacing. */}
-            <div className="relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl">
+            <motion.div
+                className="relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ type: "spring", damping: 38, stiffness: 420 }}
+            >
                 <button
                     type="button"
                     onClick={onClose}
@@ -142,7 +150,8 @@ export function FeedbackSheet({ onClose }: FeedbackSheetProps) {
                         </div>
                     </>
                 )}
-            </div>
-        </div>
+            </motion.div>
+        </div>,
+        document.body,
     );
 }

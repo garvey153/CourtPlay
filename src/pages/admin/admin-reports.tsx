@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
 import { Button } from "@/components/base/buttons/button";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
@@ -22,7 +23,9 @@ const TABS: { key: Tab; label: string }[] = [
 
 export function AdminReports() {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState<Tab>("pending");
+    const [searchParams] = useSearchParams();
+    // Deep-link: /admin?tab=reports&section=feedback opens straight to the Feedback pill.
+    const [activeTab, setActiveTab] = useState<Tab>(searchParams.get("section") === "feedback" ? "feedback" : "pending");
     const [reports, setReports] = useState<AdminReportRow[]>([]);
     const [feedback, setFeedback] = useState<AdminFeedbackRow[]>([]);
     const [loading, setLoading] = useState(true);
