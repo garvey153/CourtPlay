@@ -3,6 +3,7 @@ import { XClose } from "@untitledui/icons";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
+import { cx } from "@/utils/cx";
 
 export type ReportReason = "spam" | "inappropriate" | "incorrect_info" | "other";
 export type ReportTargetType = "post" | "user";
@@ -112,34 +113,45 @@ export function ReportModal({ targetType, targetId, onClose }: ReportModalProps)
                         </h2>
                         <p className="mt-1 text-sm text-tertiary">Select a reason for your report. Reports are anonymous.</p>
 
-                        <fieldset className="mt-4 space-y-2">
+                        <fieldset className="mt-4 flex flex-col gap-3">
                             <legend className="sr-only">Report reason</legend>
-                            {REASON_OPTIONS.map((opt) => (
-                                <label
-                                    key={opt.value}
-                                    className="flex cursor-pointer items-center gap-3 rounded-lg border border-tertiary bg-tertiary px-3 py-2.5 transition duration-100 ease-linear has-[:checked]:border-brand has-[:checked]:bg-brand-section_subtle"
-                                >
-                                    <input
-                                        type="radio"
-                                        name="report-reason"
-                                        value={opt.value}
-                                        checked={reason === opt.value}
-                                        onChange={() => setReason(opt.value)}
-                                        className="size-4 accent-brand-600"
-                                    />
-                                    <span className="text-sm font-medium text-primary">{opt.label}</span>
-                                </label>
-                            ))}
+                            {REASON_OPTIONS.map((opt) => {
+                                const selected = reason === opt.value;
+                                return (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => setReason(opt.value)}
+                                        aria-pressed={selected}
+                                        // Card border stays neutral on selection (no green stroke); the
+                                        // selected state shows in the radio dot only. Matches create-post.
+                                        className="flex w-full items-center gap-2 rounded-lg border-2 border-neutral-600 bg-tertiary p-4 text-left transition duration-100 ease-linear hover:border-neutral-500"
+                                    >
+                                        <span
+                                            className={cx(
+                                                "flex size-4 shrink-0 items-center justify-center rounded-full",
+                                                selected ? "bg-brand-solid" : "border border-neutral-600",
+                                            )}
+                                        >
+                                            {selected && <span className="size-1.5 rounded-full bg-white" />}
+                                        </span>
+                                        <span className="text-sm font-medium text-primary">{opt.label}</span>
+                                    </button>
+                                );
+                            })}
                         </fieldset>
 
-                        <div className="mt-4">
+                        <div className="mt-4 flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-secondary">Additional details (optional)</span>
+                                <span className="text-xs text-tertiary">{note.length}/150</span>
+                            </div>
                             <TextArea
-                                label="Additional details (optional)"
+                                aria-label="Additional details"
                                 placeholder="Tell us more..."
                                 value={note}
                                 onChange={(v) => setNote(v)}
                                 maxLength={150}
-                                hint={`${note.length}/150`}
                                 rows={3}
                                 size="sm"
                                 textAreaClassName={FIELD}
