@@ -98,9 +98,9 @@ export function ReportModal({ targetType, targetId, onClose }: ReportModalProps)
                 </button>
 
                 {submitted ? (
-                    <div className="py-2 text-center">
-                        <h2 className="text-lg font-semibold text-primary">Report submitted</h2>
-                        <p className="mt-2 text-sm text-tertiary">Thanks for your report. Our team will review it.</p>
+                    <div>
+                        <h2 className="pr-9 text-lg font-semibold text-primary">Report submitted</h2>
+                        <p className="mt-1 text-sm text-tertiary">Thanks for your report. Our team will review it.</p>
                         <button type="button" className={`${PRIMARY_BTN} mt-8`} onClick={onClose}>
                             Done
                         </button>
