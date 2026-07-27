@@ -352,6 +352,11 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
         );
     }
 
+    // Report replaces this sheet (single backdrop) rather than stacking over it.
+    if (showReport && selected) {
+        return <ReportModal targetType="user" targetId={selected.claimer_id} onClose={() => setShowReport(false)} />;
+    }
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
@@ -369,10 +374,6 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
             >
                 {content}
             </motion.div>
-
-            {showReport && selected && (
-                <ReportModal targetType="user" targetId={selected.claimer_id} onClose={() => setShowReport(false)} />
-            )}
         </div>
     );
 }

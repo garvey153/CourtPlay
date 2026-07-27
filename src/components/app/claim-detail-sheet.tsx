@@ -263,6 +263,12 @@ export function ClaimDetailSheet({
 
     const claimableHelper = !isOwnPost && !activeClaim && !isFull && !isExpired;
 
+    // Report replaces this sheet (single backdrop) rather than stacking over it;
+    // closing the report returns here.
+    if (showReport) {
+        return <ReportModal targetType="post" targetId={post.id} onClose={() => setShowReport(false)} />;
+    }
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
@@ -479,7 +485,6 @@ export function ClaimDetailSheet({
             </motion.div>
 
             {shareData && <ShareModal url={shareData.url} text={shareData.text} onClose={closeShareModal} />}
-            {showReport && <ReportModal targetType="post" targetId={post.id} onClose={() => setShowReport(false)} />}
         </div>
     );
 }

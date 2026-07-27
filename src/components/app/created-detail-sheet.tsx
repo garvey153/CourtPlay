@@ -201,6 +201,11 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
             </div>
         ) : null;
 
+    // Report replaces this sheet (single backdrop) rather than stacking over it.
+    if (showReport && claim) {
+        return <ReportModal targetType="user" targetId={claim.claimer_id} onClose={() => setShowReport(false)} />;
+    }
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
@@ -388,10 +393,6 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                     </div>
                 )}
             </motion.div>
-
-            {showReport && claim && (
-                <ReportModal targetType="user" targetId={claim.claimer_id} onClose={() => setShowReport(false)} />
-            )}
         </div>
     );
 }
