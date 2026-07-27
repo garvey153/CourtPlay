@@ -15,7 +15,8 @@ export type NotificationType =
     | "friend_expiry"         // N12
     | "friend_new_post"       // N13
     | "connection_request"    // N14 — responder taps Connect on a regular post
-    | "connection_closed";    // N15 — seeker removes their regular post (spot found)
+    | "connection_closed"     // N15 — seeker removes their regular post (spot found)
+    | "feedback_submitted";   // N16 — admin-only: a player submitted feedback
 
 export type NotificationChannel = "push" | "email";
 

@@ -15,6 +15,7 @@ import { PushEnableBanner } from "@/components/app/push-enable-banner";
 import { IosInstallPrompt } from "@/components/app/ios-install-prompt";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { WelcomeCard } from "@/components/app/welcome-card";
+import { FeedbackBanner } from "@/components/app/feedback-banner";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
@@ -92,6 +93,8 @@ export function Feed() {
     const [welcomeDismissed, setWelcomeDismissed] = useState(
         () => localStorage.getItem(WELCOME_KEY) === "1",
     );
+    // Admin-only: ids of feedback submissions not yet dismissed from the feed banner.
+    const [newFeedbackIds, setNewFeedbackIds] = useState<string[]>([]);
     // Success banner shown once after a post is created (flag set by the post form).
     const [createdPost, setCreatedPost] = useState<{ id: string; type: "sub_need" | "regular_game" } | null>(() => {
         const raw = localStorage.getItem("courtsub_post_created");
@@ -150,6 +153,28 @@ export function Feed() {
         fetchPosts();
         fetchMyPosts();
     }, [fetchPosts, fetchMyPosts]);
+
+    // Admin-only: surface undismissed feedback as a top-of-feed banner. RLS lets
+    // only admins read the feedback table, so this returns nothing for players.
+    useEffect(() => {
+        if (!profile?.is_admin) return;
+        supabase
+            .from("feedback")
+            .select("id")
+            .order("created_at", { ascending: false })
+            .limit(50)
+            .then(({ data }) => {
+                const dismissed = new Set<string>(JSON.parse(localStorage.getItem("cs_feedback_banner_dismissed") || "[]"));
+                setNewFeedbackIds(((data as { id: string }[]) ?? []).map((r) => r.id).filter((id) => !dismissed.has(id)));
+            });
+    }, [profile?.is_admin]);
+
+    const dismissFeedbackBanner = useCallback(() => {
+        const dismissed = new Set<string>(JSON.parse(localStorage.getItem("cs_feedback_banner_dismissed") || "[]"));
+        newFeedbackIds.forEach((id) => dismissed.add(id));
+        localStorage.setItem("cs_feedback_banner_dismissed", JSON.stringify([...dismissed]));
+        setNewFeedbackIds([]);
+    }, [newFeedbackIds]);
 
     // Load courts for filter dropdown
     useEffect(() => {
@@ -398,6 +423,15 @@ export function Feed() {
 
             <PullToRefresh onRefresh={() => Promise.all([fetchPosts(), fetchMyPosts()])}>
             <div className="flex flex-col gap-3 px-5 pb-4">
+                {/* Admin-only: new-feedback banner sits at the very top. */}
+                {profile?.is_admin && newFeedbackIds.length > 0 && (
+                    <FeedbackBanner
+                        count={newFeedbackIds.length}
+                        onView={() => navigate("/admin")}
+                        onDismiss={dismissFeedbackBanner}
+                    />
+                )}
+
                 {/* Claim banners always sit at the top of the feed. */}
                 {pendingBanners.map(({ post, claim }) => (
                     <ClaimReceivedBanner

@@ -23,7 +23,8 @@ type NotificationType =
     | "friend_expiry"
     | "friend_new_post"
     | "connection_request"
-    | "connection_closed";
+    | "connection_closed"
+    | "feedback_submitted";
 
 interface TemplateConfig {
     title: string;
@@ -198,6 +199,15 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
             : "A CourtPlay player found a spot",
         deepLink: () => "https://courtplay.app/activity",
     },
+    feedback_submitted: {
+        title: "New feedback submitted",
+        body: (d) => {
+            const who = d.submitter_name ? `${d.submitter_name} submitted feedback` : "A player submitted feedback";
+            return d.feedback_title ? `${who}: "${d.feedback_title}". Review it in the admin dashboard.` : `${who}. Review it in the admin dashboard.`;
+        },
+        subject: (d) => d.feedback_title ? `New CourtPlay feedback: ${d.feedback_title}` : "New CourtPlay feedback submitted",
+        deepLink: () => "https://courtplay.app/admin",
+    },
 };
 
 // Default channels per notification type
@@ -218,6 +228,7 @@ const DEFAULT_CHANNELS: Record<NotificationType, { push: boolean; email: boolean
     friend_new_post:    { push: false, email: false }, // N13 defaults to off
     connection_request: { push: true, email: true },   // N14 — like a new claim
     connection_closed:  { push: false, email: true },  // N15
+    feedback_submitted: { push: true, email: true },   // N16 — admin-only
 };
 
 function buildEmailHtml(template: TemplateConfig, d: Record<string, string>, postId?: string, venmoLink?: string): string {

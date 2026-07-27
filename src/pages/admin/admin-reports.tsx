@@ -5,25 +5,68 @@ import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { AdminReportCard, type AdminReportRow, type ReportPostTarget, type ReportUserTarget } from "./admin-report-card";
 import { AdminReportDetailSheet } from "./admin-report-detail-sheet";
+import { AdminFeedbackCard, type AdminFeedbackRow } from "./admin-feedback-card";
 
 type ReportStatus = "pending" | "dismissed" | "actioned";
+// The Feedback section shares the pill row but reads a different table.
+type Tab = ReportStatus | "feedback";
 
-const TABS: { key: ReportStatus; label: string }[] = [
+const TABS: { key: Tab; label: string }[] = [
     { key: "pending", label: "Pending" },
     { key: "dismissed", label: "Dismissed" },
     // 'actioned' reports are ones where the admin removed the post / suspended the user.
     { key: "actioned", label: "Removed" },
+    { key: "feedback", label: "Feedback" },
 ];
 
 export function AdminReports() {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState<ReportStatus>("pending");
+    const [activeTab, setActiveTab] = useState<Tab>("pending");
     const [reports, setReports] = useState<AdminReportRow[]>([]);
+    const [feedback, setFeedback] = useState<AdminFeedbackRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const [detailReport, setDetailReport] = useState<AdminReportRow | null>(null);
     const [actioningId, setActioningId] = useState<string | null>(null);
+    const [deletingFeedbackId, setDeletingFeedbackId] = useState<string | null>(null);
+
+    const fetchFeedback = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        const { data, error: fbErr } = await supabase
+            .from("feedback")
+            .select("id, title, details, created_at, users:user_id(first_name, last_name)")
+            .order("created_at", { ascending: false });
+        if (fbErr) {
+            setError(fbErr.message);
+            setFeedback([]);
+            setLoading(false);
+            return;
+        }
+        setFeedback(
+            ((data as unknown as { id: string; title: string; details: string | null; created_at: string; users: { first_name: string | null; last_name: string | null } | null }[]) ?? []).map((r) => ({
+                id: r.id,
+                title: r.title,
+                details: r.details,
+                created_at: r.created_at,
+                submitter_name: [r.users?.first_name, r.users?.last_name].filter(Boolean).join(" "),
+            })),
+        );
+        setLoading(false);
+    }, []);
+
+    const handleDeleteFeedback = async (item: AdminFeedbackRow) => {
+        setDeletingFeedbackId(item.id);
+        const { error: delErr } = await supabase.from("feedback").delete().eq("id", item.id);
+        if (delErr) {
+            setError(`Failed to delete feedback: ${delErr.message}`);
+            setDeletingFeedbackId(null);
+            return;
+        }
+        setFeedback((prev) => prev.filter((f) => f.id !== item.id));
+        setDeletingFeedbackId(null);
+    };
 
     const fetchReports = useCallback(async () => {
         setLoading(true);
@@ -76,8 +119,9 @@ export function AdminReports() {
     }, [activeTab]);
 
     useEffect(() => {
-        fetchReports();
-    }, [fetchReports]);
+        if (activeTab === "feedback") fetchFeedback();
+        else fetchReports();
+    }, [activeTab, fetchFeedback, fetchReports]);
 
     // After a moderation action: drop the report from the current list and close the sheet.
     const afterAction = (reportId: string) => {
@@ -189,10 +233,25 @@ export function AdminReports() {
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={fetchReports}>
+                    <Button size="sm" color="primary" onClick={() => (activeTab === "feedback" ? fetchFeedback() : fetchReports())}>
                         Retry
                     </Button>
                 </div>
+            ) : activeTab === "feedback" ? (
+                feedback.length === 0 ? (
+                    <p className="py-16 text-center text-sm text-tertiary">No feedback yet.</p>
+                ) : (
+                    <div className="flex flex-col gap-3">
+                        {feedback.map((item) => (
+                            <AdminFeedbackCard
+                                key={item.id}
+                                feedback={item}
+                                deleting={deletingFeedbackId === item.id}
+                                onDelete={handleDeleteFeedback}
+                            />
+                        ))}
+                    </div>
+                )
             ) : reports.length === 0 ? (
                 <p className="py-16 text-center text-sm text-tertiary">
                     No {TABS.find((t) => t.key === activeTab)?.label.toLowerCase()} reports.

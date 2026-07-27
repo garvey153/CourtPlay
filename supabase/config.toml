@@ -4,3 +4,8 @@ project_id = "uheeddmtntnlgrpzfjph"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/send-notification/index.ts"
+
+[functions.notify-feedback]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/notify-feedback/index.ts"
