@@ -112,10 +112,10 @@ beforeEach(() => {
 describe("ReportModal — post reporting", () => {
     it("report modal shows four reason options", () => {
         renderModal();
-        expect(screen.getByLabelText("Spam")).toBeInTheDocument();
-        expect(screen.getByLabelText("Inappropriate content")).toBeInTheDocument();
-        expect(screen.getByLabelText("Incorrect information")).toBeInTheDocument();
-        expect(screen.getByLabelText("Other")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Spam" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Inappropriate content" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Incorrect information" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Other" })).toBeInTheDocument();
     });
 
     it("submit disabled without reason selection", () => {
@@ -127,7 +127,7 @@ describe("ReportModal — post reporting", () => {
     it("submit enabled after selecting a reason", async () => {
         const user = userEvent.setup();
         renderModal();
-        await user.click(screen.getByLabelText("Spam"));
+        await user.click(screen.getByRole("button", { name: "Spam" }));
         const submitBtn = screen.getByRole("button", { name: /submit report/i });
         expect(submitBtn).not.toBeDisabled();
     });
@@ -144,7 +144,7 @@ describe("ReportModal — post reporting", () => {
     it("note field is optional", async () => {
         const user = userEvent.setup();
         renderModal();
-        await user.click(screen.getByLabelText("Spam"));
+        await user.click(screen.getByRole("button", { name: "Spam" }));
         await user.click(screen.getByRole("button", { name: /submit report/i }));
 
         await waitFor(() => {
@@ -157,7 +157,7 @@ describe("ReportModal — post reporting", () => {
     it("successful report inserts correct row", async () => {
         const user = userEvent.setup();
         renderModal();
-        await user.click(screen.getByLabelText("Spam"));
+        await user.click(screen.getByRole("button", { name: "Spam" }));
         const textarea = screen.getByPlaceholderText("Tell us more...");
         await user.type(textarea, "Test note");
         await user.click(screen.getByRole("button", { name: /submit report/i }));
@@ -176,7 +176,7 @@ describe("ReportModal — post reporting", () => {
     it("confirmation shown after successful report", async () => {
         const user = userEvent.setup();
         renderModal();
-        await user.click(screen.getByLabelText("Spam"));
+        await user.click(screen.getByRole("button", { name: "Spam" }));
         await user.click(screen.getByRole("button", { name: /submit report/i }));
 
         await waitFor(() => {
@@ -190,7 +190,7 @@ describe("ReportModal — post reporting", () => {
     it("no notification sent to post author", async () => {
         const user = userEvent.setup();
         renderModal();
-        await user.click(screen.getByLabelText("Spam"));
+        await user.click(screen.getByRole("button", { name: "Spam" }));
         await user.click(screen.getByRole("button", { name: /submit report/i }));
 
         await waitFor(() => {
@@ -207,7 +207,7 @@ describe("ReportModal — post reporting", () => {
         });
         const user = userEvent.setup();
         renderModal();
-        await user.click(screen.getByLabelText("Spam"));
+        await user.click(screen.getByRole("button", { name: "Spam" }));
         await user.click(screen.getByRole("button", { name: /submit report/i }));
 
         await waitFor(() => {
@@ -216,7 +216,7 @@ describe("ReportModal — post reporting", () => {
             ).toBeInTheDocument();
         });
         // Modal stays open — reason options still visible
-        expect(screen.getByLabelText("Spam")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Spam" })).toBeInTheDocument();
     });
 
     it("submit button disabled during async operation", async () => {
@@ -229,7 +229,7 @@ describe("ReportModal — post reporting", () => {
         );
         const user = userEvent.setup();
         renderModal();
-        await user.click(screen.getByLabelText("Spam"));
+        await user.click(screen.getByRole("button", { name: "Spam" }));
         await user.click(screen.getByRole("button", { name: /submit report/i }));
 
         // During submission the button is natively disabled (plain <button disabled>).

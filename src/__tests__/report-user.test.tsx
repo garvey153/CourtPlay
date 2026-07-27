@@ -85,17 +85,17 @@ describe("ReportModal — user reporting", () => {
 
     it("report modal shows same four reason options", () => {
         renderModal();
-        expect(screen.getByLabelText("Spam")).toBeInTheDocument();
-        expect(screen.getByLabelText("Inappropriate content")).toBeInTheDocument();
-        expect(screen.getByLabelText("Incorrect information")).toBeInTheDocument();
-        expect(screen.getByLabelText("Other")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Spam" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Inappropriate content" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Incorrect information" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Other" })).toBeInTheDocument();
     });
 
     it("successful user report inserts correct row", async () => {
         const user = userEvent.setup();
         renderModal({ targetId: "user-xyz" });
 
-        await user.click(screen.getByLabelText("Inappropriate content"));
+        await user.click(screen.getByRole("button", { name: "Inappropriate content" }));
         const textarea = screen.getByPlaceholderText("Tell us more...");
         await user.type(textarea, "Harassing others");
         await user.click(screen.getByRole("button", { name: /submit report/i }));
@@ -115,7 +115,7 @@ describe("ReportModal — user reporting", () => {
         const user = userEvent.setup();
         renderModal();
 
-        await user.click(screen.getByLabelText("Spam"));
+        await user.click(screen.getByRole("button", { name: "Spam" }));
         await user.click(screen.getByRole("button", { name: /submit report/i }));
 
         await waitFor(() => {
@@ -128,7 +128,7 @@ describe("ReportModal — user reporting", () => {
         const user = userEvent.setup();
         renderModal();
 
-        await user.click(screen.getByLabelText("Other"));
+        await user.click(screen.getByRole("button", { name: "Other" }));
         await user.click(screen.getByRole("button", { name: /submit report/i }));
 
         await waitFor(() => {
@@ -143,7 +143,7 @@ describe("ReportModal — user reporting", () => {
         const user = userEvent.setup();
         renderModal({ targetId: "user-abc" });
 
-        await user.click(screen.getByLabelText("Incorrect information"));
+        await user.click(screen.getByRole("button", { name: "Incorrect information" }));
         await user.click(screen.getByRole("button", { name: /submit report/i }));
 
         await waitFor(() => {
@@ -160,7 +160,7 @@ describe("ReportModal — user reporting", () => {
         mockInsert.mockClear();
         const { unmount } = renderModal({ targetId: "user-def" });
 
-        await user.click(screen.getAllByLabelText("Spam")[0]);
+        await user.click(screen.getAllByRole("button", { name: "Spam" })[0]);
         await user.click(screen.getAllByRole("button", { name: /submit report/i })[0]);
 
         await waitFor(() => {
