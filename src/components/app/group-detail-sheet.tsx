@@ -178,6 +178,11 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
             : `You're connected! Message ${post.first_name} to sort out the details.`
         : null;
 
+    // Report replaces this sheet (single backdrop) rather than stacking over it.
+    if (showReport) {
+        return <ReportModal targetType="post" targetId={post.id} onClose={() => setShowReport(false)} />;
+    }
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
@@ -361,7 +366,6 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
             </motion.div>
 
             {shareData && <ShareModal url={shareData.url} text={shareData.text} onClose={closeShareModal} />}
-            {showReport && <ReportModal targetType="post" targetId={post.id} onClose={() => setShowReport(false)} />}
         </div>
     );
 }
