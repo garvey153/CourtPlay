@@ -17,17 +17,14 @@ const REASON_OPTIONS: { value: ReportReason; label: string }[] = [
 // Themed field surface — matches the create-post form and the feedback sheet.
 const FIELD = "bg-tertiary ring-neutral-600";
 
-// Flat button styles shared with the other bottom sheets. The report's submit is
-// destructive (flat red) to keep the moderation signal; Cancel/Done are neutral.
-const DESTRUCTIVE_BTN =
-    "flex w-full items-center justify-center rounded-lg bg-error-solid px-4 py-2 text-sm font-semibold text-white transition duration-100 ease-linear enabled:hover:bg-error-solid_hover disabled:cursor-not-allowed disabled:opacity-50";
+// Flat button styles shared with the other bottom sheets.
 const SECONDARY_BTN =
     "flex w-full items-center justify-center rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50";
 const PRIMARY_BTN =
     "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 
 const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
+    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
 );
 
 interface ReportModalProps {
@@ -156,7 +153,7 @@ export function ReportModal({ targetType, targetId, onClose }: ReportModalProps)
                             <button
                                 type="button"
                                 aria-label="Submit report"
-                                className={DESTRUCTIVE_BTN}
+                                className={PRIMARY_BTN}
                                 onClick={handleSubmit}
                                 disabled={submitting || !reason}
                             >
