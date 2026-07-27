@@ -6,6 +6,7 @@ import { cx } from "@/utils/cx";
 import { AdminReportCard, type AdminReportRow, type ReportPostTarget, type ReportUserTarget } from "./admin-report-card";
 import { AdminReportDetailSheet } from "./admin-report-detail-sheet";
 import { AdminFeedbackCard, type AdminFeedbackRow } from "./admin-feedback-card";
+import { AdminFeedbackDetailSheet } from "./admin-feedback-detail-sheet";
 
 type ReportStatus = "pending" | "dismissed" | "actioned";
 // The Feedback section shares the pill row but reads a different table.
@@ -28,6 +29,7 @@ export function AdminReports() {
     const [error, setError] = useState<string | null>(null);
 
     const [detailReport, setDetailReport] = useState<AdminReportRow | null>(null);
+    const [detailFeedback, setDetailFeedback] = useState<AdminFeedbackRow | null>(null);
     const [actioningId, setActioningId] = useState<string | null>(null);
     const [deletingFeedbackId, setDeletingFeedbackId] = useState<string | null>(null);
 
@@ -66,6 +68,7 @@ export function AdminReports() {
         }
         setFeedback((prev) => prev.filter((f) => f.id !== item.id));
         setDeletingFeedbackId(null);
+        setDetailFeedback(null);
     };
 
     const fetchReports = useCallback(async () => {
@@ -243,12 +246,7 @@ export function AdminReports() {
                 ) : (
                     <div className="flex flex-col gap-3">
                         {feedback.map((item) => (
-                            <AdminFeedbackCard
-                                key={item.id}
-                                feedback={item}
-                                deleting={deletingFeedbackId === item.id}
-                                onDelete={handleDeleteFeedback}
-                            />
+                            <AdminFeedbackCard key={item.id} feedback={item} onOpen={setDetailFeedback} />
                         ))}
                     </div>
                 )
@@ -272,6 +270,15 @@ export function AdminReports() {
                     onRemoveContent={() => handleRemoveContent(detailReport)}
                     onReactivate={() => handleReactivate(detailReport)}
                     onClose={() => setDetailReport(null)}
+                />
+            )}
+
+            {detailFeedback && (
+                <AdminFeedbackDetailSheet
+                    feedback={detailFeedback}
+                    deleting={deletingFeedbackId === detailFeedback.id}
+                    onDelete={() => handleDeleteFeedback(detailFeedback)}
+                    onClose={() => setDetailFeedback(null)}
                 />
             )}
         </div>
