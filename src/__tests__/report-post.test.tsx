@@ -118,16 +118,16 @@ describe("ReportModal — post reporting", () => {
         expect(screen.getByRole("button", { name: "Other" })).toBeInTheDocument();
     });
 
-    it("submit disabled without reason selection", () => {
+    it("submit enabled by default (Spam preselected)", () => {
         renderModal();
         const submitBtn = screen.getByRole("button", { name: /submit report/i });
-        expect(submitBtn).toBeDisabled();
+        expect(submitBtn).not.toBeDisabled();
     });
 
-    it("submit enabled after selecting a reason", async () => {
+    it("submit stays enabled after selecting another reason", async () => {
         const user = userEvent.setup();
         renderModal();
-        await user.click(screen.getByRole("button", { name: "Spam" }));
+        await user.click(screen.getByRole("button", { name: "Other" }));
         const submitBtn = screen.getByRole("button", { name: /submit report/i });
         expect(submitBtn).not.toBeDisabled();
     });

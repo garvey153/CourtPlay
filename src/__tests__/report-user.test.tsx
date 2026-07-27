@@ -175,9 +175,9 @@ describe("ReportModal — user reporting", () => {
         unmount();
     });
 
-    it("submit disabled without reason", () => {
+    it("submit enabled by default (Spam preselected)", () => {
         renderModal();
         const submitBtn = screen.getByRole("button", { name: /submit report/i });
-        expect(submitBtn).toBeDisabled();
+        expect(submitBtn).not.toBeDisabled();
     });
 });
