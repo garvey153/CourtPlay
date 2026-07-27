@@ -155,7 +155,7 @@ export function ReportModal({ targetType, targetId, onClose }: ReportModalProps)
                             </div>
                         </fieldset>
 
-                        <div className="mt-4 flex flex-col gap-2">
+                        <div className="mt-5 flex flex-col gap-2">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium text-secondary">Additional details (optional)</span>
                                 <span className="text-xs text-tertiary">{note.length}/150</span>
