@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from "react-router";
 import { DotsVertical, SearchSm, XClose } from "@untitledui/icons";
 import { SubCard } from "@/components/app/sub-card";
 import { ReportModal } from "@/components/app/report-modal";
+import { FeedbackSheet } from "@/components/app/feedback-sheet";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { usePostSheets } from "@/hooks/use-post-sheets";
@@ -136,6 +137,7 @@ export function Profile() {
     const [error, setError] = useState<string | null>(null);
     const [showReport, setShowReport] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+    const [showFeedback, setShowFeedback] = useState(false);
 
     // Search state (own profile only)
     const [searchQuery, setSearchQuery] = useState("");
@@ -459,11 +461,21 @@ export function Profile() {
                     </div>
                 )}
 
-                {/* Build stamp (own profile only). The service worker can keep a client
-                    on an older bundle, which makes "is this fix actually on my device?"
-                    hard to answer — this makes it readable from the device itself. */}
+                {/* Footer (own profile only): the feedback entry point sits to the left of
+                    the build stamp, dot-separated in the post-detail style. The stamp makes
+                    "which build am I on?" readable from the device. */}
                 {profile.is_own_profile && (
-                    <p className="mt-8 text-center text-xs text-quaternary">Version {__BUILD_ID__}</p>
+                    <p className="mt-8 flex items-center justify-center gap-1.5 text-xs text-quaternary">
+                        <button
+                            type="button"
+                            onClick={() => setShowFeedback(true)}
+                            className="font-medium text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                        >
+                            Submit Feedback
+                        </button>
+                        <span aria-hidden="true">·</span>
+                        <span>Version {__BUILD_ID__}</span>
+                    </p>
                 )}
             </div>
 
@@ -474,6 +486,8 @@ export function Profile() {
                     onClose={() => setShowReportModal(false)}
                 />
             )}
+
+            {showFeedback && <FeedbackSheet onClose={() => setShowFeedback(false)} />}
 
             {sheets}
         </AppLayout>

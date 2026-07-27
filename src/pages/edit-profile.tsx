@@ -23,8 +23,8 @@ const SKILL_LEVELS = [
     { id: "5.0", label: "NTRP 5.0 to 7.0 (Pro)" },
 ];
 
-// All 13 notification types currently in the build. SMS is intentionally omitted
-// until it's implemented.
+// Notification types shown in the build. SMS is intentionally omitted until it's
+// implemented. `adminOnly` rows render only for admins (feedback alerts).
 const NOTIFICATION_TYPES = [
     { key: "claim_submitted", label: "New claim on your post", hint: "When someone claims a spot you posted", defaultEmail: true, defaultPush: true },
     { key: "claim_approved", label: "Claim approved", hint: "When a poster approves your claim", defaultEmail: true, defaultPush: true },
@@ -39,6 +39,7 @@ const NOTIFICATION_TYPES = [
     { key: "game_reminder", label: "Game reminder", hint: "Reminder the day before a game", defaultEmail: true, defaultPush: false },
     { key: "friend_expiry", label: "Friend's game filling up", hint: "When a friend's post is close to game time with open spots", defaultEmail: true, defaultPush: false },
     { key: "friend_new_post", label: "Friend posts new sub need", hint: "When a friend creates a new sub need post", defaultEmail: false, defaultPush: false },
+    { key: "feedback_submitted", label: "New feedback", hint: "When a player submits feedback", defaultEmail: true, defaultPush: true, adminOnly: true },
 ] as const;
 
 // Field surfaces — match the create-post form. Inputs get a bg-tertiary fill with
@@ -110,7 +111,11 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
 
 export function EditProfile() {
     const { user } = useAuth();
-    const { refreshProfile } = useProfile();
+    const { profile, refreshProfile } = useProfile();
+    // Admin-only notification rows (e.g. feedback alerts) are hidden from players.
+    const visibleNotificationTypes = NOTIFICATION_TYPES.filter(
+        (t) => profile?.is_admin || !("adminOnly" in t && t.adminOnly),
+    );
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(true);
@@ -292,7 +297,7 @@ export function EditProfile() {
             if (upErr) throw upErr;
 
             const { error: prefErr } = await supabase.from("notification_preferences").upsert(
-                NOTIFICATION_TYPES.map((t) => {
+                visibleNotificationTypes.map((t) => {
                     const p = prefs.get(t.key);
                     return {
                         user_id: user.id,
@@ -448,7 +453,7 @@ export function EditProfile() {
                         </div>
 
                         <ul className="-mt-2 divide-y divide-secondary">
-                            {NOTIFICATION_TYPES.map((t) => {
+                            {visibleNotificationTypes.map((t) => {
                                 const p = prefs.get(t.key);
                                 return (
                                     <li key={t.key} className="flex items-center gap-2 py-3">
