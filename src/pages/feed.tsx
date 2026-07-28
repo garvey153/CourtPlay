@@ -427,7 +427,10 @@ export function Feed() {
                 {profile?.is_admin && newFeedbackIds.length > 0 && (
                     <FeedbackBanner
                         count={newFeedbackIds.length}
-                        onView={() => navigate("/admin?tab=reports&section=feedback")}
+                        onView={() => {
+                            dismissFeedbackBanner();
+                            navigate("/admin?tab=reports&section=feedback");
+                        }}
                         onDismiss={dismissFeedbackBanner}
                     />
                 )}

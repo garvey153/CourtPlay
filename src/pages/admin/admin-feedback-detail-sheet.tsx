@@ -3,6 +3,8 @@ import { motion } from "motion/react";
 import { Trash01, XClose } from "@untitledui/icons";
 import type { AdminFeedbackRow } from "./admin-feedback-card";
 
+const PRIMARY_BTN =
+    "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 const DELETE_BTN =
     "flex w-full items-center justify-center gap-1.5 rounded-lg bg-error-solid px-4 py-2.5 text-sm font-semibold text-white transition duration-100 ease-linear enabled:hover:bg-error-solid_hover disabled:cursor-not-allowed disabled:opacity-50";
 const SECONDARY_BTN =
@@ -112,8 +114,7 @@ export function AdminFeedbackDetailSheet({ feedback, deleting, onDelete, onClose
 
                         {/* Action */}
                         <div className="mt-1 flex shrink-0 flex-col gap-3">
-                            <button type="button" onClick={() => setMode("confirm")} className={DELETE_BTN}>
-                                <Trash01 className="size-4" aria-hidden="true" />
+                            <button type="button" onClick={() => setMode("confirm")} className={PRIMARY_BTN}>
                                 Delete
                             </button>
                         </div>
