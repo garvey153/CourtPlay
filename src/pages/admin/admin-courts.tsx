@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, SearchSm, XClose } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
+import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { supabase } from "@/lib/supabase";
 import { AdminCourtCard, type AdminCourtRow, type CustomCourtRow } from "./admin-court-card";
 import { AdminCourtSheet, type CourtSheetTarget } from "./admin-court-sheet";
@@ -14,8 +15,8 @@ export function AdminCourts() {
     const [search, setSearch] = useState("");
     const [sheet, setSheet] = useState<CourtSheetTarget | null>(null);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
+    const fetchData = useCallback(async (opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setLoading(true);
         setError(null);
 
         const [courtsRes, customRes] = await Promise.all([
@@ -79,6 +80,8 @@ export function AdminCourts() {
     );
 
     return (
+        <>
+        <PullToRefresh onRefresh={() => fetchData({ silent: true })}>
         <div className="flex flex-col gap-4">
             {/* Search + add row (design 149:1330) */}
             <div className="flex items-center gap-3">
@@ -119,7 +122,7 @@ export function AdminCourts() {
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={fetchData}>
+                    <Button size="sm" color="primary" onClick={() => fetchData()}>
                         Retry
                     </Button>
                 </div>
@@ -154,7 +157,10 @@ export function AdminCourts() {
                 courtList
             )}
 
-            {sheet && <AdminCourtSheet target={sheet} onClose={() => setSheet(null)} onSaved={handleSaved} />}
         </div>
+        </PullToRefresh>
+
+            {sheet && <AdminCourtSheet target={sheet} onClose={() => setSheet(null)} onSaved={handleSaved} />}
+        </>
     );
 }

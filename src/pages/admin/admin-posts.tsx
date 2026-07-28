@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchSm, XClose } from "@untitledui/icons";
 import { FilterButton } from "@/components/app/filter-button";
+import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { Button } from "@/components/base/buttons/button";
 import { FeedFilters, activeCount } from "@/components/app/feed-filters";
 import { formatPlayType } from "@/components/app/sub-card";
@@ -91,8 +92,8 @@ export function AdminPosts() {
             .then(({ data }) => setCourts(data ?? []));
     }, []);
 
-    const fetchPosts = useCallback(async () => {
-        setLoading(true);
+    const fetchPosts = useCallback(async (opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setLoading(true);
         setError(null);
 
         const [postsRes, claimsRes] = await Promise.all([
@@ -158,6 +159,8 @@ export function AdminPosts() {
     };
 
     return (
+        <>
+        <PullToRefresh onRefresh={() => fetchPosts({ silent: true })}>
         <div className="flex flex-col gap-4">
             {/* Search + filter row (design 347:5807) */}
             <div className="flex items-center gap-3">
@@ -195,7 +198,7 @@ export function AdminPosts() {
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={fetchPosts}>
+                    <Button size="sm" color="primary" onClick={() => fetchPosts()}>
                         Retry
                     </Button>
                 </div>
@@ -208,6 +211,9 @@ export function AdminPosts() {
                     ))}
                 </div>
             )}
+
+        </div>
+        </PullToRefresh>
 
             {/* Shared feed filter sheet */}
             <FeedFilters
@@ -227,6 +233,6 @@ export function AdminPosts() {
                     onSaved={handleSaved}
                 />
             )}
-        </div>
+        </>
     );
 }

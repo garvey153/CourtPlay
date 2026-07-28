@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Button } from "@/components/base/buttons/button";
+import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
@@ -36,8 +37,8 @@ export function AdminReports() {
     const [actioningId, setActioningId] = useState<string | null>(null);
     const [deletingFeedbackId, setDeletingFeedbackId] = useState<string | null>(null);
 
-    const fetchFeedback = useCallback(async () => {
-        setLoading(true);
+    const fetchFeedback = useCallback(async (opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setLoading(true);
         setError(null);
         const { data, error: fbErr } = await supabase
             .from("feedback")
@@ -74,8 +75,8 @@ export function AdminReports() {
         setDetailFeedback(null);
     };
 
-    const fetchReports = useCallback(async () => {
-        setLoading(true);
+    const fetchReports = useCallback(async (opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setLoading(true);
         setError(null);
 
         let query = supabase
@@ -213,6 +214,8 @@ export function AdminReports() {
     };
 
     return (
+        <>
+        <PullToRefresh onRefresh={() => (activeTab === "feedback" ? fetchFeedback({ silent: true }) : fetchReports({ silent: true }))}>
         <div className="flex flex-col gap-4">
             {/* Status pills (Activity-tab style) */}
             <div className="flex gap-2">
@@ -265,6 +268,9 @@ export function AdminReports() {
                 </div>
             )}
 
+        </div>
+        </PullToRefresh>
+
             {detailReport && (
                 <AdminReportDetailSheet
                     report={detailReport}
@@ -284,6 +290,6 @@ export function AdminReports() {
                     onClose={() => setDetailFeedback(null)}
                 />
             )}
-        </div>
+        </>
     );
 }
