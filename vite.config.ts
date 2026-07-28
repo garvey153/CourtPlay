@@ -70,6 +70,9 @@ export default defineConfig({
             },
             workbox: {
                 globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+                // OneSignal ships its own service worker — don't let Workbox precache
+                // or manage it; it registers itself under /push/onesignal/.
+                globIgnores: ["**/OneSignalSDKWorker.js"],
                 runtimeCaching: [
                     {
                         urlPattern: /^https:\/\/uheeddmtntnlgrpzfjph\.supabase\.co\/.*/i,
