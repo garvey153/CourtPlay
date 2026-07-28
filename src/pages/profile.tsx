@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import { DotsVertical, SearchSm, XClose } from "@untitledui/icons";
 import { SubCard } from "@/components/app/sub-card";
-import { ReportModal } from "@/components/app/report-modal";
+import { ReportUserSheet } from "@/components/app/report-user-sheet";
 import { ProfileActionsSheet } from "@/components/app/profile-actions-sheet";
 import { FeedbackSheet } from "@/components/app/feedback-sheet";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -476,11 +476,7 @@ export function Profile() {
             )}
 
             {showReportModal && profile && (
-                <ReportModal
-                    targetType="user"
-                    targetId={profile.id}
-                    onClose={() => setShowReportModal(false)}
-                />
+                <ReportUserSheet targetId={profile.id} onClose={() => setShowReportModal(false)} />
             )}
 
             {showFeedback && <FeedbackSheet onClose={() => setShowFeedback(false)} />}
