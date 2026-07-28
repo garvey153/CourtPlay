@@ -112,10 +112,13 @@ export function AdminFeedbackDetailSheet({ feedback, deleting, onDelete, onClose
                             </p>
                         </div>
 
-                        {/* Action */}
+                        {/* Actions */}
                         <div className="mt-1 flex shrink-0 flex-col gap-3">
                             <button type="button" onClick={() => setMode("confirm")} className={PRIMARY_BTN}>
                                 Delete
+                            </button>
+                            <button type="button" onClick={onClose} className={SECONDARY_BTN}>
+                                Cancel
                             </button>
                         </div>
                     </>
