@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchSm, XClose } from "@untitledui/icons";
 import { FilterButton } from "@/components/app/filter-button";
+import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { Button } from "@/components/base/buttons/button";
 import { supabase } from "@/lib/supabase";
 import { AdminClaimCard, claimerName, type AdminClaimRow } from "./admin-claim-card";
@@ -55,8 +56,8 @@ export function AdminClaims() {
 
     const [detailClaim, setDetailClaim] = useState<AdminClaimRow | null>(null);
 
-    const fetchClaims = useCallback(async () => {
-        setLoading(true);
+    const fetchClaims = useCallback(async (opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setLoading(true);
         setError(null);
 
         const claimsRes = await supabase
@@ -133,6 +134,8 @@ export function AdminClaims() {
     };
 
     return (
+        <>
+        <PullToRefresh onRefresh={() => fetchClaims({ silent: true })}>
         <div className="flex flex-col gap-4">
             {/* Search + filter row (design 348:4863) */}
             <div className="flex items-center gap-3">
@@ -170,7 +173,7 @@ export function AdminClaims() {
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={fetchClaims}>
+                    <Button size="sm" color="primary" onClick={() => fetchClaims()}>
                         Retry
                     </Button>
                 </div>
@@ -184,6 +187,9 @@ export function AdminClaims() {
                 </div>
             )}
 
+        </div>
+        </PullToRefresh>
+
             <AdminClaimFilterSheet
                 filters={filters}
                 onChange={setFilters}
@@ -194,6 +200,6 @@ export function AdminClaims() {
             {detailClaim && (
                 <AdminClaimDetailSheet claim={detailClaim} onClose={() => setDetailClaim(null)} onSaved={handleSaved} />
             )}
-        </div>
+        </>
     );
 }

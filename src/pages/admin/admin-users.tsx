@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchSm, XClose } from "@untitledui/icons";
 import { FilterButton } from "@/components/app/filter-button";
+import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { Button } from "@/components/base/buttons/button";
 import { supabase } from "@/lib/supabase";
 import { AdminUserCard, type AdminUserRow } from "./admin-user-card";
@@ -46,8 +47,8 @@ export function AdminUsers() {
 
     const [detailUser, setDetailUser] = useState<AdminUserRow | null>(null);
 
-    const fetchUsers = useCallback(async () => {
-        setLoading(true);
+    const fetchUsers = useCallback(async (opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setLoading(true);
         setError(null);
 
         const usersRes = await supabase
@@ -105,6 +106,8 @@ export function AdminUsers() {
     };
 
     return (
+        <>
+        <PullToRefresh onRefresh={() => fetchUsers({ silent: true })}>
         <div className="flex flex-col gap-4">
             {/* Search + filter row (design 348:4818) */}
             <div className="flex items-center gap-3">
@@ -142,7 +145,7 @@ export function AdminUsers() {
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={fetchUsers}>
+                    <Button size="sm" color="primary" onClick={() => fetchUsers()}>
                         Retry
                     </Button>
                 </div>
@@ -156,6 +159,9 @@ export function AdminUsers() {
                 </div>
             )}
 
+        </div>
+        </PullToRefresh>
+
             <AdminUserFilterSheet
                 filters={filters}
                 onChange={setFilters}
@@ -166,6 +172,6 @@ export function AdminUsers() {
             {detailUser && (
                 <AdminUserDetailSheet user={detailUser} onClose={() => setDetailUser(null)} onSaved={handleSaved} />
             )}
-        </div>
+        </>
     );
 }

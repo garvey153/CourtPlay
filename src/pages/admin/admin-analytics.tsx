@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { supabase } from "@/lib/supabase";
 
 interface Metrics {
@@ -41,19 +42,22 @@ export function AdminAnalytics() {
     const [funnel, setFunnel] = useState<FunnelStep[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        async function fetchAll() {
-            setLoading(true);
-            try {
-                await Promise.all([fetchMetrics(), fetchFunnel()]);
-            } catch (err) {
-                console.error("Failed to fetch analytics:", err);
-            } finally {
-                setLoading(false);
-            }
+    const refresh = useCallback(async (opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setLoading(true);
+        try {
+            await Promise.all([fetchMetrics(), fetchFunnel()]);
+        } catch (err) {
+            console.error("Failed to fetch analytics:", err);
+        } finally {
+            setLoading(false);
         }
-        fetchAll();
+        // fetchMetrics/fetchFunnel are stable local declarations with no reactive deps.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        refresh();
+    }, [refresh]);
 
     async function fetchMetrics() {
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -152,6 +156,7 @@ export function AdminAnalytics() {
     }
 
     return (
+        <PullToRefresh onRefresh={() => refresh({ silent: true })}>
         <div className="flex flex-col gap-4">
             {/* Stat cards */}
             <div className="grid grid-cols-2 gap-3">
@@ -187,5 +192,6 @@ export function AdminAnalytics() {
                 </div>
             </div>
         </div>
+        </PullToRefresh>
     );
 }
