@@ -3,7 +3,6 @@ import { Link, useLocation, useParams } from "react-router";
 import { DotsVertical, SearchSm, XClose } from "@untitledui/icons";
 import { SubCard } from "@/components/app/sub-card";
 import { ReportUserSheet } from "@/components/app/report-user-sheet";
-import { ProfileActionsSheet } from "@/components/app/profile-actions-sheet";
 import { FeedbackSheet } from "@/components/app/feedback-sheet";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -136,7 +135,6 @@ export function Profile() {
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [showActions, setShowActions] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
 
@@ -302,11 +300,11 @@ export function Profile() {
                         </p>
                     </div>
 
-                    {/* Overflow menu (report) for other users' profiles — opens a bottom sheet. */}
+                    {/* Overflow menu (report) for other users' profiles — opens the report sheet. */}
                     {!profile.is_own_profile && (
                         <button
                             className="rounded p-1 text-quaternary hover:text-tertiary"
-                            onClick={() => setShowActions(true)}
+                            onClick={() => setShowReportModal(true)}
                             aria-label="More options"
                         >
                             <DotsVertical className="size-5" />
@@ -464,16 +462,6 @@ export function Profile() {
                     </p>
                 )}
             </div>
-
-            {showActions && !profile.is_own_profile && (
-                <ProfileActionsSheet
-                    onReport={() => {
-                        setShowActions(false);
-                        setShowReportModal(true);
-                    }}
-                    onClose={() => setShowActions(false)}
-                />
-            )}
 
             {showReportModal && profile && (
                 <ReportUserSheet targetId={profile.id} onClose={() => setShowReportModal(false)} />
