@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from "react-router";
 import { DotsVertical, SearchSm, XClose } from "@untitledui/icons";
 import { SubCard } from "@/components/app/sub-card";
 import { ReportModal } from "@/components/app/report-modal";
+import { ProfileActionsSheet } from "@/components/app/profile-actions-sheet";
 import { FeedbackSheet } from "@/components/app/feedback-sheet";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -135,7 +136,7 @@ export function Profile() {
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [showReport, setShowReport] = useState(false);
+    const [showActions, setShowActions] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
 
@@ -301,30 +302,15 @@ export function Profile() {
                         </p>
                     </div>
 
-                    {/* Overflow menu (report) for other users' profiles */}
+                    {/* Overflow menu (report) for other users' profiles — opens a bottom sheet. */}
                     {!profile.is_own_profile && (
-                        <div className="relative">
-                            <button
-                                className="rounded p-1 text-quaternary hover:text-tertiary"
-                                onClick={() => setShowReport(!showReport)}
-                                aria-label="More options"
-                            >
-                                <DotsVertical className="size-5" />
-                            </button>
-                            {showReport && (
-                                <div className="absolute right-0 top-full z-10 mt-1 w-44 rounded-lg border border-secondary bg-primary py-1 shadow-lg">
-                                    <button
-                                        className="w-full px-4 py-2 text-left text-sm text-error-primary hover:bg-secondary"
-                                        onClick={() => {
-                                            setShowReport(false);
-                                            setShowReportModal(true);
-                                        }}
-                                    >
-                                        Report this user
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        <button
+                            className="rounded p-1 text-quaternary hover:text-tertiary"
+                            onClick={() => setShowActions(true)}
+                            aria-label="More options"
+                        >
+                            <DotsVertical className="size-5" />
+                        </button>
                     )}
                 </div>
 
@@ -478,6 +464,16 @@ export function Profile() {
                     </p>
                 )}
             </div>
+
+            {showActions && !profile.is_own_profile && (
+                <ProfileActionsSheet
+                    onReport={() => {
+                        setShowActions(false);
+                        setShowReportModal(true);
+                    }}
+                    onClose={() => setShowActions(false)}
+                />
+            )}
 
             {showReportModal && profile && (
                 <ReportModal
