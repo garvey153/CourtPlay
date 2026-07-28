@@ -4,7 +4,7 @@ import { ArrowCircleRight, XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import type { ClaimRow, MyPost } from "@/types/activity";
 import { ThreadMessage } from "./thread-message";
-import { ReportModal } from "./report-modal";
+import { ReportUserSheet } from "./report-user-sheet";
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -203,7 +203,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
 
     // Report replaces this sheet (single backdrop) rather than stacking over it.
     if (showReport && claim) {
-        return <ReportModal targetType="user" targetId={claim.claimer_id} onClose={() => setShowReport(false)} />;
+        return <ReportUserSheet targetId={claim.claimer_id} onClose={() => setShowReport(false)} />;
     }
 
     return (

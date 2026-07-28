@@ -4,7 +4,7 @@ import { ArrowCircleRight, ArrowLeft, XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import type { ClaimRow, MyPost } from "@/types/activity";
 import { ThreadMessage } from "./thread-message";
-import { ReportModal } from "./report-modal";
+import { ReportUserSheet } from "./report-user-sheet";
 
 const MESSAGE_MAX = 150;
 
@@ -354,7 +354,7 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
 
     // Report replaces this sheet (single backdrop) rather than stacking over it.
     if (showReport && selected) {
-        return <ReportModal targetType="user" targetId={selected.claimer_id} onClose={() => setShowReport(false)} />;
+        return <ReportUserSheet targetId={selected.claimer_id} onClose={() => setShowReport(false)} />;
     }
 
     return (
