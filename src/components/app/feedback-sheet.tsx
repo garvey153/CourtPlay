@@ -64,9 +64,20 @@ export function FeedbackSheet({ onClose }: FeedbackSheetProps) {
             return;
         }
 
-        // Alert admins (push + email). Fire-and-forget — don't block the confirmation.
+        // Alert admins (push + email). Fire-and-forget — the feedback is already
+        // saved, so a failed fan-out must not fail the submission for the player.
+        // It still gets logged: `invoke` resolves with an `error` rather than
+        // rejecting, so the old bare `.catch()` swallowed every fan-out failure
+        // and left the browser with no trace of one.
         if (data) {
-            supabase.functions.invoke("notify-feedback", { body: { feedback_id: data } }).catch(() => {});
+            supabase.functions
+                .invoke("notify-feedback", { body: { feedback_id: data } })
+                .then(({ data: fanout, error: fanoutError }) => {
+                    if (fanoutError || !fanout?.ok) {
+                        console.error("[feedback] admin fan-out failed", fanoutError ?? fanout);
+                    }
+                })
+                .catch((e) => console.error("[feedback] admin fan-out threw", e));
         }
 
         setSubmitting(false);
