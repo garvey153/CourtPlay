@@ -11,7 +11,12 @@ type OneSignalSdk = typeof import("react-onesignal")["default"];
 // the resulting instance across every usePush() caller.
 let initPromise: Promise<OneSignalSdk | null> | null = null;
 
-/** Persist the push *subscription* id (what the REST API targets) for the signed-in user. */
+/**
+ * Record which device this user most recently subscribed on. Diagnostics only —
+ * the server targets the OneSignal external id (see below), never this column.
+ * A subscription id belongs to a browser rather than a person, so on a shared
+ * device it moves between accounts and is not safe to target.
+ */
 async function storeSubscriptionId(OneSignal: OneSignalSdk) {
     const subId = OneSignal.User.PushSubscription.id;
     if (!subId) return;
@@ -43,9 +48,24 @@ function ensureOneSignal(): Promise<OneSignalSdk | null> {
     return initPromise;
 }
 
+/**
+ * Aliases this device's subscription to the app's user id, so the server can
+ * target the *person* instead of a device. Without it, signing a second account
+ * in on the same device leaves the subscription attached to the first — the new
+ * account silently gets no push, and worse, notifications meant for the first
+ * account keep landing on a device someone else is now using.
+ */
+async function syncExternalId(OneSignal: OneSignalSdk, userId: string | null) {
+    if (userId) await OneSignal.login(userId);
+    else await OneSignal.logout();
+}
+
 /** Initializes OneSignal (once) and provides push permission helpers. */
 export function usePush() {
     const { user } = useAuth();
+    // Depend on the id, not the object — the provider hands back a new reference
+    // on every render, which would re-run login() continuously.
+    const userId = user?.id ?? null;
     const [initialized, setInitialized] = useState(false);
     const [permissionGranted, setPermissionGranted] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -53,8 +73,14 @@ export function usePush() {
     useEffect(() => {
         let cancelled = false;
         ensureOneSignal()
-            .then((OneSignal) => {
+            .then(async (OneSignal) => {
                 if (!OneSignal || cancelled) return;
+                try {
+                    await syncExternalId(OneSignal, userId);
+                } catch (e) {
+                    if (!cancelled) setError(`externalId: ${e instanceof Error ? e.message : String(e)}`);
+                }
+                if (cancelled) return;
                 setInitialized(true);
                 setPermissionGranted(OneSignal.Notifications.permission);
             })
@@ -64,12 +90,19 @@ export function usePush() {
         return () => {
             cancelled = true;
         };
-    }, [user]);
+    }, [userId]);
 
     const requestPermission = useCallback(async () => {
         try {
             const OneSignal = await ensureOneSignal();
             if (!OneSignal) return false;
+            // Re-assert the alias here too: the subscription may not have existed
+            // when the effect ran, and it's the opt-in below that creates it.
+            try {
+                await syncExternalId(OneSignal, userId);
+            } catch {
+                // Non-fatal — permission still worth requesting.
+            }
             await OneSignal.Notifications.requestPermission();
             // iOS needs an explicit opt-in to actually create the push subscription.
             try {
@@ -85,7 +118,7 @@ export function usePush() {
             setError(`requestPermission: ${e instanceof Error ? e.message : String(e)}`);
             return false;
         }
-    }, []);
+    }, [userId]);
 
     return { initialized, permissionGranted, requestPermission, error };
 }
