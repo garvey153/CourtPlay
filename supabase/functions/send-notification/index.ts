@@ -255,6 +255,45 @@ function buildEmailHtml(template: TemplateConfig, d: Record<string, string>, pos
     `;
 }
 
+function json(payload: unknown, status = 200): Response {
+    return new Response(JSON.stringify(payload), {
+        status,
+        headers: { "Content-Type": "application/json" },
+    });
+}
+
+/**
+ * POSTs one notification to OneSignal and returns the parsed response body
+ * alongside the status. The body is what distinguishes a real delivery from
+ * `{"recipients": 0}` — both of which come back as HTTP 200.
+ */
+async function sendPush(subscriptionId: string, title: string, body: string, url: string) {
+    const res = await fetch("https://onesignal.com/api/v1/notifications", {
+        method: "POST",
+        headers: {
+            Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            app_id: ONESIGNAL_APP_ID,
+            // We store `PushSubscription.id` (a v16 subscription id) in the
+            // `onesignal_player_id` column, so target the subscription field.
+            include_subscription_ids: [subscriptionId],
+            headings: { en: title },
+            contents: { en: body },
+            url,
+        }),
+    });
+    const text = await res.text();
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(text);
+    } catch {
+        parsed = text;
+    }
+    return { ok: res.ok, status: res.status, body: parsed };
+}
+
 serve(async (req) => {
     if (req.method !== "POST") {
         return new Response("Method not allowed", { status: 405 });
@@ -274,7 +313,7 @@ serve(async (req) => {
         }
     }
 
-    const { user_id, notification_type, post_id, claim_id, data: extraData } = await req.json();
+    const { user_id, notification_type, post_id, claim_id, data: extraData, test } = await req.json();
 
     if (!user_id || !notification_type) {
         return new Response(JSON.stringify({ error: "Missing user_id or notification_type" }), {
@@ -288,6 +327,51 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: "Unknown notification type" }), {
             status: 400,
             headers: { "Content-Type": "application/json" },
+        });
+    }
+
+    // Test mode: prove the server → OneSignal → device leg works, and nothing else.
+    // Skips preferences, email, and the notifications row so it leaves no trace.
+    // Only ever allowed against yourself, so the on-device debug button can't be
+    // repurposed to push at other users.
+    if (test) {
+        const { data: caller } = await supabase.auth.getUser(token);
+        if (!caller?.user || caller.user.id !== user_id) {
+            return json({ error: "Test mode is only allowed against your own user" }, 403);
+        }
+
+        const { data: testUser } = await supabase
+            .from("users")
+            .select("onesignal_player_id")
+            .eq("id", user_id)
+            .single();
+
+        const subscriptionId = testUser?.onesignal_player_id;
+        if (!subscriptionId) {
+            return json({ test: true, sent: false, reason: "no onesignal_player_id stored for this user" });
+        }
+        if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
+            return json({
+                test: true,
+                sent: false,
+                reason: "OneSignal env vars missing on the function",
+                appIdSet: Boolean(ONESIGNAL_APP_ID),
+                restKeySet: Boolean(ONESIGNAL_REST_API_KEY),
+            });
+        }
+
+        const result = await sendPush(
+            subscriptionId,
+            "CourtPlay test push",
+            "If you can read this, server-sent push is working.",
+            "https://courtplay.app/profile",
+        );
+        return json({
+            test: true,
+            sent: result.ok,
+            subscriptionId,
+            status: result.status,
+            onesignal: result.body,
         });
     }
 
@@ -333,21 +417,13 @@ serve(async (req) => {
     // Send push via OneSignal
     if (pushEnabled && userRow.onesignal_player_id && ONESIGNAL_APP_ID && ONESIGNAL_REST_API_KEY) {
         try {
-            const pushRes = await fetch("https://onesignal.com/api/v1/notifications", {
-                method: "POST",
-                headers: {
-                    Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    app_id: ONESIGNAL_APP_ID,
-                    include_player_ids: [userRow.onesignal_player_id],
-                    headings: { en: template.title },
-                    contents: { en: template.body(d) },
-                    url: template.deepLink(post_id),
-                }),
-            });
-            results.push = { status: pushRes.status };
+            const pushRes = await sendPush(
+                userRow.onesignal_player_id,
+                template.title,
+                template.body(d),
+                template.deepLink(post_id),
+            );
+            results.push = { status: pushRes.status, onesignal: pushRes.body };
             pushSent = pushRes.ok;
 
             if (pushRes.ok) {
