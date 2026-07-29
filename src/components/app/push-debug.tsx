@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { usePush } from "@/hooks/use-push";
+import { supabase } from "@/lib/supabase";
 
 type Readout = Record<string, string>;
 
@@ -57,6 +58,31 @@ export function PushDebug() {
         await refresh();
     }, [requestPermission, refresh]);
 
+    /**
+     * Asks the server to push at this device. The welcome notification OneSignal
+     * sends on subscribe only proves the browser leg; this is the only way to see
+     * whether our edge function can actually reach the stored subscription id.
+     */
+    const testPush = useCallback(async () => {
+        setBusy(true);
+        const out: Readout = {};
+        try {
+            const { data: auth } = await supabase.auth.getUser();
+            if (!auth.user) {
+                out.testPush = "not signed in";
+            } else {
+                const { data, error: fnError } = await supabase.functions.invoke("send-notification", {
+                    body: { user_id: auth.user.id, notification_type: "claim_submitted", test: true },
+                });
+                out.testPush = fnError ? `error: ${fnError.message}` : JSON.stringify(data);
+            }
+        } catch (e) {
+            out.testPush = e instanceof Error ? e.message : String(e);
+        }
+        setReadout((prev) => ({ ...prev, ...out }));
+        setBusy(false);
+    }, []);
+
     return (
         <div className="mt-4 w-full rounded-lg border border-secondary bg-secondary p-3 text-left">
             <p className="mb-2 text-xs font-semibold text-secondary">Push diagnostics</p>
@@ -76,6 +102,14 @@ export function PushDebug() {
                     className="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-semibold text-neutral-950 disabled:opacity-50"
                 >
                     Subscribe
+                </button>
+                <button
+                    type="button"
+                    onClick={testPush}
+                    disabled={busy}
+                    className="rounded-md bg-tertiary px-3 py-1.5 text-xs font-medium text-secondary disabled:opacity-50"
+                >
+                    Test push
                 </button>
             </div>
             {Object.keys(readout).length > 0 && (
