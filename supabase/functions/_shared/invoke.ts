@@ -50,3 +50,49 @@ export async function invokeFunction(name: string, payload: unknown): Promise<In
         return { ok: false, status: 0, body: { error: String(e) } };
     }
 }
+
+/** Cap on failure detail in a response body, so one bad run can't return megabytes. */
+const MAX_REPORTED_FAILURES = 10;
+
+/**
+ * Running count of a fan-out, for the scheduled jobs.
+ *
+ * Each of those jobs used to increment its counter immediately after dispatching
+ * and discard the result, so `{"reminded": 12}` meant "tried 12 times" — it read
+ * identically whether all twelve landed or, as was actually the case, none of
+ * them did. Counting only successes is what makes the number worth logging.
+ */
+export class DispatchTally {
+    sent = 0;
+    private failures: Array<Record<string, unknown>> = [];
+    private dropped = 0;
+
+    /** Records one dispatch. Returns true if it succeeded. */
+    record(res: InvokeResult, context: Record<string, unknown>): boolean {
+        if (res.ok) {
+            this.sent++;
+            return true;
+        }
+        if (this.failures.length < MAX_REPORTED_FAILURES) {
+            this.failures.push({ ...context, status: res.status, response: res.body });
+        } else {
+            this.dropped++;
+        }
+        return false;
+    }
+
+    /**
+     * `countKey` keeps each job's existing success field name (reminded/nudged/
+     * alerted) so callers and dashboards don't have to change.
+     */
+    toResponse(countKey: string): Record<string, unknown> {
+        return {
+            [countKey]: this.sent,
+            failed: this.failures.length + this.dropped,
+            failures: this.failures,
+            // Only present when detail was actually withheld, so its absence
+            // means "this list is complete" rather than "nobody checked".
+            ...(this.dropped > 0 ? { truncatedFailures: this.dropped } : {}),
+        };
+    }
+}

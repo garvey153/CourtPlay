@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { DispatchTally, invokeFunction } from "../_shared/invoke.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -46,6 +47,7 @@ serve(async (req) => {
         });
     }
 
+    const tally = new DispatchTally();
     let nudged = 0;
 
     for (const claim of claims as unknown as PendingClaim[]) {
@@ -64,31 +66,32 @@ serve(async (req) => {
         if (existing) continue; // Already nudged
 
         // Send nudge to poster
-        await supabase.functions.invoke("send-notification", {
-            body: {
-                user_id: posterId,
-                notification_type: "nudge_no_response",
-                post_id: claim.post_id,
-                claim_id: claim.id,
-                data: { post_summary: postSummary },
-            },
+        const posterRes = await invokeFunction("send-notification", {
+            user_id: posterId,
+            notification_type: "nudge_no_response",
+            post_id: claim.post_id,
+            claim_id: claim.id,
+            data: { post_summary: postSummary },
         });
 
         // Send nudge to claimer simultaneously
-        await supabase.functions.invoke("send-notification", {
-            body: {
-                user_id: claim.claimer_id,
-                notification_type: "nudge_no_response",
-                post_id: claim.post_id,
-                claim_id: claim.id,
-                data: { post_summary: postSummary },
-            },
+        const claimerRes = await invokeFunction("send-notification", {
+            user_id: claim.claimer_id,
+            notification_type: "nudge_no_response",
+            post_id: claim.post_id,
+            claim_id: claim.id,
+            data: { post_summary: postSummary },
         });
 
-        nudged++;
+        const posterOk = tally.record(posterRes, { claim_id: claim.id, role: "poster", user_id: posterId });
+        const claimerOk = tally.record(claimerRes, { claim_id: claim.id, role: "claimer", user_id: claim.claimer_id });
+
+        // This job dispatches twice per claim, so the tally's count is dispatches
+        // while `nudged` stays what it always meant — claims acted on.
+        if (posterOk || claimerOk) nudged++;
     }
 
-    return new Response(JSON.stringify({ nudged }), {
+    return new Response(JSON.stringify({ nudged, ...tally.toResponse("dispatched") }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
     });

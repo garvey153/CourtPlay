@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { DispatchTally, invokeFunction } from "../_shared/invoke.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -46,7 +47,7 @@ serve(async (req) => {
         });
     }
 
-    let reminded = 0;
+    const tally = new DispatchTally();
 
     for (const post of posts) {
         const locationDisplay = post.location ?? post.custom_court ?? "";
@@ -73,24 +74,22 @@ serve(async (req) => {
 
             if (existing) continue;
 
-            await supabase.functions.invoke("send-notification", {
-                body: {
-                    user_id: userId,
-                    notification_type: "game_reminder",
-                    post_id: post.id,
-                    data: {
-                        game_date: post.game_date,
-                        game_time: timeDisplay,
-                        location: locationDisplay,
-                    },
+            const res = await invokeFunction("send-notification", {
+                user_id: userId,
+                notification_type: "game_reminder",
+                post_id: post.id,
+                data: {
+                    game_date: post.game_date,
+                    game_time: timeDisplay,
+                    location: locationDisplay,
                 },
             });
 
-            reminded++;
+            tally.record(res, { user_id: userId, post_id: post.id });
         }
     }
 
-    return new Response(JSON.stringify({ reminded }), {
+    return new Response(JSON.stringify(tally.toResponse("reminded")), {
         status: 200,
         headers: { "Content-Type": "application/json" },
     });
