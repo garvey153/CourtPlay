@@ -22,7 +22,7 @@ function isEligibleForNudge(claim: {
     return age > TWELVE_HOURS;
 }
 
-/** 48h-unfilled-nudge eligibility */
+/** unfilled-nudge-48h eligibility */
 function isEligibleFor48hNudge(post: {
     status: string;
     post_type: string;
@@ -203,7 +203,7 @@ describe("nudge-unresponded-claims", () => {
     });
 });
 
-describe("48h-unfilled-nudge", () => {
+describe("unfilled-nudge-48h", () => {
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const futureDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
