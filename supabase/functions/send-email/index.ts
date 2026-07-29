@@ -1,29 +1,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders, corsJson, handlePreflight } from "../_shared/cors.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "CourtPlay <noreply@courtplay.app>";
 
 serve(async (req) => {
+    const preflight = handlePreflight(req);
+    if (preflight) return preflight;
+
     if (req.method !== "POST") {
-        return new Response("Method not allowed", { status: 405 });
+        return new Response("Method not allowed", { status: 405, headers: corsHeaders });
     }
 
     // Validate Authorization — only service role key or internal Edge Function calls allowed
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-        });
+        return corsJson({ error: "Unauthorized" }, 401);
     }
 
     const { to, subject, html } = await req.json();
 
     if (!to || !subject || !html) {
-        return new Response(JSON.stringify({ error: "Missing to, subject, or html" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-        });
+        return corsJson({ error: "Missing to, subject, or html" }, 400);
     }
 
     try {
@@ -38,14 +36,8 @@ serve(async (req) => {
 
         const data = await res.json();
 
-        return new Response(JSON.stringify(data), {
-            status: res.ok ? 200 : 500,
-            headers: { "Content-Type": "application/json" },
-        });
+        return corsJson(data, res.ok ? 200 : 500);
     } catch (e) {
-        return new Response(JSON.stringify({ error: String(e) }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-        });
+        return corsJson({ error: String(e) }, 500);
     }
 });

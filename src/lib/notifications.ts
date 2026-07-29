@@ -31,14 +31,21 @@ interface NotificationPayload {
 /**
  * Dispatches a notification via the Supabase Edge Function.
  * Fire-and-forget — errors are logged but don't block the caller.
+ *
+ * `functions.invoke` resolves with `{ data, error }` rather than throwing, so the
+ * returned error has to be checked explicitly. It previously wasn't, which is how
+ * a CORS preflight failure silently dropped every notification for months.
  */
 export async function sendNotification(payload: NotificationPayload): Promise<void> {
     try {
-        await supabase.functions.invoke("send-notification", {
+        const { error } = await supabase.functions.invoke("send-notification", {
             body: payload,
         });
+        if (error) {
+            console.warn("Notification dispatch failed:", payload.notification_type, error.message);
+        }
     } catch (e) {
-        console.warn("Notification dispatch failed:", e);
+        console.warn("Notification dispatch threw:", e);
     }
 }
 

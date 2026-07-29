@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, corsJson, handlePreflight } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -7,6 +8,15 @@ const ONESIGNAL_APP_ID = Deno.env.get("ONESIGNAL_APP_ID") ?? "";
 const ONESIGNAL_REST_API_KEY = Deno.env.get("ONESIGNAL_REST_API_KEY") ?? "";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+/**
+ * Bump on every deploy. Edge functions have no equivalent of the frontend's
+ * __BUILD_ID__, so without this there's no way to tell a stale deploy from a
+ * genuine failure — which already cost us one wrong diagnosis. Echoed in test
+ * responses, including the rejection path, so freshness is checkable with a
+ * curl and an anon key.
+ */
+const FN_BUILD = "2026-07-29e";
 
 type NotificationType =
     | "claim_submitted"
@@ -255,34 +265,25 @@ function buildEmailHtml(template: TemplateConfig, d: Record<string, string>, pos
     `;
 }
 
-function json(payload: unknown, status = 200): Response {
-    return new Response(JSON.stringify(payload), {
-        status,
-        headers: { "Content-Type": "application/json" },
-    });
-}
+const json = corsJson;
 
 /**
- * POSTs one notification to OneSignal and returns the parsed response body
- * alongside the status. The body is what distinguishes a real delivery from
- * `{"recipients": 0}` — both of which come back as HTTP 200.
+ * OneSignal changed its REST auth scheme: keys minted for the current API expect
+ * `Authorization: Key <key>`, while older ones only accept the legacy
+ * `Basic <key>`. Which one a given app needs isn't discoverable from the key
+ * itself, and getting it wrong is a flat 401, so try the current scheme first and
+ * fall back once. The winner is cached for the life of the isolate.
  */
-async function sendPush(subscriptionId: string, title: string, body: string, url: string) {
+let authScheme: "Key" | "Basic" | null = null;
+
+async function postToOneSignal(scheme: "Key" | "Basic", payload: unknown) {
     const res = await fetch("https://onesignal.com/api/v1/notifications", {
         method: "POST",
         headers: {
-            Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
+            Authorization: `${scheme} ${ONESIGNAL_REST_API_KEY}`,
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-            app_id: ONESIGNAL_APP_ID,
-            // We store `PushSubscription.id` (a v16 subscription id) in the
-            // `onesignal_player_id` column, so target the subscription field.
-            include_subscription_ids: [subscriptionId],
-            headings: { en: title },
-            contents: { en: body },
-            url,
-        }),
+        body: JSON.stringify(payload),
     });
     const text = await res.text();
     let parsed: unknown;
@@ -294,9 +295,45 @@ async function sendPush(subscriptionId: string, title: string, body: string, url
     return { ok: res.ok, status: res.status, body: parsed };
 }
 
+/**
+ * POSTs one notification to OneSignal and returns the parsed response body
+ * alongside the status. The body is what distinguishes a real delivery from
+ * `{"recipients": 0}` — both of which come back as HTTP 200.
+ */
+async function sendPush(subscriptionId: string, title: string, body: string, url: string) {
+    const payload = {
+        app_id: ONESIGNAL_APP_ID,
+        // We store `PushSubscription.id` (a v16 subscription id) in the
+        // `onesignal_player_id` column, so target the subscription field.
+        include_subscription_ids: [subscriptionId],
+        headings: { en: title },
+        contents: { en: body },
+        url,
+    };
+
+    const order: Array<"Key" | "Basic"> = authScheme ? [authScheme] : ["Key", "Basic"];
+    let last = await postToOneSignal(order[0], payload);
+    if (last.ok) {
+        authScheme = order[0];
+        return { ...last, scheme: order[0] };
+    }
+
+    // Only an auth rejection is worth retrying — anything else is a real error.
+    if (order.length > 1 && last.status === 401) {
+        const retry = await postToOneSignal(order[1], payload);
+        if (retry.ok) authScheme = order[1];
+        return { ...retry, scheme: order[1] };
+    }
+
+    return { ...last, scheme: order[0] };
+}
+
 serve(async (req) => {
+    const preflight = handlePreflight(req);
+    if (preflight) return preflight;
+
     if (req.method !== "POST") {
-        return new Response("Method not allowed", { status: 405 });
+        return new Response("Method not allowed", { status: 405, headers: corsHeaders });
     }
 
     // Validate Authorization — only service role key allowed
@@ -306,28 +343,19 @@ serve(async (req) => {
         // Also allow calls from other Edge Functions (internal calls via supabase.functions.invoke)
         // which include the service role key automatically
         if (!authHeader) {
-            return new Response(JSON.stringify({ error: "Unauthorized" }), {
-                status: 401,
-                headers: { "Content-Type": "application/json" },
-            });
+            return json({ error: "Unauthorized" }, 401);
         }
     }
 
     const { user_id, notification_type, post_id, claim_id, data: extraData, test } = await req.json();
 
     if (!user_id || !notification_type) {
-        return new Response(JSON.stringify({ error: "Missing user_id or notification_type" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Missing user_id or notification_type" }, 400);
     }
 
     const template = TEMPLATES[notification_type as NotificationType];
     if (!template) {
-        return new Response(JSON.stringify({ error: "Unknown notification type" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Unknown notification type" }, 400);
     }
 
     // Test mode: prove the server → OneSignal → device leg works, and nothing else.
@@ -337,7 +365,7 @@ serve(async (req) => {
     if (test) {
         const { data: caller } = await supabase.auth.getUser(token);
         if (!caller?.user || caller.user.id !== user_id) {
-            return json({ error: "Test mode is only allowed against your own user" }, 403);
+            return json({ error: "Test mode is only allowed against your own user", fnBuild: FN_BUILD }, 403);
         }
 
         const { data: testUser } = await supabase
@@ -348,11 +376,12 @@ serve(async (req) => {
 
         const subscriptionId = testUser?.onesignal_player_id;
         if (!subscriptionId) {
-            return json({ test: true, sent: false, reason: "no onesignal_player_id stored for this user" });
+            return json({ test: true, fnBuild: FN_BUILD, sent: false, reason: "no onesignal_player_id stored for this user" });
         }
         if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
             return json({
                 test: true,
+                fnBuild: FN_BUILD,
                 sent: false,
                 reason: "OneSignal env vars missing on the function",
                 appIdSet: Boolean(ONESIGNAL_APP_ID),
@@ -368,8 +397,10 @@ serve(async (req) => {
         );
         return json({
             test: true,
+            fnBuild: FN_BUILD,
             sent: result.ok,
             subscriptionId,
+            scheme: result.scheme,
             status: result.status,
             onesignal: result.body,
         });
@@ -389,10 +420,7 @@ serve(async (req) => {
 
     // If both channels disabled, skip
     if (!pushEnabled && !emailEnabled) {
-        return new Response(JSON.stringify({ success: true, skipped: true }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        });
+        return json({ success: true, skipped: true });
     }
 
     // Get user info for email/push
@@ -403,10 +431,7 @@ serve(async (req) => {
         .single();
 
     if (!userRow) {
-        return new Response(JSON.stringify({ error: "User not found" }), {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "User not found" }, 404);
     }
 
     const d: Record<string, string> = extraData ?? {};
@@ -423,7 +448,7 @@ serve(async (req) => {
                 template.body(d),
                 template.deepLink(post_id),
             );
-            results.push = { status: pushRes.status, onesignal: pushRes.body };
+            results.push = { status: pushRes.status, scheme: pushRes.scheme, onesignal: pushRes.body };
             pushSent = pushRes.ok;
 
             if (pushRes.ok) {
@@ -475,8 +500,5 @@ serve(async (req) => {
         }
     }
 
-    return new Response(JSON.stringify({ success: true, pushSent, emailSent, results }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-    });
+    return json({ success: true, pushSent, emailSent, results });
 });
