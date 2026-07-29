@@ -9,6 +9,7 @@ export function usePush() {
     const { user } = useAuth();
     const [initialized, setInitialized] = useState(false);
     const [permissionGranted, setPermissionGranted] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Initialize OneSignal SDK
     useEffect(() => {
@@ -42,6 +43,7 @@ export function usePush() {
                 setPermissionGranted(OneSignal.Notifications.permission);
                 if (OneSignal.Notifications.permission) await storeSubscriptionId();
             } catch (e) {
+                setError(`init: ${e instanceof Error ? e.message : String(e)}`);
                 console.warn("OneSignal init failed:", e);
             }
         }
@@ -56,6 +58,12 @@ export function usePush() {
         try {
             const OneSignal = (await import("react-onesignal")).default;
             await OneSignal.Notifications.requestPermission();
+            // iOS needs an explicit opt-in to actually create the push subscription.
+            try {
+                await OneSignal.User.PushSubscription.optIn();
+            } catch (e) {
+                setError(`optIn: ${e instanceof Error ? e.message : String(e)}`);
+            }
             const permission = OneSignal.Notifications.permission;
             setPermissionGranted(permission);
 
@@ -66,10 +74,11 @@ export function usePush() {
                 }
             }
             return permission;
-        } catch {
+        } catch (e) {
+            setError(`requestPermission: ${e instanceof Error ? e.message : String(e)}`);
             return false;
         }
     }, [initialized, user]);
 
-    return { initialized, permissionGranted, requestPermission };
+    return { initialized, permissionGranted, requestPermission, error };
 }
