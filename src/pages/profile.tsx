@@ -4,6 +4,7 @@ import { DotsVertical, SearchSm, XClose } from "@untitledui/icons";
 import { SubCard } from "@/components/app/sub-card";
 import { ReportUserSheet } from "@/components/app/report-user-sheet";
 import { FeedbackSheet } from "@/components/app/feedback-sheet";
+import { PushDebug } from "@/components/app/push-debug";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { usePostSheets } from "@/hooks/use-post-sheets";
@@ -137,6 +138,8 @@ export function Profile() {
     const [error, setError] = useState<string | null>(null);
     const [showReportModal, setShowReportModal] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
+    // Tap the version stamp to reveal on-device push diagnostics (debugging aid).
+    const [showPushDebug, setShowPushDebug] = useState(false);
 
     // Search state (own profile only)
     const [searchQuery, setSearchQuery] = useState("");
@@ -449,17 +452,26 @@ export function Profile() {
                     the build stamp, dot-separated in the post-detail style. The stamp makes
                     "which build am I on?" readable from the device. */}
                 {profile.is_own_profile && (
-                    <p className="mt-8 flex items-center justify-center gap-1.5 text-xs text-quaternary">
-                        <button
-                            type="button"
-                            onClick={() => setShowFeedback(true)}
-                            className="font-medium text-tertiary transition duration-100 ease-linear hover:text-secondary"
-                        >
-                            Submit Feedback
-                        </button>
-                        <span aria-hidden="true">·</span>
-                        <span>Version {__BUILD_ID__}</span>
-                    </p>
+                    <div className="mt-8 flex flex-col items-center gap-3">
+                        <p className="flex items-center justify-center gap-1.5 text-xs text-quaternary">
+                            <button
+                                type="button"
+                                onClick={() => setShowFeedback(true)}
+                                className="font-medium text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                            >
+                                Submit Feedback
+                            </button>
+                            <span aria-hidden="true">·</span>
+                            <button
+                                type="button"
+                                onClick={() => setShowPushDebug((v) => !v)}
+                                className="transition duration-100 ease-linear hover:text-tertiary"
+                            >
+                                Version {__BUILD_ID__}
+                            </button>
+                        </p>
+                        {showPushDebug && <PushDebug />}
+                    </div>
                 )}
             </div>
 
