@@ -168,24 +168,16 @@ export function AdminReports() {
             const { error: e2 } = await supabase.from("reports").update(reviewPatch({ status: "actioned", note })).eq("id", report.id);
             if (e2) throw e2;
 
-            // Notify the reported user by email (post author, or the reported user).
-            let email = report.userTarget?.email ?? null;
-            if (report.target_type === "post") {
-                const { data: post } = await supabase.from("posts").select("author_id").eq("id", report.target_id).single();
-                if (post?.author_id) {
-                    const { data: author } = await supabase.from("users").select("email").eq("id", post.author_id).single();
-                    email = author?.email ?? null;
-                }
-            }
-            if (email) {
-                const targetLabel = report.target_type === "post" ? "post" : "account";
-                await supabase.functions.invoke("send-email", {
-                    body: {
-                        to: email,
-                        subject: "CourtPlay community guidelines notice",
-                        html: `<p>Your ${targetLabel} was removed for violating our community guidelines. If you believe this was an error, please contact support.</p>`,
-                    },
-                });
+            // Notify the reported user by email. The recipient and the copy are
+            // both resolved server-side from the report — the browser no longer
+            // gets to name an address or write the body, because that required
+            // send-email to accept a user token and made it an open relay for
+            // anyone holding the anon key.
+            const { error: notifyError } = await supabase.functions.invoke("notify-content-removed", {
+                body: { report_id: report.id },
+            });
+            if (notifyError) {
+                console.warn("Content-removal notice failed:", notifyError.message);
             }
             afterAction(report.id);
         } catch (err) {

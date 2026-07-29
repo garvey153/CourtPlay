@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, corsJson, handlePreflight } from "../_shared/cors.ts";
 import { invokeFunction } from "../_shared/invoke.ts";
+import { resolveUserNotification } from "../_shared/notification-authz.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -17,7 +18,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  * responses, including the rejection path, so freshness is checkable with a
  * curl and an anon key.
  */
-const FN_BUILD = "2026-07-29h";
+const FN_BUILD = "2026-07-29i";
 
 type NotificationType =
     | "claim_submitted"
@@ -348,6 +349,130 @@ async function sendPush(userId: string, title: string, body: string, url: string
     return { ...last, scheme: order[0], delivered: false };
 }
 
+/**
+ * Constant-time string compare, so a caller can't recover the service role key
+ * by measuring how long the rejection took.
+ */
+function secretEquals(a: string, b: string): boolean {
+    if (a.length !== b.length) return false;
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return diff === 0;
+}
+
+interface Delivery {
+    user_id: string;
+    pushSent: boolean;
+    emailSent: boolean;
+    results: Record<string, unknown>;
+    skipped?: boolean;
+    reason?: string;
+    error?: string;
+}
+
+/**
+ * Delivers one notification to one user, honouring their channel preferences.
+ * Reports what each channel actually did rather than that it was attempted.
+ */
+async function deliverTo(
+    userId: string,
+    notificationType: NotificationType,
+    template: TemplateConfig,
+    d: Record<string, string>,
+    postId?: string,
+    claimId?: string,
+): Promise<Delivery> {
+    const empty = { user_id: userId, pushSent: false, emailSent: false, results: {} };
+
+    const { data: prefs } = await supabase
+        .from("notification_preferences")
+        .select("push_enabled, email_enabled")
+        .eq("user_id", userId)
+        .eq("notification_type", notificationType)
+        .maybeSingle();
+
+    const defaults = DEFAULT_CHANNELS[notificationType] ?? { push: false, email: true };
+    const pushEnabled = prefs?.push_enabled ?? defaults.push;
+    const emailEnabled = prefs?.email_enabled ?? defaults.email;
+
+    if (!pushEnabled && !emailEnabled) {
+        return { ...empty, skipped: true, reason: "both channels disabled for this user" };
+    }
+
+    const { data: userRow } = await supabase.from("users").select("email").eq("id", userId).single();
+    if (!userRow) return { ...empty, error: "User not found" };
+
+    const results: Record<string, unknown> = {};
+    let pushSent = false;
+    let emailSent = false;
+
+    // Send push via OneSignal
+    if (pushEnabled && ONESIGNAL_APP_ID && ONESIGNAL_REST_API_KEY) {
+        try {
+            const pushRes = await sendPush(userId, template.title, template.body(d), template.deepLink(postId));
+            results.push = { status: pushRes.status, scheme: pushRes.scheme, onesignal: pushRes.body };
+            pushSent = pushRes.delivered;
+
+            if (pushRes.delivered) {
+                await supabase.from("notifications").insert({
+                    user_id: userId,
+                    type: notificationType,
+                    post_id: postId ?? null,
+                    claim_id: claimId ?? null,
+                    channel: "push",
+                });
+            }
+        } catch (e) {
+            results.push = { error: String(e) };
+            // Push failed — don't block email
+        }
+    }
+
+    // Fallback: if push was the only enabled channel and it didn't land, email anyway.
+    // With external-id targeting there is no stored id to pre-check, so fall back
+    // on an actual delivery failure rather than on a missing column.
+    const shouldFallbackToEmail = pushEnabled && !pushSent && !emailEnabled;
+
+    if ((emailEnabled || shouldFallbackToEmail) && userRow.email) {
+        try {
+            const venmoLink = notificationType === "claim_approved" && d.venmo_handle
+                ? `https://venmo.com/${d.venmo_handle}`
+                : undefined;
+            const emailHtml = buildEmailHtml(template, d, postId, venmoLink);
+
+            // Raw fetch, not `functions.invoke`: the latter never throws and
+            // discards the callee's body, so setting emailSent inside the try
+            // block reported success for every call that got as far as
+            // dispatching — including ones send-email rejected. That is why this
+            // leg looked healthy while no mail was arriving.
+            const emailRes = await invokeFunction("send-email", {
+                to: userRow.email,
+                subject: template.subject(d),
+                html: emailHtml,
+            });
+
+            if (!emailRes.ok) {
+                results.email = { sent: false, status: emailRes.status, response: emailRes.body };
+            } else {
+                await supabase.from("notifications").insert({
+                    user_id: userId,
+                    type: notificationType,
+                    post_id: postId ?? null,
+                    claim_id: claimId ?? null,
+                    channel: "email",
+                });
+
+                emailSent = true;
+                results.email = { sent: true, response: emailRes.body };
+            }
+        } catch (e) {
+            results.email = { sent: false, error: String(e) };
+        }
+    }
+
+    return { user_id: userId, pushSent, emailSent, results };
+}
+
 serve(async (req) => {
     const preflight = handlePreflight(req);
     if (preflight) return preflight;
@@ -356,26 +481,58 @@ serve(async (req) => {
         return new Response("Method not allowed", { status: 405, headers: corsHeaders });
     }
 
-    // Validate Authorization — only service role key allowed
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.replace("Bearer ", "");
-    if (token !== SUPABASE_SERVICE_ROLE_KEY) {
-        // Also allow calls from other Edge Functions (internal calls via supabase.functions.invoke)
-        // which include the service role key automatically
-        if (!authHeader) {
-            return json({ error: "Unauthorized" }, 401);
-        }
+    if (!token) return json({ error: "Unauthorized" }, 401);
+
+    // The old check was `if (token !== SERVICE_ROLE) { if (!authHeader) 401 }` —
+    // which passes any non-empty header, so the anon key that ships in the JS
+    // bundle was enough to notify anyone. Service role now means service role,
+    // and everyone else is a user whose entitlement gets checked below.
+    const isServiceRole = SUPABASE_SERVICE_ROLE_KEY.length > 0 && secretEquals(token, SUPABASE_SERVICE_ROLE_KEY);
+
+    let body: Record<string, unknown>;
+    try {
+        body = await req.json();
+    } catch {
+        return json({ error: "Body must be JSON", fnBuild: FN_BUILD }, 400);
     }
 
-    const { user_id, notification_type, post_id, claim_id, data: extraData, test } = await req.json();
+    const {
+        user_id,
+        notification_type,
+        post_id,
+        claim_id,
+        data: extraData,
+        old_cost,
+        test,
+    } = body as {
+        user_id?: string;
+        notification_type?: string;
+        post_id?: string;
+        claim_id?: string;
+        data?: Record<string, string>;
+        old_cost?: string;
+        test?: boolean;
+    };
 
-    if (!user_id || !notification_type) {
-        return json({ error: "Missing user_id or notification_type" }, 400);
+    if (!notification_type) {
+        return json({ error: "Missing notification_type", fnBuild: FN_BUILD }, 400);
     }
 
     const template = TEMPLATES[notification_type as NotificationType];
     if (!template) {
-        return json({ error: "Unknown notification type" }, 400);
+        return json({ error: "Unknown notification type", fnBuild: FN_BUILD }, 400);
+    }
+
+    // Anyone who isn't the service role has to be a real, current user.
+    let callerId: string | null = null;
+    if (!isServiceRole) {
+        const { data: caller } = await supabase.auth.getUser(token);
+        if (!caller?.user) {
+            return json({ error: "Unauthorized", fnBuild: FN_BUILD }, 401);
+        }
+        callerId = caller.user.id;
     }
 
     // Test mode: prove the server → OneSignal → device leg works, and nothing else.
@@ -383,8 +540,7 @@ serve(async (req) => {
     // Only ever allowed against yourself, so the on-device debug button can't be
     // repurposed to push at other users.
     if (test) {
-        const { data: caller } = await supabase.auth.getUser(token);
-        if (!caller?.user || caller.user.id !== user_id) {
+        if (!callerId || callerId !== user_id) {
             return json({ error: "Test mode is only allowed against your own user", fnBuild: FN_BUILD }, 403);
         }
 
@@ -416,110 +572,60 @@ serve(async (req) => {
         });
     }
 
-    // Look up user preferences
-    const { data: prefs } = await supabase
-        .from("notification_preferences")
-        .select("push_enabled, email_enabled")
-        .eq("user_id", user_id)
-        .eq("notification_type", notification_type)
-        .maybeSingle();
-
-    const defaults = DEFAULT_CHANNELS[notification_type as NotificationType] ?? { push: false, email: true };
-    const pushEnabled = prefs?.push_enabled ?? defaults.push;
-    const emailEnabled = prefs?.email_enabled ?? defaults.email;
-
-    // If both channels disabled, skip
-    if (!pushEnabled && !emailEnabled) {
-        return json({ success: true, fnBuild: FN_BUILD, skipped: true, reason: "both channels disabled for this user" });
-    }
-
-    // Get user info for email/push
-    const { data: userRow } = await supabase
-        .from("users")
-        .select("email")
-        .eq("id", user_id)
-        .single();
-
-    if (!userRow) {
-        return json({ error: "User not found" }, 404);
-    }
-
-    const d: Record<string, string> = extraData ?? {};
-    const results: Record<string, unknown> = {};
-    let pushSent = false;
-    let emailSent = false;
-
-    // Send push via OneSignal
-    if (pushEnabled && ONESIGNAL_APP_ID && ONESIGNAL_REST_API_KEY) {
-        try {
-            const pushRes = await sendPush(
-                user_id,
-                template.title,
-                template.body(d),
-                template.deepLink(post_id),
-            );
-            results.push = { status: pushRes.status, scheme: pushRes.scheme, onesignal: pushRes.body };
-            pushSent = pushRes.delivered;
-
-            if (pushRes.delivered) {
-                await supabase.from("notifications").insert({
-                    user_id,
-                    type: notification_type,
-                    post_id: post_id ?? null,
-                    claim_id: claim_id ?? null,
-                    channel: "push",
-                });
-            }
-        } catch (e) {
-            results.push = { error: String(e) };
-            // Push failed — don't block email
+    // ── Trusted path ────────────────────────────────────────────────────────
+    // The scheduled jobs and notify-feedback run as the service role and pass an
+    // explicit recipient and payload. They aren't the threat, and their response
+    // shape is unchanged so those callers keep working as-is.
+    if (isServiceRole) {
+        if (!user_id) {
+            return json({ error: "Missing user_id", fnBuild: FN_BUILD }, 400);
         }
+        const outcome = await deliverTo(
+            user_id,
+            notification_type as NotificationType,
+            template,
+            extraData ?? {},
+            post_id,
+            claim_id,
+        );
+        return json({ success: true, fnBuild: FN_BUILD, ...outcome });
     }
 
-    // Fallback: if push enabled but no player ID, fall back to email
-    // With external-id targeting there is no stored id to pre-check, so fall back
-    // on an actual delivery failure rather than on a missing column.
-    const shouldFallbackToEmail = pushEnabled && !pushSent && !emailEnabled;
+    // ── User path ───────────────────────────────────────────────────────────
+    // The caller named a type and a row. Who gets notified and what it says are
+    // both derived from that row, after checking the caller is entitled to it.
+    const resolved = await resolveUserNotification(supabase, callerId as string, {
+        notification_type,
+        post_id,
+        claim_id,
+        old_cost,
+    });
 
-    // Send email via send-email function
-    if ((emailEnabled || shouldFallbackToEmail) && userRow.email) {
-        try {
-            const venmoLink = notification_type === "claim_approved" && d.venmo_handle
-                ? `https://venmo.com/${d.venmo_handle}`
-                : undefined;
-            const emailHtml = buildEmailHtml(template, d, post_id, venmoLink);
-
-            // Raw fetch, not `functions.invoke`: the latter never throws and
-            // discards the callee's body, so setting emailSent inside the try
-            // block reported success for every call that got as far as
-            // dispatching — including ones send-email rejected. That is why this
-            // leg looked healthy while no mail was arriving.
-            const emailRes = await invokeFunction("send-email", {
-                to: userRow.email,
-                subject: template.subject(d),
-                html: emailHtml,
-            });
-
-            if (!emailRes.ok) {
-                results.email = { sent: false, status: emailRes.status, response: emailRes.body };
-            } else {
-                await supabase.from("notifications").insert({
-                    user_id,
-                    type: notification_type,
-                    post_id: post_id ?? null,
-                    claim_id: claim_id ?? null,
-                    channel: "email",
-                });
-
-                emailSent = true;
-                results.email = { sent: true, response: emailRes.body };
-            }
-        } catch (e) {
-            results.email = { sent: false, error: String(e) };
-        }
+    if (!resolved.ok) {
+        return json({ error: resolved.error, fnBuild: FN_BUILD }, resolved.status);
     }
 
-    // fnBuild rides on the normal path too, not just test mode: this response is
-    // what notify-feedback echoes back, so a stale deploy is visible from there.
-    return json({ success: true, fnBuild: FN_BUILD, pushSent, emailSent, results });
+    const { recipients, data, post_id: resolvedPost, claim_id: resolvedClaim } = resolved.value;
+
+    const deliveries: Delivery[] = [];
+    for (const recipient of recipients) {
+        deliveries.push(
+            await deliverTo(
+                recipient,
+                notification_type as NotificationType,
+                template,
+                data,
+                resolvedPost ?? undefined,
+                resolvedClaim ?? undefined,
+            ),
+        );
+    }
+
+    return json({
+        success: true,
+        fnBuild: FN_BUILD,
+        recipients: recipients.length,
+        delivered: deliveries.filter((x) => x.pushSent || x.emailSent).length,
+        deliveries,
+    });
 });

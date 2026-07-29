@@ -177,9 +177,7 @@ export function ClaimDetailSheet({
         }
 
         sendNotification({
-            user_id: post.author_id,
             notification_type: "claim_submitted",
-            post_id: post.id,
             claim_id: data.claim_id as string,
         });
         // Transition the sheet to the pending state in place (keep it open).

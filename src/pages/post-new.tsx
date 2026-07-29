@@ -13,7 +13,7 @@ import { TextArea } from "@/components/base/textarea/textarea";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { upsertCustomCourt } from "@/lib/custom-court";
-import { sendNotificationBatch } from "@/lib/notifications";
+import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import type { Selection } from "react-aria-components";
 import { cx } from "@/utils/cx";
@@ -414,42 +414,23 @@ export function PostNew() {
                     // A custom court lives only on this post; record its name for the admin Custom list.
                     if (usedCustomCourt && !existingClaims) await upsertCustomCourt(customCourt.trim(), customArea.trim());
 
-                    // N5: Cost changed — notify active claimers
-                    const activeClaimerIds = new Set<string>();
+                    // N5 / N8: the server picks the recipients (active claimers for a
+                    // cost change, prior viewers minus those claimers for a price drop)
+                    // and reads the new price off the post. Only the previous price
+                    // travels, because the update above overwrote it.
                     if (originalCost !== null && cost !== null && originalCost !== cost) {
-                        const { data: activeClaims } = await supabase
-                            .from("claims")
-                            .select("claimer_id")
-                            .eq("post_id", editPostId)
-                            .in("status", ["pending", "approved"]);
+                        sendNotification({
+                            notification_type: "cost_changed",
+                            post_id: editPostId,
+                            old_cost: originalCost.toFixed(2),
+                        });
 
-                        if (activeClaims && activeClaims.length > 0) {
-                            for (const c of activeClaims) activeClaimerIds.add(c.claimer_id);
-                            sendNotificationBatch([...activeClaimerIds], "cost_changed", editPostId, {
+                        if (cost < originalCost) {
+                            sendNotification({
+                                notification_type: "price_drop",
+                                post_id: editPostId,
                                 old_cost: originalCost.toFixed(2),
-                                new_cost: cost.toFixed(2),
                             });
-                        }
-                    }
-
-                    // N8: Price drop — notify prior viewers (exclude poster and active claimers)
-                    if (originalCost !== null && cost !== null && cost < originalCost) {
-                        const { data: viewers } = await supabase
-                            .from("post_views")
-                            .select("user_id")
-                            .eq("post_id", editPostId)
-                            .neq("user_id", user.id);
-
-                        if (viewers && viewers.length > 0) {
-                            const viewerIds = viewers
-                                .map((v) => v.user_id)
-                                .filter((id) => !activeClaimerIds.has(id));
-                            if (viewerIds.length > 0) {
-                                sendNotificationBatch(viewerIds, "price_drop", editPostId, {
-                                    old_cost: originalCost.toFixed(2),
-                                    new_cost: cost.toFixed(2),
-                                });
-                            }
                         }
                     }
                 } else {
@@ -476,23 +457,9 @@ export function PostNew() {
                     // admin Custom list. The post itself goes live in the feed immediately.
                     if (usedCustomCourt) await upsertCustomCourt(customCourt.trim(), customArea.trim());
 
-                    // N13: Friend new post — notify followers (opt-in only)
-                    const { data: followers } = await supabase
-                        .from("follows")
-                        .select("follower_id")
-                        .eq("following_id", user.id);
-
-                    if (followers && followers.length > 0 && inserted && inserted.length > 0) {
-                        const followerIds = followers.map((f) => f.follower_id);
-                        const { data: posterInfo } = await supabase
-                            .from("users")
-                            .select("first_name")
-                            .eq("id", user.id)
-                            .single();
-                        sendNotificationBatch(followerIds, "friend_new_post", inserted[0].id, {
-                            poster_name: posterInfo?.first_name ?? "",
-                            post_summary: location ?? "",
-                        });
+                    // N13: Friend new post — the server resolves the follower list.
+                    if (inserted && inserted.length > 0) {
+                        sendNotification({ notification_type: "friend_new_post", post_id: inserted[0].id });
                     }
                 }
             } else {

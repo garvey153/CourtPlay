@@ -69,7 +69,9 @@ describe("GroupDetailSheet (regular-post connections)", () => {
         await user.click(screen.getByRole("button", { name: "Connect" }));
 
         await waitFor(() => expect(rpc).toHaveBeenCalledWith("submit_claim", { p_post_id: "post-r1", p_message: null }));
-        expect(notify).toHaveBeenCalledWith(expect.objectContaining({ notification_type: "connection_request", user_id: "seeker-1" }));
+        // The seeker is no longer named by the client — the server derives the
+        // recipient from the claim, so the claim id is what has to be right here.
+        expect(notify).toHaveBeenCalledWith(expect.objectContaining({ notification_type: "connection_request", claim_id: "conn-1" }));
         // Transitions in place to the connected thread state, which reveals the message field.
         expect(await screen.findByText(/You're connected/)).toBeInTheDocument();
         expect(screen.getByLabelText("Message")).toBeInTheDocument();

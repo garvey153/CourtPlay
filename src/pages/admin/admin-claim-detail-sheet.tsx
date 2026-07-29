@@ -77,11 +77,9 @@ export function AdminClaimDetailSheet({ claim, onClose, onSaved }: AdminClaimDet
             setLoading(false);
             return;
         }
-        // Notify both the claimer and the poster.
-        await sendNotification({ user_id: claim.claimer_id, notification_type: "claimer_cancelled", post_id: claim.post_id, claim_id: claim.id });
-        if (claim.post_author_id) {
-            await sendNotification({ user_id: claim.post_author_id, notification_type: "claimer_cancelled", post_id: claim.post_id, claim_id: claim.id });
-        }
+        // One call — the server notifies both the claimer and the poster, after
+        // checking this caller is actually an admin.
+        await sendNotification({ notification_type: "claimer_cancelled", claim_id: claim.id });
         setLoading(false);
         onSaved();
     };
