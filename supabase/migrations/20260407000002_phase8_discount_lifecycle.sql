@@ -64,9 +64,13 @@ end;
 $$;
 
 -- Cron job schedule for 48h unfilled nudge (run every 6 hours)
--- select cron.schedule('48h-unfilled-nudge', '0 */6 * * *', $$
+-- The function is deployed as `unfilled-nudge-48h`, not `48h-unfilled-nudge`:
+-- Supabase requires a function slug to match ^[A-Za-z][A-Za-z0-9_-]*$, so a name
+-- starting with a digit is rejected at deploy time. The original name could
+-- never be deployed at all, and the endpoint 404'd for months.
+-- select cron.schedule('unfilled-nudge-48h', '0 */6 * * *', $$
 --     select net.http_post(
---         url := 'https://[project].supabase.co/functions/v1/48h-unfilled-nudge',
+--         url := 'https://[project].supabase.co/functions/v1/unfilled-nudge-48h',
 --         headers := '{"Authorization": "Bearer [service_role_key]", "Content-Type": "application/json"}'::jsonb,
 --         body := '{}'::jsonb
 --     );
