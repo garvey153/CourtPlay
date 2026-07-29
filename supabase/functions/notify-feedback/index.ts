@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, corsJson, handlePreflight } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -10,25 +11,22 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 // Called by the player's client right after submitting feedback; the client
 // can't discover admin user IDs itself, so this runs with the service role.
 serve(async (req) => {
+    const preflight = handlePreflight(req);
+    if (preflight) return preflight;
+
     if (req.method !== "POST") {
-        return new Response("Method not allowed", { status: 405 });
+        return new Response("Method not allowed", { status: 405, headers: corsHeaders });
     }
 
     // Any authenticated caller may submit feedback (verify_jwt gates this).
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-        });
+        return corsJson({ error: "Unauthorized" }, 401);
     }
 
     const { feedback_id } = await req.json();
     if (!feedback_id) {
-        return new Response(JSON.stringify({ error: "Missing feedback_id" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-        });
+        return corsJson({ error: "Missing feedback_id" }, 400);
     }
 
     // Look up the feedback and submitter (service role — bypasses RLS).
@@ -39,10 +37,7 @@ serve(async (req) => {
         .single();
 
     if (!fb) {
-        return new Response(JSON.stringify({ error: "Feedback not found" }), {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-        });
+        return corsJson({ error: "Feedback not found" }, 404);
     }
 
     const submitterName = (fb.users as { first_name: string | null } | null)?.first_name ?? "";
@@ -65,8 +60,5 @@ serve(async (req) => {
         notified++;
     }
 
-    return new Response(JSON.stringify({ notified }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-    });
+    return corsJson({ notified }, 200);
 });

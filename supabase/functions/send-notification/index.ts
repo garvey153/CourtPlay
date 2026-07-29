@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, corsJson, handlePreflight } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -255,12 +256,7 @@ function buildEmailHtml(template: TemplateConfig, d: Record<string, string>, pos
     `;
 }
 
-function json(payload: unknown, status = 200): Response {
-    return new Response(JSON.stringify(payload), {
-        status,
-        headers: { "Content-Type": "application/json" },
-    });
-}
+const json = corsJson;
 
 /**
  * POSTs one notification to OneSignal and returns the parsed response body
@@ -295,8 +291,11 @@ async function sendPush(subscriptionId: string, title: string, body: string, url
 }
 
 serve(async (req) => {
+    const preflight = handlePreflight(req);
+    if (preflight) return preflight;
+
     if (req.method !== "POST") {
-        return new Response("Method not allowed", { status: 405 });
+        return new Response("Method not allowed", { status: 405, headers: corsHeaders });
     }
 
     // Validate Authorization — only service role key allowed
@@ -306,28 +305,19 @@ serve(async (req) => {
         // Also allow calls from other Edge Functions (internal calls via supabase.functions.invoke)
         // which include the service role key automatically
         if (!authHeader) {
-            return new Response(JSON.stringify({ error: "Unauthorized" }), {
-                status: 401,
-                headers: { "Content-Type": "application/json" },
-            });
+            return json({ error: "Unauthorized" }, 401);
         }
     }
 
     const { user_id, notification_type, post_id, claim_id, data: extraData, test } = await req.json();
 
     if (!user_id || !notification_type) {
-        return new Response(JSON.stringify({ error: "Missing user_id or notification_type" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Missing user_id or notification_type" }, 400);
     }
 
     const template = TEMPLATES[notification_type as NotificationType];
     if (!template) {
-        return new Response(JSON.stringify({ error: "Unknown notification type" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Unknown notification type" }, 400);
     }
 
     // Test mode: prove the server → OneSignal → device leg works, and nothing else.
@@ -389,10 +379,7 @@ serve(async (req) => {
 
     // If both channels disabled, skip
     if (!pushEnabled && !emailEnabled) {
-        return new Response(JSON.stringify({ success: true, skipped: true }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        });
+        return json({ success: true, skipped: true });
     }
 
     // Get user info for email/push
@@ -403,10 +390,7 @@ serve(async (req) => {
         .single();
 
     if (!userRow) {
-        return new Response(JSON.stringify({ error: "User not found" }), {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "User not found" }, 404);
     }
 
     const d: Record<string, string> = extraData ?? {};
@@ -475,8 +459,5 @@ serve(async (req) => {
         }
     }
 
-    return new Response(JSON.stringify({ success: true, pushSent, emailSent, results }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-    });
+    return json({ success: true, pushSent, emailSent, results });
 });
