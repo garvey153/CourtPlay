@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, corsJson, handlePreflight } from "../_shared/cors.ts";
+import { invokeFunction } from "../_shared/invoke.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -16,7 +17,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  * responses, including the rejection path, so freshness is checkable with a
  * curl and an anon key.
  */
-const FN_BUILD = "2026-07-29f";
+const FN_BUILD = "2026-07-29h";
 
 type NotificationType =
     | "claim_submitted"
@@ -296,6 +297,23 @@ async function postToOneSignal(scheme: "Key" | "Basic", payload: unknown) {
 }
 
 /**
+ * Did OneSignal actually accept a recipient?
+ *
+ * A 200 only means the request was well-formed. "All included players are not
+ * subscribed" — nobody is reachable at that external id — comes back as 200 with
+ * an empty `id` and an `errors` array, so keying delivery off the HTTP status
+ * reports success for a push that went to no one.
+ */
+function isDelivered(status: number, body: unknown): boolean {
+    if (status < 200 || status >= 300) return false;
+    const b = body as { id?: string; errors?: unknown; recipients?: number } | null;
+    if (!b || typeof b !== "object") return false;
+    if (b.errors) return false;
+    if (typeof b.recipients === "number") return b.recipients > 0;
+    return Boolean(b.id);
+}
+
+/**
  * POSTs one notification to OneSignal and returns the parsed response body
  * alongside the status. The body is what distinguishes a real delivery from
  * `{"recipients": 0}` — both of which come back as HTTP 200.
@@ -314,20 +332,20 @@ async function sendPush(userId: string, title: string, body: string, url: string
     };
 
     const order: Array<"Key" | "Basic"> = authScheme ? [authScheme] : ["Key", "Basic"];
-    let last = await postToOneSignal(order[0], payload);
+    const last = await postToOneSignal(order[0], payload);
     if (last.ok) {
         authScheme = order[0];
-        return { ...last, scheme: order[0] };
+        return { ...last, scheme: order[0], delivered: isDelivered(last.status, last.body) };
     }
 
     // Only an auth rejection is worth retrying — anything else is a real error.
     if (order.length > 1 && last.status === 401) {
         const retry = await postToOneSignal(order[1], payload);
         if (retry.ok) authScheme = order[1];
-        return { ...retry, scheme: order[1] };
+        return { ...retry, scheme: order[1], delivered: isDelivered(retry.status, retry.body) };
     }
 
-    return { ...last, scheme: order[0] };
+    return { ...last, scheme: order[0], delivered: false };
 }
 
 serve(async (req) => {
@@ -390,7 +408,7 @@ serve(async (req) => {
         return json({
             test: true,
             fnBuild: FN_BUILD,
-            sent: result.ok,
+            sent: result.delivered,
             externalId: user_id,
             scheme: result.scheme,
             status: result.status,
@@ -412,7 +430,7 @@ serve(async (req) => {
 
     // If both channels disabled, skip
     if (!pushEnabled && !emailEnabled) {
-        return json({ success: true, skipped: true });
+        return json({ success: true, fnBuild: FN_BUILD, skipped: true, reason: "both channels disabled for this user" });
     }
 
     // Get user info for email/push
@@ -441,9 +459,9 @@ serve(async (req) => {
                 template.deepLink(post_id),
             );
             results.push = { status: pushRes.status, scheme: pushRes.scheme, onesignal: pushRes.body };
-            pushSent = pushRes.ok;
+            pushSent = pushRes.delivered;
 
-            if (pushRes.ok) {
+            if (pushRes.delivered) {
                 await supabase.from("notifications").insert({
                     user_id,
                     type: notification_type,
@@ -471,28 +489,37 @@ serve(async (req) => {
                 : undefined;
             const emailHtml = buildEmailHtml(template, d, post_id, venmoLink);
 
-            await supabase.functions.invoke("send-email", {
-                body: {
-                    to: userRow.email,
-                    subject: template.subject(d),
-                    html: emailHtml,
-                },
+            // Raw fetch, not `functions.invoke`: the latter never throws and
+            // discards the callee's body, so setting emailSent inside the try
+            // block reported success for every call that got as far as
+            // dispatching — including ones send-email rejected. That is why this
+            // leg looked healthy while no mail was arriving.
+            const emailRes = await invokeFunction("send-email", {
+                to: userRow.email,
+                subject: template.subject(d),
+                html: emailHtml,
             });
 
-            await supabase.from("notifications").insert({
-                user_id,
-                type: notification_type,
-                post_id: post_id ?? null,
-                claim_id: claim_id ?? null,
-                channel: "email",
-            });
+            if (!emailRes.ok) {
+                results.email = { sent: false, status: emailRes.status, response: emailRes.body };
+            } else {
+                await supabase.from("notifications").insert({
+                    user_id,
+                    type: notification_type,
+                    post_id: post_id ?? null,
+                    claim_id: claim_id ?? null,
+                    channel: "email",
+                });
 
-            emailSent = true;
-            results.email = { sent: true };
+                emailSent = true;
+                results.email = { sent: true, response: emailRes.body };
+            }
         } catch (e) {
-            results.email = { error: String(e) };
+            results.email = { sent: false, error: String(e) };
         }
     }
 
-    return json({ success: true, pushSent, emailSent, results });
+    // fnBuild rides on the normal path too, not just test mode: this response is
+    // what notify-feedback echoes back, so a stale deploy is visible from there.
+    return json({ success: true, fnBuild: FN_BUILD, pushSent, emailSent, results });
 });
