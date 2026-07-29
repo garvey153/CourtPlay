@@ -16,7 +16,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  * responses, including the rejection path, so freshness is checkable with a
  * curl and an anon key.
  */
-const FN_BUILD = "2026-07-29e";
+const FN_BUILD = "2026-07-29f";
 
 type NotificationType =
     | "claim_submitted"
@@ -300,12 +300,14 @@ async function postToOneSignal(scheme: "Key" | "Basic", payload: unknown) {
  * alongside the status. The body is what distinguishes a real delivery from
  * `{"recipients": 0}` — both of which come back as HTTP 200.
  */
-async function sendPush(subscriptionId: string, title: string, body: string, url: string) {
+async function sendPush(userId: string, title: string, body: string, url: string) {
     const payload = {
         app_id: ONESIGNAL_APP_ID,
-        // We store `PushSubscription.id` (a v16 subscription id) in the
-        // `onesignal_player_id` column, so target the subscription field.
-        include_subscription_ids: [subscriptionId],
+        // Target the *user*, not a device. The client aliases each subscription to
+        // the app's user id via OneSignal.login(), so this follows the person
+        // across devices and can't deliver to whoever signed in most recently.
+        include_aliases: { external_id: [userId] },
+        target_channel: "push",
         headings: { en: title },
         contents: { en: body },
         url,
@@ -368,16 +370,6 @@ serve(async (req) => {
             return json({ error: "Test mode is only allowed against your own user", fnBuild: FN_BUILD }, 403);
         }
 
-        const { data: testUser } = await supabase
-            .from("users")
-            .select("onesignal_player_id")
-            .eq("id", user_id)
-            .single();
-
-        const subscriptionId = testUser?.onesignal_player_id;
-        if (!subscriptionId) {
-            return json({ test: true, fnBuild: FN_BUILD, sent: false, reason: "no onesignal_player_id stored for this user" });
-        }
         if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
             return json({
                 test: true,
@@ -390,7 +382,7 @@ serve(async (req) => {
         }
 
         const result = await sendPush(
-            subscriptionId,
+            user_id,
             "CourtPlay test push",
             "If you can read this, server-sent push is working.",
             "https://courtplay.app/profile",
@@ -399,7 +391,7 @@ serve(async (req) => {
             test: true,
             fnBuild: FN_BUILD,
             sent: result.ok,
-            subscriptionId,
+            externalId: user_id,
             scheme: result.scheme,
             status: result.status,
             onesignal: result.body,
@@ -426,7 +418,7 @@ serve(async (req) => {
     // Get user info for email/push
     const { data: userRow } = await supabase
         .from("users")
-        .select("email, onesignal_player_id")
+        .select("email")
         .eq("id", user_id)
         .single();
 
@@ -440,10 +432,10 @@ serve(async (req) => {
     let emailSent = false;
 
     // Send push via OneSignal
-    if (pushEnabled && userRow.onesignal_player_id && ONESIGNAL_APP_ID && ONESIGNAL_REST_API_KEY) {
+    if (pushEnabled && ONESIGNAL_APP_ID && ONESIGNAL_REST_API_KEY) {
         try {
             const pushRes = await sendPush(
-                userRow.onesignal_player_id,
+                user_id,
                 template.title,
                 template.body(d),
                 template.deepLink(post_id),
@@ -467,7 +459,9 @@ serve(async (req) => {
     }
 
     // Fallback: if push enabled but no player ID, fall back to email
-    const shouldFallbackToEmail = pushEnabled && !userRow.onesignal_player_id && !emailEnabled;
+    // With external-id targeting there is no stored id to pre-check, so fall back
+    // on an actual delivery failure rather than on a missing column.
+    const shouldFallbackToEmail = pushEnabled && !pushSent && !emailEnabled;
 
     // Send email via send-email function
     if ((emailEnabled || shouldFallbackToEmail) && userRow.email) {

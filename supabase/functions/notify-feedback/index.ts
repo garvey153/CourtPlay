@@ -45,9 +45,12 @@ serve(async (req) => {
     // Every admin gets notified.
     const { data: admins } = await supabase.from("users").select("id").eq("is_admin", true);
 
-    let notified = 0;
+    // Report what each fan-out actually did. This previously returned a bare
+    // count incremented regardless of outcome, so a chain that dispatched
+    // nothing at all was indistinguishable from one that worked.
+    const results: Array<Record<string, unknown>> = [];
     for (const admin of admins ?? []) {
-        await supabase.functions.invoke("send-notification", {
+        const { data, error } = await supabase.functions.invoke("send-notification", {
             body: {
                 user_id: admin.id,
                 notification_type: "feedback_submitted",
@@ -57,8 +60,8 @@ serve(async (req) => {
                 },
             },
         });
-        notified++;
+        results.push({ admin: admin.id, error: error?.message ?? null, response: data ?? null });
     }
 
-    return corsJson({ notified }, 200);
+    return corsJson({ admins: admins?.length ?? 0, results }, 200);
 });
