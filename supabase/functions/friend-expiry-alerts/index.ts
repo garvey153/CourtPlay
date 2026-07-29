@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { DispatchTally, invokeFunction } from "../_shared/invoke.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -43,7 +44,7 @@ serve(async (req) => {
         });
     }
 
-    let alerted = 0;
+    const tally = new DispatchTally();
 
     for (const post of posts as ExpiringPost[]) {
         // Get poster info for the notification body
@@ -86,23 +87,21 @@ serve(async (req) => {
 
             if (existing) continue;
 
-            await supabase.functions.invoke("send-notification", {
-                body: {
-                    user_id: follower_id,
-                    notification_type: "friend_expiry",
-                    post_id: post.id,
-                    data: {
-                        poster_name: posterName,
-                        location,
-                    },
+            const res = await invokeFunction("send-notification", {
+                user_id: follower_id,
+                notification_type: "friend_expiry",
+                post_id: post.id,
+                data: {
+                    poster_name: posterName,
+                    location,
                 },
             });
 
-            alerted++;
+            tally.record(res, { user_id: follower_id, post_id: post.id });
         }
     }
 
-    return new Response(JSON.stringify({ alerted }), {
+    return new Response(JSON.stringify(tally.toResponse("alerted")), {
         status: 200,
         headers: { "Content-Type": "application/json" },
     });
