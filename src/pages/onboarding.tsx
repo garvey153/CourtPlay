@@ -223,8 +223,11 @@ export function Onboarding() {
     useEffect(() => {
         if (step !== 3 || !user) return;
         // Same reason as the search above — the self/deleted/suspended filtering
-        // and the ordering now live in the RPC.
-        supabase.rpc("get_suggested_follows", { p_limit: 5 }).then(({ data }) => {
+        // and the ordering now live in the RPC. Named get_recent_players rather
+        // than get_suggested_follows: that name was already taken by a function
+        // returning mutual-follow/shared-court suggestions, which can be empty
+        // for a brand-new account and would leave this step blank.
+        supabase.rpc("get_recent_players", { p_limit: 5 }).then(({ data }) => {
             if (data) setSuggestedFollows(data as MemberResult[]);
         });
     }, [step, user]);
