@@ -1,20 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, corsJson, handlePreflight } from "../_shared/cors.ts";
+import { bearerToken, isServiceRoleToken } from "../_shared/service-auth.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "CourtPlay <noreply@courtplay.app>";
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-
-/**
- * Constant-time string compare, so a caller can't recover the service role key
- * by measuring how long the rejection took.
- */
-function secretEquals(a: string, b: string): boolean {
-    if (a.length !== b.length) return false;
-    let diff = 0;
-    for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-    return diff === 0;
-}
 
 serve(async (req) => {
     const preflight = handlePreflight(req);
@@ -30,8 +19,10 @@ serve(async (req) => {
     // Nothing user-facing calls this directly any more: the admin moderation
     // notice goes through notify-content-removed, which derives the recipient
     // and owns the copy.
-    const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
-    if (!token || !SUPABASE_SERVICE_ROLE_KEY || !secretEquals(token, SUPABASE_SERVICE_ROLE_KEY)) {
+    // corsJson rather than requireServiceRole: this one is reachable from a
+    // browser by mistake, and a CORS-less 401 shows up there as an opaque network
+    // error instead of the actual complaint.
+    if (!isServiceRoleToken(bearerToken(req))) {
         return corsJson({ error: "Unauthorized" }, 401);
     }
 

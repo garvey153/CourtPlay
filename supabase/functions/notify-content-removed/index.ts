@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, corsJson, handlePreflight } from "../_shared/cors.ts";
 import { invokeFunction } from "../_shared/invoke.ts";
+import { bearerToken } from "../_shared/service-auth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -35,7 +36,7 @@ serve(async (req) => {
         return new Response("Method not allowed", { status: 405, headers: corsHeaders });
     }
 
-    const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
+    const token = bearerToken(req);
     if (!token) return corsJson({ error: "Unauthorized", fnBuild: FN_BUILD }, 401);
 
     const { data: caller } = await supabase.auth.getUser(token);

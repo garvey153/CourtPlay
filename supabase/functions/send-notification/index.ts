@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, corsJson, handlePreflight } from "../_shared/cors.ts";
 import { invokeFunction } from "../_shared/invoke.ts";
 import { resolveUserNotification } from "../_shared/notification-authz.ts";
+import { bearerToken, isServiceRoleToken } from "../_shared/service-auth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -349,17 +350,6 @@ async function sendPush(userId: string, title: string, body: string, url: string
     return { ...last, scheme: order[0], delivered: false };
 }
 
-/**
- * Constant-time string compare, so a caller can't recover the service role key
- * by measuring how long the rejection took.
- */
-function secretEquals(a: string, b: string): boolean {
-    if (a.length !== b.length) return false;
-    let diff = 0;
-    for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-    return diff === 0;
-}
-
 interface Delivery {
     user_id: string;
     pushSent: boolean;
@@ -481,15 +471,16 @@ serve(async (req) => {
         return new Response("Method not allowed", { status: 405, headers: corsHeaders });
     }
 
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace("Bearer ", "");
+    // The token is needed past the check too — the user path feeds it to
+    // supabase.auth.getUser to identify the caller.
+    const token = bearerToken(req);
     if (!token) return json({ error: "Unauthorized" }, 401);
 
     // The old check was `if (token !== SERVICE_ROLE) { if (!authHeader) 401 }` —
     // which passes any non-empty header, so the anon key that ships in the JS
     // bundle was enough to notify anyone. Service role now means service role,
     // and everyone else is a user whose entitlement gets checked below.
-    const isServiceRole = SUPABASE_SERVICE_ROLE_KEY.length > 0 && secretEquals(token, SUPABASE_SERVICE_ROLE_KEY);
+    const isServiceRole = isServiceRoleToken(token);
 
     let body: Record<string, unknown>;
     try {
