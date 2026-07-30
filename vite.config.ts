@@ -38,14 +38,12 @@ export default defineConfig({
             // injected registerSW.js does neither, which left open sessions running
             // stale assets under a newly-activated worker.
             injectRegister: null,
-            includeAssets: [
-                "apple-touch-icon.png",
-                "apple-touch-icon-v2.png",
-                "icons/icon-192.png",
-                "icons/icon-512.png",
-                "icons/icon-192-v2.png",
-                "icons/icon-512-v2.png",
-            ],
+            // Icons are deliberately NOT precached (see globIgnores below), so there's
+            // nothing to add here.
+            includeAssets: [],
+            // The plugin precaches manifest icons on top of globPatterns, which
+            // globIgnores does not override — opt out so no icon is precached.
+            includeManifestIcons: false,
             manifest: {
                 name: "CourtPlay",
                 short_name: "CourtPlay",
@@ -84,9 +82,20 @@ export default defineConfig({
             },
             workbox: {
                 globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
-                // OneSignal ships its own service worker — don't let Workbox precache
-                // or manage it; it registers itself under /push/onesignal/.
-                globIgnores: ["**/OneSignalSDKWorker.js"],
+                globIgnores: [
+                    // OneSignal ships its own service worker — don't let Workbox precache
+                    // or manage it; it registers itself under /push/onesignal/.
+                    "**/OneSignalSDKWorker.js",
+                    // App icons are served from the network, never the precache. Precaching
+                    // them means a worker that fails to update keeps serving old artwork
+                    // indefinitely, which is exactly what made an icon change look like it
+                    // had not deployed. They are not needed offline, and the browser's own
+                    // HTTP cache handles them fine.
+                    "**/apple-touch-icon*.png",
+                    "**/icons/icon-*.png",
+                    "**/favicon-32.png",
+                    "**/favicon.ico",
+                ],
                 runtimeCaching: [
                     {
                         urlPattern: /^https:\/\/uheeddmtntnlgrpzfjph\.supabase\.co\/.*/i,
