@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "_comment": "SPA fallback, but never for asset-looking paths. A blanket /(.*) rewrite made every missing file answer 200 with index.html, so /apple-touch-icon-precomposed.png (which iOS probes by convention) returned HTML from an image URL. Real files are unaffected: Vercel checks the filesystem before applying rewrites. Extensionless paths and dotted slugs like /profile/user.name still reach the SPA.",
   "rewrites": [
     {
       "source": "/((?!.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|avif|css|js|mjs|map|json|webmanifest|txt|xml|woff|woff2|ttf|eot)$).*)",
