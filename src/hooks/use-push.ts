@@ -6,6 +6,13 @@ const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID as string;
 
 type OneSignalSdk = typeof import("react-onesignal")["default"];
 
+/**
+ * Browser permission, plus the case where the API doesn't exist at all (older
+ * iOS Safari outside a installed PWA). Callers need the distinction: 'default'
+ * means "ask them", 'denied' means "the browser won't ask again".
+ */
+export type PushPermission = NotificationPermission | "unsupported";
+
 // OneSignal.init() throws "SDK already initialized" if called twice, but the hook
 // is used by several components at once. Init exactly once per page load and share
 // the resulting instance across every usePush() caller.
@@ -73,9 +80,21 @@ export function usePush() {
     // during which consumers cannot distinguish "not granted" from "not known
     // yet". The push banner treated that as "not granted" and flashed on every
     // page load for users who had already enabled notifications.
-    const [permissionGranted, setPermissionGranted] = useState(
-        () => typeof Notification !== "undefined" && Notification.permission === "granted",
+    // Seeded synchronously from the browser rather than defaulting. OneSignal's
+    // permission value is just this one, but it isn't readable until the SDK has
+    // dynamically imported and initialised — a couple of seconds during which
+    // consumers cannot distinguish "not granted" from "not known yet". The push
+    // banner treated that as "not granted" and flashed on every page load.
+    //
+    // The full state, not just a boolean: 'denied' is not the same as 'default'.
+    // The browser will not re-prompt after a denial, so a UI offering to enable
+    // notifications there is offering something it cannot do.
+    const [permission, setPermission] = useState<PushPermission>(() =>
+        typeof Notification === "undefined" ? "unsupported" : Notification.permission,
     );
+    const permissionGranted = permission === "granted";
+    const setPermissionGranted = (granted: boolean) =>
+        setPermission(granted ? "granted" : typeof Notification !== "undefined" ? Notification.permission : "unsupported");
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -128,5 +147,5 @@ export function usePush() {
         }
     }, [userId]);
 
-    return { initialized, permissionGranted, requestPermission, error };
+    return { initialized, permission, permissionGranted, requestPermission, error };
 }

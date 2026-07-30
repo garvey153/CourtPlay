@@ -13,6 +13,7 @@ const mockRequestPermission = vi.fn().mockResolvedValue(true);
 vi.mock("@/hooks/use-push", () => ({
     usePush: vi.fn(() => ({
         initialized: true,
+        permission: "default" as const,
         permissionGranted: false,
         requestPermission: mockRequestPermission,
     })),
@@ -26,6 +27,7 @@ beforeEach(() => {
     mockRequestPermission.mockClear();
     mockUsePush.mockReturnValue({
         initialized: true,
+        permission: "default" as const,
         permissionGranted: false,
         requestPermission: mockRequestPermission,
     });
@@ -49,6 +51,7 @@ describe("PushPrompt", () => {
     it("push prompt not shown if user already has onesignal_player_id", () => {
         mockUsePush.mockReturnValue({
             initialized: true,
+            permission: "granted" as const,
             permissionGranted: true,
             requestPermission: mockRequestPermission,
         });

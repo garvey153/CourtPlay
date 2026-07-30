@@ -97,3 +97,54 @@ describe("PushEnableBanner", () => {
         expect(screen.queryByText("Turn on notifications.")).not.toBeInTheDocument();
     });
 });
+
+/**
+ * A denial is permanent as far as the page is concerned: requestPermission()
+ * resolves without prompting, so an "Enable" button does nothing observable.
+ * The banner previously showed exactly that — the same copy and the same dead
+ * button as for a user who simply hadn't been asked yet.
+ */
+describe("PushEnableBanner when notifications are blocked", () => {
+    beforeEach(() => setBrowserPermission("denied"));
+
+    it("explains the block rather than offering to turn them on", async () => {
+        render(<PushEnableBanner />);
+
+        expect(await screen.findByText("Notifications are blocked.")).toBeInTheDocument();
+        expect(screen.queryByText("Turn on notifications.")).not.toBeInTheDocument();
+    });
+
+    it("offers no Enable button, since it could not work", async () => {
+        render(<PushEnableBanner />);
+
+        await screen.findByText("Notifications are blocked.");
+        expect(screen.queryByRole("button", { name: "Enable" })).not.toBeInTheDocument();
+    });
+
+    it("can still be dismissed", async () => {
+        render(<PushEnableBanner />);
+
+        await screen.findByText("Notifications are blocked.");
+        // Two affordances share the label: the corner ✕ and the text button.
+        // Both remain when blocked — dismissing is the only thing left to do.
+        expect(screen.getAllByRole("button", { name: "Dismiss" })).toHaveLength(2);
+    });
+
+    it("points at where the setting actually lives", async () => {
+        render(<PushEnableBanner />);
+
+        expect(await screen.findByText(/browser or device settings/)).toBeInTheDocument();
+    });
+});
+
+describe("PushEnableBanner where notifications are unsupported", () => {
+    it("renders nothing at all", () => {
+        // Older iOS Safari outside an installed PWA has no Notification API.
+        Object.defineProperty(window, "Notification", { value: undefined, writable: true, configurable: true });
+
+        render(<PushEnableBanner />);
+
+        expect(screen.queryByText("Turn on notifications.")).not.toBeInTheDocument();
+        expect(screen.queryByText("Notifications are blocked.")).not.toBeInTheDocument();
+    });
+});
