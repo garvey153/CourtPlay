@@ -10,6 +10,7 @@ import { SelectItem } from "@/components/base/select/select-item";
 import { Toggle, ToggleBase } from "@/components/base/toggle/toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
+import { SEEDED_NOTIFICATION_TYPES } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { menuWidth } from "@/utils/menu-width";
@@ -49,20 +50,6 @@ const SKILL_LEVELS = [
     { id: "5.0", label: "5.0 — Expert" },
 ];
 
-const NOTIFICATION_TYPES = [
-    "claim_submitted",
-    "claim_approved",
-    "claim_rejected",
-    "approval_cancelled",
-    "claimer_backed_out",
-    "cost_changed",
-    "nudge_12h",
-    "nudge_48h",
-    "price_drop",
-    "spot_reopened",
-    "game_reminder",
-    "friend_expiry",
-];
 
 interface FormData {
     first_name: string;
@@ -321,7 +308,7 @@ export function Onboarding() {
 
             // Insert notification preferences
             await supabase.from("notification_preferences").upsert(
-                NOTIFICATION_TYPES.map((type) => ({
+                SEEDED_NOTIFICATION_TYPES.map((type) => ({
                     user_id: user.id,
                     notification_type: type,
                     push_enabled: form.push_enabled,

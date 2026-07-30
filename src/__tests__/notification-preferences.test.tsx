@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router";
 import userEvent from "@testing-library/user-event";
 import { EditProfile } from "@/pages/edit-profile";
 import { supabase } from "@/lib/supabase";
+import { NOTIFICATION_TYPES } from "@/lib/notifications";
 
 // The notification prefs now live in the Edit profile page. Changes are staged
 // locally and persisted together on "Save changes" (not per-toggle), and there
@@ -52,22 +53,13 @@ vi.mock("@/hooks/use-auth", () => ({
 
 const renderPage = () => render(<EditProfile />, { wrapper: MemoryRouter });
 
-const ALL_LABELS = [
-    "New claim on your post",
-    "Claim approved",
-    "Claim rejected",
-    "Approval withdrawn",
-    "Claimer backed out",
-    "Cost changed",
-    "Claim response reminder",
-    "Claimer cancelled",
-    "Price drop",
-    "Spot reopened",
-    "48h unfilled nudge",
-    "Game reminder",
-    "Friend's game filling up",
-    "Friend posts new sub need",
-];
+// Derived from the registry rather than duplicated. A hardcoded copy here was a
+// fifth parallel list of notification types, and it went stale the moment the
+// registry gained connection_request/connection_closed. What these tests are for
+// is that the screen correctly *consumes* the registry; that the registry itself
+// matches the server's DEFAULT_CHANNELS is notification-defaults.test.ts's job.
+const VISIBLE = NOTIFICATION_TYPES.filter((t) => !t.adminOnly);
+const ALL_LABELS = VISIBLE.map((t) => t.label);
 
 beforeEach(() => {
     mockUpsert.mockClear();
@@ -99,15 +91,7 @@ describe("edit profile — notification preferences", () => {
         renderPage();
         await screen.findByText(ALL_LABELS[0]);
 
-        // Claim lifecycle pushes by default. "Approval withdrawn" belongs here for
-        // the same reason approve/reject do: it is a decision on the claimer's
-        // spot, and they need it promptly rather than whenever they read email.
-        const pushOnByDefault = [
-            "New claim on your post",
-            "Claim approved",
-            "Claim rejected",
-            "Approval withdrawn",
-        ];
+        const pushOnByDefault = VISIBLE.filter((t) => t.defaultPush).map((t) => t.label);
         for (const label of ALL_LABELS) {
             const pushToggle = screen.getByLabelText(`${label} push`);
             if (pushOnByDefault.includes(label)) expect(pushToggle).toBeChecked();

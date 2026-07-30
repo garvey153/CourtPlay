@@ -21,6 +21,61 @@ export type NotificationType =
 
 export type NotificationChannel = "push" | "email";
 
+export interface NotificationTypeMeta {
+    key: NotificationType;
+    label: string;
+    hint: string;
+    defaultEmail: boolean;
+    defaultPush: boolean;
+    /** Rendered only for admins, and never seeded during onboarding. */
+    adminOnly?: boolean;
+}
+
+/**
+ * The single registry of notification types.
+ *
+ * There were four lists of these and three disagreed: onboarding seeded
+ * preference rows for `nudge_12h` and `nudge_48h` (neither is a real type — they
+ * are `nudge_no_response` and `48h_unfilled`) while omitting six real ones, and
+ * the preferences screen was missing `connection_request` and
+ * `connection_closed` entirely, so those fired with no way to opt out.
+ *
+ * The practical consequence was silent: a type absent from onboarding's list got
+ * no preference row, so the push/email choice made during onboarding didn't
+ * apply to it and the server fell back to its own defaults instead.
+ *
+ * `defaultEmail`/`defaultPush` must match DEFAULT_CHANNELS in
+ * supabase/functions/_shared/notification-defaults.ts — they are the same
+ * decision on either side of the network. notification-defaults.test.ts asserts
+ * it, importing both.
+ */
+export const NOTIFICATION_TYPES: readonly NotificationTypeMeta[] = [
+    { key: "claim_submitted", label: "New claim on your post", hint: "When someone claims a spot you posted", defaultEmail: true, defaultPush: true },
+    { key: "claim_approved", label: "Claim approved", hint: "When a poster approves your claim", defaultEmail: true, defaultPush: true },
+    { key: "claim_rejected", label: "Claim rejected", hint: "When a poster rejects your claim", defaultEmail: true, defaultPush: true },
+    { key: "approval_cancelled", label: "Approval withdrawn", hint: "When a poster withdraws an approval they gave you", defaultEmail: true, defaultPush: true },
+    { key: "claimer_backed_out", label: "Claimer backed out", hint: "When an approved claimer withdraws from your post", defaultEmail: true, defaultPush: false },
+    { key: "cost_changed", label: "Cost changed", hint: "When the cost changes on a post you claimed", defaultEmail: true, defaultPush: false },
+    { key: "nudge_no_response", label: "Claim response reminder", hint: "Reminder to respond to pending claims on your posts", defaultEmail: true, defaultPush: false },
+    { key: "claimer_cancelled", label: "Claimer cancelled", hint: "When a claimer cancels their pending claim on your post", defaultEmail: true, defaultPush: false },
+    { key: "price_drop", label: "Price drop", hint: "When a post you viewed reduces its price", defaultEmail: true, defaultPush: false },
+    { key: "spot_reopened", label: "Spot reopened", hint: "When a spot opens up on a post you're watching", defaultEmail: true, defaultPush: false },
+    { key: "48h_unfilled", label: "48h unfilled nudge", hint: "Reminder when your post has been up 48 hours with no claims", defaultEmail: true, defaultPush: false },
+    { key: "game_reminder", label: "Game reminder", hint: "Reminder the day before a game", defaultEmail: true, defaultPush: false },
+    { key: "friend_expiry", label: "Friend's game filling up", hint: "When a friend's post is close to game time with open spots", defaultEmail: true, defaultPush: false },
+    { key: "friend_new_post", label: "Friend posts new sub need", hint: "When a friend creates a new sub need post", defaultEmail: false, defaultPush: false },
+    // Added here because they were missing from the preferences screen entirely,
+    // despite firing since the regular-post connections feature shipped.
+    { key: "connection_request", label: "New connection request", hint: "When someone responds to your regular play post", defaultEmail: true, defaultPush: true },
+    { key: "connection_closed", label: "Group filled up", hint: "When a regular play post you responded to closes", defaultEmail: true, defaultPush: false },
+    { key: "feedback_submitted", label: "New feedback", hint: "When a player submits feedback", defaultEmail: true, defaultPush: true, adminOnly: true },
+] as const;
+
+/** Types seeded during onboarding — everything a normal player can receive. */
+export const SEEDED_NOTIFICATION_TYPES: readonly NotificationType[] =
+    NOTIFICATION_TYPES.filter((t) => !t.adminOnly).map((t) => t.key);
+
+
 /**
  * What the client is allowed to say.
  *

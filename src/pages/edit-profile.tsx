@@ -12,6 +12,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/lib/supabase";
+import { NOTIFICATION_TYPES } from "@/lib/notifications";
 
 // Descriptive NTRP labels — match the create-post form's contents exactly.
 const SKILL_LEVELS = [
@@ -23,25 +24,6 @@ const SKILL_LEVELS = [
     { id: "5.0", label: "NTRP 5.0 to 7.0 (Pro)" },
 ];
 
-// Notification types shown in the build. SMS is intentionally omitted until it's
-// implemented. `adminOnly` rows render only for admins (feedback alerts).
-const NOTIFICATION_TYPES = [
-    { key: "claim_submitted", label: "New claim on your post", hint: "When someone claims a spot you posted", defaultEmail: true, defaultPush: true },
-    { key: "claim_approved", label: "Claim approved", hint: "When a poster approves your claim", defaultEmail: true, defaultPush: true },
-    { key: "claim_rejected", label: "Claim rejected", hint: "When a poster rejects your claim", defaultEmail: true, defaultPush: true },
-    { key: "approval_cancelled", label: "Approval withdrawn", hint: "When a poster withdraws an approval they gave you", defaultEmail: true, defaultPush: true },
-    { key: "claimer_backed_out", label: "Claimer backed out", hint: "When an approved claimer withdraws from your post", defaultEmail: true, defaultPush: false },
-    { key: "cost_changed", label: "Cost changed", hint: "When the cost changes on a post you claimed", defaultEmail: true, defaultPush: false },
-    { key: "nudge_no_response", label: "Claim response reminder", hint: "Reminder to respond to pending claims on your posts", defaultEmail: true, defaultPush: false },
-    { key: "claimer_cancelled", label: "Claimer cancelled", hint: "When a claimer cancels their pending claim on your post", defaultEmail: true, defaultPush: false },
-    { key: "price_drop", label: "Price drop", hint: "When a post you viewed reduces its price", defaultEmail: true, defaultPush: false },
-    { key: "spot_reopened", label: "Spot reopened", hint: "When a spot opens up on a post you're watching", defaultEmail: true, defaultPush: false },
-    { key: "48h_unfilled", label: "48h unfilled nudge", hint: "Reminder when your post has been up 48 hours with no claims", defaultEmail: true, defaultPush: false },
-    { key: "game_reminder", label: "Game reminder", hint: "Reminder the day before a game", defaultEmail: true, defaultPush: false },
-    { key: "friend_expiry", label: "Friend's game filling up", hint: "When a friend's post is close to game time with open spots", defaultEmail: true, defaultPush: false },
-    { key: "friend_new_post", label: "Friend posts new sub need", hint: "When a friend creates a new sub need post", defaultEmail: false, defaultPush: false },
-    { key: "feedback_submitted", label: "New feedback", hint: "When a player submits feedback", defaultEmail: true, defaultPush: true, adminOnly: true },
-] as const;
 
 // Field surfaces — match the create-post form. Inputs get a bg-tertiary fill with
 // a neutral-600 border; dropdown triggers drop the ring/shadow.
