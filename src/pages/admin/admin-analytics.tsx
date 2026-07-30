@@ -102,16 +102,21 @@ export function AdminAnalytics() {
     }
 
     async function fetchFunnel() {
-        const [signupsRes, profileCompleteRes, firstFollowRes, firstPostOrClaimRes, firstMatchRes] = await Promise.all([
-            supabase.from("users").select("id", { count: "exact", head: true }).is("deleted_at", null),
-            supabase.from("users").select("id", { count: "exact", head: true }).is("deleted_at", null).not("full_name", "is", null),
+        // Sign-ups and profile-completions come from one RPC because they differ
+        // only in auth.users, which this role can't read. The previous version
+        // counted public.users twice and filtered the second on a `full_name`
+        // column that has never existed, so PostgREST 400'd, `count` was
+        // undefined, and `?? 0` rendered a confident "Profile complete: 0".
+        const [funnelRes, firstFollowRes, firstPostOrClaimRes, firstMatchRes] = await Promise.all([
+            supabase.rpc("admin_get_signup_funnel"),
             supabase.from("follows").select("follower_id"),
             Promise.all([supabase.from("posts").select("author_id"), supabase.from("claims").select("claimer_id")]),
             supabase.from("claims").select("claimer_id").eq("status", "approved"),
         ]);
 
-        const signups = signupsRes.count ?? 0;
-        const profileComplete = profileCompleteRes.count ?? 0;
+        const counts = funnelRes.data as { signups?: number; profiles?: number } | null;
+        const signups = counts?.signups ?? 0;
+        const profileComplete = counts?.profiles ?? 0;
         const firstFollow = new Set((firstFollowRes.data ?? []).map((r) => r.follower_id)).size;
 
         const [postsData, claimsData] = firstPostOrClaimRes;
