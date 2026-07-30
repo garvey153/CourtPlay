@@ -43,6 +43,8 @@ export default defineConfig({
                 "apple-touch-icon-v2.png",
                 "icons/icon-192.png",
                 "icons/icon-512.png",
+                "icons/icon-192-v2.png",
+                "icons/icon-512-v2.png",
             ],
             manifest: {
                 name: "CourtPlay",
@@ -54,19 +56,26 @@ export default defineConfig({
                 display: "standalone",
                 start_url: "/",
                 scope: "/",
+                // New PATHS, not ?v= bumps. iOS keys its home-screen icon cache on the
+                // URL path and ignores the query, so every ?v= bump was invisible to it
+                // and the phone kept reinstalling its cached copy. Since iOS 16.4 Safari
+                // prefers these manifest icons over apple-touch-icon for Home Screen web
+                // apps, so these are most likely the ones it actually installs.
+                // The old paths stay on disk (same bytes) so already-installed clients
+                // still referencing them don't 404.
                 icons: [
                     {
-                        src: "/icons/icon-192.png?v=7",
+                        src: "/icons/icon-192-v2.png",
                         sizes: "192x192",
                         type: "image/png",
                     },
                     {
-                        src: "/icons/icon-512.png?v=7",
+                        src: "/icons/icon-512-v2.png",
                         sizes: "512x512",
                         type: "image/png",
                     },
                     {
-                        src: "/icons/icon-512.png?v=7",
+                        src: "/icons/icon-512-v2.png",
                         sizes: "512x512",
                         type: "image/png",
                         purpose: "any maskable",
