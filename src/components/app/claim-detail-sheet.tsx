@@ -224,6 +224,9 @@ export function ClaimDetailSheet({
             notification_type: data.prior_status === "approved" ? "claimer_backed_out" : "claimer_cancelled",
             claim_id: claimId,
         });
+        // Withdrawing frees the spot too — pending and approved claims both
+        // occupy one — so anyone watching the post should hear about it.
+        sendNotification({ notification_type: "spot_reopened", post_id: post.id });
         // Cancel succeeded — refresh the feed, then show the "reopened" banner (which
         // also closes the sheet) or just close if no banner handler is provided.
         onClaimChange?.();
