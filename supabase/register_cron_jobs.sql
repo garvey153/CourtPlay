@@ -83,7 +83,13 @@ select cron.schedule('unfilled-nudge-48h', '0 */6 * * *', $job$
             ),
             'Content-Type', 'application/json'
         ),
-        body := '{}'::jsonb
+        body := '{}'::jsonb,
+        -- pg_net defaults to 5s and gives up waiting, which game-reminders
+        -- exceeded on a cold start. The function still runs to completion — only
+        -- the reply is lost — so a timed-out row is indistinguishable from a job
+        -- that genuinely failed, and net._http_response is the only place these
+        -- results are recorded. 30s is comfortably above a cold start.
+        timeout_milliseconds := 30000
     );
 $job$);
 
@@ -98,7 +104,13 @@ select cron.schedule('game-reminders', '0 9 * * *', $job$
             ),
             'Content-Type', 'application/json'
         ),
-        body := '{}'::jsonb
+        body := '{}'::jsonb,
+        -- pg_net defaults to 5s and gives up waiting, which game-reminders
+        -- exceeded on a cold start. The function still runs to completion — only
+        -- the reply is lost — so a timed-out row is indistinguishable from a job
+        -- that genuinely failed, and net._http_response is the only place these
+        -- results are recorded. 30s is comfortably above a cold start.
+        timeout_milliseconds := 30000
     );
 $job$);
 
@@ -113,7 +125,13 @@ select cron.schedule('friend-expiry-alerts', '0 * * * *', $job$
             ),
             'Content-Type', 'application/json'
         ),
-        body := '{}'::jsonb
+        body := '{}'::jsonb,
+        -- pg_net defaults to 5s and gives up waiting, which game-reminders
+        -- exceeded on a cold start. The function still runs to completion — only
+        -- the reply is lost — so a timed-out row is indistinguishable from a job
+        -- that genuinely failed, and net._http_response is the only place these
+        -- results are recorded. 30s is comfortably above a cold start.
+        timeout_milliseconds := 30000
     );
 $job$);
 
@@ -128,7 +146,13 @@ select cron.schedule('nudge-unresponded-claims', '0 */4 * * *', $job$
             ),
             'Content-Type', 'application/json'
         ),
-        body := '{}'::jsonb
+        body := '{}'::jsonb,
+        -- pg_net defaults to 5s and gives up waiting, which game-reminders
+        -- exceeded on a cold start. The function still runs to completion — only
+        -- the reply is lost — so a timed-out row is indistinguishable from a job
+        -- that genuinely failed, and net._http_response is the only place these
+        -- results are recorded. 30s is comfortably above a cold start.
+        timeout_milliseconds := 30000
     );
 $job$);
 
