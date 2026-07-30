@@ -20,48 +20,55 @@ export type NotificationType =
 
 export type NotificationChannel = "push" | "email";
 
-interface NotificationPayload {
-    user_id: string;
+/**
+ * What the client is allowed to say.
+ *
+ * It names a type and points at a row it already has a relationship to. It does
+ * NOT choose the recipient or write the copy — the edge function checks the
+ * caller is entitled to trigger this notification on this row, then derives both
+ * from the row itself. Passing `user_id` or a `data` blob used to be how this
+ * worked, and it meant anyone holding the anon key from the bundle could push
+ * and email arbitrary text at any user.
+ *
+ * The one exception is `old_cost`: the edit writes `posts.cost` in place, so the
+ * previous price is genuinely gone by the time the server looks. It is display
+ * only, and the server still verifies the caller owns the post it describes.
+ */
+interface NotificationRequest {
     notification_type: NotificationType;
     post_id?: string;
     claim_id?: string;
-    data?: Record<string, unknown>;
+    old_cost?: string;
+}
+
+export interface DispatchResult {
+    /** How many users the server decided should be notified. */
+    recipients: number;
+    /** How many of those got at least one channel through. */
+    delivered: number;
 }
 
 /**
- * Dispatches a notification via the Supabase Edge Function.
- * Fire-and-forget — errors are logged but don't block the caller.
+ * Asks the server to send a notification.
  *
- * `functions.invoke` resolves with `{ data, error }` rather than throwing, so the
- * returned error has to be checked explicitly. It previously wasn't, which is how
- * a CORS preflight failure silently dropped every notification for months.
+ * Fire-and-forget by default — the triggering action has already succeeded, so a
+ * failed notification must not fail it. `functions.invoke` resolves with
+ * `{ data, error }` rather than throwing, so the error is checked explicitly;
+ * it previously wasn't, which is how a CORS preflight failure silently dropped
+ * every notification for months.
  */
-export async function sendNotification(payload: NotificationPayload): Promise<void> {
+export async function sendNotification(request: NotificationRequest): Promise<DispatchResult | null> {
     try {
-        const { error } = await supabase.functions.invoke("send-notification", {
-            body: payload,
+        const { data, error } = await supabase.functions.invoke("send-notification", {
+            body: request,
         });
         if (error) {
-            console.warn("Notification dispatch failed:", payload.notification_type, error.message);
+            console.warn("Notification dispatch failed:", request.notification_type, error.message);
+            return null;
         }
+        return { recipients: data?.recipients ?? 0, delivered: data?.delivered ?? 0 };
     } catch (e) {
         console.warn("Notification dispatch threw:", e);
+        return null;
     }
-}
-
-/**
- * Dispatches notifications to multiple users (e.g., notify_me watchers).
- * Fire-and-forget.
- */
-export async function sendNotificationBatch(
-    userIds: string[],
-    notification_type: NotificationType,
-    post_id?: string,
-    data?: Record<string, string>,
-): Promise<void> {
-    await Promise.allSettled(
-        userIds.map((user_id) =>
-            sendNotification({ user_id, notification_type, post_id, data }),
-        ),
-    );
 }

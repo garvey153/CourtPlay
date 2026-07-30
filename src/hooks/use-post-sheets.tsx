@@ -6,7 +6,7 @@ import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
 import { RegularConnectionsSheet } from "@/components/app/regular-connections-sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
-import { sendNotification, sendNotificationBatch } from "@/lib/notifications";
+import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { REJECTION_REASONS } from "@/types/claims";
 import type { ClaimRow, MyClaim, MyPost } from "@/types/activity";
@@ -92,7 +92,7 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
             setCreatedActionLoading(claim.id);
             const { data, error } = await supabase.rpc("approve_claim", { p_claim_id: claim.id });
             if (!error && data?.success) {
-                sendNotification({ user_id: claim.claimer_id, notification_type: "claim_approved", post_id: post.id, claim_id: claim.id });
+                sendNotification({ notification_type: "claim_approved", claim_id: claim.id });
                 onChanged?.();
                 await refreshCreated(post.id);
             }
@@ -102,11 +102,11 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
     );
 
     const handleDecline = useCallback(
-        async (claim: ClaimRow, post: MyPost) => {
+        async (claim: ClaimRow, _post: MyPost) => {
             setCreatedActionLoading(claim.id);
             const { data, error } = await supabase.rpc("reject_claim", { p_claim_id: claim.id, p_reason: REJECTION_REASONS[0] });
             if (!error && data?.success) {
-                sendNotification({ user_id: claim.claimer_id, notification_type: "claim_rejected", post_id: post.id, claim_id: claim.id, data: { reason: REJECTION_REASONS[0] } });
+                sendNotification({ notification_type: "claim_rejected", claim_id: claim.id });
                 setCreatedSheet(null);
                 onChanged?.();
             }
@@ -151,10 +151,7 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
                 // A seeker removing their regular post = they found a spot. Let the
                 // responders they were talking to know the conversation is closed.
                 if (post.post_type === "regular_game" && post.claims.length > 0) {
-                    const responderIds = [...new Set(post.claims.map((c) => c.claimer_id))];
-                    sendNotificationBatch(responderIds, "connection_closed", post.id, {
-                        poster_name: profile?.first_name ?? "",
-                    });
+                    sendNotification({ notification_type: "connection_closed", post_id: post.id });
                 }
                 setCreatedSheet(null);
                 setRegularSheet(null);

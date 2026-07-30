@@ -10,7 +10,21 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/notify-feedback/index.ts"
 
-# Scheduled jobs. pg_cron reaches these with the service role key and they now
+# Called from the admin screen with the admin's own JWT; it checks is_admin
+# itself and derives the recipient, so send-email can stay service-role only.
+[functions.notify-content-removed]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/notify-content-removed/index.ts"
+
+# Never called from a browser — send-notification and notify-content-removed
+# reach it with the service role key.
+[functions.send-email]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-email/index.ts"
+
+# Scheduled jobs. pg_cron reaches these with the service role key and they
 # reject anything else, so they're listed here to keep the deployed set explicit
 # — a job that silently fails to deploy is a notification channel that quietly
 # does not exist, which is exactly what happened to unfilled-nudge-48h.

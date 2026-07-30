@@ -11,7 +11,7 @@ import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
-import { sendNotification, sendNotificationBatch } from "@/lib/notifications";
+import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { REJECTION_REASONS } from "@/types/claims";
 import type { ClaimRow, MyClaim, MyPost } from "@/types/activity";
@@ -96,12 +96,7 @@ export function Activity() {
                     setActionLoading(null);
                     return;
                 }
-                sendNotification({
-                    user_id: claim.claimer_id,
-                    notification_type: "claim_approved",
-                    post_id: post.id,
-                    claim_id: claim.id,
-                });
+                sendNotification({ notification_type: "claim_approved", claim_id: claim.id });
                 // Refresh and keep the sheet open in its approved state so the thread
                 // (including any reply the poster just sent) and contact stay visible.
                 const { data: list } = await supabase.rpc("get_my_posts_with_claims");
@@ -131,17 +126,9 @@ export function Activity() {
                     setActionLoading(null);
                     return;
                 }
-                sendNotification({
-                    user_id: claim.claimer_id,
-                    notification_type: "claim_rejected",
-                    post_id: post.id,
-                    claim_id: claim.id,
-                    data: { reason: REJECTION_REASONS[0] },
-                });
-                // Notify notify_me watchers that the spot reopened.
-                const { data: watchers } = await supabase.from("notify_me").select("user_id").eq("post_id", post.id);
-                const watcherIds = (watchers ?? []).map((w) => w.user_id).filter((id) => id !== user?.id);
-                if (watcherIds.length > 0) sendNotificationBatch(watcherIds, "spot_reopened", post.id);
+                sendNotification({ notification_type: "claim_rejected", claim_id: claim.id });
+                // The server works out which notify_me watchers to tell.
+                sendNotification({ notification_type: "spot_reopened", post_id: post.id });
                 fetchData();
             } catch {
                 setActionError("Something went wrong. Please try again.");
@@ -205,10 +192,7 @@ export function Activity() {
             // A seeker removing their regular post = they found a spot. Notify the
             // responders they were talking to that the conversation is closed.
             if (post.post_type === "regular_game" && post.claims.length > 0) {
-                const responderIds = [...new Set(post.claims.map((c) => c.claimer_id))];
-                sendNotificationBatch(responderIds, "connection_closed", post.id, {
-                    poster_name: profile?.first_name ?? "",
-                });
+                sendNotification({ notification_type: "connection_closed", post_id: post.id });
             }
             setCreatedSheet(null);
             setRegularSheet(null);

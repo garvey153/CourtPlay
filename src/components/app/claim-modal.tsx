@@ -74,9 +74,7 @@ export function ClaimModal({ post, onClose, onSuccess }: ClaimModalProps) {
 
         // Notify poster that a claim was submitted (fire-and-forget)
         sendNotification({
-            user_id: post.author_id,
             notification_type: "claim_submitted",
-            post_id: post.id,
             claim_id: data.claim_id as string,
         });
 

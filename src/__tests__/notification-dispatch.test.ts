@@ -1,11 +1,11 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { supabase } from "@/lib/supabase";
-import { sendNotification, sendNotificationBatch } from "@/lib/notifications";
+import { sendNotification } from "@/lib/notifications";
 
 vi.mock("@/lib/supabase", () => ({
     supabase: {
         functions: {
-            invoke: vi.fn().mockResolvedValue({ data: { success: true }, error: null }),
+            invoke: vi.fn(),
         },
     },
 }));
@@ -14,274 +14,84 @@ const invoke = vi.mocked(supabase.functions.invoke);
 
 beforeEach(() => {
     invoke.mockReset();
-    invoke.mockResolvedValue({ data: { success: true }, error: null } as never);
+    invoke.mockResolvedValue({ data: { recipients: 1, delivered: 1 }, error: null } as never);
 });
 
-describe("notification dispatch", () => {
-    it("dispatch sends push when push_enabled and onesignal_player_id set", async () => {
-        invoke.mockResolvedValueOnce({
-            data: { channels_sent: ["push"] },
-            error: null,
-        } as never);
-
-        await sendNotification({
-            user_id: "user-1",
-            notification_type: "claim_submitted",
-            post_id: "post-1",
-        });
-
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: "user-1",
-                notification_type: "claim_submitted",
-                post_id: "post-1",
-            },
-        });
-    });
-
-    it("dispatch sends email when email_enabled", async () => {
-        invoke.mockResolvedValueOnce({
-            data: { channels_sent: ["email"] },
-            error: null,
-        } as never);
-
-        await sendNotification({
-            user_id: "user-2",
-            notification_type: "claim_approved",
-            post_id: "post-2",
-        });
+/**
+ * The client's half of the notification contract.
+ *
+ * It names a type and points at a row. It does not choose a recipient and does
+ * not write the copy — those are derived server-side from the row, after an
+ * entitlement check. What is worth testing here is therefore what the client is
+ * *allowed to say*, because the previous contract (client supplies `user_id`
+ * plus a `data` blob) is what made the anon key enough to notify anyone.
+ *
+ * These replace a suite that asserted the library forwarded its own argument
+ * and named the results things like "sends push when push_enabled" — a decision
+ * the client has never made.
+ */
+describe("sendNotification", () => {
+    it("forwards the request to the edge function unchanged", async () => {
+        await sendNotification({ notification_type: "claim_submitted", claim_id: "claim-1" });
 
         expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: "user-2",
-                notification_type: "claim_approved",
-                post_id: "post-2",
-            },
+            body: { notification_type: "claim_submitted", claim_id: "claim-1" },
         });
     });
 
-    it("dispatch sends both push and email when both enabled", async () => {
-        invoke.mockResolvedValueOnce({
-            data: { channels_sent: ["push", "email"] },
-            error: null,
-        } as never);
+    // Regression guard for the auth hole: if either field comes back, the client
+    // is choosing recipients and copy again.
+    it("never sends a recipient or a copy payload", async () => {
+        await sendNotification({ notification_type: "claim_approved", claim_id: "claim-2" });
 
-        await sendNotification({
-            user_id: "user-3",
-            notification_type: "claim_rejected",
-            claim_id: "claim-1",
-        });
+        const body = invoke.mock.calls[0][1]?.body as Record<string, unknown>;
+        expect(body).not.toHaveProperty("user_id");
+        expect(body).not.toHaveProperty("data");
+    });
+
+    it("passes old_cost through, since the server cannot recover it", async () => {
+        await sendNotification({ notification_type: "price_drop", post_id: "post-1", old_cost: "40.00" });
 
         expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: "user-3",
-                notification_type: "claim_rejected",
-                claim_id: "claim-1",
-            },
+            body: { notification_type: "price_drop", post_id: "post-1", old_cost: "40.00" },
         });
     });
 
-    it("dispatch skips push when onesignal_player_id is null", async () => {
-        // Edge Function falls back to email-only when no player_id
-        invoke.mockResolvedValueOnce({
-            data: { channels_sent: ["email"] },
-            error: null,
-        } as never);
+    it("returns the server's recipient and delivery counts", async () => {
+        invoke.mockResolvedValueOnce({ data: { recipients: 4, delivered: 3 }, error: null } as never);
 
-        await sendNotification({
-            user_id: "user-no-player-id",
-            notification_type: "claimer_backed_out",
-            post_id: "post-3",
-        });
-
-        expect(invoke).toHaveBeenCalledTimes(1);
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: "user-no-player-id",
-                notification_type: "claimer_backed_out",
-                post_id: "post-3",
-            },
-        });
+        await expect(sendNotification({ notification_type: "friend_new_post", post_id: "post-2" }))
+            .resolves.toEqual({ recipients: 4, delivered: 3 });
     });
 
-    it("dispatch skips push when push_enabled is false", async () => {
-        invoke.mockResolvedValueOnce({
-            data: { channels_sent: ["email"] },
-            error: null,
-        } as never);
+    it("reports zero rather than undefined when the server omits the counts", async () => {
+        invoke.mockResolvedValueOnce({ data: {}, error: null } as never);
 
-        await sendNotification({
-            user_id: "user-push-disabled",
-            notification_type: "cost_changed",
-            post_id: "post-4",
-        });
-
-        expect(invoke).toHaveBeenCalledTimes(1);
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: "user-push-disabled",
-                notification_type: "cost_changed",
-                post_id: "post-4",
-            },
-        });
+        await expect(sendNotification({ notification_type: "spot_reopened", post_id: "post-3" }))
+            .resolves.toEqual({ recipients: 0, delivered: 0 });
     });
 
-    it("dispatch sends nothing when both channels disabled", async () => {
-        invoke.mockResolvedValueOnce({
-            data: { channels_sent: [] },
-            error: null,
-        } as never);
+    // The triggering action has already succeeded by the time this runs, so a
+    // failed notification must never surface as a failure of that action.
+    it("returns null instead of throwing when the function reports an error", async () => {
+        invoke.mockResolvedValueOnce({ data: null, error: { message: "boom" } } as never);
 
-        await sendNotification({
-            user_id: "user-all-disabled",
-            notification_type: "nudge_no_response",
-            post_id: "post-5",
-        });
-
-        // The client still invokes the Edge Function; the server decides to send nothing
-        expect(invoke).toHaveBeenCalledTimes(1);
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: "user-all-disabled",
-                notification_type: "nudge_no_response",
-                post_id: "post-5",
-            },
-        });
+        await expect(sendNotification({ notification_type: "claim_rejected", claim_id: "claim-3" }))
+            .resolves.toBeNull();
     });
 
-    it("dispatch respects per-type preferences", async () => {
-        // User has push disabled specifically for price_drop but email enabled
-        invoke.mockResolvedValueOnce({
-            data: { channels_sent: ["email"] },
-            error: null,
-        } as never);
+    it("returns null instead of throwing when invoke itself rejects", async () => {
+        invoke.mockRejectedValueOnce(new Error("network down"));
 
-        await sendNotification({
-            user_id: "user-per-type",
-            notification_type: "price_drop",
-            post_id: "post-6",
-            data: { old_price: 20, new_price: 15 },
-        });
-
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: "user-per-type",
-                notification_type: "price_drop",
-                post_id: "post-6",
-                data: { old_price: 20, new_price: 15 },
-            },
-        });
+        await expect(sendNotification({ notification_type: "claim_rejected", claim_id: "claim-4" }))
+            .resolves.toBeNull();
     });
 
-    it("dispatch creates default preferences if none exist for this type", async () => {
-        // Edge Function creates default prefs row then proceeds
-        invoke.mockResolvedValueOnce({
-            data: { channels_sent: ["push", "email"], preferences_created: true },
-            error: null,
-        } as never);
+    it("never sends an SMS channel — V1 is push and email only", async () => {
+        await sendNotification({ notification_type: "spot_reopened", post_id: "post-4" });
 
-        await sendNotification({
-            user_id: "user-new",
-            notification_type: "friend_new_post",
-            post_id: "post-7",
-        });
-
-        expect(invoke).toHaveBeenCalledTimes(1);
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: "user-new",
-                notification_type: "friend_new_post",
-                post_id: "post-7",
-            },
-        });
-    });
-
-    it("dispatch handles OneSignal API failure gracefully", async () => {
-        // Edge Function catches OneSignal error, still sends email
-        invoke.mockResolvedValueOnce({
-            data: { channels_sent: ["email"], errors: ["onesignal_failed"] },
-            error: null,
-        } as never);
-
-        await sendNotification({
-            user_id: "user-onesignal-fail",
-            notification_type: "game_reminder",
-            post_id: "post-8",
-        });
-
-        // sendNotification should not throw
-        expect(invoke).toHaveBeenCalledTimes(1);
-    });
-
-    it("dispatch handles Resend API failure gracefully", async () => {
-        // Edge Function catches Resend error, still sends push
-        invoke.mockResolvedValueOnce({
-            data: { channels_sent: ["push"], errors: ["resend_failed"] },
-            error: null,
-        } as never);
-
-        await sendNotification({
-            user_id: "user-resend-fail",
-            notification_type: "friend_expiry",
-            post_id: "post-9",
-        });
-
-        // sendNotification should not throw
-        expect(invoke).toHaveBeenCalledTimes(1);
-    });
-
-    it("dispatch never sends SMS in V1", async () => {
-        invoke.mockResolvedValueOnce({
-            data: { channels_sent: ["push", "email"] },
-            error: null,
-        } as never);
-
-        await sendNotification({
-            user_id: "user-sms-check",
-            notification_type: "spot_reopened",
-            post_id: "post-10",
-        });
-
-        // Verify the payload never includes an SMS channel
-        const callBody = invoke.mock.calls[0][1]?.body as Record<string, unknown>;
-        expect(callBody).not.toHaveProperty("channel", "sms");
-        expect(callBody).not.toHaveProperty("sms");
-
-        // The Edge Function response should never include "sms" in channels_sent
-        const result = await invoke.mock.results[0].value;
-        expect((result as { data: { channels_sent: string[] } }).data.channels_sent).not.toContain("sms");
-    });
-});
-
-describe("sendNotificationBatch", () => {
-    it("dispatches to all user IDs in parallel", async () => {
-        invoke.mockResolvedValue({ data: { success: true }, error: null } as never);
-
-        const userIds = ["user-a", "user-b", "user-c"];
-        await sendNotificationBatch(userIds, "spot_reopened", "post-batch");
-
-        expect(invoke).toHaveBeenCalledTimes(3);
-        for (const uid of userIds) {
-            expect(invoke).toHaveBeenCalledWith("send-notification", {
-                body: {
-                    user_id: uid,
-                    notification_type: "spot_reopened",
-                    post_id: "post-batch",
-                },
-            });
-        }
-    });
-
-    it("does not throw if one notification in batch fails", async () => {
-        invoke
-            .mockResolvedValueOnce({ data: { success: true }, error: null } as never)
-            .mockRejectedValueOnce(new Error("network error"))
-            .mockResolvedValueOnce({ data: { success: true }, error: null } as never);
-
-        await expect(
-            sendNotificationBatch(["u1", "u2", "u3"], "48h_unfilled", "post-fail"),
-        ).resolves.not.toThrow();
-
-        expect(invoke).toHaveBeenCalledTimes(3);
+        const body = invoke.mock.calls[0][1]?.body as Record<string, unknown>;
+        expect(body).not.toHaveProperty("sms");
+        expect(body).not.toHaveProperty("channel");
     });
 });

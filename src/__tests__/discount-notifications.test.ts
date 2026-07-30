@@ -1,240 +1,89 @@
-import { sendNotification, sendNotificationBatch } from "@/lib/notifications";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 
 vi.mock("@/lib/supabase", () => ({
     supabase: {
         functions: {
-            invoke: vi.fn().mockResolvedValue({ data: { success: true }, error: null }),
+            invoke: vi.fn(),
         },
     },
 }));
 
 const invoke = vi.mocked(supabase.functions.invoke);
 
-// ---------------------------------------------------------------------------
-// Helpers — mirror the filtering logic from activity.tsx handleReducePrice
-// ---------------------------------------------------------------------------
-
-/** Return viewer IDs eligible for N8, excluding poster and active claimers. */
-function getN8Recipients(
-    viewers: string[],
-    posterId: string,
-    activeClaimerIds: Set<string>,
-): string[] {
-    return viewers.filter((id) => id !== posterId && !activeClaimerIds.has(id));
-}
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const POST_ID = "post-1";
-const POSTER_ID = "poster-1";
-const CLAIMER_A = "claimer-a"; // pending
-const CLAIMER_B = "claimer-b"; // approved
-const CLAIMER_C = "claimer-c"; // rejected (should NOT receive N5)
-const CLAIMER_D = "claimer-d"; // approved
-const VIEWER_X = "viewer-x";
-const VIEWER_Y = "viewer-y";
-const WATCHER_W = "watcher-w";
-
-const ACTIVE_CLAIMER_IDS = new Set([CLAIMER_A, CLAIMER_B, CLAIMER_D]);
-
 beforeEach(() => {
-    vi.clearAllMocks();
+    invoke.mockReset();
+    invoke.mockResolvedValue({ data: { recipients: 2, delivered: 2 }, error: null } as never);
 });
 
-// ---------------------------------------------------------------------------
-// N5 — cost_changed notifications
-// ---------------------------------------------------------------------------
+const bodyOf = (call: number) => invoke.mock.calls[call][1]?.body as Record<string, unknown>;
 
-describe("N5 — cost_changed", () => {
-    it("notifies a pending claimer with old_cost and new_cost", async () => {
+/**
+ * The two price notifications are the only ones that still carry a value from
+ * the client, so they get their own tests.
+ *
+ * The edit writes `posts.cost` in place and never touches `original_cost`, so by
+ * the time the server looks the previous price is gone — `old_cost` has to
+ * travel. `new_cost` does not: the server reads it off the post, which is what
+ * keeps the number in the email honest. Recipients are derived server-side for
+ * both (active claimers for a cost change, prior viewers minus those claimers
+ * for a price drop), so the browser no longer enumerates anyone.
+ */
+describe("cost_changed", () => {
+    it("carries only the previous price, never the new one", async () => {
         await sendNotification({
-            user_id: CLAIMER_A,
             notification_type: "cost_changed",
-            post_id: POST_ID,
-            data: { old_cost: "25", new_cost: "15" },
+            post_id: "post-1",
+            old_cost: "40.00",
         });
 
-        expect(invoke).toHaveBeenCalledOnce();
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: CLAIMER_A,
-                notification_type: "cost_changed",
-                post_id: POST_ID,
-                data: { old_cost: "25", new_cost: "15" },
-            },
+        expect(bodyOf(0)).toEqual({
+            notification_type: "cost_changed",
+            post_id: "post-1",
+            old_cost: "40.00",
         });
+        expect(bodyOf(0)).not.toHaveProperty("new_cost");
     });
 
-    it("notifies approved claimers (User B and User D)", async () => {
-        const approvedClaimers = [CLAIMER_B, CLAIMER_D];
+    it("does not enumerate claimers in the browser", async () => {
+        await sendNotification({ notification_type: "cost_changed", post_id: "post-1", old_cost: "40.00" });
 
-        await sendNotificationBatch(approvedClaimers, "cost_changed", POST_ID, {
-            old_cost: "30",
-            new_cost: "20",
-        });
-
-        expect(invoke).toHaveBeenCalledTimes(2);
-
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: CLAIMER_B,
-                notification_type: "cost_changed",
-                post_id: POST_ID,
-                data: { old_cost: "30", new_cost: "20" },
-            },
-        });
-
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: CLAIMER_D,
-                notification_type: "cost_changed",
-                post_id: POST_ID,
-                data: { old_cost: "30", new_cost: "20" },
-            },
-        });
-    });
-
-    it("does not notify rejected or unclaimed claimers", async () => {
-        // Only active (pending + approved) claimers should be in the batch
-        const activeClaimers = [CLAIMER_A, CLAIMER_B, CLAIMER_D];
-
-        await sendNotificationBatch(activeClaimers, "cost_changed", POST_ID, {
-            old_cost: "30",
-            new_cost: "20",
-        });
-
-        const invokedUserIds = invoke.mock.calls.map(
-            (call) => (call[1] as { body: { user_id: string } }).body.user_id,
-        );
-
-        expect(invokedUserIds).toContain(CLAIMER_A);
-        expect(invokedUserIds).toContain(CLAIMER_B);
-        expect(invokedUserIds).toContain(CLAIMER_D);
-        expect(invokedUserIds).not.toContain(CLAIMER_C);
+        expect(invoke).toHaveBeenCalledTimes(1);
+        expect(bodyOf(0)).not.toHaveProperty("user_id");
     });
 });
 
-// ---------------------------------------------------------------------------
-// N8 — price_drop notifications
-// ---------------------------------------------------------------------------
-
-describe("N8 — price_drop", () => {
-    it("notifies prior viewers", async () => {
-        const viewers = [VIEWER_X, VIEWER_Y];
-        const recipients = getN8Recipients(viewers, POSTER_ID, new Set());
-
-        await sendNotificationBatch(recipients, "price_drop", POST_ID, {
-            new_cost: "10",
+describe("price_drop", () => {
+    it("carries only the previous price", async () => {
+        await sendNotification({
+            notification_type: "price_drop",
+            post_id: "post-2",
+            old_cost: "40.00",
         });
+
+        expect(bodyOf(0)).toEqual({
+            notification_type: "price_drop",
+            post_id: "post-2",
+            old_cost: "40.00",
+        });
+    });
+
+    it("does not enumerate viewers in the browser", async () => {
+        await sendNotification({ notification_type: "price_drop", post_id: "post-2", old_cost: "40.00" });
+
+        expect(invoke).toHaveBeenCalledTimes(1);
+        expect(bodyOf(0)).not.toHaveProperty("user_id");
+    });
+
+    // A drop is both a cost change and a drop, so the edit fires both types. The
+    // server is responsible for keeping a live claimer out of the second one.
+    it("is dispatched alongside cost_changed as two separate requests", async () => {
+        await sendNotification({ notification_type: "cost_changed", post_id: "post-3", old_cost: "40.00" });
+        await sendNotification({ notification_type: "price_drop", post_id: "post-3", old_cost: "40.00" });
 
         expect(invoke).toHaveBeenCalledTimes(2);
-
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: VIEWER_X,
-                notification_type: "price_drop",
-                post_id: POST_ID,
-                data: { new_cost: "10" },
-            },
-        });
-
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: VIEWER_Y,
-                notification_type: "price_drop",
-                post_id: POST_ID,
-                data: { new_cost: "10" },
-            },
-        });
-    });
-
-    it("does not notify the poster", async () => {
-        const viewers = [POSTER_ID, VIEWER_X, VIEWER_Y];
-        const recipients = getN8Recipients(viewers, POSTER_ID, new Set());
-
-        expect(recipients).not.toContain(POSTER_ID);
-        expect(recipients).toEqual([VIEWER_X, VIEWER_Y]);
-
-        await sendNotificationBatch(recipients, "price_drop", POST_ID, {
-            new_cost: "10",
-        });
-
-        const invokedUserIds = invoke.mock.calls.map(
-            (call) => (call[1] as { body: { user_id: string } }).body.user_id,
-        );
-
-        expect(invokedUserIds).not.toContain(POSTER_ID);
-    });
-
-    it("does not double-notify active claimers", async () => {
-        // Viewers include active claimers who already got N5
-        const viewers = [VIEWER_X, CLAIMER_A, CLAIMER_B, VIEWER_Y];
-        const recipients = getN8Recipients(viewers, POSTER_ID, ACTIVE_CLAIMER_IDS);
-
-        expect(recipients).toEqual([VIEWER_X, VIEWER_Y]);
-        expect(recipients).not.toContain(CLAIMER_A);
-        expect(recipients).not.toContain(CLAIMER_B);
-
-        await sendNotificationBatch(recipients, "price_drop", POST_ID, {
-            new_cost: "10",
-        });
-
-        expect(invoke).toHaveBeenCalledTimes(2);
-    });
-});
-
-// ---------------------------------------------------------------------------
-// notify_me watchers
-// ---------------------------------------------------------------------------
-
-describe("price_drop — notify_me watchers", () => {
-    it("notifies watchers via sendNotificationBatch", async () => {
-        const watchers = [WATCHER_W];
-        const recipients = getN8Recipients(watchers, POSTER_ID, ACTIVE_CLAIMER_IDS);
-
-        await sendNotificationBatch(recipients, "price_drop", POST_ID, {
-            new_cost: "10",
-        });
-
-        expect(invoke).toHaveBeenCalledOnce();
-        expect(invoke).toHaveBeenCalledWith("send-notification", {
-            body: {
-                user_id: WATCHER_W,
-                notification_type: "price_drop",
-                post_id: POST_ID,
-                data: { new_cost: "10" },
-            },
-        });
-    });
-});
-
-// ---------------------------------------------------------------------------
-// Edge case: no recipients at all
-// ---------------------------------------------------------------------------
-
-describe("discount with no viewers, no claimers, no watchers", () => {
-    it("succeeds silently with no notifications sent", async () => {
-        // N5 — no active claimers
-        await sendNotificationBatch([], "cost_changed", POST_ID, {
-            old_cost: "30",
-            new_cost: "20",
-        });
-
-        // N8 — no viewers
-        const viewerRecipients = getN8Recipients([], POSTER_ID, new Set());
-        await sendNotificationBatch(viewerRecipients, "price_drop", POST_ID, {
-            new_cost: "20",
-        });
-
-        // N8 — no watchers
-        const watcherRecipients = getN8Recipients([], POSTER_ID, new Set());
-        await sendNotificationBatch(watcherRecipients, "price_drop", POST_ID, {
-            new_cost: "20",
-        });
-
-        expect(invoke).not.toHaveBeenCalled();
+        expect(bodyOf(0).notification_type).toBe("cost_changed");
+        expect(bodyOf(1).notification_type).toBe("price_drop");
     });
 });
