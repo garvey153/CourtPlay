@@ -26,6 +26,7 @@ export type NotificationType =
     | "friend_new_post"
     | "connection_request"
     | "connection_closed"
+    | "connection_withdrawn"
     | "feedback_submitted";
 
 export const DEFAULT_CHANNELS: Record<NotificationType, { push: boolean; email: boolean }> = {
@@ -46,5 +47,6 @@ export const DEFAULT_CHANNELS: Record<NotificationType, { push: boolean; email: 
     friend_new_post:    { push: false, email: false }, // N13 defaults to off
     connection_request: { push: true, email: true },   // N14 — like a new claim
     connection_closed:  { push: false, email: true },  // N15
+    connection_withdrawn: { push: false, email: true }, // N16 — informational, like connection_closed
     feedback_submitted: { push: true, email: true },   // N16 — admin-only
 };

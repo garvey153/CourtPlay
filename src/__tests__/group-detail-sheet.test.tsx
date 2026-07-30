@@ -108,8 +108,10 @@ describe("GroupDetailSheet (regular-post connections)", () => {
         expect(screen.queryByLabelText("Message")).not.toBeInTheDocument();
     });
 
-    it("confirms before cancelling, then unclaims the connection", async () => {
-        rpc.mockResolvedValue({ error: null } as never);
+    it("confirms before cancelling, then unclaims the connection and tells the seeker", async () => {
+        // unclaim reports {success, prior_status}; the mock returned neither, so
+        // it passed only because the handler wasn't checking.
+        rpc.mockResolvedValue({ data: { success: true, prior_status: "pending" }, error: null } as never);
         const onCancelled = vi.fn();
         const user = userEvent.setup();
         const connected = { ...regularPost, user_claim_status: "pending" as const, user_claim_id: "conn-9" };
@@ -125,6 +127,8 @@ describe("GroupDetailSheet (regular-post connections)", () => {
 
         await user.click(screen.getByRole("button", { name: "Yes, cancel" }));
         await waitFor(() => expect(rpc).toHaveBeenCalledWith("unclaim", { p_claim_id: "conn-9" }));
+        // The seeker loses a responder and had no way of knowing before this.
+        expect(notify).toHaveBeenCalledWith({ notification_type: "connection_withdrawn", claim_id: "conn-9" });
         expect(onCancelled).toHaveBeenCalled();
     });
 

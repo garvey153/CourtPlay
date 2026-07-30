@@ -17,6 +17,7 @@ export type NotificationType =
     | "friend_new_post"       // N13
     | "connection_request"    // N14 — responder taps Connect on a regular post
     | "connection_closed"     // N15 — seeker removes their regular post (spot found)
+    | "connection_withdrawn"  // N16 — responder withdraws their connection
     | "feedback_submitted";   // N16 — admin-only: a player submitted feedback
 
 export type NotificationChannel = "push" | "email";
@@ -68,6 +69,7 @@ export const NOTIFICATION_TYPES: readonly NotificationTypeMeta[] = [
     // despite firing since the regular-post connections feature shipped.
     { key: "connection_request", label: "New connection request", hint: "When someone responds to your regular play post", defaultEmail: true, defaultPush: true },
     { key: "connection_closed", label: "Group filled up", hint: "When a regular play post you responded to closes", defaultEmail: true, defaultPush: false },
+    { key: "connection_withdrawn", label: "Connection withdrawn", hint: "When someone withdraws their response to your regular play post", defaultEmail: true, defaultPush: false },
     { key: "feedback_submitted", label: "New feedback", hint: "When a player submits feedback", defaultEmail: true, defaultPush: true, adminOnly: true },
 ] as const;
 

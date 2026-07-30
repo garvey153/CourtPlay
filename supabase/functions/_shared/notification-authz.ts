@@ -37,6 +37,7 @@ export type Resolution =
 const USER_TRIGGERABLE = new Set([
     "claim_submitted",
     "connection_request",
+    "connection_withdrawn",
     "claimer_backed_out",
     "claim_approved",
     "claim_rejected",
@@ -82,6 +83,7 @@ export async function resolveUserNotification(
     const claimAnchored = [
         "claim_submitted",
         "connection_request",
+        "connection_withdrawn",
         "claimer_backed_out",
         "claim_approved",
         "claim_rejected",
@@ -110,10 +112,14 @@ export async function resolveUserNotification(
             // Actions taken by the claimer, reported to the poster.
             case "claim_submitted":
             case "connection_request":
+            case "connection_withdrawn":
             case "claimer_backed_out": {
                 if (claim.claimer_id !== callerId) return deny(403, "Only the claimer may trigger this");
                 const claimer_name = await firstName(supabase, callerId);
-                const data: Record<string, string> = type === "connection_request"
+                // The connection_* types omit post_summary: regular posts often
+                // have no location or date set, so it renders as an empty gap.
+                const isConnection = type === "connection_request" || type === "connection_withdrawn";
+                const data: Record<string, string> = isConnection
                     ? { claimer_name }
                     : { claimer_name, post_summary: summary };
                 return { ok: true, value: { recipients: [post.author_id], data, ...base } };
