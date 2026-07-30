@@ -4,6 +4,7 @@ export type NotificationType =
     | "claim_submitted"       // N1
     | "claim_approved"        // N2
     | "claim_rejected"        // N3
+    | "approval_cancelled"    // N3b — poster withdraws an approval they granted
     | "claimer_backed_out"    // N4
     | "cost_changed"          // N5
     | "nudge_no_response"     // N6

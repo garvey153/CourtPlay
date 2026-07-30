@@ -312,6 +312,9 @@ export function Feed() {
             setCreatedActionLoading(claim.id);
             const { data, error: rpcError } = await supabase.rpc("cancel_approval", { p_claim_id: claim.id });
             if (!rpcError && data?.success) {
+                // Tell the claimer: cancel_approval sets the claim back to
+                // pending, so their spot isn't gone, it's undecided again.
+                sendNotification({ notification_type: "approval_cancelled", claim_id: claim.id });
                 fetchPosts();
                 const { data: list } = await supabase.rpc("get_my_posts_with_claims");
                 const posts = (list as MyPost[]) ?? [];

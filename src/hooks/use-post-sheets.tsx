@@ -120,6 +120,9 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
             setCreatedActionLoading(claim.id);
             const { data, error } = await supabase.rpc("cancel_approval", { p_claim_id: claim.id });
             if (!error && data?.success) {
+                // Tell the claimer: cancel_approval sets the claim back to
+                // pending, so their spot isn't gone, it's undecided again.
+                sendNotification({ notification_type: "approval_cancelled", claim_id: claim.id });
                 onChanged?.();
                 await refreshCreated(post.id);
             }

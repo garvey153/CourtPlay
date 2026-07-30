@@ -40,6 +40,7 @@ const USER_TRIGGERABLE = new Set([
     "claimer_backed_out",
     "claim_approved",
     "claim_rejected",
+    "approval_cancelled",
     "claimer_cancelled",
     "spot_reopened",
     "connection_closed",
@@ -84,6 +85,7 @@ export async function resolveUserNotification(
         "claimer_backed_out",
         "claim_approved",
         "claim_rejected",
+        "approval_cancelled",
         "claimer_cancelled",
     ];
 
@@ -124,6 +126,21 @@ export async function resolveUserNotification(
                 return {
                     ok: true,
                     value: { recipients: [claim.claimer_id], data: { poster_name, post_summary: summary }, ...base },
+                };
+            }
+            // The poster withdrawing an approval they already granted. Same
+            // direction as claim_rejected — poster acts, claimer hears — but the
+            // claim returns to pending rather than being refused.
+            case "approval_cancelled": {
+                if (post.author_id !== callerId) return deny(403, "Only the post author may trigger this");
+                const poster_name = await firstName(supabase, callerId);
+                return {
+                    ok: true,
+                    value: {
+                        recipients: [claim.claimer_id],
+                        data: { poster_name, post_summary: summary },
+                        ...base,
+                    },
                 };
             }
             case "claim_rejected": {

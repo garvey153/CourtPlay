@@ -90,3 +90,56 @@ describe("cancelling a claim notifies the poster", () => {
         expect(bodyOf(0)).not.toHaveProperty("data");
     });
 });
+
+/**
+ * The mirror image: the poster withdrawing an approval they already granted.
+ *
+ * This had no dispatch at any of its three call sites (use-post-sheets, feed,
+ * activity), so a claimer whose approved spot was revoked went on believing
+ * they had a game. Unlike reject_claim — which notified correctly everywhere —
+ * the cancel-shaped flows were uniformly silent.
+ */
+async function cancelApproval(claimId: string) {
+    const { data, error } = await supabase.rpc("cancel_approval", { p_claim_id: claimId });
+    if (error || !data?.success) return null;
+
+    return sendNotification({ notification_type: "approval_cancelled", claim_id: claimId });
+}
+
+describe("withdrawing an approval notifies the claimer", () => {
+    it("sends approval_cancelled against the claim", async () => {
+        rpc.mockResolvedValueOnce({ data: { success: true }, error: null } as never);
+
+        await cancelApproval("claim-10");
+
+        expect(invoke).toHaveBeenCalledTimes(1);
+        expect(bodyOf(0)).toEqual({ notification_type: "approval_cancelled", claim_id: "claim-10" });
+    });
+
+    // cancel_approval refuses when the caller isn't the post author, reporting it
+    // as {success:false} with no rpc error — the same shape unclaim uses.
+    it("sends nothing when the rpc reports success:false", async () => {
+        rpc.mockResolvedValueOnce({ data: { success: false, error: "Not authorized" }, error: null } as never);
+
+        await cancelApproval("claim-11");
+
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it("sends nothing when the rpc itself errors", async () => {
+        rpc.mockResolvedValueOnce({ data: null, error: { message: "boom" } } as never);
+
+        await cancelApproval("claim-12");
+
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it("never names a recipient", async () => {
+        rpc.mockResolvedValueOnce({ data: { success: true }, error: null } as never);
+
+        await cancelApproval("claim-13");
+
+        expect(bodyOf(0)).not.toHaveProperty("user_id");
+        expect(bodyOf(0)).not.toHaveProperty("data");
+    });
+});

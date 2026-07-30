@@ -53,6 +53,7 @@ const NOTIFICATION_TYPES = [
     "claim_submitted",
     "claim_approved",
     "claim_rejected",
+    "approval_cancelled",
     "claimer_backed_out",
     "cost_changed",
     "nudge_12h",

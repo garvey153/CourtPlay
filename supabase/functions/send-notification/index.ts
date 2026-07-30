@@ -19,12 +19,13 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  * responses, including the rejection path, so freshness is checkable with a
  * curl and an anon key.
  */
-const FN_BUILD = "2026-07-30b";
+const FN_BUILD = "2026-07-30c";
 
 type NotificationType =
     | "claim_submitted"
     | "claim_approved"
     | "claim_rejected"
+    | "approval_cancelled"
     | "claimer_backed_out"
     | "cost_changed"
     | "nudge_no_response"
@@ -85,6 +86,24 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
         subject: (d) => d.post_summary
             ? `CourtPlay claim update — ${d.post_summary}`
             : "CourtPlay claim update",
+        deepLink: () => "https://courtplay.app/activity",
+    },
+    approval_cancelled: {
+        title: "Your approval was withdrawn.",
+        body: (d) => {
+            let msg = d.poster_name
+                ? `${d.poster_name} withdrew your approval`
+                : "Your approval was withdrawn";
+            if (d.post_summary) msg += ` for ${d.post_summary}`;
+            // cancel_approval sets the claim back to 'pending', not 'rejected' —
+            // the spot isn't lost, it's undecided again. Say so, or the player
+            // assumes they've been dropped and stops watching for a decision.
+            msg += ". Your claim is pending again.";
+            return msg;
+        },
+        subject: (d) => d.post_summary
+            ? `CourtPlay approval withdrawn — ${d.post_summary}`
+            : "Your CourtPlay approval was withdrawn",
         deepLink: () => "https://courtplay.app/activity",
     },
     claimer_backed_out: {
@@ -229,6 +248,7 @@ const DEFAULT_CHANNELS: Record<NotificationType, { push: boolean; email: boolean
     claim_submitted:    { push: true, email: true },
     claim_approved:     { push: true, email: true },
     claim_rejected:     { push: true, email: true },
+    approval_cancelled: { push: true, email: true },   // claim lifecycle — same as approve/reject
     claimer_backed_out: { push: false, email: true },
     cost_changed:       { push: false, email: true },
     nudge_no_response:  { push: false, email: true },
