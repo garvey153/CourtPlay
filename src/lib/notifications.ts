@@ -104,6 +104,19 @@ export interface DispatchResult {
     recipients: number;
     /** How many of those got at least one channel through. */
     delivered: number;
+    /**
+     * Recipients whose push was attempted and declined. Counted separately
+     * because `delivered` is satisfied by either channel, so a push that failed
+     * while the email landed does not show up in it at all.
+     */
+    pushFailed: number;
+}
+
+/** Per-recipient detail, only inspected to report a declined push. */
+interface Delivery {
+    user_id?: string;
+    pushSent?: boolean;
+    results?: { push?: { onesignal?: unknown } };
 }
 
 /**
@@ -124,7 +137,27 @@ export async function sendNotification(request: NotificationRequest): Promise<Di
             console.warn("Notification dispatch failed:", request.notification_type, error.message);
             return null;
         }
-        return { recipients: data?.recipients ?? 0, delivered: data?.delivered ?? 0 };
+        // OneSignal answers 200 with an `errors` array when nobody is reachable,
+        // so a declined push is not an HTTP failure and nothing above catches it.
+        // The detail is in the response and was simply being thrown away — which
+        // is how a claim_approved push went missing with no trace anywhere.
+        const deliveries = (data?.deliveries ?? []) as Delivery[];
+        for (const d of deliveries) {
+            if (!d.pushSent && d.results?.push) {
+                console.warn(
+                    "Push not delivered:",
+                    request.notification_type,
+                    d.user_id,
+                    d.results.push.onesignal,
+                );
+            }
+        }
+
+        return {
+            recipients: data?.recipients ?? 0,
+            delivered: data?.delivered ?? 0,
+            pushFailed: data?.pushFailed ?? 0,
+        };
     } catch (e) {
         console.warn("Notification dispatch threw:", e);
         return null;

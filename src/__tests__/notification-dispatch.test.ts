@@ -61,14 +61,14 @@ describe("sendNotification", () => {
         invoke.mockResolvedValueOnce({ data: { recipients: 4, delivered: 3 }, error: null } as never);
 
         await expect(sendNotification({ notification_type: "friend_new_post", post_id: "post-2" }))
-            .resolves.toEqual({ recipients: 4, delivered: 3 });
+            .resolves.toEqual({ recipients: 4, delivered: 3, pushFailed: 0 });
     });
 
     it("reports zero rather than undefined when the server omits the counts", async () => {
         invoke.mockResolvedValueOnce({ data: {}, error: null } as never);
 
         await expect(sendNotification({ notification_type: "spot_reopened", post_id: "post-3" }))
-            .resolves.toEqual({ recipients: 0, delivered: 0 });
+            .resolves.toEqual({ recipients: 0, delivered: 0, pushFailed: 0 });
     });
 
     // The triggering action has already succeeded by the time this runs, so a
@@ -93,5 +93,73 @@ describe("sendNotification", () => {
         const body = invoke.mock.calls[0][1]?.body as Record<string, unknown>;
         expect(body).not.toHaveProperty("sms");
         expect(body).not.toHaveProperty("channel");
+    });
+});
+
+/**
+ * A push OneSignal declines is not an HTTP failure — it answers 200 with an
+ * `errors` array — so nothing in the normal error path catches it. The detail
+ * came back in the response all along and was discarded, which is how a real
+ * claim_approved push went missing in production with no trace: the server
+ * writes a notifications row only on success, and `delivered` is satisfied by
+ * the email that did land.
+ */
+describe("a declined push is reported", () => {
+    const declined = {
+        recipients: 1,
+        delivered: 1,
+        pushFailed: 1,
+        deliveries: [{
+            user_id: "u1",
+            pushSent: false,
+            emailSent: true,
+            results: { push: { onesignal: { id: "", errors: ["All included players are not subscribed"] } } },
+        }],
+    };
+
+    it("counts it, even though the recipient counts as delivered", async () => {
+        invoke.mockResolvedValueOnce({ data: declined, error: null } as never);
+
+        await expect(sendNotification({ notification_type: "claim_approved", claim_id: "c1" }))
+            .resolves.toEqual({ recipients: 1, delivered: 1, pushFailed: 1 });
+    });
+
+    it("warns with the OneSignal reason", async () => {
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+        invoke.mockResolvedValueOnce({ data: declined, error: null } as never);
+
+        await sendNotification({ notification_type: "claim_approved", claim_id: "c1" });
+
+        expect(warn).toHaveBeenCalledWith(
+            "Push not delivered:", "claim_approved", "u1",
+            expect.objectContaining({ errors: ["All included players are not subscribed"] }),
+        );
+        warn.mockRestore();
+    });
+
+    it("stays quiet when push was never attempted", async () => {
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+        invoke.mockResolvedValueOnce({
+            data: { recipients: 1, delivered: 1, pushFailed: 0, deliveries: [{ user_id: "u1", pushSent: false, emailSent: true, results: {} }] },
+            error: null,
+        } as never);
+
+        await sendNotification({ notification_type: "connection_closed", post_id: "p1" });
+
+        expect(warn).not.toHaveBeenCalled();
+        warn.mockRestore();
+    });
+
+    it("stays quiet when the push landed", async () => {
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+        invoke.mockResolvedValueOnce({
+            data: { recipients: 1, delivered: 1, pushFailed: 0, deliveries: [{ user_id: "u1", pushSent: true, emailSent: true, results: { push: { onesignal: { id: "abc" } } } }] },
+            error: null,
+        } as never);
+
+        await sendNotification({ notification_type: "claim_approved", claim_id: "c1" });
+
+        expect(warn).not.toHaveBeenCalled();
+        warn.mockRestore();
     });
 });
