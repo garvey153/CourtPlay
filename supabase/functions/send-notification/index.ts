@@ -20,7 +20,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  * responses, including the rejection path, so freshness is checkable with a
  * curl and an anon key.
  */
-const FN_BUILD = "2026-07-30e";
+const FN_BUILD = "2026-07-30f";
 
 interface TemplateConfig {
     title: string;
@@ -212,6 +212,19 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
             ? `${d.poster_name} found a spot on CourtPlay`
             : "A CourtPlay player found a spot",
         deepLink: () => "https://courtplay.app/activity",
+    },
+    connection_withdrawn: {
+        title: "Someone withdrew their connection.",
+        // Regular posts invert the usual roles: the author is the seeker looking
+        // to join a group, and responders reach out to them. So a withdrawal is
+        // one fewer person in the seeker's conversation list, not a lost spot.
+        body: (d) => d.claimer_name
+            ? `${d.claimer_name} is no longer looking to connect about your regular play post.`
+            : "Someone is no longer looking to connect about your regular play post.",
+        subject: (d) => d.claimer_name
+            ? `${d.claimer_name} withdrew their CourtPlay connection`
+            : "Someone withdrew their CourtPlay connection",
+        deepLink: () => "https://courtplay.app/activity?tab=created",
     },
     feedback_submitted: {
         title: "New feedback submitted",

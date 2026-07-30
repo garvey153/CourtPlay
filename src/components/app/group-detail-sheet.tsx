@@ -149,12 +149,18 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
         if (!claimId || cancelling) return;
         setCancelling(true);
         setError(null);
-        const { error: rpcError } = await supabase.rpc("unclaim", { p_claim_id: claimId });
-        if (rpcError) {
+        const { data, error: rpcError } = await supabase.rpc("unclaim", { p_claim_id: claimId });
+        if (rpcError || !data?.success) {
             setCancelling(false);
             setError("Something went wrong. Please try again.");
             return;
         }
+
+        // Tell the seeker one of their responders has dropped out. No
+        // spot_reopened here: this is a regular_game post, where the author is the
+        // seeker rather than someone holding spots, so nothing has freed up.
+        sendNotification({ notification_type: "connection_withdrawn", claim_id: claimId });
+
         onChange?.();
         if (onCancelled) onCancelled();
         else onClose();
