@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireServiceRole } from "../_shared/service-auth.ts";
 import { DispatchTally, invokeFunction } from "../_shared/invoke.ts";
+import { alreadyNotified } from "../_shared/notification-dedupe.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -49,37 +50,35 @@ serve(async (req) => {
         const posterId = claim.posts.author_id;
         const postSummary = claim.posts.location ?? claim.posts.custom_court ?? "";
 
-        // Check if we already sent a nudge for this claim (to the poster)
-        const { data: existing } = await supabase
-            .from("notifications")
-            .select("id")
-            .eq("user_id", posterId)
-            .eq("type", "nudge_no_response")
-            .eq("claim_id", claim.id)
-            .maybeSingle();
+        // Dedupe per recipient, not per claim. This used to check the poster's
+        // row alone and `continue` on it, so if the poster's send succeeded and
+        // the claimer's failed, every later run saw the poster row and skipped
+        // the claim entirely — the claimer was never retried.
+        let posterOk = false;
+        let claimerOk = false;
 
-        if (existing) continue; // Already nudged
+        for (const target of [
+            { role: "poster", userId: posterId },
+            { role: "claimer", userId: claim.claimer_id },
+        ]) {
+            if (await alreadyNotified(supabase, {
+                userId: target.userId,
+                type: "nudge_no_response",
+                claimId: claim.id,
+            })) continue;
 
-        // Send nudge to poster
-        const posterRes = await invokeFunction("send-notification", {
-            user_id: posterId,
-            notification_type: "nudge_no_response",
-            post_id: claim.post_id,
-            claim_id: claim.id,
-            data: { post_summary: postSummary },
-        });
+            const res = await invokeFunction("send-notification", {
+                user_id: target.userId,
+                notification_type: "nudge_no_response",
+                post_id: claim.post_id,
+                claim_id: claim.id,
+                data: { post_summary: postSummary },
+            });
 
-        // Send nudge to claimer simultaneously
-        const claimerRes = await invokeFunction("send-notification", {
-            user_id: claim.claimer_id,
-            notification_type: "nudge_no_response",
-            post_id: claim.post_id,
-            claim_id: claim.id,
-            data: { post_summary: postSummary },
-        });
-
-        const posterOk = tally.record(posterRes, { claim_id: claim.id, role: "poster", user_id: posterId });
-        const claimerOk = tally.record(claimerRes, { claim_id: claim.id, role: "claimer", user_id: claim.claimer_id });
+            const ok = tally.record(res, { claim_id: claim.id, role: target.role, user_id: target.userId });
+            if (target.role === "poster") posterOk = ok;
+            else claimerOk = ok;
+        }
 
         // This job dispatches twice per claim, so the tally's count is dispatches
         // while `nudged` stays what it always meant — claims acted on.

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireServiceRole } from "../_shared/service-auth.ts";
 import { DispatchTally, invokeFunction } from "../_shared/invoke.ts";
+import { alreadyNotified } from "../_shared/notification-dedupe.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -61,15 +62,7 @@ serve(async (req) => {
         if (approvedCount >= post.spots_total) continue;
 
         // Deduplication: check if already nudged for this post
-        const { data: existing } = await supabase
-            .from("notifications")
-            .select("id")
-            .eq("user_id", post.author_id)
-            .eq("type", "48h_unfilled")
-            .eq("post_id", post.id)
-            .maybeSingle();
-
-        if (existing) continue;
+        if (await alreadyNotified(supabase, { userId: post.author_id, type: "48h_unfilled", postId: post.id })) continue;
 
         const postSummary = (post as UnfilledPost).location ?? (post as UnfilledPost).custom_court ?? "your post";
 
