@@ -38,7 +38,12 @@ export default defineConfig({
             // injected registerSW.js does neither, which left open sessions running
             // stale assets under a newly-activated worker.
             injectRegister: null,
-            includeAssets: ["apple-touch-icon.png", "icons/icon-192.png", "icons/icon-512.png"],
+            includeAssets: [
+                "apple-touch-icon.png",
+                "apple-touch-icon-v2.png",
+                "icons/icon-192.png",
+                "icons/icon-512.png",
+            ],
             manifest: {
                 name: "CourtPlay",
                 short_name: "CourtPlay",
