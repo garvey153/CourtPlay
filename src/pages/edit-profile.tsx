@@ -29,6 +29,7 @@ const NOTIFICATION_TYPES = [
     { key: "claim_submitted", label: "New claim on your post", hint: "When someone claims a spot you posted", defaultEmail: true, defaultPush: true },
     { key: "claim_approved", label: "Claim approved", hint: "When a poster approves your claim", defaultEmail: true, defaultPush: true },
     { key: "claim_rejected", label: "Claim rejected", hint: "When a poster rejects your claim", defaultEmail: true, defaultPush: true },
+    { key: "approval_cancelled", label: "Approval withdrawn", hint: "When a poster withdraws an approval they gave you", defaultEmail: true, defaultPush: true },
     { key: "claimer_backed_out", label: "Claimer backed out", hint: "When an approved claimer withdraws from your post", defaultEmail: true, defaultPush: false },
     { key: "cost_changed", label: "Cost changed", hint: "When the cost changes on a post you claimed", defaultEmail: true, defaultPush: false },
     { key: "nudge_no_response", label: "Claim response reminder", hint: "Reminder to respond to pending claims on your posts", defaultEmail: true, defaultPush: false },

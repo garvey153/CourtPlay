@@ -56,6 +56,7 @@ const ALL_LABELS = [
     "New claim on your post",
     "Claim approved",
     "Claim rejected",
+    "Approval withdrawn",
     "Claimer backed out",
     "Cost changed",
     "Claim response reminder",
@@ -98,7 +99,15 @@ describe("edit profile — notification preferences", () => {
         renderPage();
         await screen.findByText(ALL_LABELS[0]);
 
-        const pushOnByDefault = ["New claim on your post", "Claim approved", "Claim rejected"];
+        // Claim lifecycle pushes by default. "Approval withdrawn" belongs here for
+        // the same reason approve/reject do: it is a decision on the claimer's
+        // spot, and they need it promptly rather than whenever they read email.
+        const pushOnByDefault = [
+            "New claim on your post",
+            "Claim approved",
+            "Claim rejected",
+            "Approval withdrawn",
+        ];
         for (const label of ALL_LABELS) {
             const pushToggle = screen.getByLabelText(`${label} push`);
             if (pushOnByDefault.includes(label)) expect(pushToggle).toBeChecked();
@@ -128,7 +137,7 @@ describe("edit profile — notification preferences", () => {
         expect(save).toBeEnabled();
     });
 
-    it("saving upserts all 13 preferences including the toggled change, never SMS", async () => {
+    it("saving upserts every non-admin preference including the toggled change, never SMS", async () => {
         const user = userEvent.setup();
         renderPage();
         await screen.findByText(ALL_LABELS[0]);
@@ -139,7 +148,7 @@ describe("edit profile — notification preferences", () => {
 
         await waitFor(() => expect(mockUpsert).toHaveBeenCalled());
         const payload = mockUpsert.mock.calls[0][0] as Array<Record<string, unknown>>;
-        expect(payload).toHaveLength(13);
+        expect(payload).toHaveLength(ALL_LABELS.length);
         const changed = payload.find((p) => p.notification_type === "cost_changed");
         expect(changed?.push_enabled).toBe(true);
         for (const p of payload) {
