@@ -4,7 +4,6 @@ import { DotsVertical, SearchSm, XClose } from "@untitledui/icons";
 import { SubCard } from "@/components/app/sub-card";
 import { ReportUserSheet } from "@/components/app/report-user-sheet";
 import { FeedbackSheet } from "@/components/app/feedback-sheet";
-import { PushDebug } from "@/components/app/push-debug";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { usePostSheets } from "@/hooks/use-post-sheets";
@@ -139,7 +138,6 @@ export function Profile() {
     const [showReportModal, setShowReportModal] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
     // Tap the version stamp to reveal on-device push diagnostics (debugging aid).
-    const [showPushDebug, setShowPushDebug] = useState(false);
 
     // Search state (own profile only)
     const [searchQuery, setSearchQuery] = useState("");
@@ -462,15 +460,11 @@ export function Profile() {
                                 Submit Feedback
                             </button>
                             <span aria-hidden="true">·</span>
-                            <button
-                                type="button"
-                                onClick={() => setShowPushDebug((v) => !v)}
-                                className="transition duration-100 ease-linear hover:text-tertiary"
-                            >
-                                Version {__BUILD_ID__}
-                            </button>
+                            {/* Kept deliberately: this is how you tell which bundle a
+                                given device is actually running. No longer a button —
+                                it used to reveal the PushDebug panel, now removed. */}
+                            <span>Version {__BUILD_ID__}</span>
                         </p>
-                        {showPushDebug && <PushDebug />}
                     </div>
                 )}
             </div>
