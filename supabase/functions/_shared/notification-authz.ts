@@ -140,22 +140,36 @@ export async function resolveUserNotification(
                 };
             }
 
-            // Admin-initiated: both sides of the claim hear about it.
+            // Two callers, two audiences. The claimer withdrawing tells the
+            // poster their spot is open again. An admin cancelling on someone's
+            // behalf has to tell both sides, since neither of them did it.
             case "claimer_cancelled": {
-                const { data: caller } = await supabase
-                    .from("users")
-                    .select("is_admin")
-                    .eq("id", callerId)
-                    .single();
-                if (!caller?.is_admin) return deny(403, "Admin only");
+                const isClaimer = claim.claimer_id === callerId;
+
+                let isAdmin = false;
+                if (!isClaimer) {
+                    const { data: caller } = await supabase
+                        .from("users")
+                        .select("is_admin")
+                        .eq("id", callerId)
+                        .single();
+                    isAdmin = Boolean(caller?.is_admin);
+                }
+
+                if (!isClaimer && !isAdmin) {
+                    return deny(403, "Only the claimer or an admin may trigger this");
+                }
+
                 const claimer_name = await firstName(supabase, claim.claimer_id);
+                // `others` drops the caller, so the claimer's own withdrawal
+                // reaches the poster alone without needing a separate branch.
+                const recipients = isClaimer
+                    ? others([post.author_id], callerId)
+                    : others([claim.claimer_id, post.author_id], callerId);
+
                 return {
                     ok: true,
-                    value: {
-                        recipients: others([claim.claimer_id, post.author_id], callerId),
-                        data: { claimer_name, post_summary: summary },
-                        ...base,
-                    },
+                    value: { recipients, data: { claimer_name, post_summary: summary }, ...base },
                 };
             }
         }

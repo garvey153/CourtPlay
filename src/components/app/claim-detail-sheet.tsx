@@ -209,12 +209,21 @@ export function ClaimDetailSheet({
         if (!claimId) return;
         setCancelling(true);
         setError(null);
-        const { error: rpcError } = await supabase.rpc("unclaim", { p_claim_id: claimId });
-        if (rpcError) {
+        const { data, error: rpcError } = await supabase.rpc("unclaim", { p_claim_id: claimId });
+        if (rpcError || !data?.success) {
             setCancelling(false);
             setError("Something went wrong. Please try again.");
             return;
         }
+
+        // Tell the poster their spot is open again. Which type depends on whether
+        // the claim was merely pending or already approved — backing out of an
+        // approved spot is the more disruptive one and reads differently. The RPC
+        // reports the prior status because the update overwrites it.
+        sendNotification({
+            notification_type: data.prior_status === "approved" ? "claimer_backed_out" : "claimer_cancelled",
+            claim_id: claimId,
+        });
         // Cancel succeeded — refresh the feed, then show the "reopened" banner (which
         // also closes the sheet) or just close if no banner handler is provided.
         onClaimChange?.();
