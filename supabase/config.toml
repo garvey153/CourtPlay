@@ -24,28 +24,36 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/send-email/index.ts"
 
-# Scheduled jobs. pg_cron reaches these with the service role key and they
-# reject anything else, so they're listed here to keep the deployed set explicit
-# — a job that silently fails to deploy is a notification channel that quietly
-# does not exist, which is exactly what happened to unfilled-nudge-48h.
+# Scheduled jobs. pg_cron authenticates with CRON_SECRET, an opaque random
+# string rather than a JWT, so the gateway's verify_jwt has to be off — it
+# answered UNAUTHORIZED_INVALID_JWT_FORMAT before the handler ever ran.
+#
+# These are not open as a result: requireServiceRole is the real gate and does a
+# constant-time compare against CRON_SECRET or the service role key. verify_jwt
+# was never providing protection here anyway, since any valid JWT satisfied it —
+# including the anon key that ships in the browser bundle.
+#
+# Listed explicitly to keep the deployed set visible: a job that silently fails
+# to deploy is a notification channel that quietly does not exist, which is
+# exactly what happened to unfilled-nudge-48h.
 [functions.game-reminders]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 entrypoint = "./functions/game-reminders/index.ts"
 
 # Named unfilled-nudge-48h, NOT 48h-unfilled-nudge: Supabase requires
 # ^[A-Za-z][A-Za-z0-9_-]*$, so a leading digit is rejected at deploy time.
 [functions.unfilled-nudge-48h]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 entrypoint = "./functions/unfilled-nudge-48h/index.ts"
 
 [functions.friend-expiry-alerts]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 entrypoint = "./functions/friend-expiry-alerts/index.ts"
 
 [functions.nudge-unresponded-claims]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 entrypoint = "./functions/nudge-unresponded-claims/index.ts"
