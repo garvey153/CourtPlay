@@ -20,7 +20,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  * responses, including the rejection path, so freshness is checkable with a
  * curl and an anon key.
  */
-const FN_BUILD = "2026-07-30f";
+const FN_BUILD = "2026-07-30g";
 
 interface TemplateConfig {
     title: string;
@@ -397,6 +397,18 @@ async function deliverTo(
             results.push = { status: pushRes.status, scheme: pushRes.scheme, onesignal: pushRes.body };
             pushSent = pushRes.delivered;
 
+            if (!pushRes.delivered) {
+                // Deliberately NOT a notifications row: dedupe keys on row
+                // existence, so recording a failure there would suppress the
+                // retry. This goes to the function log instead, which is the only
+                // durable trace a declined push has ever had — OneSignal answers
+                // 200 with an errors array, so nothing else marks it as failed.
+                console.error(
+                    `push not delivered: user=${userId} type=${notificationType} ` +
+                    `status=${pushRes.status} onesignal=${JSON.stringify(pushRes.body)}`,
+                );
+            }
+
             if (pushRes.delivered) {
                 await supabase.from("notifications").insert({
                     user_id: userId,
@@ -606,11 +618,15 @@ serve(async (req) => {
         );
     }
 
+    // `delivered` counts a recipient who got *either* channel, so a push that
+    // failed while the email landed is invisible in it. pushFailed is counted
+    // separately for exactly that case.
     return json({
         success: true,
         fnBuild: FN_BUILD,
         recipients: recipients.length,
         delivered: deliveries.filter((x) => x.pushSent || x.emailSent).length,
+        pushFailed: deliveries.filter((x) => !x.pushSent && x.results?.push).length,
         deliveries,
     });
 });
