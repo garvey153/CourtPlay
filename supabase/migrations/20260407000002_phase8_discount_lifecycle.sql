@@ -63,38 +63,13 @@ begin
 end;
 $$;
 
--- Cron job schedule for 48h unfilled nudge (run every 6 hours)
--- select cron.schedule('48h-unfilled-nudge', '0 */6 * * *', $$
---     select net.http_post(
---         url := 'https://[project].supabase.co/functions/v1/48h-unfilled-nudge',
---         headers := '{"Authorization": "Bearer [service_role_key]", "Content-Type": "application/json"}'::jsonb,
---         body := '{}'::jsonb
---     );
--- $$);
-
--- Cron job schedule for game reminders (run daily at 9 AM)
--- select cron.schedule('game-reminders', '0 9 * * *', $$
---     select net.http_post(
---         url := 'https://[project].supabase.co/functions/v1/game-reminders',
---         headers := '{"Authorization": "Bearer [service_role_key]", "Content-Type": "application/json"}'::jsonb,
---         body := '{}'::jsonb
---     );
--- $$);
-
--- Cron job schedule for friend expiry alerts (run every hour)
--- select cron.schedule('friend-expiry-alerts', '0 * * * *', $$
---     select net.http_post(
---         url := 'https://[project].supabase.co/functions/v1/friend-expiry-alerts',
---         headers := '{"Authorization": "Bearer [service_role_key]", "Content-Type": "application/json"}'::jsonb,
---         body := '{}'::jsonb
---     );
--- $$);
-
--- Cron job schedule for nudge unresponded claims (run every 4 hours)
--- select cron.schedule('nudge-unresponded-claims', '0 */4 * * *', $$
---     select net.http_post(
---         url := 'https://[project].supabase.co/functions/v1/nudge-unresponded-claims',
---         headers := '{"Authorization": "Bearer [service_role_key]", "Content-Type": "application/json"}'::jsonb,
---         body := '{}'::jsonb
---     );
--- $$);
+-- Cron job schedules moved to supabase/register_cron_jobs.sql.
+--
+-- The blocks that used to sit here had drifted badly enough to be actively
+-- misleading: they named `48h-unfilled-nudge`, a slug Supabase rejects at deploy
+-- time because it starts with a digit (the function 404'd in production for
+-- months), and they embedded a literal service_role key in the job body, which
+-- lands it in cron.job.command for anyone with database access to read.
+--
+-- The live definitions now pull the key from Supabase Vault at job run time.
+-- See supabase/store_service_key_in_vault.sql then supabase/register_cron_jobs.sql.

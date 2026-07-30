@@ -23,3 +23,29 @@ entrypoint = "./functions/notify-content-removed/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/send-email/index.ts"
+
+# Scheduled jobs. pg_cron reaches these with the service role key and they
+# reject anything else, so they're listed here to keep the deployed set explicit
+# — a job that silently fails to deploy is a notification channel that quietly
+# does not exist, which is exactly what happened to unfilled-nudge-48h.
+[functions.game-reminders]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/game-reminders/index.ts"
+
+# Named unfilled-nudge-48h, NOT 48h-unfilled-nudge: Supabase requires
+# ^[A-Za-z][A-Za-z0-9_-]*$, so a leading digit is rejected at deploy time.
+[functions.unfilled-nudge-48h]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/unfilled-nudge-48h/index.ts"
+
+[functions.friend-expiry-alerts]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/friend-expiry-alerts/index.ts"
+
+[functions.nudge-unresponded-claims]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/nudge-unresponded-claims/index.ts"

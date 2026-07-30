@@ -31,26 +31,11 @@ begin
 end;
 $$;
 
--- Cron jobs (run these in Supabase SQL editor with pg_cron enabled)
--- Note: Replace [project] and [service_role_key] with actual values
-
--- Auto-expire sub_need posts after game time passes (every 15 min)
--- select cron.schedule('auto-expire-posts', '*/15 * * * *', $$
---     update public.posts
---     set status = 'expired'
---     where status = 'active'
---       and post_type = 'sub_need'
---       and game_date is not null
---       and game_time is not null
---       and (game_date + game_time) < now()
--- $$);
-
--- Auto-expire regular_game posts after 30 days (daily at midnight)
--- select cron.schedule('expire-regular-game-posts', '0 0 * * *', $$
---     update public.posts
---     set status = 'expired'
---     where status = 'active'
---       and post_type = 'regular_game'
---       and expires_at is not null
---       and expires_at < now()
--- $$);
+-- Cron job schedules moved to supabase/register_cron_jobs.sql.
+--
+-- `auto-expire-posts` was the only one of these ever actually registered.
+-- `expire-regular-game-posts` was not, which meant regular_game posts with a
+-- past expires_at stayed 'active' indefinitely and kept appearing in the feed;
+-- it is registered as of 2026-07-29.
+--
+-- See supabase/register_cron_jobs.sql for the live definitions.

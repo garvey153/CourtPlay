@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // ---------------------------------------------------------------------------
-// Helpers: pure-function simulations of the 48h-unfilled-nudge Edge Function
-// logic. These mirror what supabase/functions/48h-unfilled-nudge/index.ts does
+// Helpers: pure-function simulations of the unfilled-nudge-48h Edge Function
+// logic. These mirror what supabase/functions/unfilled-nudge-48h/index.ts does
 // so we can unit-test the decision logic without running Deno.
 // ---------------------------------------------------------------------------
 
@@ -41,7 +41,7 @@ function hasBeenNudged(
 // Tests
 // ---------------------------------------------------------------------------
 
-describe("48h-unfilled-nudge integration", () => {
+describe("unfilled-nudge-48h integration", () => {
     // Fix time to 2026-04-07T12:00:00Z so date arithmetic is deterministic
     const NOW = new Date("2026-04-07T12:00:00Z").getTime();
 

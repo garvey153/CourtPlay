@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireServiceRole } from "../_shared/service-auth.ts";
 import { DispatchTally, invokeFunction } from "../_shared/invoke.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -13,15 +14,9 @@ interface ExpiringPost {
 }
 
 serve(async (req) => {
-    // Validate Authorization
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace("Bearer ", "");
-    if (!token) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-        });
-    }
+    // A POST to this endpoint runs the job, so the gate has to mean something.
+    const denied = requireServiceRole(req);
+    if (denied) return denied;
 
     const now = new Date();
     const fourHoursFromNow = new Date(now.getTime() + 4 * 60 * 60 * 1000);
