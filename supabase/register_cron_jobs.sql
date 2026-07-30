@@ -25,35 +25,28 @@
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
--- Refuse to register anything if step 1 didn't land. Without this the jobs would
--- register happily and then fail on every single run, which is exactly the kind of
--- silent failure this whole exercise was about.
+-- Refuse to register anything if the secret isn't there. Without this the jobs
+-- register happily and then fail on every run — which is exactly what happened:
+-- they authenticated with the dashboard's service_role JWT, which is NOT the key
+-- Supabase injects into the function runtime, and pg_cron recorded 'succeeded'
+-- for a day of 401s because net.http_post itself worked fine.
 do $$
 declare
-    v_key  text;
-    v_role text;
+    v_key text;
 begin
     select decrypted_secret into v_key
     from vault.decrypted_secrets
-    where name = 'service_role_key';
+    where name = 'cron_secret';
 
     if v_key is null then
-        raise exception 'Vault secret "service_role_key" not found. Run step 1 first.';
+        raise exception 'Vault secret "cron_secret" not found. Set it with `supabase secrets set CRON_SECRET=…` and store the same value here first.';
     end if;
 
-    select convert_from(
-        decode(
-            translate(split_part(v_key, '.', 2), '-_', '+/')
-                || repeat('=', (4 - length(split_part(v_key, '.', 2)) % 4) % 4),
-            'base64'
-        ), 'utf8'
-    )::jsonb ->> 'role' into v_role;
-
-    if v_role is distinct from 'service_role' then
-        raise exception 'Stored key has role "%", expected "service_role". Re-run step 1 with the correct key.', v_role;
+    if length(v_key) < 32 then
+        raise exception 'cron_secret is only % chars — too short to be the generated value.', length(v_key);
     end if;
 
-    raise notice 'Vault secret OK (role=%, length=%)', v_role, length(v_key);
+    raise notice 'cron_secret present (% chars)', length(v_key);
 end $$;
 
 -- Clear any previous registrations. cron.unschedule throws when the job is absent,
@@ -86,7 +79,7 @@ select cron.schedule('unfilled-nudge-48h', '0 */6 * * *', $job$
         headers := jsonb_build_object(
             'Authorization', 'Bearer ' || (
                 select decrypted_secret from vault.decrypted_secrets
-                where name = 'service_role_key'
+                where name = 'cron_secret'
             ),
             'Content-Type', 'application/json'
         ),
@@ -101,7 +94,7 @@ select cron.schedule('game-reminders', '0 9 * * *', $job$
         headers := jsonb_build_object(
             'Authorization', 'Bearer ' || (
                 select decrypted_secret from vault.decrypted_secrets
-                where name = 'service_role_key'
+                where name = 'cron_secret'
             ),
             'Content-Type', 'application/json'
         ),
@@ -116,7 +109,7 @@ select cron.schedule('friend-expiry-alerts', '0 * * * *', $job$
         headers := jsonb_build_object(
             'Authorization', 'Bearer ' || (
                 select decrypted_secret from vault.decrypted_secrets
-                where name = 'service_role_key'
+                where name = 'cron_secret'
             ),
             'Content-Type', 'application/json'
         ),
@@ -131,7 +124,7 @@ select cron.schedule('nudge-unresponded-claims', '0 */4 * * *', $job$
         headers := jsonb_build_object(
             'Authorization', 'Bearer ' || (
                 select decrypted_secret from vault.decrypted_secrets
-                where name = 'service_role_key'
+                where name = 'cron_secret'
             ),
             'Content-Type', 'application/json'
         ),
