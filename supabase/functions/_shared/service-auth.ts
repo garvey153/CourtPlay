@@ -54,9 +54,14 @@ export function isServiceRoleToken(token: string): boolean {
  * shape their own response with `corsJson`, so a rejection arrives as a readable
  * 401 rather than an opaque CORS failure.
  */
-export function requireServiceRole(req: Request): Response | null {
+export function requireServiceRole(req: Request, fnBuild?: string): Response | null {
     if (!isServiceRoleToken(bearerToken(req))) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        // fnBuild rides on the rejection, which is the only response an outside
+        // caller can see: these functions answer nothing else without the service
+        // role key, so without this there is no way to tell a stale deploy from a
+        // healthy one. It is a date string, not a secret, and send-notification
+        // already echoes its build the same way.
+        return new Response(JSON.stringify({ error: "Unauthorized", ...(fnBuild ? { fnBuild } : {}) }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
         });

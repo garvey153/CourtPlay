@@ -9,6 +9,15 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+/**
+ * Bump on every deploy. Edge functions have no equivalent of the frontend's
+ * __BUILD_ID__, so without this there is no way to tell a stale deploy from a
+ * genuine failure — which already cost one wrong diagnosis in this project.
+ * Echoed on the 401 as well as the success response, because a caller without
+ * the service role key can only ever see the 401.
+ */
+const FN_BUILD = "2026-07-30a";
+
 interface ExpiringPost {
     id: string;
     author_id: string;
@@ -16,7 +25,7 @@ interface ExpiringPost {
 
 serve(async (req) => {
     // A POST to this endpoint runs the job, so the gate has to mean something.
-    const denied = requireServiceRole(req);
+    const denied = requireServiceRole(req, FN_BUILD);
     if (denied) return denied;
 
     const now = new Date();
@@ -35,7 +44,7 @@ serve(async (req) => {
     }
 
     if (!posts || (posts as ExpiringPost[]).length === 0) {
-        return new Response(JSON.stringify({ alerted: 0 }), {
+        return new Response(JSON.stringify({ fnBuild: FN_BUILD, alerted: 0 }), {
             headers: { "Content-Type": "application/json" },
         });
     }
@@ -89,7 +98,7 @@ serve(async (req) => {
         }
     }
 
-    return new Response(JSON.stringify(tally.toResponse("alerted")), {
+    return new Response(JSON.stringify({ fnBuild: FN_BUILD, ...tally.toResponse("alerted") }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
     });
