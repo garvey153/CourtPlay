@@ -67,7 +67,15 @@ export function usePush() {
     // on every render, which would re-run login() continuously.
     const userId = user?.id ?? null;
     const [initialized, setInitialized] = useState(false);
-    const [permissionGranted, setPermissionGranted] = useState(false);
+    // Seeded synchronously from the browser rather than defaulting to false.
+    // OneSignal's permission value is just this one, but it isn't readable until
+    // the SDK has dynamically imported and initialised — a couple of seconds
+    // during which consumers cannot distinguish "not granted" from "not known
+    // yet". The push banner treated that as "not granted" and flashed on every
+    // page load for users who had already enabled notifications.
+    const [permissionGranted, setPermissionGranted] = useState(
+        () => typeof Notification !== "undefined" && Notification.permission === "granted",
+    );
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
