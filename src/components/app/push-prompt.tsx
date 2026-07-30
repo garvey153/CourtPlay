@@ -10,16 +10,16 @@ interface PushPromptProps {
 }
 
 export function PushPrompt({ variant }: PushPromptProps) {
-    const { permissionGranted, requestPermission } = usePush();
+    const { permission, requestPermission } = usePush();
     const [dismissed, setDismissed] = useState(true); // default to hidden
     const [requesting, setRequesting] = useState(false);
 
     useEffect(() => {
         // Don't show if already granted or dismissed
-        if (permissionGranted) return;
+        if (permission === "granted") return;
         const wasDismissed = localStorage.getItem(DISMISSED_KEY) === "true";
         setDismissed(wasDismissed);
-    }, [permissionGranted]);
+    }, [permission]);
 
     const handleDismiss = useCallback(() => {
         setDismissed(true);
@@ -33,8 +33,10 @@ export function PushPrompt({ variant }: PushPromptProps) {
         setDismissed(true);
     }, [requestPermission]);
 
-    // Don't render if already granted, dismissed, or not supported
-    if (permissionGranted || dismissed || !("Notification" in window)) {
+    // Also hidden when denied: requestPermission() cannot prompt after a denial,
+    // so this card's only action would do nothing. Unlike the feed banner there
+    // is no room here for re-enable guidance, so it stays out of the way instead.
+    if (permission === "granted" || permission === "denied" || permission === "unsupported" || dismissed) {
         return null;
     }
 

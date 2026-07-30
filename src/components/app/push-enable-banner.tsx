@@ -9,14 +9,14 @@ const DISMISSED_KEY = "courtsub_push_prompt_dismissed";
  * granted permission. Uses the shared confirmation-banner styling.
  */
 export function PushEnableBanner() {
-    const { permissionGranted, requestPermission } = usePush();
+    const { permission, requestPermission } = usePush();
     const [dismissed, setDismissed] = useState(true); // default hidden until we know
     const [requesting, setRequesting] = useState(false);
 
     useEffect(() => {
-        if (permissionGranted) return;
+        if (permission === "granted") return;
         setDismissed(localStorage.getItem(DISMISSED_KEY) === "true");
-    }, [permissionGranted]);
+    }, [permission]);
 
     const dismiss = useCallback(() => {
         setDismissed(true);
@@ -30,8 +30,13 @@ export function PushEnableBanner() {
         setDismissed(true);
     }, [requestPermission]);
 
-    // Hide once granted, dismissed, or in a browser without notification support.
-    if (permissionGranted || dismissed || !("Notification" in window)) return null;
+    // Hide once granted, dismissed, or where notifications aren't supported.
+    if (permission === "granted" || permission === "unsupported" || dismissed) return null;
+
+    // A denial is permanent as far as the page is concerned — requestPermission()
+    // resolves without prompting, so an "Enable" button there offers something it
+    // silently cannot do. Say what actually has to happen instead, and drop it.
+    const blocked = permission === "denied";
 
     return (
         <div className="relative rounded-lg bg-brand-800 p-4">
@@ -44,9 +49,13 @@ export function PushEnableBanner() {
                 <XClose className="size-5" strokeWidth={1} aria-hidden="true" />
             </button>
 
-            <p className="pr-6 text-sm font-semibold text-primary">Turn on notifications.</p>
+            <p className="pr-6 text-sm font-semibold text-primary">
+                {blocked ? "Notifications are blocked." : "Turn on notifications."}
+            </p>
             <p className="mt-1 text-sm text-secondary">
-                Get notified the moment your spots are claimed, approved, or declined.
+                {blocked
+                    ? "Your browser is blocking notifications for CourtPlay. Re-enable them in your browser or device settings to hear about claims."
+                    : "Get notified the moment your spots are claimed, approved, or declined."}
             </p>
 
             <div className="mt-3 flex items-center gap-3">
@@ -57,14 +66,16 @@ export function PushEnableBanner() {
                 >
                     Dismiss
                 </button>
-                <button
-                    type="button"
-                    onClick={enable}
-                    disabled={requesting}
-                    className="text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600 disabled:opacity-50"
-                >
-                    {requesting ? "Enabling…" : "Enable"}
-                </button>
+                {!blocked && (
+                    <button
+                        type="button"
+                        onClick={enable}
+                        disabled={requesting}
+                        className="text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600 disabled:opacity-50"
+                    >
+                        {requesting ? "Enabling…" : "Enable"}
+                    </button>
+                )}
             </div>
         </div>
     );
