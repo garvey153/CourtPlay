@@ -143,3 +143,64 @@ describe("withdrawing an approval notifies the claimer", () => {
         expect(bodyOf(0)).not.toHaveProperty("data");
     });
 });
+
+/**
+ * spot_reopened fires wherever a spot actually frees up — and only there.
+ *
+ * `spots_available` is `spots_total - count(claims where status in ('pending',
+ * 'approved'))`, so a *pending* claim occupies a spot just as an approved one
+ * does. That makes declining a claim a genuine reopen, which is why activity.tsx
+ * dispatched it; feed.tsx and use-post-sheets.tsx simply hadn't. Withdrawing a
+ * claim frees one too and notified nobody at all.
+ *
+ * cancel_approval is the deliberate exception: approved → pending, and both
+ * statuses occupy, so nothing is freed.
+ */
+describe("spot_reopened fires exactly when a spot frees up", () => {
+    it("declining a claim reopens the spot", async () => {
+        rpc.mockResolvedValueOnce({ data: { success: true }, error: null } as never);
+
+        const { data } = await supabase.rpc("reject_claim", { p_claim_id: "claim-20" });
+        if (data?.success) {
+            await sendNotification({ notification_type: "claim_rejected", claim_id: "claim-20" });
+            await sendNotification({ notification_type: "spot_reopened", post_id: "post-20" });
+        }
+
+        expect(invoke).toHaveBeenCalledTimes(2);
+        expect(bodyOf(1)).toEqual({ notification_type: "spot_reopened", post_id: "post-20" });
+    });
+
+    it("withdrawing a claim reopens the spot", async () => {
+        rpc.mockResolvedValueOnce({ data: { success: true, prior_status: "approved" }, error: null } as never);
+
+        const { data } = await supabase.rpc("unclaim", { p_claim_id: "claim-21" });
+        if (data?.success) {
+            await sendNotification({ notification_type: "claimer_backed_out", claim_id: "claim-21" });
+            await sendNotification({ notification_type: "spot_reopened", post_id: "post-21" });
+        }
+
+        expect(bodyOf(1)).toEqual({ notification_type: "spot_reopened", post_id: "post-21" });
+    });
+
+    // Withdrawing an approval sends the claim back to pending, which still
+    // occupies the spot. Notifying watchers here would advertise a spot that
+    // isn't free.
+    it("withdrawing an approval does NOT reopen the spot", async () => {
+        rpc.mockResolvedValueOnce({ data: { success: true }, error: null } as never);
+
+        const { data } = await supabase.rpc("cancel_approval", { p_claim_id: "claim-22" });
+        if (data?.success) {
+            await sendNotification({ notification_type: "approval_cancelled", claim_id: "claim-22" });
+        }
+
+        expect(invoke).toHaveBeenCalledTimes(1);
+        expect(bodyOf(0).notification_type).toBe("approval_cancelled");
+    });
+
+    it("is post-anchored, never claim-anchored", async () => {
+        await sendNotification({ notification_type: "spot_reopened", post_id: "post-23" });
+
+        expect(bodyOf(0)).toHaveProperty("post_id");
+        expect(bodyOf(0)).not.toHaveProperty("claim_id");
+    });
+});

@@ -293,11 +293,14 @@ export function Feed() {
     );
 
     const handleDeclineClaim = useCallback(
-        async (claim: ClaimRow, _post: MyPost) => {
+        async (claim: ClaimRow, post: MyPost) => {
             setCreatedActionLoading(claim.id);
             const { data, error: rpcError } = await supabase.rpc("reject_claim", { p_claim_id: claim.id, p_reason: REJECTION_REASONS[0] });
             if (!rpcError && data?.success) {
                 sendNotification({ notification_type: "claim_rejected", claim_id: claim.id });
+                // Declining frees the spot: spots_available counts pending and
+                // approved claims alike, so a rejected pending claim reopens one.
+                sendNotification({ notification_type: "spot_reopened", post_id: post.id });
                 setCreatedSheet(null);
                 fetchPosts();
                 fetchMyPosts();

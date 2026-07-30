@@ -203,8 +203,29 @@ export async function resolveUserNotification(
 
     if (!post) return deny(404, "Post not found");
 
-    // Every post-anchored type is something only the post's author can cause.
-    if (post.author_id !== callerId) return deny(403, "Only the post author may trigger this");
+    // Every post-anchored type is something only the post's author can cause —
+    // except spot_reopened, which a claimer also causes by withdrawing. A spot is
+    // occupied by any pending *or* approved claim, so dropping either frees it,
+    // and the person who freed it is the claimer rather than the author.
+    if (post.author_id !== callerId) {
+        if (type !== "spot_reopened") {
+            return deny(403, "Only the post author may trigger this");
+        }
+
+        // Held a claim on this post at some point — enough to have plausibly
+        // reopened a spot, and it stops an uninvolved user messaging watchers.
+        const { data: ownClaim } = await supabase
+            .from("claims")
+            .select("id")
+            .eq("post_id", post.id)
+            .eq("claimer_id", callerId)
+            .limit(1)
+            .maybeSingle();
+
+        if (!ownClaim) {
+            return deny(403, "Only the post author or a claimer on it may trigger this");
+        }
+    }
 
     const summary = postSummary(post);
     const base = { post_id: post.id as string, claim_id: null };
