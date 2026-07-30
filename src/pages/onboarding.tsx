@@ -205,13 +205,14 @@ export function Onboarding() {
         }
         setSearchLoading(true);
         const t = setTimeout(async () => {
-            const { data } = await supabase
-                .from("users")
-                .select("id, first_name, last_name, photo_url, skill_level, headline")
-                .or(`first_name.ilike.%${memberQuery.trim()}%,last_name.ilike.%${memberQuery.trim()}%`)
-                .neq("id", user.id)
-                .limit(8);
-            setMemberResults(data ?? []);
+            // Via RPC, not a direct table read: public.users is own-row only now,
+            // so the browser can't search other players itself. search_users is
+            // security definer and returns just the public-facing fields.
+            const { data } = await supabase.rpc("search_users", {
+                p_query: memberQuery.trim(),
+                p_limit: 8,
+            });
+            setMemberResults((data as MemberResult[]) ?? []);
             setShowDropdown(true);
             setSearchLoading(false);
         }, 300);
@@ -221,17 +222,11 @@ export function Onboarding() {
     // Suggest the 5 most recently joined players when entering the invite step.
     useEffect(() => {
         if (step !== 3 || !user) return;
-        supabase
-            .from("users")
-            .select("id, first_name, last_name, photo_url, skill_level, headline")
-            .neq("id", user.id)
-            .is("deleted_at", null)
-            .eq("is_suspended", false)
-            .order("created_at", { ascending: false })
-            .limit(5)
-            .then(({ data }) => {
-                if (data) setSuggestedFollows(data as MemberResult[]);
-            });
+        // Same reason as the search above — the self/deleted/suspended filtering
+        // and the ordering now live in the RPC.
+        supabase.rpc("get_suggested_follows", { p_limit: 5 }).then(({ data }) => {
+            if (data) setSuggestedFollows(data as MemberResult[]);
+        });
     }, [step, user]);
 
     const handleFollow = async (member: MemberResult) => {
