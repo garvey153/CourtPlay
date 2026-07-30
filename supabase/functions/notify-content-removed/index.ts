@@ -10,7 +10,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 /** Bump on every deploy — see the same constant in send-notification for why. */
-const FN_BUILD = "2026-07-29a";
+const FN_BUILD = "2026-07-30a";
 
 /**
  * Sends the "your content was removed" moderation notice.
