@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import type { FeedPost } from "@/types/feed";
 import { skillLabel } from "@/utils/skill-label";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { ErrorState } from "@/components/application/loading-indicator/area-state";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -236,15 +237,7 @@ export function Profile() {
     if (error || !profile) {
         return (
             <AppLayout>
-                <div className="flex flex-col items-center gap-4 py-16 text-center">
-                    <p className="text-base font-semibold text-primary">{error ?? "User not found"}</p>
-                    <button
-                        onClick={fetchProfile}
-                        className="rounded-full bg-brand-solid px-5 py-2 text-sm font-semibold text-white hover:bg-brand-solid_hover"
-                    >
-                        Retry
-                    </button>
-                </div>
+                <ErrorState title={error ?? "User not found"} onRetry={fetchProfile} />
             </AppLayout>
         );
     }

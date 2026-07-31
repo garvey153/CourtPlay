@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, SearchSm, XClose } from "@untitledui/icons";
-import { Button } from "@/components/base/buttons/button";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { supabase } from "@/lib/supabase";
 import { AdminCourtCard, type AdminCourtRow, type CustomCourtRow } from "./admin-court-card";
 import { AdminCourtSheet, type CourtSheetTarget } from "./admin-court-sheet";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 
 export function AdminCourts() {
     const [courts, setCourts] = useState<AdminCourtRow[]>([]);
@@ -82,8 +82,7 @@ export function AdminCourts() {
 
     return (
         <>
-        <PullToRefresh onRefresh={() => fetchData({ silent: true })}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-1 flex-col gap-4">
             {/* Search + add row (design 149:1330) */}
             <div className="flex items-center gap-3">
                 <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
@@ -116,19 +115,13 @@ export function AdminCourts() {
             </div>
 
             {/* Content */}
+            <PullToRefresh onRefresh={() => fetchData({ silent: true })} className="flex flex-1 flex-col" contentClassName="flex flex-1 flex-col">
             {loading ? (
-                <LoadingState variant="block" size="md" />
+                <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <div className="flex flex-col items-center gap-4 py-16 text-center">
-                    <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={() => fetchData()}>
-                        Retry
-                    </Button>
-                </div>
+                <ErrorState variant="grow" message={error} onRetry={() => fetchData()} />
             ) : visibleCourts.length === 0 && customCourts.length === 0 ? (
-                <p className="py-16 text-center text-sm text-tertiary">
-                    {search ? "No courts match your search." : "No courts yet."}
-                </p>
+                <EmptyState variant="grow" title={search ? "No courts match your search." : "No courts yet."} />
             ) : hasSections ? (
                 <div className="flex flex-col gap-5">
                     <div>
@@ -156,8 +149,8 @@ export function AdminCourts() {
                 courtList
             )}
 
+            </PullToRefresh>
         </div>
-        </PullToRefresh>
 
             {sheet && <AdminCourtSheet target={sheet} onClose={() => setSheet(null)} onSaved={handleSaved} />}
         </>

@@ -25,6 +25,7 @@ import { REJECTION_REASONS } from "@/types/claims";
 import { claimToFeedPost } from "@/utils/activity-feed-map";
 import type { ClaimRow, MyClaim, MyPost } from "@/types/activity";
 import type { FeedPost, FilterState } from "@/types/feed";
+import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 
 const WELCOME_KEY = "cs_welcome_dismissed";
 const VIEW_DEBOUNCE_MS = 300;
@@ -424,8 +425,12 @@ export function Feed() {
                 onToggle={handleToggleFilters}
             />
 
-            <PullToRefresh onRefresh={() => Promise.all([fetchPosts(), fetchMyPosts()])}>
-            <div className="flex flex-col gap-3 px-5 pb-4">
+            <PullToRefresh
+                onRefresh={() => Promise.all([fetchPosts(), fetchMyPosts()])}
+                className="flex min-h-full flex-col"
+                contentClassName="flex min-h-full flex-1 flex-col"
+            >
+            <div className="flex flex-1 flex-col gap-3 px-5 pb-4">
                 {/* Admin-only: new-feedback banner sits at the very top. */}
                 {profile?.is_admin && newFeedbackIds.length > 0 && (
                     <FeedbackBanner
@@ -517,29 +522,15 @@ export function Feed() {
                         ))}
                     </ul>
                 ) : error ? (
-                    <div className="flex flex-col items-center gap-4 py-16 text-center">
-                        <p className="text-base font-semibold text-primary">Something went wrong</p>
-                        <p className="text-sm text-tertiary">{error}</p>
-                        <button
-                            onClick={fetchPosts}
-                            className="rounded-full bg-brand-solid px-5 py-2 text-sm font-semibold text-white hover:bg-brand-solid_hover"
-                        >
-                            Retry
-                        </button>
-                    </div>
+                    <ErrorState variant="grow" message={error} onRetry={fetchPosts} />
                 ) : filteredPosts.length === 0 ? (
-                    <div className="flex flex-col items-center gap-4 py-16 text-center">
-                        <p className="text-base font-semibold text-primary">No open spots right now</p>
-                        <p className="text-sm text-tertiary">
-                            Be the first to post one.
-                        </p>
-                        <button
-                            onClick={handleNavigateToPost}
-                            className="rounded-full bg-brand-solid px-5 py-2 text-sm font-semibold text-white hover:bg-brand-solid_hover"
-                        >
-                            Find a Sub
-                        </button>
-                    </div>
+                    <EmptyState
+                        variant="grow"
+                        title="No open spots right now"
+                        description="Be the first to post one."
+                        actionLabel="Find a Sub"
+                        onAction={handleNavigateToPost}
+                    />
                 ) : (
                     <ul className="flex flex-col gap-3">
                         {filteredPosts.map((post) =>

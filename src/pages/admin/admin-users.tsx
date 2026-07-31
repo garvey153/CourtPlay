@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchSm, XClose } from "@untitledui/icons";
 import { FilterButton } from "@/components/app/filter-button";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
-import { Button } from "@/components/base/buttons/button";
 import { supabase } from "@/lib/supabase";
 import { AdminUserCard, type AdminUserRow } from "./admin-user-card";
 import { AdminUserDetailSheet } from "./admin-user-detail-sheet";
 import { AdminUserFilterSheet, EMPTY_USER_FILTERS, userFilterCount, type UserFilters } from "./admin-user-filter-sheet";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 
 // Admin shows every user; loads a generous cap and filters client-side.
 const FETCH_LIMIT = 500;
@@ -108,8 +108,7 @@ export function AdminUsers() {
 
     return (
         <>
-        <PullToRefresh onRefresh={() => fetchUsers({ silent: true })}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-1 flex-col gap-4">
             {/* Search + filter row (design 348:4818) */}
             <div className="flex items-center gap-3">
                 <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
@@ -139,17 +138,13 @@ export function AdminUsers() {
             </div>
 
             {/* Content */}
+            <PullToRefresh onRefresh={() => fetchUsers({ silent: true })} className="flex flex-1 flex-col" contentClassName="flex flex-1 flex-col">
             {loading ? (
-                <LoadingState variant="block" size="md" />
+                <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <div className="flex flex-col items-center gap-4 py-16 text-center">
-                    <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={() => fetchUsers()}>
-                        Retry
-                    </Button>
-                </div>
+                <ErrorState variant="grow" message={error} onRetry={() => fetchUsers()} />
             ) : visibleUsers.length === 0 ? (
-                <p className="py-16 text-center text-sm text-tertiary">No users match your filters.</p>
+                <EmptyState variant="grow" title="No users match your filters." />
             ) : (
                 <div className="flex flex-col gap-3">
                     {visibleUsers.map((user) => (
@@ -158,8 +153,8 @@ export function AdminUsers() {
                 </div>
             )}
 
+            </PullToRefresh>
         </div>
-        </PullToRefresh>
 
             <AdminUserFilterSheet
                 filters={filters}

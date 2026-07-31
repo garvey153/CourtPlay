@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchSm, XClose } from "@untitledui/icons";
 import { FilterButton } from "@/components/app/filter-button";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
-import { Button } from "@/components/base/buttons/button";
 import { supabase } from "@/lib/supabase";
 import { AdminClaimCard, claimerName, type AdminClaimRow } from "./admin-claim-card";
 import { AdminClaimDetailSheet } from "./admin-claim-detail-sheet";
 import { AdminClaimFilterSheet, EMPTY_CLAIM_FILTERS, claimFilterCount, type ClaimFilters } from "./admin-claim-filter-sheet";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 
 const FETCH_LIMIT = 500;
 
@@ -136,8 +136,7 @@ export function AdminClaims() {
 
     return (
         <>
-        <PullToRefresh onRefresh={() => fetchClaims({ silent: true })}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-1 flex-col gap-4">
             {/* Search + filter row (design 348:4863) */}
             <div className="flex items-center gap-3">
                 <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
@@ -167,17 +166,13 @@ export function AdminClaims() {
             </div>
 
             {/* Content */}
+            <PullToRefresh onRefresh={() => fetchClaims({ silent: true })} className="flex flex-1 flex-col" contentClassName="flex flex-1 flex-col">
             {loading ? (
-                <LoadingState variant="block" size="md" />
+                <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <div className="flex flex-col items-center gap-4 py-16 text-center">
-                    <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={() => fetchClaims()}>
-                        Retry
-                    </Button>
-                </div>
+                <ErrorState variant="grow" message={error} onRetry={() => fetchClaims()} />
             ) : visibleClaims.length === 0 ? (
-                <p className="py-16 text-center text-sm text-tertiary">No claims match your filters.</p>
+                <EmptyState variant="grow" title="No claims match your filters." />
             ) : (
                 <div className="flex flex-col gap-3">
                     {visibleClaims.map((claim) => (
@@ -186,8 +181,8 @@ export function AdminClaims() {
                 </div>
             )}
 
+            </PullToRefresh>
         </div>
-        </PullToRefresh>
 
             <AdminClaimFilterSheet
                 filters={filters}

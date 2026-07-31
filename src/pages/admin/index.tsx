@@ -28,6 +28,10 @@ export function Admin() {
 
     return (
         <AppLayout>
+            {/* Fills <main> as a flex column so each tab's content can grow into the
+                space left under the tab bar — that's what lets a loading spinner
+                centre in the list area instead of collapsing to the top. */}
+            <div className="flex min-h-full flex-col">
             {/* Tab bar — active tab gets a green underline bar (design 350:5076). */}
             <div className="sticky top-0 z-10 bg-primary">
                 <div className="flex justify-between gap-5 overflow-x-auto px-5">
@@ -46,13 +50,14 @@ export function Admin() {
                 </div>
             </div>
 
-            <div className="px-5 py-4">
+            <div className="flex flex-1 flex-col px-5 py-4">
                 {tab === "analytics" && <AdminAnalytics />}
                 {tab === "posts" && <AdminPosts />}
                 {tab === "users" && <AdminUsers />}
                 {tab === "claims" && <AdminClaims />}
                 {tab === "courts" && <AdminCourts />}
                 {tab === "reports" && <AdminReports />}
+            </div>
             </div>
         </AppLayout>
     );
