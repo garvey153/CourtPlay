@@ -82,7 +82,12 @@ export function AdminCourts() {
 
     return (
         <>
-        <div className="flex flex-1 flex-col gap-4">
+        <PullToRefresh
+            onRefresh={() => fetchData({ silent: true })}
+            className="flex flex-1 flex-col gap-4"
+            contentClassName="flex flex-1 flex-col"
+            header={
+                <>
             {/* Search + add row (design 149:1330) */}
             <div className="flex items-center gap-3">
                 <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
@@ -113,9 +118,9 @@ export function AdminCourts() {
                     <Plus className="size-4" strokeWidth={2.5} aria-hidden="true" />
                 </button>
             </div>
-
-            {/* Content */}
-            <PullToRefresh onRefresh={() => fetchData({ silent: true })} className="flex flex-1 flex-col" contentClassName="flex flex-1 flex-col">
+                </>
+            }
+        >
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
@@ -149,8 +154,7 @@ export function AdminCourts() {
                 courtList
             )}
 
-            </PullToRefresh>
-        </div>
+        </PullToRefresh>
 
             {sheet && <AdminCourtSheet target={sheet} onClose={() => setSheet(null)} onSaved={handleSaved} />}
         </>

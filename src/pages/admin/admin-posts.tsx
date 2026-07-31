@@ -161,7 +161,12 @@ export function AdminPosts() {
 
     return (
         <>
-        <div className="flex flex-1 flex-col gap-4">
+        <PullToRefresh
+            onRefresh={() => fetchPosts({ silent: true })}
+            className="flex flex-1 flex-col gap-4"
+            contentClassName="flex flex-1 flex-col"
+            header={
+                <>
             {/* Search + filter row (design 347:5807) */}
             <div className="flex items-center gap-3">
                 <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
@@ -189,9 +194,9 @@ export function AdminPosts() {
                     label="Filter posts"
                 />
             </div>
-
-            {/* Content */}
-            <PullToRefresh onRefresh={() => fetchPosts({ silent: true })} className="flex flex-1 flex-col" contentClassName="flex flex-1 flex-col">
+                </>
+            }
+        >
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
@@ -206,8 +211,7 @@ export function AdminPosts() {
                 </div>
             )}
 
-            </PullToRefresh>
-        </div>
+        </PullToRefresh>
 
             {/* Shared feed filter sheet */}
             <FeedFilters

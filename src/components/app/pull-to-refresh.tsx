@@ -21,6 +21,17 @@ interface PullToRefreshProps {
     /** Invoked when the user pulls past the threshold and releases. Awaited to keep the spinner up. */
     onRefresh: () => Promise<unknown> | unknown;
     children: ReactNode;
+    /**
+     * Chrome that should respond to the gesture without moving with it — an
+     * admin list's search row, or its sub-nav pills.
+     *
+     * The touch listeners live on the outer wrapper, so anything rendered
+     * outside it cannot start a pull: the drag falls through to the scroll
+     * container and iOS rubber-bands the whole page instead, which drags that
+     * chrome along anyway. Passing it here keeps it inside the gesture surface
+     * while leaving it out of the translated region.
+     */
+    header?: ReactNode;
     /** Extra classes on the outer wrapper (e.g. to grow within a flex column). */
     className?: string;
     /** Extra classes on the translated content wrapper. */
@@ -33,7 +44,7 @@ interface PullToRefreshProps {
  * the finger (with resistance) and a spinner shows; releasing past the threshold
  * runs onRefresh. Only the wrapped content moves — the app header stays fixed.
  */
-export function PullToRefresh({ onRefresh, children, className, contentClassName }: PullToRefreshProps) {
+export function PullToRefresh({ onRefresh, children, header, className, contentClassName }: PullToRefreshProps) {
     const wrapRef = useRef<HTMLDivElement>(null);
     const [pull, setPull] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
@@ -113,8 +124,11 @@ export function PullToRefresh({ onRefresh, children, className, contentClassName
 
     const progress = Math.min(1, pull / THRESHOLD);
 
-    return (
-        <div ref={wrapRef} className={cx("relative", className)}>
+    // Without a header this is the whole wrapper, so the markup below is
+    // unchanged for existing callers; with one, it becomes an inner region so
+    // the spinner gap opens below the header rather than above it.
+    const pullRegion = (
+        <>
             {/* Spinner revealed in the gap that opens as the content translates down. */}
             <div
                 className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center overflow-hidden"
@@ -142,6 +156,19 @@ export function PullToRefresh({ onRefresh, children, className, contentClassName
             >
                 {children}
             </div>
+        </>
+    );
+
+    return (
+        <div ref={wrapRef} className={cx("relative", className)}>
+            {header ? (
+                <>
+                    {header}
+                    <div className="relative flex min-h-0 flex-1 flex-col">{pullRegion}</div>
+                </>
+            ) : (
+                pullRegion
+            )}
         </div>
     );
 }

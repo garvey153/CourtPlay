@@ -108,7 +108,12 @@ export function AdminUsers() {
 
     return (
         <>
-        <div className="flex flex-1 flex-col gap-4">
+        <PullToRefresh
+            onRefresh={() => fetchUsers({ silent: true })}
+            className="flex flex-1 flex-col gap-4"
+            contentClassName="flex flex-1 flex-col"
+            header={
+                <>
             {/* Search + filter row (design 348:4818) */}
             <div className="flex items-center gap-3">
                 <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
@@ -136,9 +141,9 @@ export function AdminUsers() {
                     label="Filter users"
                 />
             </div>
-
-            {/* Content */}
-            <PullToRefresh onRefresh={() => fetchUsers({ silent: true })} className="flex flex-1 flex-col" contentClassName="flex flex-1 flex-col">
+                </>
+            }
+        >
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
@@ -153,8 +158,7 @@ export function AdminUsers() {
                 </div>
             )}
 
-            </PullToRefresh>
-        </div>
+        </PullToRefresh>
 
             <AdminUserFilterSheet
                 filters={filters}
