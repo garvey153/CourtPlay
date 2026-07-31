@@ -30,7 +30,7 @@ export function ForgotPassword() {
         setError(null);
 
         if (!email.trim()) {
-            setError("Enter the email address for your account.");
+            setError("We'll need your email address first.");
             return;
         }
 

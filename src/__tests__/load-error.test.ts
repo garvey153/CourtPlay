@@ -73,18 +73,20 @@ describe("describeActionError", () => {
 describe("describeAuthError", () => {
     it("rewrites the auth failures people actually hit", () => {
         setOnline(true);
-        expect(describeAuthError({ message: "Invalid login credentials" })).toBe("That email or password isn't right.");
-        expect(describeAuthError({ message: "Email not confirmed" })).toMatch(/confirm your email/i);
-        expect(describeAuthError({ message: "User already registered" })).toMatch(/already exists/i);
+        expect(describeAuthError({ message: "Invalid login credentials" })).toBe(
+            "That one's out. Check your email and password, then try again.",
+        );
+        expect(describeAuthError({ message: "Email not confirmed" })).toMatch(/confirmation link/i);
+        expect(describeAuthError({ message: "User already registered" })).toMatch(/already on the roster/i);
         expect(describeAuthError({ message: "For security purposes, you can only request this after 45 seconds" })).toMatch(
-            /too many attempts/i,
+            /take a breather/i,
         );
     });
 
     it("does not surface internal auth errors verbatim", () => {
         setOnline(true);
         const copy = describeAuthError({ message: "Database error granting user" });
-        expect(copy).toBe("Something went wrong. Try again.");
+        expect(copy).toBe("Something went wide. Give it another go.");
         expect(copy).not.toContain("Database");
     });
 

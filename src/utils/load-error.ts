@@ -79,16 +79,18 @@ export function describeActionError(error: unknown, action: string): string {
 // developers and a few are unusable ("Database error granting user"). Map the
 // ones people actually hit; anything unrecognised falls back to generic rather
 // than putting an internal string on screen.
+// Tennis-flavoured, but the fix always comes first — a joke that hides what to
+// do next is a worse message than a dull one.
 const AUTH_MESSAGES: [RegExp, string][] = [
-    [/invalid login credentials/i, "That email or password isn't right."],
-    [/email not confirmed/i, "Confirm your email address first — check your inbox for the link."],
-    [/user already registered|already been registered/i, "An account with this email already exists. Try signing in instead."],
-    [/unable to validate email address|invalid format/i, "That doesn't look like a valid email address."],
-    [/password should be at least (\d+)/i, "Choose a longer password — at least 8 characters."],
-    [/new password should be different/i, "Choose a password you haven't used before."],
-    [/for security purposes|rate limit|too many requests/i, "Too many attempts. Wait a moment and try again."],
-    [/email link is invalid or has expired|token has expired/i, "That link has expired. Request a new one."],
-    [/user not found/i, "We couldn't find an account with that email."],
+    [/invalid login credentials/i, "That one's out. Check your email and password, then try again."],
+    [/email not confirmed/i, "You're not quite in play yet — tap the confirmation link in your inbox."],
+    [/user already registered|already been registered/i, "You're already on the roster. Try signing in instead."],
+    [/unable to validate email address|invalid format/i, "That email won't clear the net. Give it another look."],
+    [/password should be at least (\d+)/i, "A little short of the baseline — passwords need at least 8 characters."],
+    [/new password should be different/i, "No replays — pick a password you haven't used before."],
+    [/for security purposes|rate limit|too many requests/i, "Easy, champ. Take a breather and try again in a moment."],
+    [/email link is invalid or has expired|token has expired/i, "That link's out of play. Request a fresh one."],
+    [/user not found/i, "No match for that email. Want to sign up instead?"],
 ];
 
 /** Turns a Supabase auth failure into something worth reading. */
@@ -100,5 +102,5 @@ export function describeAuthError(error: unknown): string {
     for (const [pattern, copy] of AUTH_MESSAGES) {
         if (pattern.test(msg)) return copy;
     }
-    return "Something went wrong. Try again.";
+    return "Something went wide. Give it another go.";
 }

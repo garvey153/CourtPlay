@@ -77,11 +77,11 @@ export function ResetPassword() {
         setError(null);
 
         if (password.length < 8) {
-            setError("Password must be at least 8 characters.");
+            setError("A little short of the baseline — use at least 8 characters.");
             return;
         }
         if (password !== confirmPassword) {
-            setError("Passwords do not match.");
+            setError("Those don't match. Take another swing.");
             return;
         }
 

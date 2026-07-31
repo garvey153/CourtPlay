@@ -73,11 +73,11 @@ export function AuthScreen() {
 
         if (isSignup) {
             if (password.length < 8) {
-                setError("Password must be at least 8 characters.");
+                setError("A little short of the baseline — use at least 8 characters.");
                 return;
             }
             if (password !== confirmPassword) {
-                setError("Passwords do not match.");
+                setError("Those don't match. Take another swing.");
                 return;
             }
 
@@ -95,7 +95,7 @@ export function AuthScreen() {
             }
             // Supabase returns identities: [] when the email is already registered.
             if (data.user && data.user.identities?.length === 0) {
-                setError("An account with this email already exists. Try signing in instead.");
+                setError("You're already on the roster. Try signing in instead.");
                 return;
             }
             // Session present → email confirmation disabled; go straight to onboarding.
