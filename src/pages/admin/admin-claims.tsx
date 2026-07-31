@@ -136,8 +136,7 @@ export function AdminClaims() {
 
     return (
         <>
-        <PullToRefresh onRefresh={() => fetchClaims({ silent: true })}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-1 flex-col gap-4">
             {/* Search + filter row (design 348:4863) */}
             <div className="flex items-center gap-3">
                 <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
@@ -167,8 +166,9 @@ export function AdminClaims() {
             </div>
 
             {/* Content */}
+            <PullToRefresh onRefresh={() => fetchClaims({ silent: true })} className="flex flex-1 flex-col" contentClassName="flex flex-1 flex-col">
             {loading ? (
-                <LoadingState variant="block" size="md" />
+                <LoadingState variant="grow" size="md" />
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>
@@ -186,8 +186,8 @@ export function AdminClaims() {
                 </div>
             )}
 
+            </PullToRefresh>
         </div>
-        </PullToRefresh>
 
             <AdminClaimFilterSheet
                 filters={filters}

@@ -61,7 +61,17 @@ const variants = {
      * actually centres it.
      */
     fill: "min-h-full",
-    /** Centres within its own block — for a list or panel inside a page. */
+    /**
+     * Grows to fill the remaining space of a flex-column parent. Use where the
+     * loading area sits below persistent chrome — an admin list under its
+     * search and filter row — so the spinner centres in the part that is
+     * actually loading rather than in the page as a whole. Every ancestor up to
+     * the scroll container has to be a growing flex column for this to resolve;
+     * `fill` does NOT work here, since a percentage min-height measured against
+     * a padded flex parent lands well above centre.
+     */
+    grow: "flex-1",
+    /** Centres within its own block — for a panel or sheet with no height to fill. */
     block: "py-16",
 };
 

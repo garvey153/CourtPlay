@@ -158,12 +158,12 @@ export function AdminAnalytics() {
     ];
 
     if (loading) {
-        return <LoadingState variant="block" size="md" label="Loading analytics" />;
+        return <LoadingState variant="grow" size="md" label="Loading analytics" />;
     }
 
     return (
-        <PullToRefresh onRefresh={() => refresh({ silent: true })}>
-        <div className="flex flex-col gap-4">
+        <PullToRefresh onRefresh={() => refresh({ silent: true })} className="flex flex-1 flex-col" contentClassName="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col gap-4">
             {/* Stat cards */}
             <div className="grid grid-cols-2 gap-3">
                 {cards.map((card) => (

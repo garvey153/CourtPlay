@@ -208,8 +208,7 @@ export function AdminReports() {
 
     return (
         <>
-        <PullToRefresh onRefresh={() => (activeTab === "feedback" ? fetchFeedback({ silent: true }) : fetchReports({ silent: true }))}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-1 flex-col gap-4">
             {/* Status pills (Activity-tab style) */}
             <div className="flex gap-2">
                 {TABS.map((t) => (
@@ -228,8 +227,9 @@ export function AdminReports() {
             </div>
 
             {/* Content */}
+            <PullToRefresh onRefresh={() => (activeTab === "feedback" ? fetchFeedback({ silent: true }) : fetchReports({ silent: true }))} className="flex flex-1 flex-col" contentClassName="flex flex-1 flex-col">
             {loading ? (
-                <LoadingState variant="block" size="md" />
+                <LoadingState variant="grow" size="md" />
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>
@@ -259,8 +259,8 @@ export function AdminReports() {
                 </div>
             )}
 
+            </PullToRefresh>
         </div>
-        </PullToRefresh>
 
             {detailReport && (
                 <AdminReportDetailSheet
