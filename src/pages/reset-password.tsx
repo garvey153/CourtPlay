@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle } from "@untitledui/icons";
 import { Input } from "@/components/base/input/input";
 import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
+import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 
 // Brand-green CTA (dark on-brand text), matching auth.tsx.
 const PRIMARY_BTN =
@@ -11,9 +12,6 @@ const PRIMARY_BTN =
 // Field fill matches the design (lighter than the page) — overrides the base Input's bg-primary.
 const FIELD_WRAPPER = "bg-tertiary ring-neutral-600";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 type Status = "verifying" | "ready" | "invalid";
 
@@ -102,9 +100,7 @@ export function ResetPassword() {
 
     if (status === "verifying") {
         return (
-            <div className="flex h-dvh items-center justify-center bg-primary">
-                <div className="size-8 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-            </div>
+            <LoadingState variant="screen" className="bg-primary" />
         );
     }
 
@@ -174,7 +170,7 @@ export function ResetPassword() {
                     {error && <p className="text-sm text-error-primary">{error}</p>}
 
                     <button type="submit" disabled={loading} className={cx(PRIMARY_BTN, "mt-2")}>
-                        {loading ? <ButtonSpinner /> : "Update password"}
+                        {loading ? <Spinner size="sm" tone="on-brand" /> : "Update password"}
                     </button>
                 </form>
 

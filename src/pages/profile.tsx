@@ -10,6 +10,7 @@ import { usePostSheets } from "@/hooks/use-post-sheets";
 import { supabase } from "@/lib/supabase";
 import type { FeedPost } from "@/types/feed";
 import { skillLabel } from "@/utils/skill-label";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -227,9 +228,7 @@ export function Profile() {
     if (loading) {
         return (
             <AppLayout>
-                <div className="flex flex-1 items-center justify-center py-16">
-                    <div className="size-8 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-                </div>
+                <LoadingState />
             </AppLayout>
         );
     }

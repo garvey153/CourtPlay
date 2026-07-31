@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/lib/supabase";
 import type { FeedPost } from "@/types/feed";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -111,9 +112,7 @@ export function PostDetail() {
 
     if (loading || authLoading) {
         return (
-            <div className="flex min-h-dvh items-center justify-center bg-primary">
-                <div className="size-8 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-            </div>
+            <LoadingState variant="screen" className="bg-primary" />
         );
     }
 

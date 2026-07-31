@@ -10,6 +10,7 @@ import type { ClaimMessage } from "@/types/activity";
 import { ShareModal } from "./share-modal";
 import { ReportModal } from "./report-modal";
 import { ThreadMessage } from "./thread-message";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 const MESSAGE_MAX = 150;
 
@@ -73,9 +74,6 @@ const SECONDARY_BTN =
     "rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary";
 
 /** Spinner tuned for the brand button (dark strokes on green). */
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 interface ClaimDetailSheetProps {
     post: FeedPost;
@@ -444,10 +442,7 @@ export function ClaimDetailSheet({
                                 className={`${SECONDARY_BTN} flex items-center justify-center`}
                             >
                                 {cancelling ? (
-                                    <span
-                                        className="size-5 animate-spin rounded-full border-2 border-secondary border-t-transparent"
-                                        aria-hidden="true"
-                                    />
+                                    <Spinner size="sm" tone="neutral" />
                                 ) : (
                                     "Cancel claim"
                                 )}
@@ -469,7 +464,7 @@ export function ClaimDetailSheet({
                                     disabled={notifyState === "loading"}
                                     className={PRIMARY_BTN}
                                 >
-                                    {notifyState === "loading" ? <ButtonSpinner /> : "Notify me if a spot opens"}
+                                    {notifyState === "loading" ? <Spinner size="sm" tone="on-brand" /> : "Notify me if a spot opens"}
                                 </button>
                             )}
                             {shareButton}
@@ -484,7 +479,7 @@ export function ClaimDetailSheet({
                                 disabled={loading || !!conflict}
                                 className={PRIMARY_BTN}
                             >
-                                {loading ? <ButtonSpinner /> : costLabel}
+                                {loading ? <Spinner size="sm" tone="on-brand" /> : costLabel}
                             </button>
                             {shareButton}
                         </>

@@ -18,6 +18,7 @@ import { supabase } from "@/lib/supabase";
 import type { Selection } from "react-aria-components";
 import { cx } from "@/utils/cx";
 import { menuWidth, multiMenuWidth } from "@/utils/menu-width";
+import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 
 // Field surface per the design: text inputs get a bg/tertiary fill with a
 // border/tertiary outline; dropdowns get the fill only (no border).
@@ -568,9 +569,7 @@ export function PostNew() {
                     <div className="flex-1 overflow-y-auto overscroll-y-contain px-5 pb-8">
                 {!loaded ? (
                     // Edit mode: hold the sheet until the post loads so the create form never flashes.
-                    <div className="flex items-center justify-center py-20">
-                        <span className="size-6 animate-spin rounded-full border-2 border-secondary border-t-transparent" aria-hidden="true" />
-                    </div>
+                    <LoadingState variant="block" size="md" className="py-20" />
                 ) : (
                 <>
                 {/* Post type — radio cards (hidden in edit mode) */}
@@ -946,10 +945,7 @@ export function PostNew() {
                         className={PRIMARY_BTN}
                     >
                         {saving ? (
-                            <span
-                                className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950"
-                                aria-hidden="true"
-                            />
+                            <Spinner size="sm" tone="on-brand" />
                         ) : isEditing ? (
                             "Save changes"
                         ) : (

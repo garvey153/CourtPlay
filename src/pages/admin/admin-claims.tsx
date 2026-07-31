@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { AdminClaimCard, claimerName, type AdminClaimRow } from "./admin-claim-card";
 import { AdminClaimDetailSheet } from "./admin-claim-detail-sheet";
 import { AdminClaimFilterSheet, EMPTY_CLAIM_FILTERS, claimFilterCount, type ClaimFilters } from "./admin-claim-filter-sheet";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 const FETCH_LIMIT = 500;
 
@@ -167,9 +168,7 @@ export function AdminClaims() {
 
             {/* Content */}
             {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <div className="size-6 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-                </div>
+                <LoadingState variant="block" size="md" />
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>

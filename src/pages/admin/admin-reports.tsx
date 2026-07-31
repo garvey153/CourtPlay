@@ -9,6 +9,7 @@ import { AdminReportCard, type AdminReportRow, type ReportPostTarget, type Repor
 import { AdminReportDetailSheet } from "./admin-report-detail-sheet";
 import { AdminFeedbackCard, type AdminFeedbackRow } from "./admin-feedback-card";
 import { AdminFeedbackDetailSheet } from "./admin-feedback-detail-sheet";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 type ReportStatus = "pending" | "dismissed" | "actioned";
 // The Feedback section shares the pill row but reads a different table.
@@ -228,9 +229,7 @@ export function AdminReports() {
 
             {/* Content */}
             {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <div className="size-6 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-                </div>
+                <LoadingState variant="block" size="md" />
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>

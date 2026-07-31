@@ -5,6 +5,7 @@ import { XClose } from "@untitledui/icons";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 // Themed field surface — matches the create-post form and the feedback sheet.
 const FIELD = "bg-tertiary ring-neutral-600";
@@ -15,9 +16,6 @@ const PRIMARY_BTN =
 const SECONDARY_BTN =
     "flex w-full items-center justify-center rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 interface ReportUserSheetProps {
     /** The reported user's id. */
@@ -136,7 +134,7 @@ export function ReportUserSheet({ targetId, onClose }: ReportUserSheetProps) {
                                 onClick={handleSubmit}
                                 disabled={submitting || !details.trim()}
                             >
-                                {submitting ? <ButtonSpinner /> : "Submit"}
+                                {submitting ? <Spinner size="sm" tone="on-brand" /> : "Submit"}
                             </button>
                             <button type="button" className={SECONDARY_BTN} onClick={onClose} disabled={submitting}>
                                 Cancel

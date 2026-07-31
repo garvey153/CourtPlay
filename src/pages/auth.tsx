@@ -7,6 +7,7 @@ import { SocialButton } from "@/components/base/buttons/social-button";
 import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { validateRedirect } from "@/utils/validate-redirect";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 type Mode = "signup" | "signin";
 
@@ -19,9 +20,6 @@ const FIELD_WRAPPER = "bg-tertiary ring-neutral-600";
 // the app is dark-only, so force the light treatment with important overrides.
 const GOOGLE_BTN = "w-full !bg-white !text-gray-700 !ring-1 !ring-black/10 hover:!bg-gray-50";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 /**
  * Combined auth screen (design 149:1168): a "Sign up | Sign in" segmented toggle
@@ -248,7 +246,7 @@ export function AuthScreen() {
 
                     {/* 32px above the CTA (mt-2 on top of the form's 24px gap). */}
                     <button type="submit" disabled={loading} className={cx(PRIMARY_BTN, "mt-2")}>
-                        {loading ? <ButtonSpinner /> : isSignup ? "Sign up" : "Sign in"}
+                        {loading ? <Spinner size="sm" tone="on-brand" /> : isSignup ? "Sign up" : "Sign in"}
                     </button>
                 </form>
 

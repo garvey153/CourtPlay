@@ -5,6 +5,7 @@ import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { supabase } from "@/lib/supabase";
 import { AdminCourtCard, type AdminCourtRow, type CustomCourtRow } from "./admin-court-card";
 import { AdminCourtSheet, type CourtSheetTarget } from "./admin-court-sheet";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 export function AdminCourts() {
     const [courts, setCourts] = useState<AdminCourtRow[]>([]);
@@ -116,9 +117,7 @@ export function AdminCourts() {
 
             {/* Content */}
             {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <div className="size-6 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-                </div>
+                <LoadingState variant="block" size="md" />
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>

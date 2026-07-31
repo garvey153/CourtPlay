@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { supabase } from "@/lib/supabase";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 interface Metrics {
     totalUsers: number | null;
@@ -157,7 +158,7 @@ export function AdminAnalytics() {
     ];
 
     if (loading) {
-        return <p className="py-8 text-center text-sm text-tertiary">Loading analytics…</p>;
+        return <LoadingState variant="block" size="md" label="Loading analytics" />;
     }
 
     return (

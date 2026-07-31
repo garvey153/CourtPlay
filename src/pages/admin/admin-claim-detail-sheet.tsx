@@ -6,15 +6,13 @@ import { supabase } from "@/lib/supabase";
 import { sendNotification } from "@/lib/notifications";
 import { formatWhen, formatPlayType, formatDuration, timeAgo } from "@/components/app/sub-card";
 import { claimKind, claimerName, type AdminClaimRow } from "./admin-claim-card";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 const SECONDARY_BTN =
     "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 function formatDate(iso: string): string {
     return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -111,7 +109,7 @@ export function AdminClaimDetailSheet({ claim, onClose, onSaved }: AdminClaimDet
                 {errorLine}
                 <div className="mt-2 flex flex-col gap-3">
                     <button type="button" onClick={cancelClaim} disabled={loading} className={PRIMARY_BTN}>
-                        {loading ? <ButtonSpinner /> : "Yes, cancel claim"}
+                        {loading ? <Spinner size="sm" tone="on-brand" /> : "Yes, cancel claim"}
                     </button>
                     <button type="button" onClick={() => setMode("view")} disabled={loading} className={SECONDARY_BTN}>
                         Keep claim

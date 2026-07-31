@@ -5,15 +5,13 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { supabase } from "@/lib/supabase";
 import { formatWhen, formatPlayType, formatDuration, timeAgo } from "@/components/app/sub-card";
 import { adminCardKind, type AdminPostRow } from "./admin-post-card";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 const SECONDARY_BTN =
     "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 type Mode = "view" | "edit" | "confirmExpire" | "confirmDelete";
 
@@ -190,7 +188,7 @@ export function AdminPostDetailSheet({ post, currentUserId, onClose, onSaved }: 
                 {errorLine}
                 <div className="mt-2 flex flex-col gap-3">
                     <button type="button" onClick={saveEdit} disabled={loading || !costValid} className={PRIMARY_BTN}>
-                        {loading ? <ButtonSpinner /> : "Save changes"}
+                        {loading ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
                     </button>
                     <button type="button" onClick={() => setMode("view")} disabled={loading} className={SECONDARY_BTN}>
                         Cancel
@@ -211,7 +209,7 @@ export function AdminPostDetailSheet({ post, currentUserId, onClose, onSaved }: 
                 {errorLine}
                 <div className="mt-2 flex flex-col gap-3">
                     <button type="button" onClick={expirePost} disabled={loading} className={PRIMARY_BTN}>
-                        {loading ? <ButtonSpinner /> : "Yes, expire"}
+                        {loading ? <Spinner size="sm" tone="on-brand" /> : "Yes, expire"}
                     </button>
                     <button type="button" onClick={() => setMode("view")} disabled={loading} className={SECONDARY_BTN}>
                         Cancel
@@ -232,7 +230,7 @@ export function AdminPostDetailSheet({ post, currentUserId, onClose, onSaved }: 
                 {errorLine}
                 <div className="mt-2 flex flex-col gap-3">
                     <button type="button" onClick={deletePost} disabled={loading} className={PRIMARY_BTN}>
-                        {loading ? <ButtonSpinner /> : "Yes, delete"}
+                        {loading ? <Spinner size="sm" tone="on-brand" /> : "Yes, delete"}
                     </button>
                     <button type="button" onClick={() => setMode("view")} disabled={loading} className={SECONDARY_BTN}>
                         No, keep it

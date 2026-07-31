@@ -6,6 +6,7 @@ import { TextArea } from "@/components/base/textarea/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 export type ReportReason = "spam" | "inappropriate" | "incorrect_info" | "other";
 export type ReportTargetType = "post" | "user";
@@ -26,9 +27,6 @@ const SECONDARY_BTN =
 const PRIMARY_BTN =
     "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 interface ReportModalProps {
     targetType: ReportTargetType;
@@ -183,7 +181,7 @@ export function ReportModal({ targetType, targetId, onClose }: ReportModalProps)
                                 onClick={handleSubmit}
                                 disabled={submitting}
                             >
-                                {submitting ? <ButtonSpinner /> : "Submit report"}
+                                {submitting ? <Spinner size="sm" tone="on-brand" /> : "Submit report"}
                             </button>
                             <button type="button" className={SECONDARY_BTN} onClick={onClose} disabled={submitting}>
                                 Cancel

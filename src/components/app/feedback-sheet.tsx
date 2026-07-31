@@ -5,6 +5,7 @@ import { XClose } from "@untitledui/icons";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { supabase } from "@/lib/supabase";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 // Themed field surface — bg-tertiary fill with a neutral-600 ring — matching the
 // create-post form (Figma 145:1006). Applied to the Input wrapper and, via
@@ -18,9 +19,6 @@ const PRIMARY_BTN =
 const SECONDARY_BTN =
     "flex w-full items-center justify-center rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 interface FeedbackSheetProps {
     onClose: () => void;
@@ -153,7 +151,7 @@ export function FeedbackSheet({ onClose }: FeedbackSheetProps) {
                         {/* 32px above the actions; stacked full-width, primary on top. */}
                         <div className="mt-8 flex flex-col gap-3">
                             <button type="button" className={PRIMARY_BTN} onClick={handleSubmit} disabled={submitting || !title.trim()}>
-                                {submitting ? <ButtonSpinner /> : "Submit"}
+                                {submitting ? <Spinner size="sm" tone="on-brand" /> : "Submit"}
                             </button>
                             <button type="button" className={SECONDARY_BTN} onClick={onClose} disabled={submitting}>
                                 Cancel

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "@/lib/supabase";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 export function AuthCallback() {
     const navigate = useNavigate();
@@ -26,8 +27,6 @@ export function AuthCallback() {
     }, [navigate]);
 
     return (
-        <div className="flex h-dvh items-center justify-center">
-            <div className="size-8 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-        </div>
+        <LoadingState variant="screen" />
     );
 }
