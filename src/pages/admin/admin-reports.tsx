@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { Button } from "@/components/base/buttons/button";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
@@ -10,6 +9,7 @@ import { AdminReportDetailSheet } from "./admin-report-detail-sheet";
 import { AdminFeedbackCard, type AdminFeedbackRow } from "./admin-feedback-card";
 import { AdminFeedbackDetailSheet } from "./admin-feedback-detail-sheet";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 
 type ReportStatus = "pending" | "dismissed" | "actioned";
 // The Feedback section shares the pill row but reads a different table.
@@ -231,15 +231,10 @@ export function AdminReports() {
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <div className="flex flex-col items-center gap-4 py-16 text-center">
-                    <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={() => (activeTab === "feedback" ? fetchFeedback() : fetchReports())}>
-                        Retry
-                    </Button>
-                </div>
+                <ErrorState variant="grow" message={error} onRetry={() => (activeTab === "feedback" ? fetchFeedback() : fetchReports())} />
             ) : activeTab === "feedback" ? (
                 feedback.length === 0 ? (
-                    <p className="py-16 text-center text-sm text-tertiary">No feedback yet.</p>
+                    <EmptyState variant="grow" title="No feedback yet." />
                 ) : (
                     <div className="flex flex-col gap-3">
                         {feedback.map((item) => (
@@ -248,9 +243,7 @@ export function AdminReports() {
                     </div>
                 )
             ) : reports.length === 0 ? (
-                <p className="py-16 text-center text-sm text-tertiary">
-                    No {TABS.find((t) => t.key === activeTab)?.label.toLowerCase()} reports.
-                </p>
+                <EmptyState variant="grow" title={`No ${TABS.find((t) => t.key === activeTab)?.label.toLowerCase()} reports.`} />
             ) : (
                 <div className="flex flex-col gap-3">
                     {reports.map((report) => (

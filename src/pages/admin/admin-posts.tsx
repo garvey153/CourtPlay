@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchSm, XClose } from "@untitledui/icons";
 import { FilterButton } from "@/components/app/filter-button";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
-import { Button } from "@/components/base/buttons/button";
 import { FeedFilters, activeCount } from "@/components/app/feed-filters";
 import { formatPlayType } from "@/components/app/sub-card";
 import type { FilterState } from "@/types/feed";
@@ -11,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { AdminPostCard, type AdminPostRow } from "./admin-post-card";
 import { AdminPostDetailSheet } from "./admin-post-detail-sheet";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 
 // Admin shows every post regardless of status/author, so it loads a generous
 // cap and filters client-side (matching the feed's filter UX) rather than paging.
@@ -195,14 +195,9 @@ export function AdminPosts() {
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <div className="flex flex-col items-center gap-4 py-16 text-center">
-                    <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={() => fetchPosts()}>
-                        Retry
-                    </Button>
-                </div>
+                <ErrorState variant="grow" message={error} onRetry={() => fetchPosts()} />
             ) : visiblePosts.length === 0 ? (
-                <p className="py-16 text-center text-sm text-tertiary">No posts match your filters.</p>
+                <EmptyState variant="grow" title="No posts match your filters." />
             ) : (
                 <div className="flex flex-col gap-3">
                     {visiblePosts.map((post) => (

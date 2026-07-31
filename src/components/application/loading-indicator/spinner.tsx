@@ -50,7 +50,11 @@ export const Spinner = ({ size = "md", tone = "brand", spin = true, className }:
     />
 );
 
-const variants = {
+/**
+ * How a full-area state fills whatever is loading, failing, or empty. Shared by
+ * LoadingState, ErrorState and EmptyState so all three land in the same place.
+ */
+export const areaVariants = {
     /** Fills the viewport — for routes that render outside AppLayout. */
     screen: "min-h-dvh",
     /**
@@ -75,9 +79,11 @@ const variants = {
     block: "py-16",
 };
 
+export type AreaVariant = keyof typeof areaVariants;
+
 interface LoadingStateProps {
     /** @default 'fill' */
-    variant?: keyof typeof variants;
+    variant?: AreaVariant;
     /** @default 'lg' */
     size?: SpinnerSize;
     /** Announced to screen readers while loading. @default 'Loading' */
@@ -87,7 +93,7 @@ interface LoadingStateProps {
 
 /** A centred {@link Spinner} that fills whichever area is loading. */
 export const LoadingState = ({ variant = "fill", size = "lg", label = "Loading", className }: LoadingStateProps) => (
-    <div role="status" className={cx("flex w-full items-center justify-center", variants[variant], className)}>
+    <div role="status" className={cx("flex w-full items-center justify-center", areaVariants[variant], className)}>
         <Spinner size={size} />
         <span className="sr-only">{label}</span>
     </div>

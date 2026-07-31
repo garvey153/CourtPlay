@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchSm, XClose } from "@untitledui/icons";
 import { FilterButton } from "@/components/app/filter-button";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
-import { Button } from "@/components/base/buttons/button";
 import { supabase } from "@/lib/supabase";
 import { AdminClaimCard, claimerName, type AdminClaimRow } from "./admin-claim-card";
 import { AdminClaimDetailSheet } from "./admin-claim-detail-sheet";
 import { AdminClaimFilterSheet, EMPTY_CLAIM_FILTERS, claimFilterCount, type ClaimFilters } from "./admin-claim-filter-sheet";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 
 const FETCH_LIMIT = 500;
 
@@ -170,14 +170,9 @@ export function AdminClaims() {
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <div className="flex flex-col items-center gap-4 py-16 text-center">
-                    <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={() => fetchClaims()}>
-                        Retry
-                    </Button>
-                </div>
+                <ErrorState variant="grow" message={error} onRetry={() => fetchClaims()} />
             ) : visibleClaims.length === 0 ? (
-                <p className="py-16 text-center text-sm text-tertiary">No claims match your filters.</p>
+                <EmptyState variant="grow" title="No claims match your filters." />
             ) : (
                 <div className="flex flex-col gap-3">
                     {visibleClaims.map((claim) => (

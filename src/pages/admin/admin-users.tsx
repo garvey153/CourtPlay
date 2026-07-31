@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchSm, XClose } from "@untitledui/icons";
 import { FilterButton } from "@/components/app/filter-button";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
-import { Button } from "@/components/base/buttons/button";
 import { supabase } from "@/lib/supabase";
 import { AdminUserCard, type AdminUserRow } from "./admin-user-card";
 import { AdminUserDetailSheet } from "./admin-user-detail-sheet";
 import { AdminUserFilterSheet, EMPTY_USER_FILTERS, userFilterCount, type UserFilters } from "./admin-user-filter-sheet";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 
 // Admin shows every user; loads a generous cap and filters client-side.
 const FETCH_LIMIT = 500;
@@ -142,14 +142,9 @@ export function AdminUsers() {
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <div className="flex flex-col items-center gap-4 py-16 text-center">
-                    <p className="text-sm text-error-primary">{error}</p>
-                    <Button size="sm" color="primary" onClick={() => fetchUsers()}>
-                        Retry
-                    </Button>
-                </div>
+                <ErrorState variant="grow" message={error} onRetry={() => fetchUsers()} />
             ) : visibleUsers.length === 0 ? (
-                <p className="py-16 text-center text-sm text-tertiary">No users match your filters.</p>
+                <EmptyState variant="grow" title="No users match your filters." />
             ) : (
                 <div className="flex flex-col gap-3">
                     {visibleUsers.map((user) => (

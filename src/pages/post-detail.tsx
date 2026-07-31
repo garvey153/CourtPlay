@@ -12,6 +12,7 @@ import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/lib/supabase";
 import type { FeedPost } from "@/types/feed";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { ErrorState } from "@/components/application/loading-indicator/area-state";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -119,16 +120,7 @@ export function PostDetail() {
     // Error state
     if (error) {
         return (
-            <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-primary px-4 text-center">
-                <p className="text-base font-semibold text-primary">Something went wrong</p>
-                <p className="text-sm text-tertiary">{error}</p>
-                <button
-                    onClick={fetchPost}
-                    className="rounded-full bg-brand-solid px-5 py-2 text-sm font-semibold text-white hover:bg-brand-solid_hover"
-                >
-                    Retry
-                </button>
-            </div>
+            <ErrorState variant="screen" message={error} onRetry={fetchPost} className="bg-primary" />
         );
     }
 
