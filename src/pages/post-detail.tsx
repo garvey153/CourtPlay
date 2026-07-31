@@ -46,7 +46,7 @@ export function PostDetail() {
     const [post, setPost] = useState<FeedPost | null>(null);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
     const [claimOpen, setClaimOpen] = useState(false);
 
     const fetchPost = useCallback(async () => {
@@ -62,13 +62,19 @@ export function PostDetail() {
         try {
             const { data, error: rpcError } = await supabase.rpc("get_post_by_id", { p_post_id: id });
 
-            if (rpcError || !data) {
+            if (rpcError) {
+                // A failed request is not the same as a post that isn't there —
+                // offline used to read as "no longer available".
+                console.error("get_post_by_id failed:", rpcError);
+                setError(rpcError);
+            } else if (!data) {
                 setNotFound(true);
             } else {
                 setPost(data as FeedPost);
             }
-        } catch {
-            setError("Failed to load this post. Please try again.");
+        } catch (e) {
+            console.error("get_post_by_id threw:", e);
+            setError(e);
         }
         setLoading(false);
     }, [id]);
@@ -120,7 +126,7 @@ export function PostDetail() {
     // Error state
     if (error) {
         return (
-            <ErrorState variant="screen" message={error} onRetry={fetchPost} className="bg-primary" />
+            <ErrorState variant="screen" error={error} subject="this post" onRetry={fetchPost} className="bg-primary" />
         );
     }
 

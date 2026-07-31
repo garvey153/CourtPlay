@@ -31,7 +31,7 @@ export function AdminReports() {
     const [reports, setReports] = useState<AdminReportRow[]>([]);
     const [feedback, setFeedback] = useState<AdminFeedbackRow[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const [detailReport, setDetailReport] = useState<AdminReportRow | null>(null);
     const [detailFeedback, setDetailFeedback] = useState<AdminFeedbackRow | null>(null);
@@ -46,7 +46,7 @@ export function AdminReports() {
             .select("id, title, details, created_at, users:user_id(first_name, last_name)")
             .order("created_at", { ascending: false });
         if (fbErr) {
-            setError(fbErr.message);
+            (console.error("admin feedback load failed:", fbErr), setError(fbErr));
             setFeedback([]);
             setLoading(false);
             return;
@@ -67,7 +67,7 @@ export function AdminReports() {
         setDeletingFeedbackId(item.id);
         const { error: delErr } = await supabase.from("feedback").delete().eq("id", item.id);
         if (delErr) {
-            setError(`Failed to delete feedback: ${delErr.message}`);
+            (console.error("admin delete feedback failed:", delErr), setError(delErr));
             setDeletingFeedbackId(null);
             return;
         }
@@ -89,7 +89,7 @@ export function AdminReports() {
         const { data, error: reportsErr } = await query.order("created_at", { ascending: false });
 
         if (reportsErr) {
-            setError(reportsErr.message);
+            (console.error("admin reports load failed:", reportsErr), setError(reportsErr));
             setReports([]);
             setLoading(false);
             return;
@@ -148,7 +148,7 @@ export function AdminReports() {
         if (!user) return;
         setActioningId(report.id);
         const { error: err } = await supabase.from("reports").update(reviewPatch({ status: "dismissed" })).eq("id", report.id);
-        if (err) return void (setError(`Failed to dismiss report: ${err.message}`), setActioningId(null));
+        if (err) return void ((console.error("admin dismiss report failed:", err), setError(err)), setActioningId(null));
         afterAction(report.id);
     };
 
@@ -182,7 +182,7 @@ export function AdminReports() {
             }
             afterAction(report.id);
         } catch (err) {
-            setError(`Failed to remove content: ${err instanceof Error ? err.message : "Something went wrong."}`);
+            (console.error("admin remove content failed:", err), setError(err));
             setActioningId(null);
         }
     };
@@ -195,14 +195,14 @@ export function AdminReports() {
             .from("posts")
             .update({ status: "active", deleted_at: null, deleted_by: null })
             .eq("id", report.target_id);
-        if (e) return void (setError(`Failed to reactivate post: ${e.message}`), setActioningId(null));
+        if (e) return void ((console.error("admin reactivate post failed:", e), setError(e)), setActioningId(null));
         // The removal is undone — send the report back to Pending for re-review (clear the review stamp).
         const note = report.note ? `${report.note}\n[Admin: Post reactivated]` : "[Admin: Post reactivated]";
         const { error: e2 } = await supabase
             .from("reports")
             .update({ status: "pending", reviewed_by: null, reviewed_at: null, note })
             .eq("id", report.id);
-        if (e2) return void (setError(`Failed to reactivate post: ${e2.message}`), setActioningId(null));
+        if (e2) return void ((console.error("admin reactivate post failed:", e2), setError(e2)), setActioningId(null));
         afterAction(report.id);
     };
 
@@ -236,7 +236,7 @@ export function AdminReports() {
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <ErrorState variant="grow" message={error} onRetry={() => (activeTab === "feedback" ? fetchFeedback() : fetchReports())} />
+                <ErrorState variant="grow" error={error} subject="reports" onRetry={() => (activeTab === "feedback" ? fetchFeedback() : fetchReports())} />
             ) : activeTab === "feedback" ? (
                 feedback.length === 0 ? (
                     <EmptyState variant="grow" title="No feedback yet." />

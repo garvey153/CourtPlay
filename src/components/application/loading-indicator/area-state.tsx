@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router";
+import { Button } from "@/components/base/buttons/button";
+import { describeLoadError } from "@/utils/load-error";
 import { areaVariants, type AreaVariant } from "./spinner";
 import { cx } from "@/utils/cx";
 
@@ -7,13 +8,10 @@ import { cx } from "@/utils/cx";
  * The states that replace a whole area's content: it failed, or there is
  * nothing to show. They share {@link areaVariants} with LoadingState so all
  * three land in the same place — swapping between them never moves the content.
+ *
+ * Actions use the design-system Button so every call to action in the app looks
+ * the same.
  */
-
-// Matches the CTA used across the feed and post pages.
-const PRIMARY_ACTION =
-    "rounded-full bg-brand-solid px-5 py-2 text-sm font-semibold text-white transition duration-100 ease-linear hover:bg-brand-solid_hover";
-const SECONDARY_ACTION =
-    "rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800";
 
 const shell = (variant: AreaVariant, className?: string) =>
     cx("flex w-full flex-col items-center justify-center gap-3 px-4 text-center", areaVariants[variant], className);
@@ -21,13 +19,21 @@ const shell = (variant: AreaVariant, className?: string) =>
 interface ErrorStateProps {
     /** @default 'fill' */
     variant?: AreaVariant;
-    /** @default 'Something went wrong' */
+    /**
+     * The failure itself. Copy is derived from it, so a dropped connection reads
+     * as such instead of leaking "TypeError: Load failed" or a Postgres code.
+     * Log the underlying error rather than displaying it.
+     */
+    error?: unknown;
+    /** What failed to load, mid-sentence: "the feed", "your activity". */
+    subject?: string;
+    /** Overrides the derived title — for a definitive result like "User not found". */
     title?: string;
-    /** The underlying failure, shown beneath the title. */
-    message?: string | null;
+    /** Overrides the derived message. */
+    message?: string;
     /** Renders a retry control when provided. */
     onRetry?: () => void;
-    /** @default 'Retry' */
+    /** @default 'Try again' */
     retryLabel?: string;
     className?: string;
 }
@@ -35,22 +41,28 @@ interface ErrorStateProps {
 /** Shown when an area's content failed to load. */
 export const ErrorState = ({
     variant = "fill",
-    title = "Something went wrong",
+    error,
+    subject,
+    title,
     message,
     onRetry,
-    retryLabel = "Retry",
+    retryLabel = "Try again",
     className,
-}: ErrorStateProps) => (
-    <div role="alert" className={shell(variant, className)}>
-        <p className="text-base font-semibold text-primary">{title}</p>
-        {message && <p className="text-sm text-tertiary">{message}</p>}
-        {onRetry && (
-            <button type="button" onClick={onRetry} className={cx("mt-1", PRIMARY_ACTION)}>
-                {retryLabel}
-            </button>
-        )}
-    </div>
-);
+}: ErrorStateProps) => {
+    const derived = describeLoadError(error, subject);
+
+    return (
+        <div role="alert" className={shell(variant, className)}>
+            <p className="text-base font-semibold text-primary">{title ?? derived.title}</p>
+            <p className="text-sm text-tertiary">{message ?? derived.message}</p>
+            {onRetry && (
+                <Button size="md" color="primary" onClick={onRetry} className="mt-1">
+                    {retryLabel}
+                </Button>
+            )}
+        </div>
+    );
+};
 
 interface EmptyStateProps {
     /** @default 'fill' */
@@ -61,7 +73,7 @@ interface EmptyStateProps {
     /** Label for the call to action. Requires onAction or href. */
     actionLabel?: string;
     onAction?: () => void;
-    /** Renders the call to action as a router link instead of a button. */
+    /** Renders the call to action as a link instead of a button. */
     href?: string;
     /** @default 'primary' */
     actionTone?: "primary" | "secondary";
@@ -78,23 +90,20 @@ export const EmptyState = ({
     href,
     actionTone = "primary",
     className,
-}: EmptyStateProps) => {
-    const actionClass = cx("mt-1", actionTone === "primary" ? PRIMARY_ACTION : SECONDARY_ACTION);
-
-    return (
-        <div className={shell(variant, className)}>
-            <p className="text-base font-semibold text-primary">{title}</p>
-            {description && <p className="text-sm text-tertiary">{description}</p>}
-            {actionLabel && href && (
-                <Link to={href} className={actionClass}>
-                    {actionLabel}
-                </Link>
-            )}
-            {actionLabel && !href && onAction && (
-                <button type="button" onClick={onAction} className={actionClass}>
-                    {actionLabel}
-                </button>
-            )}
-        </div>
-    );
-};
+}: EmptyStateProps) => (
+    <div className={shell(variant, className)}>
+        <p className="text-base font-semibold text-primary">{title}</p>
+        {description && <p className="text-sm text-tertiary">{description}</p>}
+        {actionLabel && (href || onAction) && (
+            <Button
+                size="md"
+                color={actionTone === "primary" ? "primary" : "secondary"}
+                href={href}
+                onClick={href ? undefined : onAction}
+                className="mt-1"
+            >
+                {actionLabel}
+            </Button>
+        )}
+    </div>
+);

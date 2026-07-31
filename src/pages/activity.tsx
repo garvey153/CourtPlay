@@ -34,7 +34,7 @@ export function Activity() {
     const [myPosts, setMyPosts] = useState<MyPost[]>([]);
     const [myClaims, setMyClaims] = useState<MyClaim[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
     const [actionError, setActionError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -54,8 +54,11 @@ export function Activity() {
             ? { id: user.id, first_name: profile.first_name, last_name: profile.last_name, photo_url: profile.photo_url }
             : null;
 
-    const fetchData = useCallback(async () => {
+    // `silent` keeps the current lists on screen for a pull-to-refresh; a retry
+    // wants the skeletons back, otherwise the empty state flashes mid-request.
+    const fetchData = useCallback(async (opts?: { silent?: boolean }) => {
         if (!user) return;
+        if (!opts?.silent) setLoading(true);
         setError(null);
         try {
             const [postsRes, claimsRes] = await Promise.all([
@@ -63,13 +66,13 @@ export function Activity() {
                 supabase.rpc("get_my_claims_with_posts"),
             ]);
             if (postsRes.error || claimsRes.error) {
-                setError("Failed to load activity. Please try again.");
+                setError(postsRes.error ?? claimsRes.error);
             } else {
                 setMyPosts((postsRes.data as MyPost[]) ?? []);
                 setMyClaims((claimsRes.data as MyClaim[]) ?? []);
             }
-        } catch {
-            setError("Failed to load activity. Please try again.");
+        } catch (e) {
+            setError(e);
         }
         setLoading(false);
     }, [user]);
@@ -453,7 +456,7 @@ export function Activity() {
                 )}
 
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
-                    <PullToRefresh onRefresh={fetchData} className="flex min-h-full flex-col" contentClassName="flex min-h-full flex-1 flex-col">
+                    <PullToRefresh onRefresh={() => fetchData({ silent: true })} className="flex min-h-full flex-col" contentClassName="flex min-h-full flex-1 flex-col">
                     <div className="flex flex-1 flex-col px-5 pt-2 pb-4">
                         {loading ? (
                             <ul aria-label="Loading" className="flex flex-col gap-3">
@@ -462,7 +465,7 @@ export function Activity() {
                                 ))}
                             </ul>
                         ) : error ? (
-                            <ErrorState variant="grow" message={error} onRetry={fetchData} />
+                            <ErrorState variant="grow" error={error} subject="your activity" onRetry={() => fetchData()} />
                         ) : tab === "claims" ? (
                             renderClaims()
                         ) : (

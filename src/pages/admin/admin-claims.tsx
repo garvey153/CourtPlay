@@ -49,7 +49,7 @@ function matchesSearch(claim: AdminClaimRow, query: string): boolean {
 export function AdminClaims() {
     const [claims, setClaims] = useState<AdminClaimRow[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const [search, setSearch] = useState("");
     const [filters, setFilters] = useState<ClaimFilters>(EMPTY_CLAIM_FILTERS);
@@ -72,7 +72,7 @@ export function AdminClaims() {
             .limit(FETCH_LIMIT);
 
         if (claimsRes.error) {
-            setError(claimsRes.error.message);
+            (console.error("admin load failed:", claimsRes.error), setError(claimsRes.error));
             setClaims([]);
             setLoading(false);
             return;
@@ -175,7 +175,7 @@ export function AdminClaims() {
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <ErrorState variant="grow" message={error} onRetry={() => fetchClaims()} />
+                <ErrorState variant="grow" error={error} subject="claims" onRetry={() => fetchClaims()} />
             ) : visibleClaims.length === 0 ? (
                 <EmptyState variant="grow" title="No claims match your filters." />
             ) : (
