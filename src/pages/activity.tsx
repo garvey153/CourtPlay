@@ -20,6 +20,7 @@ import { claimToFeedPost, postToFeedPost } from "@/utils/activity-feed-map";
 import { cx } from "@/utils/cx";
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { describeActionError } from "@/utils/load-error";
 
 // ── Main component ─────────────────────────────────────────────────────────
 
@@ -108,8 +109,8 @@ export function Activity() {
                 const posts = (list as MyPost[]) ?? [];
                 setMyPosts(posts);
                 setCreatedSheet(posts.find((p) => p.id === post.id) ?? null);
-            } catch {
-                setActionError("Something went wrong. Please try again.");
+            } catch (e) {
+                setActionError(describeActionError(e, "approve that claim"));
             }
             setActionLoading(null);
         },
@@ -135,8 +136,8 @@ export function Activity() {
                 // The server works out which notify_me watchers to tell.
                 sendNotification({ notification_type: "spot_reopened", post_id: post.id });
                 fetchData();
-            } catch {
-                setActionError("Something went wrong. Please try again.");
+            } catch (e) {
+                setActionError(describeActionError(e, "decline that claim"));
             }
             setActionLoading(null);
         },
@@ -162,8 +163,8 @@ export function Activity() {
                 const posts = (list as MyPost[]) ?? [];
                 setMyPosts(posts);
                 setCreatedSheet(posts.find((p) => p.id === post.id) ?? null);
-            } catch {
-                setActionError("Something went wrong. Please try again.");
+            } catch (e) {
+                setActionError(describeActionError(e, "cancel that approval"));
             }
             setActionLoading(null);
         },

@@ -3,6 +3,7 @@ import { Button } from "@/components/base/buttons/button";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import type { FeedPost } from "@/types/feed";
+import { describeActionError } from "@/utils/load-error";
 
 function formatDate(dateStr: string): string {
     const d = new Date(dateStr + "T12:00:00");
@@ -59,7 +60,7 @@ export function ClaimModal({ post, onClose, onSuccess }: ClaimModalProps) {
         setLoading(false);
 
         if (rpcError) {
-            setError("Something went wrong. Please try again.");
+            setError(describeActionError(rpcError, "claim that spot"));
             return;
         }
 

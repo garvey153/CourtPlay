@@ -148,7 +148,7 @@ describe("profile page", () => {
     it("shows empty state for no posts", async () => {
         setupMock(minimalProfile);
         renderProfile("cccccccc-0000-0000-0000-000000000003");
-        expect(await screen.findByText("No posts.")).toBeInTheDocument();
+        expect(await screen.findByText("Nothing on the board yet.")).toBeInTheDocument();
     });
 
     it("shows report menu on other profiles", async () => {

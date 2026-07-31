@@ -370,7 +370,11 @@ export function EditProfile() {
                             isNonModal
                             showSearch={false}
                             showFooter={false}
-                            items={courtItems.length > 0 ? courtItems : [{ id: "_empty", label: "No courts listed yet" }]}
+                            items={courtItems}
+                            emptyStateTitle="No courts on the books"
+                            emptyStateDescription="They'll show up here once someone adds them."
+                            emptyStateHideIcon
+                            emptyStateAlign="left"
                             selectedKeys={form.court_preferences}
                             onSelectionChange={(keys) => set("court_preferences", keys)}
                             triggerClassName={FIELD_SELECT}
