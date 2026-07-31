@@ -51,13 +51,13 @@ export interface LoadErrorCopy {
 export function describeLoadError(error: unknown, subject = "this page"): LoadErrorCopy {
     if (isConnectivityError(error)) {
         return {
-            title: "No internet connection",
-            message: `CourtPlay can't load ${subject} while you're offline. Reconnect and try again.`,
+            title: "Rain delay",
+            message: `CourtPlay can't load ${subject} without a connection. Reconnect and try again.`,
         };
     }
     return {
-        title: "Something went wrong",
-        message: `We couldn't load ${subject}. Try again in a moment.`,
+        title: "That one went long",
+        message: `We couldn't load ${subject}. Give it another go.`,
     };
 }
 
@@ -70,9 +70,9 @@ export function describeLoadError(error: unknown, subject = "this page"): LoadEr
  */
 export function describeActionError(error: unknown, action: string): string {
     if (isConnectivityError(error)) {
-        return "No internet connection. Reconnect and try again.";
+        return "Rain delay — reconnect and try again.";
     }
-    return `Couldn't ${action}. Try again.`;
+    return `Couldn't ${action}. Take another swing.`;
 }
 
 // Supabase auth messages are mostly readable, but they are written for
@@ -96,7 +96,7 @@ const AUTH_MESSAGES: [RegExp, string][] = [
 /** Turns a Supabase auth failure into something worth reading. */
 export function describeAuthError(error: unknown): string {
     if (isConnectivityError(error)) {
-        return "No internet connection. Reconnect and try again.";
+        return "Rain delay — reconnect and try again.";
     }
     const msg = messageOf(error);
     for (const [pattern, copy] of AUTH_MESSAGES) {

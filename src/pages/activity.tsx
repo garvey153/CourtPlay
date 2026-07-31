@@ -295,8 +295,8 @@ export function Activity() {
                 <EmptyState
                     variant="grow"
                     actionTone="secondary"
-                    title="No claims yet"
-                    description="You haven't claimed any spots yet."
+                    title="Still on the sidelines"
+                    description="Claim a spot and it'll show up here."
                     actionLabel="Browse the feed"
                     href="/feed"
                 />
@@ -395,8 +395,8 @@ export function Activity() {
                     <EmptyState
                         variant="grow"
                         actionTone="secondary"
-                        title="It's your serve!"
-                        description="You haven't posted any openings yet."
+                        title="It's your serve"
+                        description="Post an opening and it'll land right here."
                         actionLabel="Find a sub"
                         href="/post/new"
                     />

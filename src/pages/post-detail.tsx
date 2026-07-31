@@ -134,7 +134,7 @@ export function PostDetail() {
     if (notFound || !post || post.status !== "active") {
         return (
             <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-primary px-4 text-center">
-                <p className="text-base font-semibold text-primary">This spot is no longer available.</p>
+                <p className="text-base font-semibold text-primary">That spot's off the board.</p>
                 {user ? (
                     <Link
                         to="/feed"

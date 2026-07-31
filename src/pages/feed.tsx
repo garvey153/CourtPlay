@@ -530,8 +530,8 @@ export function Feed() {
                 ) : filteredPosts.length === 0 ? (
                     <EmptyState
                         variant="grow"
-                        title="No open spots right now"
-                        description="Be the first to post one."
+                        title="The courts are quiet"
+                        description="No open spots right now — be the first to put one up."
                         actionLabel="Find a sub"
                         onAction={handleNavigateToPost}
                     />

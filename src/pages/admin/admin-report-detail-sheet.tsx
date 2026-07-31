@@ -152,7 +152,7 @@ export function AdminReportDetailSheet({ report, actioning, onDismiss, onRemoveC
                                 ctxLoading ? (
                                     <LoadingState variant="block" size="md" className="py-8" />
                                 ) : ctxError || !context?.post ? (
-                                    <p className="py-6 text-center text-sm text-tertiary">This post is no longer available.</p>
+                                    <p className="py-6 text-center text-sm text-tertiary">That post has left the court.</p>
                                 ) : (
                                     <>
                                         <SubCard post={context.post} />

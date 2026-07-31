@@ -169,11 +169,11 @@ describe("profile page", () => {
     it("shows User not found for null profile data", async () => {
         rpc.mockResolvedValueOnce({ data: null, error: null } as never);
         renderProfile("nonexistent-id");
-        expect(await screen.findByText("User not found")).toBeInTheDocument();
+        expect(await screen.findByText("No match for that player")).toBeInTheDocument();
     });
 
     it("handles invalid UUID gracefully", async () => {
         renderProfile("not-a-uuid");
-        expect(await screen.findByText("User not found")).toBeInTheDocument();
+        expect(await screen.findByText("No match for that player")).toBeInTheDocument();
     });
 });

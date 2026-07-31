@@ -126,7 +126,23 @@ export function AdminCourts() {
             ) : error ? (
                 <ErrorState variant="grow" error={error} subject="courts" onRetry={() => fetchData()} />
             ) : visibleCourts.length === 0 && customCourts.length === 0 ? (
-                <EmptyState variant="grow" title={search ? "No courts match your search." : "No courts yet."} />
+                search ? (
+                    <EmptyState
+                        variant="grow"
+                        title="No courts match"
+                        description="Nothing came back for that search. Try a different name."
+                        actionLabel="Clear search"
+                        onAction={() => setSearch("")}
+                    />
+                ) : (
+                    <EmptyState
+                        variant="grow"
+                        title="No courts yet"
+                        description="Add the first one so players have somewhere to play."
+                        actionLabel="Add a court"
+                        onAction={() => setSheet({ mode: "create" })}
+                    />
+                )
             ) : hasSections ? (
                 <div className="flex flex-col gap-5">
                     <div>
