@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 import type { FeedPost } from "@/types/feed";
 import { skillLabel } from "@/utils/skill-label";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
-import { ErrorState } from "@/components/application/loading-indicator/area-state";
+import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -136,7 +136,9 @@ export function Profile() {
 
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
+    // A profile that does not exist is a different outcome from a failed request.
+    const [notFound, setNotFound] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
     // Tap the version stamp to reveal on-device push diagnostics (debugging aid).
@@ -149,20 +151,26 @@ export function Profile() {
     const fetchProfile = useCallback(async () => {
         if (authLoading) return;
         if (!profileId || (id && id !== "me" && !UUID_RE.test(profileId))) {
-            setError("User not found.");
+            setNotFound(true);
             setLoading(false);
             return;
         }
+        setLoading(true);
         setError(null);
         try {
             const { data, error: rpcError } = await supabase.rpc("get_profile", { p_user_id: profileId });
-            if (rpcError || !data) {
-                setError("User not found.");
+            if (rpcError) {
+                // A failed request is not the same as a profile that isn't there.
+                console.error("get_profile failed:", rpcError);
+                setError(rpcError);
+                setNotFound(false);
+            } else if (!data) {
+                setNotFound(true);
             } else {
                 setProfile(data as ProfileData);
             }
-        } catch {
-            setError("Failed to load profile.");
+        } catch (e) {
+            setError(e);
         }
         setLoading(false);
     }, [profileId, authLoading, id]);
@@ -234,10 +242,18 @@ export function Profile() {
         );
     }
 
+    if (notFound && !error) {
+        return (
+            <AppLayout>
+                <EmptyState title="User not found" description="This profile doesn't exist, or it's no longer available." />
+            </AppLayout>
+        );
+    }
+
     if (error || !profile) {
         return (
             <AppLayout>
-                <ErrorState title={error ?? "User not found"} onRetry={fetchProfile} />
+                <ErrorState error={error} subject="this profile" onRetry={fetchProfile} />
             </AppLayout>
         );
     }

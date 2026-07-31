@@ -135,7 +135,7 @@ describe("PostDetail", () => {
         rpc.mockRejectedValueOnce(new Error("Network error") as never);
         renderWithRoute(activeSubNeed.id);
         expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
-        expect(screen.getByText("Retry")).toBeInTheDocument();
+        expect(screen.getByText("Try again")).toBeInTheDocument();
     });
 
     it("opens claim sheet with Claim button when the post has spots", async () => {

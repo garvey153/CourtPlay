@@ -14,6 +14,7 @@ import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/lib/supabase";
 import { NOTIFICATION_TYPES } from "@/lib/notifications";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
+import { describeActionError } from "@/utils/load-error";
 
 // Descriptive NTRP labels — match the create-post form's contents exactly.
 const SKILL_LEVELS = [
@@ -297,7 +298,8 @@ export function EditProfile() {
             await refreshProfile();
             backToProfile();
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+            console.error("save profile failed:", e);
+            setError(describeActionError(e, "save your changes"));
             setSaving(false);
         }
     };

@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { validateRedirect } from "@/utils/validate-redirect";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { describeAuthError } from "@/utils/load-error";
 
 type Mode = "signup" | "signin";
 
@@ -72,11 +73,11 @@ export function AuthScreen() {
 
         if (isSignup) {
             if (password.length < 8) {
-                setError("Password must be at least 8 characters.");
+                setError("A little short of the baseline — use at least 8 characters.");
                 return;
             }
             if (password !== confirmPassword) {
-                setError("Passwords do not match.");
+                setError("Those don't match. Take another swing.");
                 return;
             }
 
@@ -89,12 +90,12 @@ export function AuthScreen() {
             setLoading(false);
 
             if (signUpError) {
-                setError(signUpError.message);
+                (console.error("signUp failed:", signUpError), setError(describeAuthError(signUpError)));
                 return;
             }
             // Supabase returns identities: [] when the email is already registered.
             if (data.user && data.user.identities?.length === 0) {
-                setError("An account with this email already exists. Try signing in instead.");
+                setError("You're already on the roster. Try signing in instead.");
                 return;
             }
             // Session present → email confirmation disabled; go straight to onboarding.
@@ -110,7 +111,7 @@ export function AuthScreen() {
         setLoading(true);
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) {
-            setError(signInError.message);
+            (console.error("signIn failed:", signInError), setError(describeAuthError(signInError)));
         } else if (data.user) {
             await redirectAfterAuth(data.user.id);
         }

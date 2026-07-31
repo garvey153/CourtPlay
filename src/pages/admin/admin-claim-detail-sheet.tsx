@@ -7,6 +7,7 @@ import { sendNotification } from "@/lib/notifications";
 import { formatWhen, formatPlayType, formatDuration, timeAgo } from "@/components/app/sub-card";
 import { claimKind, claimerName, type AdminClaimRow } from "./admin-claim-card";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { describeActionError } from "@/utils/load-error";
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
@@ -71,7 +72,7 @@ export function AdminClaimDetailSheet({ claim, onClose, onSaved }: AdminClaimDet
         setError(null);
         const { error: updateError } = await supabase.from("claims").update({ status: "cancelled" }).eq("id", claim.id);
         if (updateError) {
-            setError(`Failed to cancel: ${updateError.message}`);
+            (console.error("admin cancel claim failed:", updateError), setError(describeActionError(updateError, "cancel that claim")));
             setLoading(false);
             return;
         }

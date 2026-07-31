@@ -5,6 +5,7 @@ import { Input } from "@/components/base/input/input";
 import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
+import { describeAuthError } from "@/utils/load-error";
 
 // Brand-green CTA (dark on-brand text), matching auth.tsx.
 const PRIMARY_BTN =
@@ -76,11 +77,11 @@ export function ResetPassword() {
         setError(null);
 
         if (password.length < 8) {
-            setError("Password must be at least 8 characters.");
+            setError("A little short of the baseline — use at least 8 characters.");
             return;
         }
         if (password !== confirmPassword) {
-            setError("Passwords do not match.");
+            setError("Those don't match. Take another swing.");
             return;
         }
 
@@ -89,7 +90,7 @@ export function ResetPassword() {
         setLoading(false);
 
         if (updateError) {
-            setError(updateError.message);
+            (console.error("password update failed:", updateError), setError(describeAuthError(updateError)));
             return;
         }
         setDone(true);

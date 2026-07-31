@@ -40,7 +40,7 @@ function matchesSearch(user: AdminUserRow, query: string): boolean {
 export function AdminUsers() {
     const [users, setUsers] = useState<AdminUserRow[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const [search, setSearch] = useState("");
     const [filters, setFilters] = useState<UserFilters>(EMPTY_USER_FILTERS);
@@ -59,7 +59,7 @@ export function AdminUsers() {
             .limit(FETCH_LIMIT);
 
         if (usersRes.error) {
-            setError(usersRes.error.message);
+            (console.error("admin load failed:", usersRes.error), setError(usersRes.error));
             setUsers([]);
             setLoading(false);
             return;
@@ -147,7 +147,7 @@ export function AdminUsers() {
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <ErrorState variant="grow" message={error} onRetry={() => fetchUsers()} />
+                <ErrorState variant="grow" error={error} subject="users" onRetry={() => fetchUsers()} />
             ) : visibleUsers.length === 0 ? (
                 <EmptyState variant="grow" title="No users match your filters." />
             ) : (

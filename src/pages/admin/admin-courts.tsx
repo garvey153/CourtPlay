@@ -11,7 +11,7 @@ export function AdminCourts() {
     const [courts, setCourts] = useState<AdminCourtRow[]>([]);
     const [customCourts, setCustomCourts] = useState<CustomCourtRow[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const [search, setSearch] = useState("");
     const [sheet, setSheet] = useState<CourtSheetTarget | null>(null);
@@ -32,7 +32,7 @@ export function AdminCourts() {
 
         // The master court list is the core of the tab — only its failure blanks the view.
         if (courtsRes.error) {
-            setError("Failed to load courts.");
+            setError(courtsRes.error ?? new Error("Failed to load courts"));
             setLoading(false);
             return;
         }
@@ -124,7 +124,7 @@ export function AdminCourts() {
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <ErrorState variant="grow" message={error} onRetry={() => fetchData()} />
+                <ErrorState variant="grow" error={error} subject="courts" onRetry={() => fetchData()} />
             ) : visibleCourts.length === 0 && customCourts.length === 0 ? (
                 <EmptyState variant="grow" title={search ? "No courts match your search." : "No courts yet."} />
             ) : hasSections ? (

@@ -75,7 +75,7 @@ export function AdminPosts() {
     const [posts, setPosts] = useState<AdminPostRow[]>([]);
     const [courts, setCourts] = useState<Court[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const [search, setSearch] = useState("");
     const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
@@ -110,7 +110,7 @@ export function AdminPosts() {
         ]);
 
         if (postsRes.error) {
-            setError(postsRes.error.message);
+            (console.error("admin load failed:", postsRes.error), setError(postsRes.error));
             setPosts([]);
             setLoading(false);
             return;
@@ -200,7 +200,7 @@ export function AdminPosts() {
             {loading ? (
                 <LoadingState variant="grow" size="md" />
             ) : error ? (
-                <ErrorState variant="grow" message={error} onRetry={() => fetchPosts()} />
+                <ErrorState variant="grow" error={error} subject="posts" onRetry={() => fetchPosts()} />
             ) : visiblePosts.length === 0 ? (
                 <EmptyState variant="grow" title="No posts match your filters." />
             ) : (

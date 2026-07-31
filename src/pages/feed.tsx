@@ -63,7 +63,7 @@ export function Feed() {
 
     const [posts, setPosts] = useState<FeedPost[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
     const [courts, setCourts] = useState<Court[]>([]);
     const [filters, setFilters] = useState<FilterState>({
         skillLevels: [],
@@ -116,7 +116,11 @@ export function Feed() {
     // Debounce timers per post ID
     const viewTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
-    const fetchPosts = useCallback(async () => {
+    // `silent` keeps the current list on screen for a pull-to-refresh. Without
+    // it a retry cleared the error while loading was already false, so the empty
+    // state flashed up mid-request.
+    const fetchPosts = useCallback(async (opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setLoading(true);
         setError(null);
         let { data, error: rpcError } = await supabase.rpc("get_feed");
 
@@ -132,7 +136,7 @@ export function Feed() {
             // Keep the underlying reason — the generic message alone made this
             // impossible to diagnose from a device.
             console.error("get_feed failed:", rpcError);
-            setError(rpcError.message || "Failed to load the feed. Please try again.");
+            setError(rpcError);
         } else if (data) {
             setPosts(data as FeedPost[]);
         }
@@ -426,7 +430,7 @@ export function Feed() {
             />
 
             <PullToRefresh
-                onRefresh={() => Promise.all([fetchPosts(), fetchMyPosts()])}
+                onRefresh={() => Promise.all([fetchPosts({ silent: true }), fetchMyPosts()])}
                 className="flex min-h-full flex-col"
                 contentClassName="flex min-h-full flex-1 flex-col"
             >
@@ -522,13 +526,13 @@ export function Feed() {
                         ))}
                     </ul>
                 ) : error ? (
-                    <ErrorState variant="grow" message={error} onRetry={fetchPosts} />
+                    <ErrorState variant="grow" error={error} subject="the feed" onRetry={() => fetchPosts()} />
                 ) : filteredPosts.length === 0 ? (
                     <EmptyState
                         variant="grow"
                         title="No open spots right now"
                         description="Be the first to post one."
-                        actionLabel="Find a Sub"
+                        actionLabel="Find a sub"
                         onAction={handleNavigateToPost}
                     />
                 ) : (

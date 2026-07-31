@@ -16,6 +16,7 @@ import { cx } from "@/utils/cx";
 import { menuWidth } from "@/utils/menu-width";
 import { skillLabel } from "@/utils/skill-label";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { describeActionError } from "@/utils/load-error";
 
 // Matches the Profile page's follow rows: "First L." plus the skill label.
 function rowName(first: string, last: string, level: string | null): string {
@@ -323,7 +324,7 @@ export function Onboarding() {
             navigate(redirect ?? "/feed", { replace: true });
         } catch (e) {
             console.error("handleFinish error:", e);
-            setError(e instanceof Error ? e.message : (e as any)?.message ?? JSON.stringify(e) ?? "Something went wrong. Please try again.");
+            setError(describeActionError(e, "set up your profile"));
         } finally {
             setSaving(false);
         }
