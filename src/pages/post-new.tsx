@@ -569,7 +569,7 @@ export function PostNew() {
                     <div className="flex-1 overflow-y-auto overscroll-y-contain px-5 pb-8">
                 {!loaded ? (
                     // Edit mode: hold the sheet until the post loads so the create form never flashes.
-                    <LoadingState variant="block" size="md" className="py-20" />
+                    <LoadingState variant="block" className="py-20" />
                 ) : (
                 <>
                 {/* Post type — radio cards (hidden in edit mode) */}

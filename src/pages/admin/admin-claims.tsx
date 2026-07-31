@@ -173,7 +173,7 @@ export function AdminClaims() {
             }
         >
             {loading ? (
-                <LoadingState variant="grow" size="md" />
+                <LoadingState variant="grow" />
             ) : error ? (
                 <ErrorState variant="grow" error={error} subject="claims" onRetry={() => fetchClaims()} />
             ) : visibleClaims.length === 0 ? (

@@ -158,7 +158,7 @@ export function AdminAnalytics() {
     ];
 
     if (loading) {
-        return <LoadingState variant="grow" size="md" label="Loading analytics" />;
+        return <LoadingState variant="grow" label="Loading analytics" />;
     }
 
     return (

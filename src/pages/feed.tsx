@@ -26,6 +26,7 @@ import { claimToFeedPost } from "@/utils/activity-feed-map";
 import type { ClaimRow, MyClaim, MyPost } from "@/types/activity";
 import type { FeedPost, FilterState } from "@/types/feed";
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 const WELCOME_KEY = "cs_welcome_dismissed";
 const VIEW_DEBOUNCE_MS = 300;
@@ -520,11 +521,7 @@ export function Feed() {
                 )}
 
                 {loading ? (
-                    <ul aria-label="Feed loading" className="flex flex-col gap-3">
-                        {[1, 2, 3].map((i) => (
-                            <li key={i} className="h-52 animate-pulse rounded-xl bg-secondary" />
-                        ))}
-                    </ul>
+                    <LoadingState variant="grow" label="Loading the feed" />
                 ) : error ? (
                     <ErrorState variant="grow" error={error} subject="the feed" onRetry={() => fetchPosts()} />
                 ) : filteredPosts.length === 0 ? (

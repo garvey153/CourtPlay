@@ -145,7 +145,7 @@ export function AdminUsers() {
             }
         >
             {loading ? (
-                <LoadingState variant="grow" size="md" />
+                <LoadingState variant="grow" />
             ) : error ? (
                 <ErrorState variant="grow" error={error} subject="users" onRetry={() => fetchUsers()} />
             ) : visibleUsers.length === 0 ? (
