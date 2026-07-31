@@ -5,6 +5,7 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import type { ClaimRow, MyPost } from "@/types/activity";
 import { ThreadMessage } from "./thread-message";
 import { ReportUserSheet } from "./report-user-sheet";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -43,9 +44,6 @@ const PRIMARY_BTN =
 const SECONDARY_BTN =
     "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 interface Poster {
     first_name: string;
@@ -266,7 +264,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
 
                         <div className="mt-2 flex flex-col gap-3">
                             <button type="button" onClick={onDelete} disabled={deleting} className={PRIMARY_BTN}>
-                                {deleting ? <ButtonSpinner /> : "Yes, delete"}
+                                {deleting ? <Spinner size="sm" tone="on-brand" /> : "Yes, delete"}
                             </button>
                             <button type="button" onClick={onClose} disabled={deleting} className={SECONDARY_BTN}>
                                 No, keep it
@@ -338,7 +336,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                             {pendingClaim ? (
                                 <div className="mt-8 flex flex-col gap-3">
                                     <button type="button" onClick={handleApproveClick} disabled={busy || sending} className={PRIMARY_BTN}>
-                                        {busy || sending ? <ButtonSpinner /> : "Approve claim"}
+                                        {busy || sending ? <Spinner size="sm" tone="on-brand" /> : "Approve claim"}
                                     </button>
                                     <button type="button" onClick={() => onDecline(pendingClaim)} disabled={busy} className={SECONDARY_BTN}>
                                         Decline
@@ -357,7 +355,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                                         disabled={busy}
                                         className={`${SECONDARY_BTN} flex items-center justify-center`}
                                     >
-                                        {busy ? <ButtonSpinner /> : "Cancel approval"}
+                                        {busy ? <Spinner size="sm" tone="on-brand" /> : "Cancel approval"}
                                     </button>
                                     {venmoWeb && chargeHref && (
                                         <a

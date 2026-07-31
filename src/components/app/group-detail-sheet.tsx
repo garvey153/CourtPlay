@@ -11,6 +11,7 @@ import type { ClaimMessage } from "@/types/activity";
 import { ShareModal } from "./share-modal";
 import { ReportModal } from "./report-modal";
 import { ThreadMessage } from "./thread-message";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 const MESSAGE_MAX = 150;
 
@@ -31,9 +32,6 @@ const SECONDARY_BTN =
     "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Spinner tuned for the brand button (dark strokes on green). */
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 interface GroupDetailSheetProps {
     post: FeedPost;
@@ -224,7 +222,7 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
                         {error && <p className="text-sm text-error-primary">{error}</p>}
                         <div className="mt-2 flex flex-col gap-3">
                             <button type="button" onClick={handleCancel} disabled={cancelling} className={PRIMARY_BTN}>
-                                {cancelling ? <ButtonSpinner /> : "Yes, cancel"}
+                                {cancelling ? <Spinner size="sm" tone="on-brand" /> : "Yes, cancel"}
                             </button>
                             <button
                                 type="button"
@@ -357,7 +355,7 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
                     ) : (
                         <>
                             <button type="button" onClick={handleConnect} disabled={loading} className={PRIMARY_BTN}>
-                                {loading ? <ButtonSpinner /> : "Connect"}
+                                {loading ? <Spinner size="sm" tone="on-brand" /> : "Connect"}
                             </button>
                             <button type="button" onClick={() => handleShare(post)} className={SECONDARY_BTN}>
                                 Share with a friend

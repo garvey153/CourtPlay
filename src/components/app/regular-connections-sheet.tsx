@@ -5,6 +5,7 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import type { ClaimRow, MyPost } from "@/types/activity";
 import { ThreadMessage } from "./thread-message";
 import { ReportUserSheet } from "./report-user-sheet";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 const MESSAGE_MAX = 150;
 
@@ -23,9 +24,6 @@ const PRIMARY_BTN =
 const SECONDARY_BTN =
     "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 interface Poster {
     first_name: string;
@@ -163,7 +161,7 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
                 </div>
                 <div className="mt-2 flex flex-col gap-3">
                     <button type="button" onClick={onDelete} disabled={deleting} className={PRIMARY_BTN}>
-                        {deleting ? <ButtonSpinner /> : "Yes, remove"}
+                        {deleting ? <Spinner size="sm" tone="on-brand" /> : "Yes, remove"}
                     </button>
                     <button type="button" onClick={() => setConfirmingDelete(false)} disabled={deleting} className={SECONDARY_BTN}>
                         No, keep it

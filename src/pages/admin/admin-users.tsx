@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { AdminUserCard, type AdminUserRow } from "./admin-user-card";
 import { AdminUserDetailSheet } from "./admin-user-detail-sheet";
 import { AdminUserFilterSheet, EMPTY_USER_FILTERS, userFilterCount, type UserFilters } from "./admin-user-filter-sheet";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 // Admin shows every user; loads a generous cap and filters client-side.
 const FETCH_LIMIT = 500;
@@ -139,9 +140,7 @@ export function AdminUsers() {
 
             {/* Content */}
             {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <div className="size-6 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-                </div>
+                <LoadingState variant="block" size="md" />
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>

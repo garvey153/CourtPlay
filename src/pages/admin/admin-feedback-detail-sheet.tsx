@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Trash01, XClose } from "@untitledui/icons";
 import type { AdminFeedbackRow } from "./admin-feedback-card";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 const PRIMARY_BTN =
     "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
@@ -10,9 +11,6 @@ const DELETE_BTN =
 const SECONDARY_BTN =
     "flex w-full items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
-);
 
 function formatTimestamp(dateStr: string): string {
     return new Date(dateStr).toLocaleString("en-US", {
@@ -90,7 +88,7 @@ export function AdminFeedbackDetailSheet({ feedback, deleting, onDelete, onClose
                         <div className="flex flex-col gap-3">
                             <button type="button" onClick={onDelete} disabled={deleting} className={DELETE_BTN}>
                                 {deleting ? (
-                                    <ButtonSpinner />
+                                    <Spinner size="sm" tone="current" />
                                 ) : (
                                     <>
                                         <Trash01 className="size-4" aria-hidden="true" />

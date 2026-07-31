@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cx } from "@/utils/cx";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 const THRESHOLD = 72; // px the user must pull before a release triggers a refresh
 const MAX_PULL = 96; // clamp so the content can't be dragged arbitrarily far
@@ -120,15 +121,16 @@ export function PullToRefresh({ onRefresh, children, className, contentClassName
                 style={{ height: pull }}
                 aria-hidden={!refreshing}
             >
+                {/* Same ring and animation as the rest of the app, in the neutral tone —
+                    pull-to-refresh is deliberately not the brand-coloured spinner. While
+                    dragging it is frozen and rotated by pull distance instead of spinning. */}
                 <div
-                    className={cx(
-                        "size-6 rounded-full border-2 border-secondary border-t-transparent",
-                        refreshing && "animate-spin",
-                    )}
                     style={refreshing ? undefined : { opacity: progress, transform: `rotate(${progress * 270}deg)` }}
                     role={refreshing ? "status" : undefined}
                     aria-label={refreshing ? "Refreshing feed" : undefined}
-                />
+                >
+                    <Spinner size="md" tone="neutral" spin={refreshing} />
+                </div>
             </div>
             <div
                 className={contentClassName}

@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
 import { AdminPostCard, type AdminPostRow } from "./admin-post-card";
 import { AdminPostDetailSheet } from "./admin-post-detail-sheet";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 // Admin shows every post regardless of status/author, so it loads a generous
 // cap and filters client-side (matching the feed's filter UX) rather than paging.
@@ -192,9 +193,7 @@ export function AdminPosts() {
 
             {/* Content */}
             {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <div className="size-6 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-                </div>
+                <LoadingState variant="block" size="md" />
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 py-16 text-center">
                     <p className="text-sm text-error-primary">{error}</p>

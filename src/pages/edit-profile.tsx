@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/lib/supabase";
 import { NOTIFICATION_TYPES } from "@/lib/notifications";
+import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 
 // Descriptive NTRP labels — match the create-post form's contents exactly.
 const SKILL_LEVELS = [
@@ -35,9 +36,6 @@ const PRIMARY_BTN =
 const SECONDARY_BTN =
     "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 interface Court {
     id: string;
@@ -313,7 +311,7 @@ export function EditProfile() {
                 Cancel
             </button>
             <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
-                {saving ? <ButtonSpinner /> : "Save changes"}
+                {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
             </button>
         </div>
     );
@@ -321,9 +319,7 @@ export function EditProfile() {
     return (
         <AppLayout footer={footer}>
             {loading ? (
-                <div className="flex flex-1 items-center justify-center py-16">
-                    <div className="size-8 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-                </div>
+                <LoadingState />
             ) : (
                 <div className="flex flex-col gap-8 px-5 pt-2 pb-6">
                     {/* Header: avatar + title + change photo */}

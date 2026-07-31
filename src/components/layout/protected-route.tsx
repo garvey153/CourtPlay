@@ -3,6 +3,7 @@ import { Navigate, useLocation } from "react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/lib/supabase";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -43,9 +44,7 @@ export function ProtectedRoute({ children, adminOnly = false, skipProfileCheck =
 
     if (authLoading || profileLoading || adminChecking) {
         return (
-            <div className="flex h-dvh items-center justify-center">
-                <div className="size-8 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-            </div>
+            <LoadingState variant="screen" />
         );
     }
 

@@ -4,15 +4,13 @@ import { XClose } from "@untitledui/icons";
 import { Input } from "@/components/base/input/input";
 import { supabase } from "@/lib/supabase";
 import type { AdminCourtRow, CustomCourtRow } from "./admin-court-card";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 const SECONDARY_BTN =
     "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-neutral-950/40 border-t-neutral-950" aria-hidden="true" />
-);
 
 /** Which flow the sheet is driving. */
 export type CourtSheetTarget =
@@ -154,7 +152,7 @@ export function AdminCourtSheet({ target, onClose, onSaved }: AdminCourtSheetPro
                 {/* 32px between the last field and the buttons (sheet gap-4 = 16px + mt-4 = 16px). */}
                 <div className="mt-4 flex flex-col gap-3">
                     <button type="button" onClick={handleSave} disabled={busy !== null || !name.trim()} className={PRIMARY_BTN}>
-                        {busy === "save" ? <ButtonSpinner /> : saveLabel}
+                        {busy === "save" ? <Spinner size="sm" tone="on-brand" /> : saveLabel}
                     </button>
                     {target.mode !== "create" && (
                         <button type="button" onClick={handleAction} disabled={busy !== null} className={SECONDARY_BTN}>

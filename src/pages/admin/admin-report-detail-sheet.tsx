@@ -7,16 +7,13 @@ import { supabase } from "@/lib/supabase";
 import type { ClaimMessage } from "@/types/activity";
 import type { FeedPost } from "@/types/feed";
 import { reasonLabel, reportTargetLabel, reportUserName, type AdminReportRow } from "./admin-report-card";
+import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 const SECONDARY_BTN =
     "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
-// Inherits each button's text color so it reads on both the destructive and secondary buttons.
-const ButtonSpinner = () => (
-    <span className="size-5 animate-spin rounded-full border-2 border-current/30 border-t-current" aria-hidden="true" />
-);
 
 function formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
@@ -133,7 +130,7 @@ export function AdminReportDetailSheet({ report, actioning, onDismiss, onRemoveC
                         </div>
                         <div className="flex flex-col gap-3">
                             <button type="button" onClick={onRemoveContent} disabled={actioning} className={PRIMARY_BTN}>
-                                {actioning ? <ButtonSpinner /> : isPost ? "Yes, remove" : "Yes, suspend"}
+                                {actioning ? <Spinner size="sm" tone="current" /> : isPost ? "Yes, remove" : "Yes, suspend"}
                             </button>
                             <button type="button" onClick={() => setMode("view")} disabled={actioning} className={SECONDARY_BTN}>
                                 Cancel
@@ -153,9 +150,7 @@ export function AdminReportDetailSheet({ report, actioning, onDismiss, onRemoveC
 
                             {isPost ? (
                                 ctxLoading ? (
-                                    <div className="flex justify-center py-8">
-                                        <div className="size-6 animate-spin rounded-full border-2 border-border-secondary border-t-brand-solid" />
-                                    </div>
+                                    <LoadingState variant="block" size="md" className="py-8" />
                                 ) : ctxError || !context?.post ? (
                                     <p className="py-6 text-center text-sm text-tertiary">This post is no longer available.</p>
                                 ) : (
@@ -192,16 +187,16 @@ export function AdminReportDetailSheet({ report, actioning, onDismiss, onRemoveC
                         {report.status === "pending" ? (
                             <div className="mt-1 flex shrink-0 flex-col gap-3">
                                 <button type="button" onClick={() => setMode("confirm")} disabled={actioning} className={PRIMARY_BTN}>
-                                    {actioning ? <ButtonSpinner /> : removeLabel}
+                                    {actioning ? <Spinner size="sm" tone="current" /> : removeLabel}
                                 </button>
                                 <button type="button" onClick={onDismiss} disabled={actioning} className={SECONDARY_BTN}>
-                                    {actioning ? <ButtonSpinner /> : "Dismiss"}
+                                    {actioning ? <Spinner size="sm" tone="current" /> : "Dismiss"}
                                 </button>
                             </div>
                         ) : report.status === "actioned" && isPost ? (
                             <div className="mt-1 flex shrink-0 flex-col gap-3">
                                 <button type="button" onClick={onReactivate} disabled={actioning} className={PRIMARY_BTN}>
-                                    {actioning ? <ButtonSpinner /> : "Reactivate post"}
+                                    {actioning ? <Spinner size="sm" tone="current" /> : "Reactivate post"}
                                 </button>
                             </div>
                         ) : null}

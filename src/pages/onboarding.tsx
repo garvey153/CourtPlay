@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { menuWidth } from "@/utils/menu-width";
 import { skillLabel } from "@/utils/skill-label";
+import { Spinner } from "@/components/application/loading-indicator/spinner";
 
 // Matches the Profile page's follow rows: "First L." plus the skill label.
 function rowName(first: string, last: string, level: string | null): string {
@@ -772,10 +773,7 @@ export function Onboarding() {
                         onClick={handleFinish}
                     >
                         {saving && (
-                            <span
-                                className="size-4 animate-spin rounded-full border-2 border-neutral-950/30 border-t-neutral-950"
-                                aria-hidden="true"
-                            />
+                            <Spinner size="xs" tone="on-brand" />
                         )}
                         Get started
                     </button>
