@@ -349,7 +349,7 @@ export function Profile() {
                         Posts ({posts.length})
                     </p>
                     {posts.length === 0 ? (
-                        <p className="text-sm text-tertiary">No posts.</p>
+                        <p className="text-sm text-tertiary">Nothing on the board yet.</p>
                     ) : (
                         <div className="flex flex-col gap-3">
                             {posts.map((post) => (

@@ -361,7 +361,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                                                 ))}
                                             </CheckGroup>
                                         ) : (
-                                            <p className="px-1 py-2 text-sm text-tertiary">No courts match “{locQuery}”.</p>
+                                            <p className="px-1 py-2 text-sm text-tertiary">No courts by that name.</p>
                                         )}
                                     </div>
                                 </>

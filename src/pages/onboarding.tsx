@@ -436,8 +436,8 @@ export function Onboarding() {
                             showFooter={false}
                             isNonModal
                             triggerClassName={FIELD_SELECT}
-                            emptyStateTitle="No courts available"
-                            emptyStateDescription="Courts will appear here once they've been added."
+                            emptyStateTitle="No courts on the books"
+                            emptyStateDescription="They'll show up here once someone adds them."
                             emptyStateHideIcon
                             emptyStateAlign="left"
                             className="mt-4"

@@ -12,6 +12,7 @@ import { ShareModal } from "./share-modal";
 import { ReportModal } from "./report-modal";
 import { ThreadMessage } from "./thread-message";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { describeActionError } from "@/utils/load-error";
 
 const MESSAGE_MAX = 150;
 
@@ -113,7 +114,7 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
         setLoading(false);
 
         if (rpcError) {
-            setError("Something went wrong. Please try again.");
+            setError(describeActionError(rpcError, "send that request"));
             return;
         }
         if (!data.success) {
@@ -150,7 +151,7 @@ export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCan
         const { data, error: rpcError } = await supabase.rpc("unclaim", { p_claim_id: claimId });
         if (rpcError || !data?.success) {
             setCancelling(false);
-            setError("Something went wrong. Please try again.");
+            setError(describeActionError(rpcError, "cancel that request"));
             return;
         }
 
