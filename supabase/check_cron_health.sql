@@ -19,6 +19,15 @@
 --   5xx              the function itself errored — read the body
 --   no response row  the request never got a reply at all
 --
+-- 'stale — response purged' is NOT a problem. pg_net prunes net._http_response
+-- on a TTL of roughly six hours, so any run older than that has no reply left to
+-- read — the row was deleted, not missing. Without this distinction the daily
+-- 09:00 game-reminders job reported 'NO RESPONSE ROW' every time the check ran
+-- after ~15:00 UTC, which reads identically to a job that never got a reply.
+-- To get a real verdict for a daily job, run this within a few hours of its
+-- fire time. For history that outlives the TTL, the functions would have to
+-- record their own outcomes.
+--
 -- fnBuild in the body identifies which deploy produced the run.
 --
 -- CAVEAT: 'no run yet' can also mean 'no run since the job was last
@@ -28,7 +37,15 @@
 -- scheduled fire.
 -- ============================================================================
 
-with recent as (
+with retention as (
+    -- The oldest reply pg_net still holds. Anything that ran before this point
+    -- cannot have a response row, so a missing one tells us nothing. Derived
+    -- from the data rather than hardcoded, since the TTL is not ours to set;
+    -- the fallback only matters when the table has been fully pruned.
+    select coalesce(min(created), now() - interval '6 hours') as oldest_kept
+    from net._http_response
+),
+recent as (
     select
         j.jobname,
         j.schedule,
@@ -65,6 +82,11 @@ select
         when jobname in ('auto-expire-posts', 'expire-regular-game-posts')
              then case when cron_status = 'succeeded' then 'ok' else 'CRON FAILED' end
         when timed_out                           then 'TIMED OUT — result lost'
+        -- Ordered before the missing-row case: a purged reply is expected, not a
+        -- failure, and only a run inside the retention window can prove anything.
+        when status_code is null
+             and start_time < (select oldest_kept from retention)
+                                                 then 'stale — response purged'
         when status_code is null                 then 'NO RESPONSE ROW'
         when status_code between 200 and 299     then 'ok'
         when status_code in (401, 403)           then 'AUTH REJECTED'
@@ -73,6 +95,16 @@ select
     left(body, 160)                              as response
 from recent
 where rn = 1
+-- Anything needing attention first, then the merely uninformative, then the ok.
 order by
-    case when start_time is null then 1 else 0 end,
+    case
+        when start_time is null                                              then 2
+        when jobname in ('auto-expire-posts', 'expire-regular-game-posts')
+             then case when cron_status = 'succeeded' then 3 else 0 end
+        when timed_out                                                       then 0
+        when status_code is null
+             and start_time < (select oldest_kept from retention)            then 1
+        when status_code between 200 and 299                                 then 3
+        else                                                                      0
+    end,
     jobname;
