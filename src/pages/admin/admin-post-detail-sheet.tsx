@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { formatWhen, formatPlayType, formatDuration, timeAgo } from "@/components/app/sub-card";
 import { adminCardKind, type AdminPostRow } from "./admin-post-card";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { describeActionError } from "@/utils/load-error";
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
@@ -73,7 +74,7 @@ export function AdminPostDetailSheet({ post, currentUserId, onClose, onSaved }: 
             .eq("id", post.id);
         setLoading(false);
         if (updateError) {
-            setError(`Failed to save: ${updateError.message}`);
+            (console.error("admin save post failed:", updateError), setError(describeActionError(updateError, "save those changes")));
         } else {
             onSaved();
         }
@@ -85,7 +86,7 @@ export function AdminPostDetailSheet({ post, currentUserId, onClose, onSaved }: 
         const { error: updateError } = await supabase.from("posts").update({ status: "expired" }).eq("id", post.id);
         setLoading(false);
         if (updateError) {
-            setError(`Failed to expire: ${updateError.message}`);
+            (console.error("admin expire post failed:", updateError), setError(describeActionError(updateError, "expire that post")));
         } else {
             onSaved();
         }
@@ -100,7 +101,7 @@ export function AdminPostDetailSheet({ post, currentUserId, onClose, onSaved }: 
             .eq("id", post.id);
         setLoading(false);
         if (updateError) {
-            setError(`Failed to delete: ${updateError.message}`);
+            (console.error("admin delete post failed:", updateError), setError(describeActionError(updateError, "delete that post")));
         } else {
             onSaved();
         }

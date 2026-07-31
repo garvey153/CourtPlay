@@ -5,6 +5,7 @@ import { Input } from "@/components/base/input/input";
 import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { describeAuthError } from "@/utils/load-error";
 
 // Brand-green CTA (dark on-brand text), matching auth.tsx.
 const PRIMARY_BTN =
@@ -40,7 +41,7 @@ export function ForgotPassword() {
         setLoading(false);
 
         if (resetError) {
-            setError(resetError.message);
+            (console.error("password reset request failed:", resetError), setError(describeAuthError(resetError)));
             return;
         }
         // Always show the confirmation, even if the email isn't registered —

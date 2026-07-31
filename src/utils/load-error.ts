@@ -60,3 +60,45 @@ export function describeLoadError(error: unknown, subject = "this page"): LoadEr
         message: `We couldn't load ${subject}. Try again in a moment.`,
     };
 }
+
+/**
+ * A single line for an action that failed, shown next to the control that
+ * triggered it — saving, deleting, suspending.
+ *
+ * @param action what was attempted, as it reads after "couldn't" —
+ * "save those changes", "delete that post".
+ */
+export function describeActionError(error: unknown, action: string): string {
+    if (isConnectivityError(error)) {
+        return "No internet connection. Reconnect and try again.";
+    }
+    return `Couldn't ${action}. Try again.`;
+}
+
+// Supabase auth messages are mostly readable, but they are written for
+// developers and a few are unusable ("Database error granting user"). Map the
+// ones people actually hit; anything unrecognised falls back to generic rather
+// than putting an internal string on screen.
+const AUTH_MESSAGES: [RegExp, string][] = [
+    [/invalid login credentials/i, "That email or password isn't right."],
+    [/email not confirmed/i, "Confirm your email address first — check your inbox for the link."],
+    [/user already registered|already been registered/i, "An account with this email already exists. Try signing in instead."],
+    [/unable to validate email address|invalid format/i, "That doesn't look like a valid email address."],
+    [/password should be at least (\d+)/i, "Choose a longer password — at least 8 characters."],
+    [/new password should be different/i, "Choose a password you haven't used before."],
+    [/for security purposes|rate limit|too many requests/i, "Too many attempts. Wait a moment and try again."],
+    [/email link is invalid or has expired|token has expired/i, "That link has expired. Request a new one."],
+    [/user not found/i, "We couldn't find an account with that email."],
+];
+
+/** Turns a Supabase auth failure into something worth reading. */
+export function describeAuthError(error: unknown): string {
+    if (isConnectivityError(error)) {
+        return "No internet connection. Reconnect and try again.";
+    }
+    const msg = messageOf(error);
+    for (const [pattern, copy] of AUTH_MESSAGES) {
+        if (pattern.test(msg)) return copy;
+    }
+    return "Something went wrong. Try again.";
+}

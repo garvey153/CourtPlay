@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { validateRedirect } from "@/utils/validate-redirect";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { describeAuthError } from "@/utils/load-error";
 
 type Mode = "signup" | "signin";
 
@@ -89,7 +90,7 @@ export function AuthScreen() {
             setLoading(false);
 
             if (signUpError) {
-                setError(signUpError.message);
+                (console.error("signUp failed:", signUpError), setError(describeAuthError(signUpError)));
                 return;
             }
             // Supabase returns identities: [] when the email is already registered.
@@ -110,7 +111,7 @@ export function AuthScreen() {
         setLoading(true);
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) {
-            setError(signInError.message);
+            (console.error("signIn failed:", signInError), setError(describeAuthError(signInError)));
         } else if (data.user) {
             await redirectAfterAuth(data.user.id);
         }

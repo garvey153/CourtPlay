@@ -5,6 +5,7 @@ import { Input } from "@/components/base/input/input";
 import { supabase } from "@/lib/supabase";
 import type { AdminCourtRow, CustomCourtRow } from "./admin-court-card";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { describeActionError } from "@/utils/load-error";
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
@@ -53,7 +54,7 @@ export function AdminCourtSheet({ target, onClose, onSaved }: AdminCourtSheetPro
 
     const finish = (err: { message: string } | null, verb: string) => {
         setBusy(null);
-        if (err) setError(`Failed to ${verb}: ${err.message}`);
+        if (err) (console.error("admin court action failed:", err), setError(describeActionError(err, verb)));
         else onSaved();
     };
 
@@ -70,25 +71,25 @@ export function AdminCourtSheet({ target, onClose, onSaved }: AdminCourtSheetPro
                 .from("courts")
                 .update({ name: trimmed, area: areaVal })
                 .eq("id", target.court.id);
-            finish(updateErr, "save court");
+            finish(updateErr, "save that court");
             return;
         }
 
         // create + custom both add a court to the master list.
         const { error: insertErr } = await supabase.from("courts").insert({ name: trimmed, area: areaVal, active: true });
         if (insertErr) {
-            finish(insertErr, "add court");
+            finish(insertErr, "add that court");
             return;
         }
 
         // Promoting a custom court also removes it from the Custom list; live posts keep their text.
         if (target.mode === "custom") {
             const { error: delErr } = await supabase.from("custom_court_submissions").delete().eq("id", target.custom.id);
-            finish(delErr, "add court");
+            finish(delErr, "add that court");
             return;
         }
 
-        finish(null, "add court");
+        finish(null, "add that court");
     };
 
     // Deactivate a master court, or remove a custom court from the Custom list.
@@ -98,14 +99,14 @@ export function AdminCourtSheet({ target, onClose, onSaved }: AdminCourtSheetPro
 
         if (target.mode === "court") {
             const { error: updateErr } = await supabase.from("courts").update({ active: false }).eq("id", target.court.id);
-            finish(updateErr, "deactivate court");
+            finish(updateErr, "deactivate that court");
             return;
         }
 
         if (target.mode === "custom") {
             // Removing a custom court has no impact on the live posts using it.
             const { error: delErr } = await supabase.from("custom_court_submissions").delete().eq("id", target.custom.id);
-            finish(delErr, "remove court");
+            finish(delErr, "remove that court");
         }
     };
 

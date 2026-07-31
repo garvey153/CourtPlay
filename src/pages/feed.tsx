@@ -532,7 +532,7 @@ export function Feed() {
                         variant="grow"
                         title="No open spots right now"
                         description="Be the first to post one."
-                        actionLabel="Find a Sub"
+                        actionLabel="Find a sub"
                         onAction={handleNavigateToPost}
                     />
                 ) : (

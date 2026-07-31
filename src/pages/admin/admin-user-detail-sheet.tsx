@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { skillLabel } from "@/utils/skill-label";
 import { userDisplayName, type AdminUserRow } from "./admin-user-card";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { describeActionError } from "@/utils/load-error";
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
@@ -50,7 +51,7 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
         const { error: updateError } = await supabase.from("users").update(patch).eq("id", user.id);
         setLoading(false);
         if (updateError) {
-            setError(`Failed to ${failVerb}: ${updateError.message}`);
+            (console.error("admin user action failed:", updateError), setError(describeActionError(updateError, failVerb)));
         } else {
             onSaved();
         }
@@ -82,7 +83,7 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
                 </div>
                 {errorLine}
                 <div className="mt-2 flex flex-col gap-3">
-                    <button type="button" onClick={() => runUpdate({ is_suspended: true }, "deactivate")} disabled={loading} className={PRIMARY_BTN}>
+                    <button type="button" onClick={() => runUpdate({ is_suspended: true }, "deactivate that user")} disabled={loading} className={PRIMARY_BTN}>
                         {loading ? <Spinner size="sm" tone="on-brand" /> : "Yes, deactivate"}
                     </button>
                     <button type="button" onClick={() => setMode("view")} disabled={loading} className={SECONDARY_BTN}>
@@ -144,7 +145,7 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
 
                 <div className="mt-2 flex flex-col gap-3">
                     {user.is_suspended ? (
-                        <button type="button" onClick={() => runUpdate({ is_suspended: false }, "reactivate")} disabled={loading} className={PRIMARY_BTN}>
+                        <button type="button" onClick={() => runUpdate({ is_suspended: false }, "reactivate that user")} disabled={loading} className={PRIMARY_BTN}>
                             {loading ? <Spinner size="sm" tone="on-brand" /> : "Reactivate user"}
                         </button>
                     ) : (
@@ -152,7 +153,7 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
                             Deactivate user
                         </button>
                     )}
-                    <button type="button" onClick={() => runUpdate({ is_admin: !user.is_admin }, "update admin")} disabled={loading} className={SECONDARY_BTN}>
+                    <button type="button" onClick={() => runUpdate({ is_admin: !user.is_admin }, "change that user's admin access")} disabled={loading} className={SECONDARY_BTN}>
                         {loading ? <Spinner size="sm" tone="on-brand" /> : user.is_admin ? "Remove admin" : "Make admin"}
                     </button>
                 </div>

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { describeLoadError, isConnectivityError } from "@/utils/load-error";
+import { describeActionError, describeAuthError, describeLoadError, isConnectivityError } from "@/utils/load-error";
 
 function setOnline(value: boolean) {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(value);
@@ -51,5 +51,45 @@ describe("describeLoadError", () => {
         expect(`${title} ${message}`).not.toContain("42501");
         expect(`${title} ${message}`).not.toContain("permission denied");
         expect(`${title} ${message}`).not.toContain(raw);
+    });
+});
+
+describe("describeActionError", () => {
+    it("blames the connection when offline", () => {
+        setOnline(false);
+        expect(describeActionError(new Error("whatever"), "save those changes")).toBe(
+            "No internet connection. Reconnect and try again.",
+        );
+    });
+
+    it("names the action otherwise, without the underlying message", () => {
+        setOnline(true);
+        const copy = describeActionError({ message: 'duplicate key value violates constraint "courts_pkey"' }, "add that court");
+        expect(copy).toBe("Couldn't add that court. Try again.");
+        expect(copy).not.toContain("courts_pkey");
+    });
+});
+
+describe("describeAuthError", () => {
+    it("rewrites the auth failures people actually hit", () => {
+        setOnline(true);
+        expect(describeAuthError({ message: "Invalid login credentials" })).toBe("That email or password isn't right.");
+        expect(describeAuthError({ message: "Email not confirmed" })).toMatch(/confirm your email/i);
+        expect(describeAuthError({ message: "User already registered" })).toMatch(/already exists/i);
+        expect(describeAuthError({ message: "For security purposes, you can only request this after 45 seconds" })).toMatch(
+            /too many attempts/i,
+        );
+    });
+
+    it("does not surface internal auth errors verbatim", () => {
+        setOnline(true);
+        const copy = describeAuthError({ message: "Database error granting user" });
+        expect(copy).toBe("Something went wrong. Try again.");
+        expect(copy).not.toContain("Database");
+    });
+
+    it("still prefers the connection message when offline", () => {
+        setOnline(false);
+        expect(describeAuthError({ message: "Invalid login credentials" })).toMatch(/no internet connection/i);
     });
 });
