@@ -149,7 +149,20 @@ export function AdminUsers() {
             ) : error ? (
                 <ErrorState variant="grow" error={error} subject="users" onRetry={() => fetchUsers()} />
             ) : visibleUsers.length === 0 ? (
-                <EmptyState variant="grow" title="No users match your filters." />
+                search || userFilterCount(filters) > 0 ? (
+                    <EmptyState
+                        variant="grow"
+                        title="No players match"
+                        description="Nobody's getting past those filters. Try loosening them up."
+                        actionLabel="Clear filters"
+                        onAction={() => {
+                            setSearch("");
+                            setFilters(EMPTY_USER_FILTERS);
+                        }}
+                    />
+                ) : (
+                    <EmptyState variant="grow" title="No players yet" description="Nobody has signed up so far." />
+                )
             ) : (
                 <div className="flex flex-col gap-3">
                     {visibleUsers.map((user) => (

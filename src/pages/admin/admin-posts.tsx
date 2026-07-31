@@ -202,7 +202,20 @@ export function AdminPosts() {
             ) : error ? (
                 <ErrorState variant="grow" error={error} subject="posts" onRetry={() => fetchPosts()} />
             ) : visiblePosts.length === 0 ? (
-                <EmptyState variant="grow" title="No posts match your filters." />
+                search || activeCount(filters) > 0 ? (
+                    <EmptyState
+                        variant="grow"
+                        title="No posts match"
+                        description="Nothing's getting past those filters. Try loosening them up."
+                        actionLabel="Clear filters"
+                        onAction={() => {
+                            setSearch("");
+                            setFilters(EMPTY_FILTERS);
+                        }}
+                    />
+                ) : (
+                    <EmptyState variant="grow" title="No posts yet" description="Nobody has put up an opening so far." />
+                )
             ) : (
                 <div className="flex flex-col gap-3">
                     {visiblePosts.map((post) => (

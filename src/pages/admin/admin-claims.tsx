@@ -177,7 +177,20 @@ export function AdminClaims() {
             ) : error ? (
                 <ErrorState variant="grow" error={error} subject="claims" onRetry={() => fetchClaims()} />
             ) : visibleClaims.length === 0 ? (
-                <EmptyState variant="grow" title="No claims match your filters." />
+                search || claimFilterCount(filters) > 0 ? (
+                    <EmptyState
+                        variant="grow"
+                        title="No claims match"
+                        description="Nothing's getting past those filters. Try loosening them up."
+                        actionLabel="Clear filters"
+                        onAction={() => {
+                            setSearch("");
+                            setFilters(EMPTY_CLAIM_FILTERS);
+                        }}
+                    />
+                ) : (
+                    <EmptyState variant="grow" title="No claims yet" description="Nobody has claimed a spot so far." />
+                )
             ) : (
                 <div className="flex flex-col gap-3">
                     {visibleClaims.map((claim) => (

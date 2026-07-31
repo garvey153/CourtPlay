@@ -32,15 +32,15 @@ describe("describeLoadError", () => {
     it("names the connection as the problem when offline", () => {
         setOnline(false);
         const { title, message } = describeLoadError(new TypeError("Load failed"), "the feed");
-        expect(title).toBe("No internet connection");
+        expect(title).toBe("Rain delay");
         expect(message).toContain("the feed");
-        expect(message).toMatch(/offline/i);
+        expect(message).toMatch(/without a connection/i);
     });
 
     it("falls back to a generic failure otherwise", () => {
         setOnline(true);
         const { title, message } = describeLoadError({ message: "boom", code: "42501" }, "reports");
-        expect(title).toBe("Something went wrong");
+        expect(title).toBe("That one went long");
         expect(message).toContain("reports");
     });
 
@@ -58,14 +58,14 @@ describe("describeActionError", () => {
     it("blames the connection when offline", () => {
         setOnline(false);
         expect(describeActionError(new Error("whatever"), "save those changes")).toBe(
-            "No internet connection. Reconnect and try again.",
+            "Rain delay — reconnect and try again.",
         );
     });
 
     it("names the action otherwise, without the underlying message", () => {
         setOnline(true);
         const copy = describeActionError({ message: 'duplicate key value violates constraint "courts_pkey"' }, "add that court");
-        expect(copy).toBe("Couldn't add that court. Try again.");
+        expect(copy).toBe("Couldn't add that court. Take another swing.");
         expect(copy).not.toContain("courts_pkey");
     });
 });
@@ -92,6 +92,6 @@ describe("describeAuthError", () => {
 
     it("still prefers the connection message when offline", () => {
         setOnline(false);
-        expect(describeAuthError({ message: "Invalid login credentials" })).toMatch(/no internet connection/i);
+        expect(describeAuthError({ message: "Invalid login credentials" })).toMatch(/rain delay/i);
     });
 });

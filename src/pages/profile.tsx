@@ -245,7 +245,7 @@ export function Profile() {
     if (notFound && !error) {
         return (
             <AppLayout>
-                <EmptyState title="User not found" description="This profile doesn't exist, or it's no longer available." />
+                <EmptyState title="No match for that player" description="This profile doesn't exist, or it's no longer available." />
             </AppLayout>
         );
     }

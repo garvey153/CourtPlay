@@ -239,7 +239,11 @@ export function AdminReports() {
                 <ErrorState variant="grow" error={error} subject="reports" onRetry={() => (activeTab === "feedback" ? fetchFeedback() : fetchReports())} />
             ) : activeTab === "feedback" ? (
                 feedback.length === 0 ? (
-                    <EmptyState variant="grow" title="No feedback yet." />
+                    <EmptyState
+                        variant="grow"
+                        title="Nothing in the suggestion box"
+                        description="No feedback from players yet. Silence is golden."
+                    />
                 ) : (
                     <div className="flex flex-col gap-3">
                         {feedback.map((item) => (
@@ -248,7 +252,11 @@ export function AdminReports() {
                     </div>
                 )
             ) : reports.length === 0 ? (
-                <EmptyState variant="grow" title={`No ${TABS.find((t) => t.key === activeTab)?.label.toLowerCase()} reports.`} />
+                <EmptyState
+                    variant="grow"
+                    title="Nothing to review"
+                    description={`No ${TABS.find((t) => t.key === activeTab)?.label.toLowerCase()} reports — quiet day at the club.`}
+                />
             ) : (
                 <div className="flex flex-col gap-3">
                     {reports.map((report) => (

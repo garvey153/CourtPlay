@@ -102,26 +102,26 @@ describe("PostDetail", () => {
         mockUseAuth.mockReturnValue({ user: { id: "user-b" }, loading: false, session: {}, signOut: vi.fn() });
         rpc.mockResolvedValueOnce({ data: expiredPost, error: null } as never);
         renderWithRoute(expiredPost.id);
-        expect(await screen.findByText("This spot is no longer available.")).toBeInTheDocument();
+        expect(await screen.findByText("That spot's off the board.")).toBeInTheDocument();
         expect(screen.getByText(/Browse open spots/)).toBeInTheDocument();
     });
 
     it("renders expired state for expired post — unauthenticated", async () => {
         rpc.mockResolvedValueOnce({ data: expiredPost, error: null } as never);
         renderWithRoute(expiredPost.id);
-        expect(await screen.findByText("This spot is no longer available.")).toBeInTheDocument();
+        expect(await screen.findByText("That spot's off the board.")).toBeInTheDocument();
         expect(screen.getByText(/Sign up to find a sub/)).toBeInTheDocument();
     });
 
     it("renders 404 for non-existent post ID", async () => {
         rpc.mockResolvedValueOnce({ data: null, error: null } as never);
         renderWithRoute("dddddddd-0000-0000-0000-000000000004");
-        expect(await screen.findByText("This spot is no longer available.")).toBeInTheDocument();
+        expect(await screen.findByText("That spot's off the board.")).toBeInTheDocument();
     });
 
     it("handles invalid UUID in route param", async () => {
         renderWithRoute("not-a-uuid");
-        expect(await screen.findByText("This spot is no longer available.")).toBeInTheDocument();
+        expect(await screen.findByText("That spot's off the board.")).toBeInTheDocument();
         expect(rpc).not.toHaveBeenCalled();
     });
 
@@ -134,7 +134,7 @@ describe("PostDetail", () => {
     it("shows error state on fetch failure", async () => {
         rpc.mockRejectedValueOnce(new Error("Network error") as never);
         renderWithRoute(activeSubNeed.id);
-        expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
+        expect(await screen.findByText("That one went long")).toBeInTheDocument();
         expect(screen.getByText("Try again")).toBeInTheDocument();
     });
 
