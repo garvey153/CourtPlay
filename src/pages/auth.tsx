@@ -229,7 +229,7 @@ export function AuthScreen() {
                             size="sm"
                             wrapperClassName={FIELD_WRAPPER}
                             isInvalid={confirmPassword.length > 0 && confirmPassword !== password}
-                            hint={confirmPassword.length > 0 && confirmPassword !== password ? "Passwords do not match" : undefined}
+                            hint={confirmPassword.length > 0 && confirmPassword !== password ? "Those don't match" : undefined}
                         />
                     ) : (
                         <div className="flex w-full items-center justify-between gap-3">
