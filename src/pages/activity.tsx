@@ -19,6 +19,7 @@ import type { FeedPost } from "@/types/feed";
 import { claimToFeedPost, postToFeedPost } from "@/utils/activity-feed-map";
 import { cx } from "@/utils/cx";
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
+import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 // ── Main component ─────────────────────────────────────────────────────────
 
@@ -459,11 +460,7 @@ export function Activity() {
                     <PullToRefresh onRefresh={() => fetchData({ silent: true })} className="flex min-h-full flex-col" contentClassName="flex min-h-full flex-1 flex-col">
                     <div className="flex flex-1 flex-col px-5 pt-2 pb-4">
                         {loading ? (
-                            <ul aria-label="Loading" className="flex flex-col gap-3">
-                                {[1, 2, 3].map((i) => (
-                                    <li key={i} className="h-40 animate-pulse rounded-xl bg-secondary" />
-                                ))}
-                            </ul>
+                            <LoadingState variant="grow" label="Loading your activity" />
                         ) : error ? (
                             <ErrorState variant="grow" error={error} subject="your activity" onRetry={() => fetchData()} />
                         ) : tab === "claims" ? (

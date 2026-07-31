@@ -150,7 +150,7 @@ export function AdminReportDetailSheet({ report, actioning, onDismiss, onRemoveC
 
                             {isPost ? (
                                 ctxLoading ? (
-                                    <LoadingState variant="block" size="md" className="py-8" />
+                                    <LoadingState variant="block" className="py-8" />
                                 ) : ctxError || !context?.post ? (
                                     <p className="py-6 text-center text-sm text-tertiary">That post has left the court.</p>
                                 ) : (

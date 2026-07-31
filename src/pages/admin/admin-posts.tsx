@@ -198,7 +198,7 @@ export function AdminPosts() {
             }
         >
             {loading ? (
-                <LoadingState variant="grow" size="md" />
+                <LoadingState variant="grow" />
             ) : error ? (
                 <ErrorState variant="grow" error={error} subject="posts" onRetry={() => fetchPosts()} />
             ) : visiblePosts.length === 0 ? (

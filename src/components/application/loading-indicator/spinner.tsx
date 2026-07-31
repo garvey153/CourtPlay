@@ -81,10 +81,25 @@ export const areaVariants = {
 
 export type AreaVariant = keyof typeof areaVariants;
 
+/**
+ * How a page-level load looks, everywhere in the app.
+ *
+ * This is the ONLY place that decision lives. Call sites choose where a loader
+ * sits (`variant`) but never how it looks, so restyling every page loader —
+ * a different size, a different colour — is a change to this object and nothing
+ * else. Before this existed the size was repeated at each call site and the app
+ * had drifted into three: skeleton tiles on the feed and activity, a large
+ * spinner on profile, a medium one across admin.
+ */
+export const PAGE_LOADING: { size: SpinnerSize; tone: SpinnerTone } = {
+    size: "md",
+    tone: "brand",
+};
+
 interface LoadingStateProps {
-    /** @default 'fill' */
+    /** Where the loader sits. @default 'fill' */
     variant?: AreaVariant;
-    /** @default 'lg' */
+    /** Overrides {@link PAGE_LOADING} for a loader that is deliberately not page-level. */
     size?: SpinnerSize;
     /** Announced to screen readers while loading. @default 'Loading' */
     label?: string;
@@ -92,9 +107,9 @@ interface LoadingStateProps {
 }
 
 /** A centred {@link Spinner} that fills whichever area is loading. */
-export const LoadingState = ({ variant = "fill", size = "lg", label = "Loading", className }: LoadingStateProps) => (
+export const LoadingState = ({ variant = "fill", size, label = "Loading", className }: LoadingStateProps) => (
     <div role="status" className={cx("flex w-full items-center justify-center", areaVariants[variant], className)}>
-        <Spinner size={size} />
+        <Spinner size={size ?? PAGE_LOADING.size} tone={PAGE_LOADING.tone} />
         <span className="sr-only">{label}</span>
     </div>
 );

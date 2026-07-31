@@ -234,7 +234,7 @@ export function AdminReports() {
             }
         >
             {loading ? (
-                <LoadingState variant="grow" size="md" />
+                <LoadingState variant="grow" />
             ) : error ? (
                 <ErrorState variant="grow" error={error} subject="reports" onRetry={() => (activeTab === "feedback" ? fetchFeedback() : fetchReports())} />
             ) : activeTab === "feedback" ? (

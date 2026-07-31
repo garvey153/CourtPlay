@@ -122,7 +122,7 @@ export function AdminCourts() {
             }
         >
             {loading ? (
-                <LoadingState variant="grow" size="md" />
+                <LoadingState variant="grow" />
             ) : error ? (
                 <ErrorState variant="grow" error={error} subject="courts" onRetry={() => fetchData()} />
             ) : visibleCourts.length === 0 && customCourts.length === 0 ? (
