@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Button } from "@/components/base/buttons/button";
+import { Link } from "react-router";
+import { PRIMARY_CTA, SECONDARY_CTA } from "@/components/base/buttons/cta";
 import { describeLoadError } from "@/utils/load-error";
 import { areaVariants, type AreaVariant } from "./spinner";
 import { cx } from "@/utils/cx";
@@ -9,8 +10,8 @@ import { cx } from "@/utils/cx";
  * nothing to show. They share {@link areaVariants} with LoadingState so all
  * three land in the same place — swapping between them never moves the content.
  *
- * Actions use the design-system Button so every call to action in the app looks
- * the same.
+ * Actions use the design-system primary CTA (Figma 32:506) so every call to
+ * action in the app looks the same.
  */
 
 const shell = (variant: AreaVariant, className?: string) =>
@@ -56,9 +57,9 @@ export const ErrorState = ({
             <p className="text-base font-semibold text-primary">{title ?? derived.title}</p>
             <p className="text-sm text-tertiary">{message ?? derived.message}</p>
             {onRetry && (
-                <Button size="md" color="primary" onClick={onRetry} className="mt-1">
+                <button type="button" onClick={onRetry} className={cx("mt-1", PRIMARY_CTA)}>
                     {retryLabel}
-                </Button>
+                </button>
             )}
         </div>
     );
@@ -94,16 +95,19 @@ export const EmptyState = ({
     <div className={shell(variant, className)}>
         <p className="text-base font-semibold text-primary">{title}</p>
         {description && <p className="text-sm text-tertiary">{description}</p>}
-        {actionLabel && (href || onAction) && (
-            <Button
-                size="md"
-                color={actionTone === "primary" ? "primary" : "secondary"}
-                href={href}
-                onClick={href ? undefined : onAction}
-                className="mt-1"
+        {actionLabel && href && (
+            <Link to={href} className={cx("mt-1", actionTone === "primary" ? PRIMARY_CTA : SECONDARY_CTA)}>
+                {actionLabel}
+            </Link>
+        )}
+        {actionLabel && !href && onAction && (
+            <button
+                type="button"
+                onClick={onAction}
+                className={cx("mt-1", actionTone === "primary" ? PRIMARY_CTA : SECONDARY_CTA)}
             >
                 {actionLabel}
-            </Button>
+            </button>
         )}
     </div>
 );
