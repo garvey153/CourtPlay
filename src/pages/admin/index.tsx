@@ -34,7 +34,13 @@ export function Admin() {
             <div className="flex min-h-full flex-col">
             {/* Tab bar — active tab gets a green underline bar (design 350:5076). */}
             <div className="sticky top-0 z-10 bg-primary">
-                <div className="flex justify-between gap-5 overflow-x-auto px-5">
+                {/* mx-5, not px-5: padding on a scroll container only shows at the
+                    scroll extremes, so at rest the last tab ran flush to the screen
+                    edge. A margin insets the scroll area itself, so the gutter
+                    survives and the overflow is clipped at it instead. The bar keeps
+                    scrolling when the six tabs don't fit (they don't below ~430px),
+                    with the scrollbar hidden — it would sit under the underline. */}
+                <div className="mx-5 flex justify-between gap-5 overflow-x-auto scrollbar-hide">
                     {TABS.map((t) => (
                         <button
                             key={t.key}
