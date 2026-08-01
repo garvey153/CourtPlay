@@ -67,21 +67,28 @@ export function Admin() {
                     version scrolled. So the tabs are inline-block in a whitespace-nowrap
                     container, which is the shape that works.
 
-                    Cost of losing flex: justify-between went with it, so the tabs no
-                    longer spread to fill the bar on wide screens — they sit left-aligned
-                    at a fixed 20px rhythm. That is the trade for the thing working at
-                    all on a phone.
+                    Flex comes back only at 480px and up, where all six tabs already
+                    fit (they need 416px) and the bar therefore never needs to scroll.
+                    A flex row that cannot overflow cannot hit the touch bug, so this
+                    restores the spread-to-fill look on desktop while leaving every
+                    phone width on the inline-block path that actually works. The
+                    breakpoint is deliberately above the 416px fit point rather than at
+                    it, so a font or label change cannot quietly put a scrolling bar
+                    back into flex.
 
                     px-5 gives the geometry asked for: Analytics starts on the content
                     gutter, Reports bleeds past the right edge, and scrolling to the end
                     lands Reports exactly on the content's right edge. */}
-                <div ref={barRef} className="overflow-x-auto whitespace-nowrap px-5 scrollbar-hide">
+                <div
+                    ref={barRef}
+                    className="overflow-x-auto whitespace-nowrap px-5 scrollbar-hide min-[480px]:flex min-[480px]:justify-between min-[480px]:gap-5"
+                >
                     {TABS.map((t) => (
                         <button
                             key={t.key}
                             ref={(el) => { tabRefs.current[t.key] = el; }}
                             onClick={() => setTab(t.key)}
-                            className="inline-block pt-2 align-top first:ml-0 ml-5"
+                            className="ml-5 inline-block pt-2 align-top first:ml-0 min-[480px]:ml-0"
                         >
                             <span className={cx("block text-sm", tab === t.key ? "text-primary" : "text-secondary")}>
                                 {t.label}
