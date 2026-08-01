@@ -59,46 +59,36 @@ export function Admin() {
             <div className="flex min-h-full flex-col">
             {/* Tab bar — active tab gets a green underline bar (design 350:5076). */}
             <div className="sticky top-0 z-10 bg-primary">
-                {/* Scrolls horizontally once the tabs stop fitting, which at six is
-                    already true below ~430px. Full bleed on purpose: px-5 on the
-                    scroller keeps the gutter at both scroll extremes while letting the
-                    last tab run to the edge in between, which is what signals there is
-                    more to reach. scrollbar-hide because the bar would otherwise sit
-                    directly under the active tab's underline.
+                {/* Inline-block, not flex — and that is load-bearing.
+                    A flex row inside this scroller cannot be panned with a finger on
+                    iOS: the bar scrolled with a mouse and stayed completely fixed on
+                    touch. Tested on-device across five variants; removing `sticky` and
+                    removing `touch-action` both still failed, and only the inline-block
+                    version scrolled. So the tabs are inline-block in a whitespace-nowrap
+                    container, which is the shape that works.
 
-                    touch-pan-x and overflow-y-hidden are what make it scroll on a
-                    phone. Setting overflow-x alone leaves overflow-y computing to
-                    auto, so the bar is a scroll container on both axes with nothing to
-                    scroll vertically; with touch-action left at auto, iOS is free to
-                    read a horizontal swipe as belonging to the page's vertical
-                    scroller instead — which is why this worked with a mouse and not
-                    with a finger. pan-x claims horizontal panning explicitly.
-                    Trade-off: a vertical drag that starts on the bar no longer scrolls
-                    the page. The bar is a thin strip, so that is the cheaper side.
+                    Cost of losing flex: justify-between went with it, so the tabs no
+                    longer spread to fill the bar on wide screens — they sit left-aligned
+                    at a fixed 20px rhythm. That is the trade for the thing working at
+                    all on a phone.
 
-                    The inner row is w-max so its width is its content, and min-w-full
-                    so it still fills — and so justify-between still spreads the tabs —
-                    when they do fit. Without w-max the row is capped at the container
-                    and adding a seventh tab would squeeze rather than scroll. */}
-                <div
-                    ref={barRef}
-                    className="touch-pan-x overflow-x-auto overflow-y-hidden px-5 scrollbar-hide"
-                >
-                <div className="flex w-max min-w-full justify-between gap-5">
+                    px-5 gives the geometry asked for: Analytics starts on the content
+                    gutter, Reports bleeds past the right edge, and scrolling to the end
+                    lands Reports exactly on the content's right edge. */}
+                <div ref={barRef} className="overflow-x-auto whitespace-nowrap px-5 scrollbar-hide">
                     {TABS.map((t) => (
                         <button
                             key={t.key}
                             ref={(el) => { tabRefs.current[t.key] = el; }}
                             onClick={() => setTab(t.key)}
-                            className="flex shrink-0 flex-col gap-2 pt-2"
+                            className="inline-block pt-2 align-top first:ml-0 ml-5"
                         >
-                            <span className={cx("whitespace-nowrap text-sm", tab === t.key ? "text-primary" : "text-secondary")}>
+                            <span className={cx("block text-sm", tab === t.key ? "text-primary" : "text-secondary")}>
                                 {t.label}
                             </span>
-                            <span className={cx("h-1 w-full rounded-full", tab === t.key ? "bg-brand-500" : "bg-transparent")} />
+                            <span className={cx("mt-2 block h-1 rounded-full", tab === t.key ? "bg-brand-500" : "bg-transparent")} />
                         </button>
                     ))}
-                </div>
                 </div>
             </div>
 
