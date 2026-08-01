@@ -66,11 +66,24 @@ export function Admin() {
                     more to reach. scrollbar-hide because the bar would otherwise sit
                     directly under the active tab's underline.
 
+                    touch-pan-x and overflow-y-hidden are what make it scroll on a
+                    phone. Setting overflow-x alone leaves overflow-y computing to
+                    auto, so the bar is a scroll container on both axes with nothing to
+                    scroll vertically; with touch-action left at auto, iOS is free to
+                    read a horizontal swipe as belonging to the page's vertical
+                    scroller instead — which is why this worked with a mouse and not
+                    with a finger. pan-x claims horizontal panning explicitly.
+                    Trade-off: a vertical drag that starts on the bar no longer scrolls
+                    the page. The bar is a thin strip, so that is the cheaper side.
+
                     The inner row is w-max so its width is its content, and min-w-full
                     so it still fills — and so justify-between still spreads the tabs —
                     when they do fit. Without w-max the row is capped at the container
                     and adding a seventh tab would squeeze rather than scroll. */}
-                <div ref={barRef} className="overflow-x-auto px-5 scrollbar-hide">
+                <div
+                    ref={barRef}
+                    className="touch-pan-x overflow-x-auto overflow-y-hidden px-5 scrollbar-hide"
+                >
                 <div className="flex w-max min-w-full justify-between gap-5">
                     {TABS.map((t) => (
                         <button
