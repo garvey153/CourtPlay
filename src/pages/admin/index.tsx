@@ -34,7 +34,16 @@ export function Admin() {
             <div className="flex min-h-full flex-col">
             {/* Tab bar — active tab gets a green underline bar (design 350:5076). */}
             <div className="sticky top-0 z-10 bg-primary">
-                <div className="flex justify-between gap-5 overflow-x-auto px-5">
+                {/* Full bleed on purpose: below ~430px the six tabs don't fit, and
+                    letting the last one run to the screen edge is what signals there
+                    is more to scroll to. px-5 rather than mx-5 so the gutter still
+                    appears at both scroll extremes — the bar starts and ends inset,
+                    and only bleeds mid-scroll.
+
+                    scrollbar-hide because the scrollbar would sit directly under the
+                    active tab's underline. It is declared in globals.css but was used
+                    nowhere, so Tailwind had never emitted the rule. */}
+                <div className="flex justify-between gap-5 overflow-x-auto px-5 scrollbar-hide">
                     {TABS.map((t) => (
                         <button
                             key={t.key}
