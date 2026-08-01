@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { cx } from "@/utils/cx";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -26,6 +26,31 @@ export function Admin() {
     const initialTab = TABS.find((t) => t.key === searchParams.get("tab"))?.key ?? "analytics";
     const [tab, setTab] = useState<AdminTab>(initialTab);
 
+    const barRef = useRef<HTMLDivElement>(null);
+    const tabRefs = useRef<Partial<Record<AdminTab, HTMLButtonElement | null>>>({});
+
+    // Bring the selected tab fully into view. Without this the last tabs are
+    // reachable only by scrolling a bar most people never realise scrolls — with
+    // six tabs the overflow is about 26px at 390px wide, small enough to read as a
+    // clipped label rather than a hint. It also keeps working as tabs are added.
+    // scrollLeft rather than scrollIntoView, which would also scroll the page
+    // vertically and yank the content out from under the tap.
+    useEffect(() => {
+        const bar = barRef.current;
+        const el = tabRefs.current[tab];
+        if (!bar || !el) return;
+
+        const barBox = bar.getBoundingClientRect();
+        const elBox = el.getBoundingClientRect();
+        // Keep the 20px gutter visible past the tab rather than flush to the edge.
+        const GUTTER = 20;
+        const pastRight = elBox.right - (barBox.right - GUTTER);
+        const pastLeft = barBox.left + GUTTER - elBox.left;
+
+        if (pastRight > 0) bar.scrollBy({ left: pastRight, behavior: "smooth" });
+        else if (pastLeft > 0) bar.scrollBy({ left: -pastLeft, behavior: "smooth" });
+    }, [tab]);
+
     return (
         <AppLayout>
             {/* Fills <main> as a flex column so each tab's content can grow into the
@@ -34,19 +59,23 @@ export function Admin() {
             <div className="flex min-h-full flex-col">
             {/* Tab bar — active tab gets a green underline bar (design 350:5076). */}
             <div className="sticky top-0 z-10 bg-primary">
-                {/* Full bleed on purpose: below ~430px the six tabs don't fit, and
-                    letting the last one run to the screen edge is what signals there
-                    is more to scroll to. px-5 rather than mx-5 so the gutter still
-                    appears at both scroll extremes — the bar starts and ends inset,
-                    and only bleeds mid-scroll.
+                {/* Scrolls horizontally once the tabs stop fitting, which at six is
+                    already true below ~430px. Full bleed on purpose: px-5 on the
+                    scroller keeps the gutter at both scroll extremes while letting the
+                    last tab run to the edge in between, which is what signals there is
+                    more to reach. scrollbar-hide because the bar would otherwise sit
+                    directly under the active tab's underline.
 
-                    scrollbar-hide because the scrollbar would sit directly under the
-                    active tab's underline. It is declared in globals.css but was used
-                    nowhere, so Tailwind had never emitted the rule. */}
-                <div className="flex justify-between gap-5 overflow-x-auto px-5 scrollbar-hide">
+                    The inner row is w-max so its width is its content, and min-w-full
+                    so it still fills — and so justify-between still spreads the tabs —
+                    when they do fit. Without w-max the row is capped at the container
+                    and adding a seventh tab would squeeze rather than scroll. */}
+                <div ref={barRef} className="overflow-x-auto px-5 scrollbar-hide">
+                <div className="flex w-max min-w-full justify-between gap-5">
                     {TABS.map((t) => (
                         <button
                             key={t.key}
+                            ref={(el) => { tabRefs.current[t.key] = el; }}
                             onClick={() => setTab(t.key)}
                             className="flex shrink-0 flex-col gap-2 pt-2"
                         >
@@ -56,6 +85,7 @@ export function Admin() {
                             <span className={cx("h-1 w-full rounded-full", tab === t.key ? "bg-brand-500" : "bg-transparent")} />
                         </button>
                     ))}
+                </div>
                 </div>
             </div>
 
