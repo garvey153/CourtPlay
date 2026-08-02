@@ -3,13 +3,8 @@ import { motion } from "motion/react";
 import { Trash01, XClose } from "@untitledui/icons";
 import type { AdminFeedbackRow } from "./admin-feedback-card";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { DANGER_MD_FULL_GAP1_5 as DELETE_BTN, PRIMARY_MD_FULL as PRIMARY_BTN, SECONDARY_MD_FULL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
-const PRIMARY_BTN =
-    "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
-const DELETE_BTN =
-    "flex w-full items-center justify-center gap-1.5 rounded-lg bg-error-solid px-4 py-2.5 text-sm font-semibold text-white transition duration-100 ease-linear enabled:hover:bg-error-solid_hover disabled:cursor-not-allowed disabled:opacity-50";
-const SECONDARY_BTN =
-    "flex w-full items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
 
 function formatTimestamp(dateStr: string): string {

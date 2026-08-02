@@ -20,13 +20,10 @@ import { cx } from "@/utils/cx";
 import { menuWidth, multiMenuWidth } from "@/utils/menu-width";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 import { FIELD, FIELD_SELECT } from "@/components/base/input/field-styles";
+import { PRIMARY_SM as PRIMARY_BTN, SECONDARY_SM_HOVERFILL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 // Design-system buttons (node 32-85): primary = bg/brand + on-brand text;
 // secondary = bg/tertiary + secondary text.
-const PRIMARY_BTN =
-    "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
-const SECONDARY_BTN =
-    "rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800";
 
 // Play type supersedes `format` for sub_need posts; drives the feed card title.
 const PLAY_TYPES = [

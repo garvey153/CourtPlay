@@ -3,11 +3,10 @@ import { Download01 } from "@untitledui/icons";
 import { InstallGuide } from "@/components/app/install-guide";
 import { isStandalone } from "@/utils/is-standalone";
 import { cx } from "@/utils/cx";
+import { SECONDARY_LG_GAP1 as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 // CourtPlay design-system Secondary button (Figma node 32:104, size M): a filled
 // bg-tertiary surface with secondary text — matches the app's existing SECONDARY_BTN.
-const SECONDARY_BTN =
-    "inline-flex items-center justify-center gap-1 rounded-lg bg-tertiary px-5 py-3 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary";
 
 // Chrome / Edge / Android fire `beforeinstallprompt` before offering to install;
 // capturing it lets our own button trigger the native install prompt on tap.

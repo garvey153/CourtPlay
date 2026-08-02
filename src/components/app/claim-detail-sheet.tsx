@@ -12,6 +12,7 @@ import { ReportModal } from "./report-modal";
 import { ThreadMessage } from "./thread-message";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeActionError } from "@/utils/load-error";
+import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD_BARE as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 const MESSAGE_MAX = 150;
 
@@ -69,10 +70,6 @@ function formatDuration(duration: number | null): string | null {
 
 // Bottom-sheet button styles, kept in sync with the feed filters sheet (brand
 // primary with dark on-brand text; tertiary secondary) so all sheets match.
-const PRIMARY_BTN =
-    "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
-const SECONDARY_BTN =
-    "rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary";
 
 /** Spinner tuned for the brand button (dark strokes on green). */
 

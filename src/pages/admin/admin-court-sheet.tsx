@@ -7,11 +7,8 @@ import type { AdminCourtRow, CustomCourtRow } from "./admin-court-card";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeActionError } from "@/utils/load-error";
 import { FIELD } from "@/components/base/input/field-styles";
+import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
-const PRIMARY_BTN =
-    "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
-const SECONDARY_BTN =
-    "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
 
 /** Which flow the sheet is driving. */

@@ -7,10 +7,9 @@ import { cx } from "@/utils/cx";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeAuthError } from "@/utils/load-error";
 import { FIELD } from "@/components/base/input/field-styles";
+import { PRIMARY_H9_FULL as PRIMARY_BTN } from "@/components/base/buttons/button-styles";
 
 // Brand-green CTA (dark on-brand text), matching auth.tsx.
-const PRIMARY_BTN =
-    "flex h-9 w-full items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 // Field fill matches the design (lighter than the page) — overrides the base Input's bg-primary.
 
 

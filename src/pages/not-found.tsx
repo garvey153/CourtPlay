@@ -1,11 +1,8 @@
 import { ArrowLeft } from "@untitledui/icons";
 import { useNavigate } from "react-router";
+import { PRIMARY_MD_FULL_PLAINHOVER as PRIMARY_BTN, SECONDARY_MD_FULL_GAP2 as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 // Shared button styles, matching the auth / landing CTAs (green with dark on-brand text).
-const PRIMARY_BTN =
-    "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600";
-const SECONDARY_BTN =
-    "flex w-full items-center justify-center gap-2 rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary";
 
 export function NotFound() {
     const navigate = useNavigate();

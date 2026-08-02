@@ -7,6 +7,7 @@ import { TextArea } from "@/components/base/textarea/textarea";
 import { supabase } from "@/lib/supabase";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { FIELD } from "@/components/base/input/field-styles";
+import { PRIMARY_SM_FULL as PRIMARY_BTN, SECONDARY_SM_FULL_HOVERFILL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 // Themed field surface — bg-tertiary fill with a neutral-600 ring — matching the
 // create-post form (Figma 145:1006). Applied to the Input wrapper and, via
@@ -14,10 +15,6 @@ import { FIELD } from "@/components/base/input/field-styles";
 
 // Action buttons match the create-post form: flat brand primary + flat bg-tertiary
 // secondary (the base Button's secondary variant uses a ring, which is wrong here).
-const PRIMARY_BTN =
-    "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
-const SECONDARY_BTN =
-    "flex w-full items-center justify-center rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50";
 
 
 interface FeedbackSheetProps {

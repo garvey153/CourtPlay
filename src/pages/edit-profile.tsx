@@ -16,6 +16,7 @@ import { NOTIFICATION_TYPES } from "@/lib/notifications";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeActionError } from "@/utils/load-error";
 import { FIELD, FIELD_SELECT } from "@/components/base/input/field-styles";
+import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 // Descriptive NTRP labels — match the create-post form's contents exactly.
 const SKILL_LEVELS = [
@@ -28,10 +29,6 @@ const SKILL_LEVELS = [
 ];
 
 
-const PRIMARY_BTN =
-    "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
-const SECONDARY_BTN =
-    "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
 
 interface Court {
