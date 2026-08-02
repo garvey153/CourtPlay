@@ -63,6 +63,34 @@
     }
 }
 
+/* Landscape guard. The app is laid out portrait-only — single column, bottom
+   nav, full-height sheets — and in landscape on a phone the sheets have almost
+   no room and the bottom nav eats most of the screen.
+
+   The manifest's orientation:"portrait" handles installed PWAs on Android, but
+   iOS Safari does not support that member and screen.orientation.lock() is
+   unavailable there too, so on iPhone — the platform that matters here — CSS is
+   the only lever. Hence an overlay rather than a real orientation lock: it can't
+   stop the rotation, only cover it.
+
+   Three conditions, all needed. `orientation: landscape` alone would also catch
+   desktop; `max-height: 500px` excludes tablets (iPad is 768px+ in landscape)
+   and any reasonable desktop window; `pointer: coarse` excludes a short mouse-
+   driven window. iPhone landscape heights top out at 430px on a 14 Pro Max.
+
+   Display is toggled here rather than with a Tailwind `hidden` class: both are
+   single-specificity selectors, so it would come down to source order, which is
+   not something to rely on. */
+[data-landscape-guard] {
+    display: none;
+}
+
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+    [data-landscape-guard] {
+        display: flex;
+    }
+}
+
 html,
 body {
     font-family: var(--font-body);

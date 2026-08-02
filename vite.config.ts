@@ -52,6 +52,12 @@ export default defineConfig({
                 theme_color: "#08180e",
                 background_color: "#08180e",
                 display: "standalone",
+                // Android honours this for installed PWAs and won't rotate at all.
+                // iOS Safari has never supported the manifest orientation member, so
+                // on iPhone this does nothing — the CSS landscape guard in globals.css
+                // is what actually covers the primary platform. Harmless to declare
+                // either way, and it means Android gets the better native behaviour.
+                orientation: "portrait",
                 start_url: "/",
                 scope: "/",
                 // New PATHS, not ?v= bumps. iOS keys its home-screen icon cache on the

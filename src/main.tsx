@@ -5,6 +5,7 @@ import { ProfileProvider } from "@/providers/profile-provider";
 import { RouteProvider } from "@/providers/router-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import "@/styles/globals.css";
+import { LandscapeGuard } from "@/components/layout/landscape-guard";
 import { ProtectedRoute } from "@/components/layout/protected-route";
 import { Activity } from "@/pages/activity";
 import { Admin } from "@/pages/admin/index";
@@ -30,6 +31,9 @@ registerServiceWorker();
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <ThemeProvider defaultTheme="dark">
+            {/* Outside the router: applies to every route, and nothing about it
+                depends on the current one. */}
+            <LandscapeGuard />
             <BrowserRouter>
                 <RouteProvider>
                 <ProfileProvider>
