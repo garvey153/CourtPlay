@@ -30,6 +30,27 @@ import { EmptyState, ErrorState } from "@/components/application/loading-indicat
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
 const WELCOME_KEY = "cs_welcome_dismissed";
+
+/**
+ * First-run welcome card: shown to users who haven't posted yet, until they
+ * dismiss it. Deliberately independent of the feed/filter count — an empty or
+ * filtered feed is the "No open spots" state, not this card.
+ *
+ * `myPostsLoaded` is the part that isn't obvious. `feedLoading` only tracks
+ * get_feed; the "mine" RPCs run separately and settle later, so between the two
+ * an empty myPosts means "not fetched yet" and "you have no posts" at once.
+ * Reading it as the latter is what made the card flash on every navigation to
+ * the feed for users who do have posts. Extracted and exported so the invariant
+ * is testable — rendering Feed itself needs the whole Supabase surface mocked.
+ */
+export function shouldShowWelcome(state: {
+    dismissed: boolean;
+    feedLoading: boolean;
+    myPostsLoaded: boolean;
+    myPostCount: number;
+}): boolean {
+    return !state.dismissed && !state.feedLoading && state.myPostsLoaded && state.myPostCount === 0;
+}
 const VIEW_DEBOUNCE_MS = 300;
 
 interface Court {
@@ -96,6 +117,11 @@ export function Feed() {
     const [welcomeDismissed, setWelcomeDismissed] = useState(
         () => localStorage.getItem(WELCOME_KEY) === "1",
     );
+    // Whether the "mine" RPCs have come back yet. `loading` only covers get_feed,
+    // so without this an empty myPosts means "not fetched yet" and "you have no
+    // posts" at the same time — and the welcome card read it as the latter,
+    // flashing on every navigation to the feed for users who do have posts.
+    const [myPostsLoaded, setMyPostsLoaded] = useState(false);
     // Admin-only: ids of feedback submissions not yet dismissed from the feed banner.
     const [newFeedbackIds, setNewFeedbackIds] = useState<string[]>([]);
     // Success banner shown once after a post is created (flag set by the post form).
@@ -166,6 +192,7 @@ export function Feed() {
         ]);
         setMyPosts((postsRes.data as MyPost[]) ?? []);
         setMyClaims((claimsRes.data as MyClaim[]) ?? []);
+        setMyPostsLoaded(true);
     }, [user]);
 
     // Initial load
@@ -437,7 +464,12 @@ export function Feed() {
     // First-run welcome: shown once to users who haven't posted yet (until they
     // dismiss it). Deliberately independent of the feed/filter count — an empty or
     // filtered feed is handled by the "No open spots" state below, not this card.
-    const showWelcome = !welcomeDismissed && !loading && myPosts.length === 0;
+    const showWelcome = shouldShowWelcome({
+        dismissed: welcomeDismissed,
+        feedLoading: loading,
+        myPostsLoaded,
+        myPostCount: myPosts.length,
+    });
 
     return (
         <AppLayout onOpenFilters={handleToggleFilters} filtersActive={activeCount(filters) > 0}>
