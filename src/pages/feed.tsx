@@ -19,7 +19,7 @@ import { FeedbackBanner } from "@/components/app/feedback-banner";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
-import { useRealtimePosts, type PostChangeRow } from "@/hooks/use-realtime-posts";
+import { postAffectsViewer, useRealtimePosts, type PostChangeRow } from "@/hooks/use-realtime-posts";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { REJECTION_REASONS } from "@/types/claims";
@@ -212,8 +212,7 @@ export function Feed() {
     // takes three RPCs per event down to one.
     const affectsViewer = useCallback(
         (row: PostChangeRow | null) =>
-            row?.author_id === user?.id ||
-            (!!row?.id && (myPostIds.current.has(row.id) || myClaimPostIds.current.has(row.id))),
+            postAffectsViewer(row, user?.id, myPostIds.current, myClaimPostIds.current),
         [user?.id],
     );
 

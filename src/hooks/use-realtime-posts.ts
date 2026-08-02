@@ -111,6 +111,26 @@ export function createRefetchScheduler(opts: SchedulerOptions): RefetchScheduler
     };
 }
 
+/**
+ * Whether a changed post can affect the viewer's banners — their own post, or
+ * one they claimed. Pure, so the decision is testable without the feed page.
+ */
+export function postAffectsViewer(
+    row: PostChangeRow | null,
+    viewerId: string | undefined,
+    ownPostIds: ReadonlySet<string>,
+    claimedPostIds: ReadonlySet<string>,
+): boolean {
+    // Unidentifiable row: refresh rather than leave a banner stale. Soft deletes
+    // arrive as UPDATEs, so a payload without an id is rare.
+    if (!row?.id) return true;
+    // Both ids have to exist. A DELETE payload carries only the primary key
+    // under the default replica identity, so an undefined author would other-
+    // wise match an undefined viewer and refetch on every signed-out session.
+    if (viewerId && row.author_id === viewerId) return true;
+    return ownPostIds.has(row.id) || claimedPostIds.has(row.id);
+}
+
 export interface RealtimePostsOptions {
     refetchFeed: () => void;
     refetchMine: () => void;
@@ -144,11 +164,7 @@ export function useRealtimePosts({ refetchFeed, refetchMine, affectsViewer }: Re
             .channel("feed-posts")
             .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, (payload) => {
                 const row = (payload.new ?? payload.old ?? null) as PostChangeRow | null;
-                // Unidentifiable row → assume it concerns the viewer rather than
-                // leave a banner stale. Soft deletes arrive as UPDATEs, so this
-                // is rare.
-                const mine = !row?.id || latest.current.affectsViewer(row);
-                scheduler.schedule({ feed: true, mine });
+                scheduler.schedule({ feed: true, mine: latest.current.affectsViewer(row) });
             })
             .subscribe();
 
