@@ -1,181 +1,234 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act, waitFor } from "@testing-library/react";
-import { useState, useEffect, useCallback } from "react";
-import type { FeedPost } from "@/types/feed";
+import { act, renderHook } from "@testing-library/react";
+import { supabase } from "@/lib/supabase";
+import {
+    postAffectsViewer,
+    useRealtimePosts,
+    REFETCH_DEBOUNCE_MS,
+    type PostChangeRow,
+} from "@/hooks/use-realtime-posts";
 
 // ---------------------------------------------------------------------------
-// We test the real-time subscription behaviour using a minimal feed component
-// that mirrors the subscription logic from feed.tsx without Supabase/auth deps.
+// These exercise the real subscription the feed uses. An earlier version of
+// this file rendered a stand-in component that applied realtime payloads to
+// local state — the feed has never done that (it refetches through RPCs), so
+// those tests passed no matter how the subscription behaved.
+//
+// The debounce/visibility rules live in feed-realtime-scheduler.test.ts. Here
+// we cover the wiring: which payloads reach the scheduler, how much work each
+// one asks for, and that the channel is opened once and cleaned up.
 // ---------------------------------------------------------------------------
 
-type RealTimeEvent = {
-    eventType: "INSERT" | "UPDATE" | "DELETE";
-    new: Partial<FeedPost>;
-};
+vi.mock("@/lib/supabase", () => ({
+    supabase: { channel: vi.fn(), removeChannel: vi.fn() },
+}));
 
-/** Minimal feed that mirrors the real-time subscription logic */
-function MiniRealTimeFeed({
-    initialPosts,
-    subscribeToChanges,
-}: {
-    initialPosts: FeedPost[];
-    subscribeToChanges: (cb: (event: RealTimeEvent) => void) => () => void;
-}) {
-    const [posts, setPosts] = useState<FeedPost[]>(initialPosts);
+type ChangePayload = { new?: PostChangeRow; old?: PostChangeRow };
+type ChangeHandler = (payload: ChangePayload) => void;
 
-    useEffect(() => {
-        const unsubscribe = subscribeToChanges((event) => {
-            if (event.eventType === "INSERT") {
-                setPosts((prev) => {
-                    // Avoid duplicates
-                    if (prev.some((p) => p.id === event.new.id)) return prev;
-                    return [...prev, event.new as FeedPost];
-                });
-            } else if (event.eventType === "UPDATE") {
-                setPosts((prev) => {
-                    const updated = prev.map((p) =>
-                        p.id === event.new.id ? ({ ...p, ...event.new } as FeedPost) : p,
-                    );
-                    return updated.filter((p) => p.status !== "deleted");
-                });
-            } else if (event.eventType === "DELETE") {
-                setPosts((prev) => prev.filter((p) => p.id !== event.new.id));
-            }
+const VIEWER = "viewer-1";
+const OTHER = "author-2";
+
+describe("postAffectsViewer", () => {
+    const own = new Set(["own-post"]);
+    const claimed = new Set(["claimed-post"]);
+
+    it("is true for a post the viewer authored", () => {
+        expect(postAffectsViewer({ id: "p1", author_id: VIEWER }, VIEWER, own, claimed)).toBe(true);
+    });
+
+    it("is true for a post the viewer authored even when not yet in the id sets", () => {
+        // A brand-new post of the viewer's arrives before myPosts has refetched.
+        expect(postAffectsViewer({ id: "brand-new", author_id: VIEWER }, VIEWER, own, claimed)).toBe(true);
+    });
+
+    it("is true for a post the viewer claimed", () => {
+        expect(postAffectsViewer({ id: "claimed-post", author_id: OTHER }, VIEWER, own, claimed)).toBe(true);
+    });
+
+    it("is true for the viewer's own post identified by id alone", () => {
+        // DELETE payloads carry only the primary key.
+        expect(postAffectsViewer({ id: "own-post" }, VIEWER, own, claimed)).toBe(true);
+    });
+
+    it("is false for an unrelated post — the common case", () => {
+        expect(postAffectsViewer({ id: "stranger", author_id: OTHER }, VIEWER, own, claimed)).toBe(false);
+    });
+
+    it("is true for an unidentifiable row rather than leaving a banner stale", () => {
+        expect(postAffectsViewer(null, VIEWER, own, claimed)).toBe(true);
+        expect(postAffectsViewer({}, VIEWER, own, claimed)).toBe(true);
+    });
+
+    it("does not match an absent author against an absent viewer", () => {
+        // Signed out, on a DELETE payload: undefined === undefined must not read
+        // as "this is the viewer's post" and refetch for every session.
+        expect(postAffectsViewer({ id: "stranger" }, undefined, new Set(), new Set())).toBe(false);
+    });
+});
+
+describe("useRealtimePosts", () => {
+    let handler: ChangeHandler | null = null;
+    let refetchFeed: ReturnType<typeof vi.fn>;
+    let refetchMine: ReturnType<typeof vi.fn>;
+    let subscribe: ReturnType<typeof vi.fn>;
+
+    const ownPostIds = new Set(["own-post"]);
+    const claimedPostIds = new Set(["claimed-post"]);
+    const affectsViewer = (row: PostChangeRow | null) =>
+        postAffectsViewer(row, VIEWER, ownPostIds, claimedPostIds);
+
+    const mount = () =>
+        renderHook(() => useRealtimePosts({ refetchFeed, refetchMine, affectsViewer }));
+
+    /** Deliver a change and let the debounce window close. */
+    const emit = (payload: ChangePayload) => {
+        act(() => {
+            handler?.(payload);
+            vi.advanceTimersByTime(REFETCH_DEBOUNCE_MS);
         });
-        return unsubscribe;
-    }, [subscribeToChanges]);
-
-    return (
-        <ul>
-            {posts.map((p) => (
-                <li key={p.id} data-testid={`post-${p.id}`}>
-                    {p.first_name} — ${p.cost ?? 0}
-                </li>
-            ))}
-        </ul>
-    );
-}
-
-function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
-    return {
-        id: "post-1",
-        author_id: "author-1",
-        author_type: "player",
-        post_type: "sub_need",
-        status: "active",
-        format: "point_play",
-        total_players: 4,
-        game_date: "2026-05-10",
-        game_time: "09:00",
-        skill_level: "4.0",
-        location: "Longshore Club",
-        court_id: "court-1",
-        custom_court: null,
-        pro_name: null,
-        cost: 40,
-        original_cost: null,
-        spots_total: 1,
-        spots_available: 1,
-        view_count: 0,
-        notes: null,
-        series_id: null,
-        expires_at: null,
-        preferred_days: null,
-        preferred_times: null,
-        created_at: new Date().toISOString(),
-        first_name: "Bob",
-        last_name: "Jones",
-        photo_url: null,
-        is_friend: false,
-        ...overrides,
     };
-}
 
-describe("real-time feed updates", () => {
-    it("new post appears in feed on INSERT event", async () => {
-        let listener: ((event: RealTimeEvent) => void) | null = null;
-        const unsubscribe = vi.fn();
+    beforeEach(() => {
+        vi.useFakeTimers();
+        handler = null;
+        refetchFeed = vi.fn();
+        refetchMine = vi.fn();
+        subscribe = vi.fn();
 
-        const subscribe = vi.fn((cb: (event: RealTimeEvent) => void) => {
-            listener = cb;
-            return unsubscribe;
-        });
-
-        render(<MiniRealTimeFeed initialPosts={[makePost()]} subscribeToChanges={subscribe} />);
-
-        expect(screen.getByTestId("post-post-1")).toBeInTheDocument();
-
-        act(() => {
-            listener?.({
-                eventType: "INSERT",
-                new: makePost({ id: "post-2", first_name: "Carol", cost: 30 }),
-            });
-        });
-
-        await waitFor(() => {
-            expect(screen.getByTestId("post-post-2")).toBeInTheDocument();
-        });
+        const channel = {
+            on: vi.fn((_event: string, _filter: unknown, cb: ChangeHandler) => {
+                handler = cb;
+                return channel;
+            }),
+            subscribe,
+        };
+        // Reset before stubbing: these are module-level mocks, so call counts
+        // carry across tests otherwise.
+        vi.mocked(supabase.channel).mockReset();
+        vi.mocked(supabase.channel).mockReturnValue(channel as never);
+        vi.mocked(supabase.removeChannel).mockReset();
     });
 
-    it("updated post reflects changes on UPDATE event", async () => {
-        let listener: ((event: RealTimeEvent) => void) | null = null;
-        const unsubscribe = vi.fn();
-
-        render(
-            <MiniRealTimeFeed
-                initialPosts={[makePost({ cost: 40 })]}
-                subscribeToChanges={(cb) => {
-                    listener = cb;
-                    return unsubscribe;
-                }}
-            />,
-        );
-
-        expect(screen.getByText(/Bob — \$40/)).toBeInTheDocument();
-
-        act(() => {
-            listener?.({ eventType: "UPDATE", new: { id: "post-1", cost: 20 } });
-        });
-
-        await waitFor(() => {
-            expect(screen.getByText(/Bob — \$20/)).toBeInTheDocument();
-        });
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
-    it("deleted post is removed from feed on UPDATE event with status deleted", async () => {
-        let listener: ((event: RealTimeEvent) => void) | null = null;
-        const unsubscribe = vi.fn();
-
-        render(
-            <MiniRealTimeFeed
-                initialPosts={[makePost()]}
-                subscribeToChanges={(cb) => {
-                    listener = cb;
-                    return unsubscribe;
-                }}
-            />,
-        );
-
-        expect(screen.getByTestId("post-post-1")).toBeInTheDocument();
-
-        act(() => {
-            listener?.({ eventType: "UPDATE", new: { id: "post-1", status: "deleted" } });
-        });
-
-        await waitFor(() => {
-            expect(screen.queryByTestId("post-post-1")).not.toBeInTheDocument();
-        });
+    it("opens and subscribes to a single posts channel", () => {
+        mount();
+        expect(supabase.channel).toHaveBeenCalledTimes(1);
+        expect(supabase.channel).toHaveBeenCalledWith("feed-posts");
+        expect(subscribe).toHaveBeenCalledTimes(1);
     });
 
-    it("real-time subscription is cleaned up on unmount", () => {
-        const unsubscribe = vi.fn();
-        const subscribe = vi.fn((_cb: (event: RealTimeEvent) => void) => unsubscribe);
+    it("refetches the feed only for an unrelated post", () => {
+        mount();
+        emit({ new: { id: "stranger", author_id: OTHER } });
 
-        const { unmount } = render(
-            <MiniRealTimeFeed initialPosts={[makePost()]} subscribeToChanges={subscribe} />,
+        expect(refetchFeed).toHaveBeenCalledTimes(1);
+        expect(refetchMine).not.toHaveBeenCalled();
+    });
+
+    it("refetches both halves for the viewer's own post", () => {
+        mount();
+        emit({ new: { id: "own-post", author_id: VIEWER } });
+
+        expect(refetchFeed).toHaveBeenCalledTimes(1);
+        expect(refetchMine).toHaveBeenCalledTimes(1);
+    });
+
+    it("refetches both halves for a post the viewer claimed", () => {
+        mount();
+        emit({ new: { id: "claimed-post", author_id: OTHER } });
+
+        expect(refetchMine).toHaveBeenCalledTimes(1);
+    });
+
+    it("reads the row from `old` when a payload has no `new`", () => {
+        mount();
+        // A hard DELETE carries only `old`; reading `new` alone would treat every
+        // deletion as unidentifiable and refetch both halves on every client.
+        emit({ old: { id: "stranger", author_id: OTHER } });
+
+        expect(refetchFeed).toHaveBeenCalledTimes(1);
+        expect(refetchMine).not.toHaveBeenCalled();
+    });
+
+    it("does not reopen the channel when the callbacks change identity", () => {
+        const { rerender } = renderHook(
+            ({ id }) =>
+                useRealtimePosts({
+                    // Fresh function identities on every render, as the feed
+                    // produces whenever its state changes.
+                    refetchFeed: () => refetchFeed(id),
+                    refetchMine: () => refetchMine(id),
+                    affectsViewer,
+                }),
+            { initialProps: { id: 1 } },
         );
 
+        rerender({ id: 2 });
+        rerender({ id: 3 });
+
+        expect(supabase.channel).toHaveBeenCalledTimes(1);
+        expect(supabase.removeChannel).not.toHaveBeenCalled();
+    });
+
+    it("calls the latest callbacks, not the ones captured at subscribe time", () => {
+        const { rerender } = renderHook(
+            ({ id }) =>
+                useRealtimePosts({
+                    refetchFeed: () => refetchFeed(id),
+                    refetchMine: () => refetchMine(id),
+                    affectsViewer,
+                }),
+            { initialProps: { id: 1 } },
+        );
+
+        rerender({ id: 2 });
+        emit({ new: { id: "stranger", author_id: OTHER } });
+
+        expect(refetchFeed).toHaveBeenCalledWith(2);
+    });
+
+    it("removes the channel on unmount", () => {
+        const { unmount } = mount();
         unmount();
-        expect(unsubscribe).toHaveBeenCalledOnce();
+        expect(supabase.removeChannel).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not refetch after unmount", () => {
+        const { unmount } = mount();
+
+        act(() => {
+            handler?.({ new: { id: "stranger", author_id: OTHER } });
+        });
+        unmount();
+        act(() => {
+            vi.advanceTimersByTime(REFETCH_DEBOUNCE_MS * 5);
+        });
+
+        expect(refetchFeed).not.toHaveBeenCalled();
+    });
+
+    it("does no work while the tab is hidden, then catches up when it returns", () => {
+        const visibility = vi.spyOn(document, "visibilityState", "get");
+        mount();
+
+        visibility.mockReturnValue("hidden");
+        act(() => {
+            document.dispatchEvent(new Event("visibilitychange"));
+            handler?.({ new: { id: "stranger", author_id: OTHER } });
+            vi.advanceTimersByTime(REFETCH_DEBOUNCE_MS * 5);
+        });
+        expect(refetchFeed).not.toHaveBeenCalled();
+
+        visibility.mockReturnValue("visible");
+        act(() => {
+            document.dispatchEvent(new Event("visibilitychange"));
+        });
+        expect(refetchFeed).toHaveBeenCalledTimes(1);
+
+        visibility.mockRestore();
     });
 });

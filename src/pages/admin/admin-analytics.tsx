@@ -53,7 +53,6 @@ export function AdminAnalytics() {
             setLoading(false);
         }
         // fetchMetrics/fetchFunnel are stable local declarations with no reactive deps.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
