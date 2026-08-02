@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render as rtlRender, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
-import { GroupCard } from "@/components/app/group-card";
+import { RegularPlayCard } from "@/components/app/regular-play-card";
 import type { FeedPost } from "@/types/feed";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,9 +64,9 @@ beforeEach(() => {
     mockDisconnect.mockClear();
 });
 
-describe("GroupCard", () => {
+describe("RegularPlayCard", () => {
     it("renders the Regular Play card with all required fields", () => {
-        render(<GroupCard post={makePost()} profileComplete={false} />);
+        render(<RegularPlayCard post={makePost()} profileComplete={false} />);
         // Title folds the play type + skill level
         expect(screen.getByText(/Tennis, Regular Play · NTRP 3\.5/i)).toBeInTheDocument();
         // Preferred days + times share a line
@@ -83,18 +83,18 @@ describe("GroupCard", () => {
     it("opens the detail sheet when the card is tapped", async () => {
         const onOpenDetail = vi.fn();
         const post = makePost();
-        render(<GroupCard post={post} profileComplete={false} onOpenDetail={onOpenDetail} />);
+        render(<RegularPlayCard post={post} profileComplete={false} onOpenDetail={onOpenDetail} />);
         await userEvent.click(screen.getByRole("button"));
         expect(onOpenDetail).toHaveBeenCalledWith(post);
     });
 
     it("shows the friend badge for friends' posts", () => {
-        render(<GroupCard post={makePost({ is_friend: true })} profileComplete={false} />);
+        render(<RegularPlayCard post={makePost({ is_friend: true })} profileComplete={false} />);
         expect(screen.getByText("Friend")).toBeInTheDocument();
     });
 
     it("renders no actions menu (clean Regular Play card)", () => {
-        render(<GroupCard post={makePost()} profileComplete={false} currentUserId="viewer-1" />);
+        render(<RegularPlayCard post={makePost()} profileComplete={false} currentUserId="viewer-1" />);
         expect(screen.queryByRole("button", { name: /More options/i })).not.toBeInTheDocument();
         expect(screen.queryByText(/Report issue/i)).not.toBeInTheDocument();
     });

@@ -2,7 +2,7 @@ import { type ReactNode, useCallback, useState } from "react";
 import { useNavigate } from "react-router";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
-import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
+import { RegularPlaySheet } from "@/components/app/regular-play-sheet";
 import { RegularConnectionsSheet } from "@/components/app/regular-connections-sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
@@ -204,7 +204,7 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
                         }}
                     />
                 ) : (
-                    <GroupDetailSheet
+                    <RegularPlaySheet
                         post={detailPost}
                         currentUserId={user?.id}
                         messages={claimMessages}

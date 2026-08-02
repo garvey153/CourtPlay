@@ -72,7 +72,7 @@ describe("PostDetail", () => {
         expect(screen.getByText(/NTRP 3\.5/)).toBeInTheDocument();
     });
 
-    it("renders GroupCard for authenticated user viewing regular_game", async () => {
+    it("renders RegularPlayCard for authenticated user viewing regular_game", async () => {
         mockUseAuth.mockReturnValue({ user: { id: "user-b" }, loading: false, session: {}, signOut: vi.fn() });
         mockUseProfile.mockReturnValue({ profile: { skill_level: "3.5" }, loading: false });
         rpc.mockResolvedValueOnce({ data: regularGame, error: null } as never);

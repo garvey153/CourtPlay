@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { SubCard, gameEndMs, type CardKind } from "@/components/app/sub-card";
-import { GroupCard } from "@/components/app/group-card";
+import { RegularPlayCard } from "@/components/app/regular-play-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
-import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
+import { RegularPlaySheet } from "@/components/app/regular-play-sheet";
 import { RegularConnectionsSheet } from "@/components/app/regular-connections-sheet";
 import { PostDeletedBanner } from "@/components/app/post-deleted-banner";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
@@ -46,7 +46,7 @@ export function Activity() {
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null); // creator view (subs)
     const [regularSheet, setRegularSheet] = useState<MyPost | null>(null); // seeker's regular-post conversations
     // Responder's conversation on a regular post they connected to.
-    const [groupThread, setGroupThread] = useState<{ post: FeedPost; messages: MyClaim["messages"] } | null>(null);
+    const [regularThread, setRegularThread] = useState<{ post: FeedPost; messages: MyClaim["messages"] } | null>(null);
     const [deletedPost, setDeletedPost] = useState<MyPost | null>(null); // undo banner
     const [deletingPost, setDeletingPost] = useState(false);
     const [undoingDelete, setUndoingDelete] = useState(false);
@@ -313,11 +313,11 @@ export function Activity() {
                         <ul className="flex flex-col gap-3">
                             {connections.map((claim) => (
                                 <li key={claim.id}>
-                                    <GroupCard
+                                    <RegularPlayCard
                                         post={claimToFeedPost(claim)}
                                         profileComplete
                                         currentUserId={user?.id}
-                                        onOpenDetail={() => setGroupThread({ post: claimToFeedPost(claim), messages: claim.messages })}
+                                        onOpenDetail={() => setRegularThread({ post: claimToFeedPost(claim), messages: claim.messages })}
                                     />
                                 </li>
                             ))}
@@ -380,11 +380,11 @@ export function Activity() {
             />
         ) : null;
 
-        // Match the feed: regular-play posts use the blue GroupCard, subs the green SubCard.
+        // Match the feed: regular-play posts use the blue RegularPlayCard, subs the green SubCard.
         const renderCard = (post: MyPost, kind: CardKind) => {
             const feedPost = postToFeedPost(post, me ?? { id: "", first_name: "", last_name: "", photo_url: null });
             return post.post_type === "regular_game" ? (
-                <GroupCard post={feedPost} profileComplete currentUserId={user?.id} onOpenDetail={() => setRegularSheet(post)} />
+                <RegularPlayCard post={feedPost} profileComplete currentUserId={user?.id} onOpenDetail={() => setRegularSheet(post)} />
             ) : (
                 <SubCard post={feedPost} currentUserId={user?.id} kindOverride={kind} onOpenDetail={() => setCreatedSheet(post)} />
             );
@@ -523,17 +523,17 @@ export function Activity() {
                 />
             )}
 
-            {groupThread && (
-                <GroupDetailSheet
-                    post={groupThread.post}
+            {regularThread && (
+                <RegularPlaySheet
+                    post={regularThread.post}
                     currentUserId={user?.id}
-                    messages={groupThread.messages}
+                    messages={regularThread.messages}
                     currentUser={
                         profile
                             ? { first_name: profile.first_name, last_name: profile.last_name, photo_url: profile.photo_url }
                             : undefined
                     }
-                    onClose={() => setGroupThread(null)}
+                    onClose={() => setRegularThread(null)}
                     onChange={fetchData}
                 />
             )}

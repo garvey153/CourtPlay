@@ -31,7 +31,7 @@ function timeAgo(dateStr: string): string {
 
 /** Spinner tuned for the brand button (dark strokes on green). */
 
-interface GroupDetailSheetProps {
+interface RegularPlaySheetProps {
     post: FeedPost;
     currentUserId?: string | null;
     onClose: () => void;
@@ -50,8 +50,11 @@ interface GroupDetailSheetProps {
  * person looking to join a group; tapping "Connect" starts a direct conversation
  * with them (no approval). Once connected the sheet becomes a message thread. Same
  * styling as the sub claim sheet.
+ *
+ * This is the RESPONDER's side. The seeker's own view of the same post is
+ * RegularConnectionsSheet — the two are named alike on purpose.
  */
-export function GroupDetailSheet({ post, currentUserId, onClose, onChange, onCancelled, messages, currentUser }: GroupDetailSheetProps) {
+export function RegularPlaySheet({ post, currentUserId, onClose, onChange, onCancelled, messages, currentUser }: RegularPlaySheetProps) {
     const [loading, setLoading] = useState(false);
     const [cancelling, setCancelling] = useState(false);
     const [confirmingCancel, setConfirmingCancel] = useState(false);

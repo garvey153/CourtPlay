@@ -5,7 +5,7 @@ import { Button } from "@/components/base/buttons/button";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { SubCard } from "@/components/app/sub-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
-import { GroupCard } from "@/components/app/group-card";
+import { RegularPlayCard } from "@/components/app/regular-play-card";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
@@ -165,7 +165,7 @@ export function PostDetail() {
                     {post.post_type === "sub_need" ? (
                         <SubCard post={post} currentUserId={user.id} onOpenDetail={() => setClaimOpen(true)} />
                     ) : (
-                        <GroupCard
+                        <RegularPlayCard
                             post={post}
                             profileComplete={profileComplete}
                             currentUserId={user.id}

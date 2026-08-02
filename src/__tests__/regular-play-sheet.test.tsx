@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
+import { RegularPlaySheet } from "@/components/app/regular-play-sheet";
 import { supabase } from "@/lib/supabase";
 import { sendNotification } from "@/lib/notifications";
 import type { FeedPost } from "@/types/feed";
@@ -52,7 +52,7 @@ const regularPost: FeedPost = {
     user_notify_me: false,
 };
 
-describe("GroupDetailSheet (regular-post connections)", () => {
+describe("RegularPlaySheet (regular-post connections)", () => {
     beforeEach(() => {
         rpc.mockReset();
         notify.mockReset();
@@ -64,7 +64,7 @@ describe("GroupDetailSheet (regular-post connections)", () => {
         rpc.mockResolvedValue({ data: { success: true, claim_id: "conn-1" }, error: null } as never);
         const user = userEvent.setup();
 
-        render(<GroupDetailSheet post={regularPost} currentUserId="responder-1" onClose={vi.fn()} />);
+        render(<RegularPlaySheet post={regularPost} currentUserId="responder-1" onClose={vi.fn()} />);
 
         await user.click(screen.getByRole("button", { name: "Connect" }));
 
@@ -89,7 +89,7 @@ describe("GroupDetailSheet (regular-post connections)", () => {
             photo_url: null,
         };
         const { rerender } = render(
-            <GroupDetailSheet post={connected} currentUserId="responder-1" onClose={vi.fn()} messages={[mine]} />,
+            <RegularPlaySheet post={connected} currentUserId="responder-1" onClose={vi.fn()} messages={[mine]} />,
         );
         // Only my own message so far → still "Message Sam…".
         expect(screen.getByPlaceholderText("Message Sam…")).toBeInTheDocument();
@@ -97,13 +97,13 @@ describe("GroupDetailSheet (regular-post connections)", () => {
         // The poster (author) replies → "Reply to Sam…".
         const fromPoster = { ...mine, id: "m2", sender_id: "seeker-1", body: "hey!" };
         rerender(
-            <GroupDetailSheet post={connected} currentUserId="responder-1" onClose={vi.fn()} messages={[mine, fromPoster]} />,
+            <RegularPlaySheet post={connected} currentUserId="responder-1" onClose={vi.fn()} messages={[mine, fromPoster]} />,
         );
         expect(screen.getByPlaceholderText("Reply to Sam…")).toBeInTheDocument();
     });
 
     it("shows no message field before connecting", () => {
-        render(<GroupDetailSheet post={regularPost} currentUserId="responder-1" onClose={vi.fn()} />);
+        render(<RegularPlaySheet post={regularPost} currentUserId="responder-1" onClose={vi.fn()} />);
         expect(screen.getByRole("button", { name: "Connect" })).toBeInTheDocument();
         expect(screen.queryByLabelText("Message")).not.toBeInTheDocument();
     });
@@ -117,7 +117,7 @@ describe("GroupDetailSheet (regular-post connections)", () => {
         const connected = { ...regularPost, user_claim_status: "pending" as const, user_claim_id: "conn-9" };
 
         render(
-            <GroupDetailSheet post={connected} currentUserId="responder-1" onClose={vi.fn()} onCancelled={onCancelled} />,
+            <RegularPlaySheet post={connected} currentUserId="responder-1" onClose={vi.fn()} onCancelled={onCancelled} />,
         );
 
         // Cancel opens a confirmation; no RPC until confirmed.
@@ -136,7 +136,7 @@ describe("GroupDetailSheet (regular-post connections)", () => {
         const user = userEvent.setup();
         const connected = { ...regularPost, user_claim_status: "pending" as const, user_claim_id: "conn-9" };
 
-        render(<GroupDetailSheet post={connected} currentUserId="responder-1" onClose={vi.fn()} />);
+        render(<RegularPlaySheet post={connected} currentUserId="responder-1" onClose={vi.fn()} />);
 
         await user.click(screen.getByRole("button", { name: "Cancel connection" }));
         await user.click(screen.getByRole("button", { name: "No, keep it" }));
@@ -147,7 +147,7 @@ describe("GroupDetailSheet (regular-post connections)", () => {
     it("shows a read-only closed thread once the seeker removed the post", () => {
         const closed = { ...regularPost, status: "deleted", user_claim_status: "pending" as const, user_claim_id: "conn-3" };
         render(
-            <GroupDetailSheet
+            <RegularPlaySheet
                 post={closed}
                 currentUserId="responder-1"
                 onClose={vi.fn()}
