@@ -12,6 +12,7 @@ import { Admin } from "@/pages/admin/index";
 import { AuthCallback } from "@/pages/auth-callback";
 import { Feed } from "@/pages/feed";
 import { ForgotPassword } from "@/pages/forgot-password";
+import { Groups } from "@/pages/groups";
 import { Landing } from "@/pages/landing";
 import { NotFound } from "@/pages/not-found";
 import { Onboarding } from "@/pages/onboarding";
@@ -98,6 +99,14 @@ createRoot(document.getElementById("root")!).render(
                             element={
                                 <ProtectedRoute>
                                     <Profile />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/groups"
+                            element={
+                                <ProtectedRoute>
+                                    <Groups />
                                 </ProtectedRoute>
                             }
                         />

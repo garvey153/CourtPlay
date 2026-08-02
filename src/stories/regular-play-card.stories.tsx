@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { MemoryRouter } from "react-router";
-import { GroupCard } from "@/components/app/group-card";
+import { RegularPlayCard } from "@/components/app/regular-play-card";
 import type { FeedPost } from "@/types/feed";
 
 if (typeof window !== "undefined" && !window.IntersectionObserver) {
@@ -51,8 +51,8 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
 }
 
 const meta = {
-    title: "App/GroupCard",
-    component: GroupCard,
+    title: "App/RegularPlayCard",
+    component: RegularPlayCard,
     tags: ["autodocs"],
     decorators: [
         (Story) => (
@@ -63,7 +63,7 @@ const meta = {
             </MemoryRouter>
         ),
     ],
-} satisfies Meta<typeof GroupCard>;
+} satisfies Meta<typeof RegularPlayCard>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

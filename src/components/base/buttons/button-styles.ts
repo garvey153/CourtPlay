@@ -27,11 +27,11 @@
  * not-found's primary used `hover:` rather than `enabled:hover:`.
  */
 
-/** 12 call sites: components/app/claim-detail-sheet.tsx, components/app/created-detail-sheet.tsx, components/app/group-detail-sheet.tsx, components/app/regular-connections-sheet.tsx, pages/admin/admin-claim-detail-sheet.tsx, pages/admin/admin-claim-filter-sheet.tsx, pages/admin/admin-court-sheet.tsx, pages/admin/admin-post-detail-sheet.tsx, pages/admin/admin-report-detail-sheet.tsx, pages/admin/admin-user-detail-sheet.tsx, pages/admin/admin-user-filter-sheet.tsx, pages/edit-profile.tsx */
+/** 12 call sites: components/app/claim-detail-sheet.tsx, components/app/created-detail-sheet.tsx, components/app/regular-play-sheet.tsx, components/app/regular-connections-sheet.tsx, pages/admin/admin-claim-detail-sheet.tsx, pages/admin/admin-claim-filter-sheet.tsx, pages/admin/admin-court-sheet.tsx, pages/admin/admin-post-detail-sheet.tsx, pages/admin/admin-report-detail-sheet.tsx, pages/admin/admin-user-detail-sheet.tsx, pages/admin/admin-user-filter-sheet.tsx, pages/edit-profile.tsx */
 export const PRIMARY_MD =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 
-/** 12 call sites: components/app/claim-detail-sheet.tsx, components/app/created-detail-sheet.tsx, components/app/group-detail-sheet.tsx, components/app/regular-connections-sheet.tsx, pages/admin/admin-claim-detail-sheet.tsx, pages/admin/admin-claim-filter-sheet.tsx, pages/admin/admin-court-sheet.tsx, pages/admin/admin-post-detail-sheet.tsx, pages/admin/admin-report-detail-sheet.tsx, pages/admin/admin-user-detail-sheet.tsx, pages/admin/admin-user-filter-sheet.tsx, pages/edit-profile.tsx */
+/** 12 call sites: components/app/claim-detail-sheet.tsx, components/app/created-detail-sheet.tsx, components/app/regular-play-sheet.tsx, components/app/regular-connections-sheet.tsx, pages/admin/admin-claim-detail-sheet.tsx, pages/admin/admin-claim-filter-sheet.tsx, pages/admin/admin-court-sheet.tsx, pages/admin/admin-post-detail-sheet.tsx, pages/admin/admin-report-detail-sheet.tsx, pages/admin/admin-user-detail-sheet.tsx, pages/admin/admin-user-filter-sheet.tsx, pages/edit-profile.tsx */
 export const SECONDARY_MD =
     "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 

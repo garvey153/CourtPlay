@@ -13,7 +13,7 @@ function timeAgo(dateStr: string): string {
     return `${Math.floor(hrs / 24)}d ago`;
 }
 
-interface GroupCardProps {
+interface RegularPlayCardProps {
     post: FeedPost;
     /** Whether the viewing user has a complete profile (headline/photo + skill level). */
     profileComplete: boolean;
@@ -23,7 +23,7 @@ interface GroupCardProps {
     onOpenDetail?: (post: FeedPost) => void;
 }
 
-export const GroupCard = memo(function GroupCard({ post, currentUserId, onViewed, onOpenDetail }: GroupCardProps) {
+export const RegularPlayCard = memo(function RegularPlayCard({ post, currentUserId, onViewed, onOpenDetail }: RegularPlayCardProps) {
     const cardRef = useRef<HTMLButtonElement>(null);
     const didTrack = useRef(false);
 

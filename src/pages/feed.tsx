@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { GroupCard } from "@/components/app/group-card";
+import { RegularPlayCard } from "@/components/app/regular-play-card";
 import { FeedFilters, activeCount } from "@/components/app/feed-filters";
 import { SubCard, gameEndMs } from "@/components/app/sub-card";
 import { ClaimCancelledBanner } from "@/components/app/claim-cancelled-banner";
 import { PostSuccessBanner } from "@/components/app/post-success-banner";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
-import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
+import { RegularPlaySheet } from "@/components/app/regular-play-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
 import { RegularConnectionsSheet } from "@/components/app/regular-connections-sheet";
 import { ClaimReceivedBanner } from "@/components/app/claim-received-banner";
@@ -597,7 +597,7 @@ export function Feed() {
                                 </li>
                             ) : (
                                 <li key={post.id}>
-                                    <GroupCard
+                                    <RegularPlayCard
                                         post={post}
                                         profileComplete={profileComplete}
                                         currentUserId={user?.id}
@@ -640,7 +640,7 @@ export function Feed() {
                         }}
                     />
                 ) : (
-                    <GroupDetailSheet
+                    <RegularPlaySheet
                         post={detailPost}
                         currentUserId={user?.id}
                         messages={myClaims.find((c) => c.post_id === detailPost.id)?.messages}

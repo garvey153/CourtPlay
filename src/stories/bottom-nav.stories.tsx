@@ -24,6 +24,10 @@ export const FeedActive: Story = {
     parameters: { path: "/feed" },
 };
 
+export const GroupsActive: Story = {
+    parameters: { path: "/groups" },
+};
+
 export const ActivityActive: Story = {
     parameters: { path: "/activity" },
 };
