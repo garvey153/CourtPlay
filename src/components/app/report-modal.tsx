@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { FIELD } from "@/components/base/input/field-styles";
+import { PRIMARY_SM_FULL as PRIMARY_BTN, SECONDARY_SM_FULL_HOVERFILL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 export type ReportReason = "spam" | "inappropriate" | "incorrect_info" | "other";
 export type ReportTargetType = "post" | "user";
@@ -22,10 +23,6 @@ const REASON_OPTIONS: { value: ReportReason; label: string }[] = [
 // Themed field surface — matches the create-post form and the feedback sheet.
 
 // Flat button styles shared with the other bottom sheets.
-const SECONDARY_BTN =
-    "flex w-full items-center justify-center rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50";
-const PRIMARY_BTN =
-    "flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 
 
 interface ReportModalProps {

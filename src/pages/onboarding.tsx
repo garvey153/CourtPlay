@@ -18,6 +18,7 @@ import { skillLabel } from "@/utils/skill-label";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeActionError } from "@/utils/load-error";
 import { FIELD_AUTOFILL, FIELD_SELECT } from "@/components/base/input/field-styles";
+import { PRIMARY_SM_GAP1_5 as PRIMARY_BTN, SECONDARY_SM_GAP1_HOVERFILL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 // Matches the Profile page's follow rows: "First L." plus the skill label.
 function rowName(first: string, last: string, level: string | null): string {
@@ -28,13 +29,9 @@ function rowName(first: string, last: string, level: string | null): string {
 
 // Design-system Secondary button (Figma node 32:542, mirrors post-new.tsx's SECONDARY_BTN):
 // tertiary fill, no ring/border, secondary text — used for the Back buttons.
-const SECONDARY_BTN =
-    "flex items-center justify-center gap-1 rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800";
 
 // Design-system Primary button (Figma node 32:506, mirrors post-new.tsx's PRIMARY_BTN):
 // brand fill with dark on-brand text — used for Continue / Get started.
-const PRIMARY_BTN =
-    "flex items-center justify-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 
 const SKILL_LEVELS = [
     { id: "2.5", label: "2.5 — Beginner" },

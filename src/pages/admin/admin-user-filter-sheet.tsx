@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { cx } from "@/utils/cx";
+import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 export type UserStatus = "all" | "active" | "suspended";
 
@@ -24,10 +25,6 @@ const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
     { value: "suspended", label: "Deactivated" },
 ];
 
-const PRIMARY_BTN =
-    "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
-const SECONDARY_BTN =
-    "flex items-center justify-center rounded-lg bg-tertiary px-4 py-2.5 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
 
 /**
  * Option row matching the feed filters' row style, but with a circular green

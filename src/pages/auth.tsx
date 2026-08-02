@@ -10,16 +10,14 @@ import { validateRedirect } from "@/utils/validate-redirect";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeAuthError } from "@/utils/load-error";
 import { FIELD } from "@/components/base/input/field-styles";
+import { GOOGLE_FULL as GOOGLE_BTN, PRIMARY_H9_FULL as PRIMARY_BTN } from "@/components/base/buttons/button-styles";
 
 type Mode = "signup" | "signin";
 
 // Brand-green CTA (dark on-brand text), matching the app's other primary buttons.
-const PRIMARY_BTN =
-    "flex h-9 w-full items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 // Field fill matches the design (lighter than the page) — overrides the base Input's bg-primary.
 // The design uses a white Google button even in dark mode (standard Google branding);
 // the app is dark-only, so force the light treatment with important overrides.
-const GOOGLE_BTN = "w-full !bg-white !text-gray-700 !ring-1 !ring-black/10 hover:!bg-gray-50";
 
 
 /**

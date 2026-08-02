@@ -4,6 +4,7 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { BetaTag } from "@/components/app/beta-tag";
 import { InstallAppButton } from "@/components/app/install-app-button";
 import { cx } from "@/utils/cx";
+import { PRIMARY_LG_GAP1 as PRIMARY_BTN } from "@/components/base/buttons/button-styles";
 
 // Hero headlines, rendered as two lines. One is picked at random on each page load.
 const HEADLINES: [string, string][] = [
@@ -18,8 +19,6 @@ const HEADLINES: [string, string][] = [
 // Design-system Primary button (Figma node 32:86, size M): bg/brand fill with
 // on-brand text. Width is set per-usage. Token mapping: bg/brand #1ab363 →
 // brand-500, bg/brand-hover #118c4a → brand-600, text/on-brand #08180e → neutral-950.
-const PRIMARY_BTN =
-    "flex items-center justify-center gap-1 rounded-lg bg-brand-500 px-5 py-3 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600";
 
 // Static preview cards for the hero — mirrors the feed SubCard styling, with a
 // mix of open games and one already claimed (dimmed, grey) for variety.
