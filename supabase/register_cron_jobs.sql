@@ -60,7 +60,8 @@ begin
         'game-reminders',
         'friend-expiry-alerts',
         'nudge-unresponded-claims',
-        'expire-regular-game-posts'
+        'expire-regular-game-posts',
+        'auto-expire-posts'
     ] loop
         begin
             perform cron.unschedule(j);
@@ -156,8 +157,10 @@ select cron.schedule('nudge-unresponded-claims', '0 */4 * * *', $job$
     );
 $job$);
 
--- Pure SQL, no key needed. Without this, regular_game posts with a past
--- expires_at stay 'active' forever and keep showing in the feed.
+-- Pure SQL, no key needed. get_feed and get_profile both gate on expires_at
+-- directly, so a regular_game post leaves both views the moment it lapses; this
+-- job exists to settle the status column afterwards (within 24h) so admin and
+-- anything else reading status agrees with what members actually see.
 select cron.schedule('expire-regular-game-posts', '0 0 * * *', $job$
     update public.posts
     set status = 'expired'
@@ -167,7 +170,27 @@ select cron.schedule('expire-regular-game-posts', '0 0 * * *', $job$
       and expires_at < now()
 $job$);
 
--- Expect six rows: the five above plus the pre-existing auto-expire-posts.
+-- Pure SQL. Dated (sub_need) posts expire when their game starts.
+--
+-- game_date/game_time are Westport-local wall-clock, so they MUST be read in
+-- America/New_York. This job originally compared the naive (game_date +
+-- game_time) against now() in a UTC session, which read a 6pm NY game as 18:00
+-- UTC — 2pm NY — and expired posts four hours before their game began (five
+-- under EST). Since get_feed gates on status = 'active', the post vanished from
+-- the feed before the game it was advertising. Fixed in 20260802000000.
+--
+-- coalesce on game_time so a dated post with no time expires at end of day
+-- rather than never, matching get_feed, get_profile and SubCard's gameEndMs.
+select cron.schedule('auto-expire-posts', '*/15 * * * *', $job$
+    update public.posts
+    set status = 'expired'
+    where status = 'active'
+      and post_type = 'sub_need'
+      and game_date is not null
+      and ((game_date + coalesce(game_time, time '23:59')) at time zone 'America/New_York') < now()
+$job$);
+
+-- Expect six rows: the six registered above.
 select jobname, schedule, active from cron.job order by jobname;
 
 -- Should return ZERO rows — proof no literal key landed in a system table.
