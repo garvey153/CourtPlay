@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { FIELD } from "@/components/base/input/field-styles";
 
 export type ReportReason = "spam" | "inappropriate" | "incorrect_info" | "other";
 export type ReportTargetType = "post" | "user";
@@ -19,7 +20,6 @@ const REASON_OPTIONS: { value: ReportReason; label: string }[] = [
 ];
 
 // Themed field surface — matches the create-post form and the feedback sheet.
-const FIELD = "bg-tertiary ring-neutral-600";
 
 // Flat button styles shared with the other bottom sheets.
 const SECONDARY_BTN =

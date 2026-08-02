@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { NOTIFICATION_TYPES } from "@/lib/notifications";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeActionError } from "@/utils/load-error";
+import { FIELD, FIELD_SELECT } from "@/components/base/input/field-styles";
 
 // Descriptive NTRP labels — match the create-post form's contents exactly.
 const SKILL_LEVELS = [
@@ -26,11 +27,6 @@ const SKILL_LEVELS = [
     { id: "5.0", label: "NTRP 5.0 to 7.0 (Pro)" },
 ];
 
-
-// Field surfaces — match the create-post form. Inputs get a bg-tertiary fill with
-// a neutral-600 border; dropdown triggers drop the ring/shadow.
-const FIELD_INPUT = "bg-tertiary ring-neutral-600";
-const FIELD_SELECT = "bg-tertiary ring-0 shadow-none";
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
@@ -405,7 +401,7 @@ export function EditProfile() {
                             label="Phone number"
                             type="tel"
                             size="sm"
-                            wrapperClassName={FIELD_INPUT}
+                            wrapperClassName={FIELD}
                             placeholder="+1 (203) 555-0100"
                             value={form.phone}
                             onChange={(v) => set("phone", v)}
@@ -414,7 +410,7 @@ export function EditProfile() {
                         <Input
                             label="Venmo handle"
                             size="sm"
-                            wrapperClassName={FIELD_INPUT}
+                            wrapperClassName={FIELD}
                             placeholder="@yourhandle"
                             value={form.venmo_handle}
                             onChange={(v) => set("venmo_handle", v)}

@@ -6,11 +6,11 @@ import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { supabase } from "@/lib/supabase";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { FIELD } from "@/components/base/input/field-styles";
 
 // Themed field surface — bg-tertiary fill with a neutral-600 ring — matching the
 // create-post form (Figma 145:1006). Applied to the Input wrapper and, via
 // textAreaClassName, to the details TextArea.
-const FIELD = "bg-tertiary ring-neutral-600";
 
 // Action buttons match the create-post form: flat brand primary + flat bg-tertiary
 // secondary (the base Button's secondary variant uses a ring, which is wrong here).

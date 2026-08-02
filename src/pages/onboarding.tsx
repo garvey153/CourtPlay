@@ -17,6 +17,7 @@ import { menuWidth } from "@/utils/menu-width";
 import { skillLabel } from "@/utils/skill-label";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeActionError } from "@/utils/load-error";
+import { FIELD_AUTOFILL, FIELD_SELECT } from "@/components/base/input/field-styles";
 
 // Matches the Profile page's follow rows: "First L." plus the skill label.
 function rowName(first: string, last: string, level: string | null): string {
@@ -24,14 +25,6 @@ function rowName(first: string, last: string, level: string | null): string {
     const skill = skillLabel(level);
     return skill ? `${name} · ${skill}` : name;
 }
-
-// Field styling shared with the create-post sheet (see post-new.tsx): inputs get a
-// tertiary fill with a neutral border; dropdown triggers get the fill only (no ring).
-// The autofill overrides keep Chrome from painting the input white (and highlighting
-// the related name field) when a phone number is autofilled.
-const FIELD =
-    "bg-tertiary ring-neutral-600 [&_input:-webkit-autofill]:[-webkit-box-shadow:inset_0_0_0_1000px_var(--color-bg-tertiary)] [&_input:-webkit-autofill]:[-webkit-text-fill-color:var(--color-text-primary)]";
-const FIELD_SELECT = "bg-tertiary ring-0 shadow-none";
 
 // Design-system Secondary button (Figma node 32:542, mirrors post-new.tsx's SECONDARY_BTN):
 // tertiary fill, no ring/border, secondary text — used for the Back buttons.
@@ -380,7 +373,7 @@ export function Onboarding() {
                             onChange={(v) => set("first_name", v)}
                             isRequired
                             size="sm"
-                            wrapperClassName={FIELD}
+                            wrapperClassName={FIELD_AUTOFILL}
                         />
                         <Input
                             label="Last name"
@@ -389,7 +382,7 @@ export function Onboarding() {
                             onChange={(v) => set("last_name", v)}
                             isRequired
                             size="sm"
-                            wrapperClassName={FIELD}
+                            wrapperClassName={FIELD_AUTOFILL}
                         />
                         <Select
                             label="Skill level (NTRP)"
@@ -413,7 +406,7 @@ export function Onboarding() {
                             onChange={(v) => set("phone", v)}
                             hint="Encrypted and only visible after a claim is approved."
                             size="sm"
-                            wrapperClassName={FIELD}
+                            wrapperClassName={FIELD_AUTOFILL}
                             className="mt-4"
                         />
                         <Input
@@ -423,7 +416,7 @@ export function Onboarding() {
                             onChange={(v) => set("venmo_handle", v)}
                             hint="Used to generate payment requests. Encrypted and only visible after approval."
                             size="sm"
-                            wrapperClassName={FIELD}
+                            wrapperClassName={FIELD_AUTOFILL}
                         />
                         <MultiSelect
                             label="Preferred courts (optional)"
@@ -459,7 +452,7 @@ export function Onboarding() {
                             value={form.pro_preference}
                             onChange={(v) => set("pro_preference", v)}
                             size="sm"
-                            wrapperClassName={FIELD}
+                            wrapperClassName={FIELD_AUTOFILL}
                         />
                         {/* Switch on the left; the combined label sits in a flex-1 column so it
                             wraps within the same left/right margins as the fields above. */}
@@ -566,7 +559,7 @@ export function Onboarding() {
                                     onChange={(v) => setInviteEmail(v)}
                                     isRequired
                                     size="sm"
-                                    wrapperClassName={FIELD}
+                                    wrapperClassName={FIELD_AUTOFILL}
                                 />
                                 <Button
                                     color="primary"
