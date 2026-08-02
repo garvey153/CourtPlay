@@ -27,12 +27,6 @@ function rowName(first: string, last: string, level: string | null): string {
     return skill ? `${name} · ${skill}` : name;
 }
 
-// Design-system Secondary button (Figma node 32:542, mirrors post-new.tsx's SECONDARY_BTN):
-// tertiary fill, no ring/border, secondary text — used for the Back buttons.
-
-// Design-system Primary button (Figma node 32:506, mirrors post-new.tsx's PRIMARY_BTN):
-// brand fill with dark on-brand text — used for Continue / Get started.
-
 const SKILL_LEVELS = [
     { id: "2.5", label: "2.5 — Beginner" },
     { id: "3.0", label: "3.0 — Beginner+" },

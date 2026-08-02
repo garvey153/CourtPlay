@@ -1,8 +1,6 @@
 import { ArrowLeft } from "@untitledui/icons";
 import { useNavigate } from "react-router";
-import { PRIMARY_MD_FULL_PLAINHOVER as PRIMARY_BTN, SECONDARY_MD_FULL_GAP2 as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
-
-// Shared button styles, matching the auth / landing CTAs (green with dark on-brand text).
+import { PRIMARY_MD_FULL as PRIMARY_BTN, SECONDARY_MD_FULL_GAP2 as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 export function NotFound() {
     const navigate = useNavigate();

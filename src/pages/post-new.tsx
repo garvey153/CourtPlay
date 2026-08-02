@@ -22,9 +22,6 @@ import { LoadingState, Spinner } from "@/components/application/loading-indicato
 import { FIELD, FIELD_SELECT } from "@/components/base/input/field-styles";
 import { PRIMARY_SM as PRIMARY_BTN, SECONDARY_SM_HOVERFILL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
-// Design-system buttons (node 32-85): primary = bg/brand + on-brand text;
-// secondary = bg/tertiary + secondary text.
-
 // Play type supersedes `format` for sub_need posts; drives the feed card title.
 const PLAY_TYPES = [
     { id: "doubles", label: "Doubles" },
