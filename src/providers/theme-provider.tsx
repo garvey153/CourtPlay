@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 type Theme = "light" | "dark" | "system";
 
@@ -48,9 +48,19 @@ export const ThemeProvider = ({ children, defaultTheme = "system", storageKey = 
         return defaultTheme;
     });
 
+    // Which class is currently on <html>, so that a change to darkModeClass can
+    // take the previous one back off. Toggling the new class alone would leave
+    // both applied.
+    const appliedClass = useRef<string | null>(null);
+
     useEffect(() => {
         const applyTheme = () => {
             const root = window.document.documentElement;
+
+            if (appliedClass.current !== null && appliedClass.current !== darkModeClass) {
+                root.classList.remove(appliedClass.current);
+            }
+            appliedClass.current = darkModeClass;
 
             if (theme === "system") {
                 const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -76,7 +86,7 @@ export const ThemeProvider = ({ children, defaultTheme = "system", storageKey = 
 
         mediaQuery.addEventListener("change", handleChange);
         return () => mediaQuery.removeEventListener("change", handleChange);
-    }, [theme]);
+    }, [theme, darkModeClass, storageKey]);
 
     return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
 };
