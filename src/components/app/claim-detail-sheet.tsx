@@ -12,7 +12,7 @@ import { ReportModal } from "./report-modal";
 import { ThreadMessage } from "./thread-message";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeActionError } from "@/utils/load-error";
-import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD_BARE as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
+import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 const MESSAGE_MAX = 150;
 
@@ -437,7 +437,7 @@ export function ClaimDetailSheet({
                                 type="button"
                                 onClick={handleCancel}
                                 disabled={cancelling}
-                                className={`${SECONDARY_BTN} flex items-center justify-center`}
+                                className={SECONDARY_BTN}
                             >
                                 {cancelling ? (
                                     <Spinner size="sm" tone="neutral" />
