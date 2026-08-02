@@ -547,9 +547,15 @@ export function PostNew() {
                 onClick={closeForm}
                 aria-hidden="true"
             />
-            {/* Full-height sheet: spans the whole screen with the form scrolling inside. */}
+            {/* Full-height sheet: spans the whole screen with the form scrolling inside.
+                The inset-top padding sits on this container rather than on the header:
+                the close button is absolutely positioned against the header's border
+                box, so padding the header alone would push the title down and leave the
+                button under the status bar. Padding here moves the whole header as a
+                unit. Only matters in the installed PWA — Safari's own chrome reserves
+                the space, which is why this looked fine in the browser. */}
             <div className="pointer-events-none fixed inset-0 z-50 flex justify-center">
-                <div className="pointer-events-auto flex w-full max-w-lg flex-col overflow-hidden bg-secondary shadow-xl">
+                <div className="pointer-events-auto flex w-full max-w-lg flex-col overflow-hidden bg-secondary pt-[env(safe-area-inset-top)] shadow-xl">
                     {/* Sheet header — pinned */}
                     <div className="relative shrink-0 px-5 pt-[18px] pb-5">
                         <h1 className="pr-9 text-lg font-semibold text-primary">
@@ -565,8 +571,11 @@ export function PostNew() {
                         </button>
                     </div>
 
-                    {/* Scrolling form body */}
-                    <div className="flex-1 overflow-y-auto overscroll-y-contain px-5 pb-8">
+                    {/* Scrolling form body. The submit/cancel buttons are the last thing
+                        in here rather than a pinned footer, so the bottom inset has to be
+                        part of this padding — plain pb-8 (32px) is less than the ~34px
+                        home indicator and left Cancel sitting under it in standalone. */}
+                    <div className="flex-1 overflow-y-auto overscroll-y-contain px-5 pb-[calc(2rem_+_var(--safe-bottom))]">
                 {!loaded ? (
                     // Edit mode: hold the sheet until the post loads so the create form never flashes.
                     <LoadingState variant="block" className="py-20" />
