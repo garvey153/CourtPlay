@@ -19,6 +19,7 @@ import { FeedbackBanner } from "@/components/app/feedback-banner";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
+import { useRealtimePosts, type PostChangeRow } from "@/hooks/use-realtime-posts";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { REJECTION_REASONS } from "@/types/claims";
@@ -117,6 +118,19 @@ export function Feed() {
     // Debounce timers per post ID
     const viewTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
+    // Post IDs the viewer authored or claimed — the only ones whose changes can
+    // affect the banners, so the only ones worth re-running the "mine" RPCs for.
+    // Refs, not state: the realtime change handler reads them at event time and
+    // must not cause the channel to be re-opened when they change.
+    const myPostIds = useRef<Set<string>>(new Set());
+    const myClaimPostIds = useRef<Set<string>>(new Set());
+    useEffect(() => {
+        myPostIds.current = new Set(myPosts.map((p) => p.id));
+    }, [myPosts]);
+    useEffect(() => {
+        myClaimPostIds.current = new Set(myClaims.map((c) => c.post_id));
+    }, [myClaims]);
+
     // `silent` keeps the current list on screen for a pull-to-refresh. Without
     // it a retry cleared the error while loading was already false, so the empty
     // state flashed up mid-request.
@@ -192,18 +206,24 @@ export function Feed() {
             .then(({ data }) => setCourts(data ?? []));
     }, []);
 
-    // Real-time subscription — refetch on any posts change
-    useEffect(() => {
-        const channel = supabase
-            .channel("feed-posts")
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "posts" },
-                () => { fetchPosts(); fetchMyPosts(); },
-            )
-            .subscribe();
-        return () => { supabase.removeChannel(channel); };
-    }, [fetchPosts, fetchMyPosts]);
+    // The claim banners and the created/connections sheets only go stale when the
+    // changed post is the viewer's own or one they claimed. For everybody else's
+    // posts — nearly all of them — refetching the feed alone is correct, which
+    // takes three RPCs per event down to one.
+    const affectsViewer = useCallback(
+        (row: PostChangeRow | null) =>
+            row?.author_id === user?.id ||
+            (!!row?.id && (myPostIds.current.has(row.id) || myClaimPostIds.current.has(row.id))),
+        [user?.id],
+    );
+
+    const refetchFeedSilently = useCallback(() => fetchPosts({ silent: true }), [fetchPosts]);
+
+    useRealtimePosts({
+        refetchFeed: refetchFeedSilently,
+        refetchMine: fetchMyPosts,
+        affectsViewer,
+    });
 
     // View tracking — called by each card when it enters the viewport
     const handleViewed = useCallback(
