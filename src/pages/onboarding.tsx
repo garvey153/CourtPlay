@@ -18,7 +18,7 @@ import { skillLabel } from "@/utils/skill-label";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeActionError } from "@/utils/load-error";
 import { FIELD_AUTOFILL, FIELD_SELECT } from "@/components/base/input/field-styles";
-import { PRIMARY_SM_GAP1_5 as PRIMARY_BTN, SECONDARY_SM_GAP1_HOVERFILL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
+import { PRIMARY_SM_GAP1_5 as PRIMARY_BTN, SECONDARY_SM_GAP1 as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 // Matches the Profile page's follow rows: "First L." plus the skill label.
 function rowName(first: string, last: string, level: string | null): string {

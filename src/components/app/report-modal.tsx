@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { FIELD } from "@/components/base/input/field-styles";
-import { PRIMARY_SM_FULL as PRIMARY_BTN, SECONDARY_SM_FULL_HOVERFILL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
+import { PRIMARY_SM_FULL as PRIMARY_BTN, SECONDARY_SM_FULL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 export type ReportReason = "spam" | "inappropriate" | "incorrect_info" | "other";
 export type ReportTargetType = "post" | "user";
