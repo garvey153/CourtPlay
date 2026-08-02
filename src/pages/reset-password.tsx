@@ -6,12 +6,12 @@ import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeAuthError } from "@/utils/load-error";
+import { FIELD } from "@/components/base/input/field-styles";
 
 // Brand-green CTA (dark on-brand text), matching auth.tsx.
 const PRIMARY_BTN =
     "flex h-9 w-full items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 // Field fill matches the design (lighter than the page) — overrides the base Input's bg-primary.
-const FIELD_WRAPPER = "bg-tertiary ring-neutral-600";
 
 
 type Status = "verifying" | "ready" | "invalid";
@@ -154,7 +154,7 @@ export function ResetPassword() {
                         value={password}
                         onChange={setPassword}
                         size="sm"
-                        wrapperClassName={FIELD_WRAPPER}
+                        wrapperClassName={FIELD}
                     />
                     <Input
                         label="Confirm password"
@@ -163,7 +163,7 @@ export function ResetPassword() {
                         value={confirmPassword}
                         onChange={setConfirmPassword}
                         size="sm"
-                        wrapperClassName={FIELD_WRAPPER}
+                        wrapperClassName={FIELD}
                         isInvalid={confirmPassword.length > 0 && confirmPassword !== password}
                         hint={confirmPassword.length > 0 && confirmPassword !== password ? "Those don't match" : undefined}
                     />

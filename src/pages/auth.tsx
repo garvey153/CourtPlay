@@ -9,6 +9,7 @@ import { cx } from "@/utils/cx";
 import { validateRedirect } from "@/utils/validate-redirect";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeAuthError } from "@/utils/load-error";
+import { FIELD } from "@/components/base/input/field-styles";
 
 type Mode = "signup" | "signin";
 
@@ -16,7 +17,6 @@ type Mode = "signup" | "signin";
 const PRIMARY_BTN =
     "flex h-9 w-full items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 // Field fill matches the design (lighter than the page) — overrides the base Input's bg-primary.
-const FIELD_WRAPPER = "bg-tertiary ring-neutral-600";
 // The design uses a white Google button even in dark mode (standard Google branding);
 // the app is dark-only, so force the light treatment with important overrides.
 const GOOGLE_BTN = "w-full !bg-white !text-gray-700 !ring-1 !ring-black/10 hover:!bg-gray-50";
@@ -207,7 +207,7 @@ export function AuthScreen() {
                         value={email}
                         onChange={setEmail}
                         size="sm"
-                        wrapperClassName={FIELD_WRAPPER}
+                        wrapperClassName={FIELD}
                     />
                     <Input
                         label="Password"
@@ -216,7 +216,7 @@ export function AuthScreen() {
                         value={password}
                         onChange={setPassword}
                         size="sm"
-                        wrapperClassName={FIELD_WRAPPER}
+                        wrapperClassName={FIELD}
                     />
 
                     {isSignup ? (
@@ -227,7 +227,7 @@ export function AuthScreen() {
                             value={confirmPassword}
                             onChange={setConfirmPassword}
                             size="sm"
-                            wrapperClassName={FIELD_WRAPPER}
+                            wrapperClassName={FIELD}
                             isInvalid={confirmPassword.length > 0 && confirmPassword !== password}
                             hint={confirmPassword.length > 0 && confirmPassword !== password ? "Those don't match" : undefined}
                         />

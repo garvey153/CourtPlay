@@ -6,12 +6,7 @@ import { supabase } from "@/lib/supabase";
 import type { AdminCourtRow, CustomCourtRow } from "./admin-court-card";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeActionError } from "@/utils/load-error";
-
-// Field surface per the design: text inputs get a bg/tertiary fill with a
-// border/tertiary outline. Same value the Create Post form and every other
-// app screen uses — without it these two inputs fell back to the library
-// default and were the only app-level fields in the codebase left unstyled.
-const FIELD = "bg-tertiary ring-neutral-600";
+import { FIELD } from "@/components/base/input/field-styles";
 
 const PRIMARY_BTN =
     "flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";

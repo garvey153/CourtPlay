@@ -19,11 +19,7 @@ import type { Selection } from "react-aria-components";
 import { cx } from "@/utils/cx";
 import { menuWidth, multiMenuWidth } from "@/utils/menu-width";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
-
-// Field surface per the design: text inputs get a bg/tertiary fill with a
-// border/tertiary outline; dropdowns get the fill only (no border).
-const FIELD = "bg-tertiary ring-neutral-600";
-const FIELD_SELECT = "bg-tertiary ring-0 shadow-none";
+import { FIELD, FIELD_SELECT } from "@/components/base/input/field-styles";
 
 // Design-system buttons (node 32-85): primary = bg/brand + on-brand text;
 // secondary = bg/tertiary + secondary text.

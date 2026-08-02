@@ -6,9 +6,9 @@ import { TextArea } from "@/components/base/textarea/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
+import { FIELD } from "@/components/base/input/field-styles";
 
 // Themed field surface — matches the create-post form and the feedback sheet.
-const FIELD = "bg-tertiary ring-neutral-600";
 
 // Flat button styles shared with the feedback / report sheets.
 const PRIMARY_BTN =
