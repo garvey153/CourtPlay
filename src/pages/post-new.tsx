@@ -20,7 +20,7 @@ import { cx } from "@/utils/cx";
 import { menuWidth, multiMenuWidth } from "@/utils/menu-width";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 import { FIELD, FIELD_SELECT } from "@/components/base/input/field-styles";
-import { PRIMARY_SM as PRIMARY_BTN, SECONDARY_SM_HOVERFILL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
+import { PRIMARY_SM as PRIMARY_BTN, SECONDARY_SM as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 // Play type supersedes `format` for sub_need posts; drives the feed card title.
 const PLAY_TYPES = [

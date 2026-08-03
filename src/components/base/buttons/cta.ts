@@ -20,4 +20,4 @@ export const PRIMARY_CTA =
 
 /** The quieter counterpart, as used by the activity empty states. */
 export const SECONDARY_CTA =
-    "inline-flex items-center justify-center gap-1 rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50";
+    "inline-flex items-center justify-center gap-1 rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";

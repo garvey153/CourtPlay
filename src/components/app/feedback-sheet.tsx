@@ -7,7 +7,7 @@ import { TextArea } from "@/components/base/textarea/textarea";
 import { supabase } from "@/lib/supabase";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { FIELD } from "@/components/base/input/field-styles";
-import { PRIMARY_SM_FULL as PRIMARY_BTN, SECONDARY_SM_FULL_HOVERFILL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
+import { PRIMARY_SM_FULL as PRIMARY_BTN, SECONDARY_SM_FULL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 // Themed field surface — bg-tertiary fill with a neutral-600 ring — matching the
 // create-post form (Figma 145:1006). Applied to the Input wrapper and, via
