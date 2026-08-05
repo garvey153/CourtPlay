@@ -6,10 +6,9 @@ import { useProfile } from "@/hooks/use-profile";
 import { BottomNav } from "@/components/layout/bottom-nav";
 
 /**
- * The bottom nav had no test at all before the Groups tab was added (Figma
- * 178:1737), so this covers the tab set, the ordering, and the active rule —
- * including the one non-obvious case: another player's profile must NOT light
- * up the Profile tab, only your own.
+ * Covers the tab set, the ordering, and the active rule — including the one
+ * non-obvious case: another player's profile must NOT light up the Profile tab,
+ * only your own.
  *
  * Active state is asserted via aria-current rather than the Tailwind classes that
  * also express it — the attribute is the stable contract and survives a palette
@@ -47,35 +46,23 @@ beforeEach(() => {
 });
 
 describe("BottomNav", () => {
-    it("renders the four base tabs in the designed order", () => {
+    it("renders the three base tabs in the designed order", () => {
         renderAt("/feed");
         const labels = screen.getAllByRole("link").map((a) => a.textContent);
-        expect(labels).toEqual(["Feed", "Groups", "Activity", "Profile"]);
+        expect(labels).toEqual(["Feed", "Activity", "Profile"]);
     });
 
-    it("points Groups at /groups", () => {
-        renderAt("/feed");
-        expect(screen.getByRole("link", { name: "Groups" })).toHaveAttribute("href", "/groups");
-    });
-
-    it("marks only Groups active on /groups", () => {
-        renderAt("/groups");
-        expect(isActive("Groups")).toBe(true);
+    it("marks only the current tab active", () => {
+        renderAt("/activity");
+        expect(isActive("Activity")).toBe(true);
         expect(isActive("Feed")).toBe(false);
-        expect(isActive("Activity")).toBe(false);
         expect(isActive("Profile")).toBe(false);
-    });
-
-    it("keeps Groups active on a nested group route", () => {
-        // startsWith matching, so a future /groups/:id keeps the tab lit.
-        renderAt("/groups/abc-123");
-        expect(isActive("Groups")).toBe(true);
     });
 
     it("marks Profile active on your own profile", () => {
         renderAt("/profile/me");
         expect(isActive("Profile")).toBe(true);
-        expect(isActive("Groups")).toBe(false);
+        expect(isActive("Feed")).toBe(false);
     });
 
     it("does NOT mark Profile active on another player's profile", () => {
@@ -88,7 +75,7 @@ describe("BottomNav", () => {
         expect(isActive("Profile")).toBe(true);
     });
 
-    it("hides Admin from non-admins and shows it to admins as a fifth tab", () => {
+    it("hides Admin from non-admins and shows it to admins as a fourth tab", () => {
         const { unmount } = renderAt("/feed");
         expect(screen.queryByRole("link", { name: "Admin" })).toBeNull();
         unmount();
@@ -96,7 +83,7 @@ describe("BottomNav", () => {
         mockUser(true);
         renderAt("/admin");
         const labels = screen.getAllByRole("link").map((a) => a.textContent);
-        expect(labels).toEqual(["Feed", "Groups", "Activity", "Profile", "Admin"]);
+        expect(labels).toEqual(["Feed", "Activity", "Profile", "Admin"]);
         expect(isActive("Admin")).toBe(true);
     });
 });
