@@ -314,7 +314,10 @@ export function GroupFormSheet({ groupId, onClose, onSaved }: GroupFormSheetProp
                                             {nameOf(creator)}
                                             {creator.skill_level && ` · ${skillLabel(creator.skill_level)}`}
                                         </span>
-                                        <span className="shrink-0 text-sm text-brand-500">Owner</span>
+                                        {/* Tertiary, not brand: the Remove links beside it are
+                                            actions, and Owner is a label. Green would read as
+                                            something you could tap. */}
+                                        <span className="shrink-0 text-sm text-tertiary">Owner</span>
                                     </li>
                                 )}
                                 {members.map((m) => (
