@@ -23,12 +23,24 @@ interface GroupDetailSheetProps {
 /**
  * A group's roster, and the only place its lifecycle is driven.
  *
- * Three exits, all confirmed, and which one you get depends on who you are and
- * whether the group is still open:
+ * Only members ever see this: Profile is the sole entry point, and get_group
+ * returns null unless is_group_member passes. So every exit below is a member's
+ * exit; the question is only whether they created the group and whether it is
+ * still open.
  *
  *   creator, open    Delete group  — their only way out. Ends it for everyone.
- *   member, open     Leave group   — available at any time.
- *   anyone, closed   Remove group  — clears the tombstone from your profile.
+ *   member,  open    Leave group   — available at any time.
+ *   member,  closed  Remove group  — clears the tombstone from their profile.
+ *
+ * There is no creator/closed row, and it is not an omission: close_group stamps
+ * the creator's own membership removed in the same transaction, and Profile
+ * filters removed rows out, so their group leaves their list the moment they
+ * delete it. A closed group is only ever reachable by someone else's member.
+ *
+ * The branch below still tests `closed` before `is_creator`. That ordering is a
+ * fallback for a state the UI cannot currently produce, not a live decision — if
+ * the unreachable case ever became reachable, "Remove group" is the right thing
+ * to offer.
  *
  * "Delete group" runs close_group rather than a hard delete: the row survives so
  * the other members keep seeing it, marked closed, until each of them clears it.
@@ -101,8 +113,9 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
     const memberCount = group?.members.length ?? 0;
     const closed = !!group?.is_closed;
     /**
-     * Which exit this viewer gets, and what to warn them about. Closed wins over
-     * role: once a group is over, everyone left is just clearing a tombstone.
+     * Which exit this viewer gets, and what to warn them about. See the note on
+     * the component: the `closed` branch is reachable only by a member of a group
+     * someone else deleted, never by its creator.
      *
      * "Delete group" runs close_group, not a hard delete — the row survives so
      * the other members keep seeing it, marked closed, until each of them clears
