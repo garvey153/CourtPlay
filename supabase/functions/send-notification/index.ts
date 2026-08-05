@@ -20,7 +20,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  * responses, including the rejection path, so freshness is checkable with a
  * curl and an anon key.
  */
-const FN_BUILD = "2026-07-30g";
+const FN_BUILD = "2026-08-04a";
 
 interface TemplateConfig {
     title: string;
