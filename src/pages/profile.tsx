@@ -332,12 +332,12 @@ export function Profile() {
                 {/* Groups (own profile only) */}
                 {profile.is_own_profile && (
                     <div className="mt-6">
-                        <div className="mb-3 flex items-center justify-between">
+                        <div className="mb-1.5 flex items-center justify-between">
                             <p className="text-sm font-semibold text-tertiary">Groups ({groups.length})</p>
                             <button
                                 type="button"
                                 onClick={() => setFormOpen({})}
-                                className="text-sm font-semibold text-brand-secondary transition duration-100 ease-linear hover:text-primary"
+                                className="text-sm text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
                             >
                                 Create group
                             </button>
@@ -361,8 +361,11 @@ export function Profile() {
                                         // A closed group is a tombstone until its remaining members
                                         // clear it, so it gets the same dimmed treatment an expired
                                         // post does rather than being hidden or looking live.
+                                        // Gaps are set per-pair rather than one uniform gap: the
+                                        // name and its detail line read as a single block, while
+                                        // the face pile needs air to separate from them.
                                         className={cx(
-                                            "flex w-full flex-col gap-2 rounded-lg bg-secondary p-4 text-left transition duration-100 ease-linear hover:bg-secondary_hover",
+                                            "flex w-full flex-col rounded-lg bg-secondary p-4 text-left transition duration-100 ease-linear hover:bg-secondary_hover",
                                             g.is_closed && "opacity-60",
                                         )}
                                     >
@@ -374,14 +377,12 @@ export function Profile() {
                                                 </span>
                                             )}
                                         </div>
-                                        <div>
-                                            <p className="truncate text-sm text-tertiary">
-                                                {[g.details, `${g.member_count} player${g.member_count === 1 ? "" : "s"}`]
-                                                    .filter(Boolean)
-                                                    .join(" \u00b7 ")}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
+                                        <p className="mt-0.5 truncate text-sm text-secondary">
+                                            {[g.details, `${g.member_count} player${g.member_count === 1 ? "" : "s"}`]
+                                                .filter(Boolean)
+                                                .join(" \u00b7 ")}
+                                        </p>
+                                        <div className="mt-3 flex items-center gap-2">
                                             <div className="flex shrink-0 -space-x-2">
                                                 {g.members.slice(0, 5).map((m) => (
                                                     <Avatar
@@ -394,7 +395,7 @@ export function Profile() {
                                                     />
                                                 ))}
                                             </div>
-                                            <span className="min-w-0 truncate text-sm text-tertiary">
+                                            <span className="min-w-0 truncate text-sm text-secondary">
                                                 {describeMembers(g.members)}
                                             </span>
                                         </div>
@@ -407,14 +408,16 @@ export function Profile() {
 
                 {/* Following + search (own profile only) */}
                 {profile.is_own_profile && (
-                    <div className="mt-4">
+                    <div className="mt-6">
                         <p className="mb-1.5 text-sm font-semibold text-tertiary">
                             Following ({profile.following_count})
                         </p>
 
-                        {/* Search field — matches the filter sheet's location search */}
-                        <div className="mb-4 flex h-9 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
-                            <SearchSm className="size-6 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
+                        {/* Search field per design-system 407:765 — 20x20 icon, and the
+                            filled variant because this sits on the page background rather
+                            than an already-elevated surface. */}
+                        <div className="mb-3 flex h-9 items-center gap-2 rounded-lg border border-neutral-700 bg-tertiary px-3 shadow-xs">
+                            <SearchSm className="size-5 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
                             <input
                                 className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
                                 placeholder="Search for players to follow..."
@@ -441,24 +444,30 @@ export function Profile() {
                             ) : searchResults.length === 0 ? (
                                 <p className="py-3 text-sm text-tertiary">No players found.</p>
                             ) : (
-                                <div className="flex flex-col">
+                                /* Search results sit where the Following list does, so they
+                                   take the same card treatment — otherwise typing changes
+                                   the shape of the section, not just its contents. */
+                                <div className="flex flex-col gap-2">
                                     {searchResults.map((su) => (
-                                        <div key={su.id} className="flex items-center gap-2 py-2.5">
+                                        <div
+                                            key={su.id}
+                                            className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2.5"
+                                        >
                                             <Link to={`/profile/${su.id}`}>
                                                 <RowAvatar photo={su.photo_url} name={su.first_name} />
                                             </Link>
                                             <Link
                                                 to={`/profile/${su.id}`}
-                                                className="min-w-0 flex-1 truncate text-sm text-primary hover:underline"
+                                                className="min-w-0 flex-1 truncate text-sm text-secondary hover:underline"
                                             >
                                                 {rowName(su.first_name, su.last_name, su.skill_level)}
                                             </Link>
                                             {su.is_following ? (
-                                                <span className="shrink-0 text-sm font-medium text-tertiary">Following</span>
+                                                <span className="shrink-0 text-sm text-tertiary">Following</span>
                                             ) : (
                                                 <button
                                                     onClick={() => handleFollow(su.id)}
-                                                    className="shrink-0 text-sm font-medium text-brand-secondary hover:text-brand-secondary_hover"
+                                                    className="shrink-0 text-sm text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
                                                 >
                                                     Follow
                                                 </button>
@@ -470,21 +479,27 @@ export function Profile() {
                         ) : profile.following_list.length === 0 ? (
                             <p className="py-1 text-sm text-tertiary">You're not following anyone yet.</p>
                         ) : (
-                            <div className="flex flex-col">
+                            /* Followed players are cards, not bare rows (588:6254) — the
+                               same surface the group cards use, so the two lists read as
+                               one system rather than two. */
+                            <div className="flex flex-col gap-2">
                                 {profile.following_list.map((fu) => (
-                                    <div key={fu.id} className="flex items-center gap-2 py-2.5">
+                                    <div
+                                        key={fu.id}
+                                        className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2.5"
+                                    >
                                         <Link to={`/profile/${fu.id}`}>
                                             <RowAvatar photo={fu.photo_url} name={fu.first_name} />
                                         </Link>
                                         <Link
                                             to={`/profile/${fu.id}`}
-                                            className="min-w-0 flex-1 truncate text-sm text-primary hover:underline"
+                                            className="min-w-0 flex-1 truncate text-sm text-secondary hover:underline"
                                         >
                                             {rowName(fu.first_name, fu.last_name, fu.skill_level)}
                                         </Link>
                                         <button
                                             onClick={() => handleUnfollow(fu.id)}
-                                            className="shrink-0 text-sm font-medium text-brand-secondary hover:text-brand-secondary_hover"
+                                            className="shrink-0 text-sm text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
                                         >
                                             Unfollow
                                         </button>
