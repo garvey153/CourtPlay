@@ -13,7 +13,7 @@ import { LoadingState } from "@/components/application/loading-indicator/spinner
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 import { GroupFormSheet } from "@/components/app/group-form-sheet";
 import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
-import { describeMembers, type GroupDetail, type GroupSummary } from "@/types/groups";
+import { describeMembers, type GroupSummary } from "@/types/groups";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -113,8 +113,8 @@ export function Profile() {
     // with other players' profiles and has no business returning them.
     const [groups, setGroups] = useState<GroupSummary[]>([]);
     const [openGroupId, setOpenGroupId] = useState<string | null>(null);
-    /** `{}` opens the create form; `{group}` opens it in edit mode. */
-    const [formOpen, setFormOpen] = useState<{ group?: GroupDetail } | null>(null);
+    /** `{}` opens the create form; `{groupId}` opens it in edit mode. */
+    const [formOpen, setFormOpen] = useState<{ groupId?: string } | null>(null);
 
     const fetchGroups = useCallback(async () => {
         const { data, error: rpcError } = await supabase.rpc("get_my_groups");
@@ -550,20 +550,20 @@ export function Profile() {
                     onChanged={fetchGroups}
                     onEdit={(g) => {
                         setOpenGroupId(null);
-                        setFormOpen({ group: g });
+                        setFormOpen({ groupId: g.id });
                     }}
                 />
             )}
 
             {formOpen && (
                 <GroupFormSheet
-                    group={formOpen.group}
+                    groupId={formOpen.groupId}
                     onClose={() => setFormOpen(null)}
                     onSaved={(id) => {
                         setFormOpen(null);
                         fetchGroups();
-                        // Straight into the group, so adding people after
-                        // creating one is a step rather than a hunt.
+                        // Straight into the group, so adding people after creating
+                        // one is a step rather than a hunt.
                         setOpenGroupId(id);
                     }}
                 />

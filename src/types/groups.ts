@@ -27,6 +27,11 @@ export interface GroupSummary {
      * are actually IN must filter these out.
      */
     my_removed_at: string | null;
+    /**
+     * Whether the caller removed themselves. Leaving is not news to the person
+     * who did it, so the feed suppresses the banner when this is true.
+     */
+    removed_by_me: boolean;
     member_count: number;
     members: GroupMemberBrief[];
 }
