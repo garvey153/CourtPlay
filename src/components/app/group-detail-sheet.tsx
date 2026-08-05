@@ -142,8 +142,8 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
                 confirmCta: "Yes, delete",
                 disclaimer:
                     memberCount <= 1
-                        ? "Deleting removes this group for good. Nobody else is in it."
-                        : "Deleting closes the group for everyone. It stays on their profile, marked closed, until they clear it.",
+                        ? "Delete group removes this group for good. Nobody else is in it."
+                        : "Delete group closes the group for everyone. It stays on their profiles, marked closed, until they remove it.",
             }
           : {
                 label: "Leave group",

@@ -582,12 +582,15 @@ export function Profile() {
                 <GroupFormSheet
                     groupId={formOpen.groupId}
                     onClose={() => setFormOpen(null)}
-                    onSaved={(id) => {
+                    onSaved={() => {
+                        // Saving returns to Profile — both the form and the sheet
+                        // behind it close. Reopening the group afterwards used to
+                        // make sense when members were added from the sheet; they
+                        // are added in this form now, so it only put a sheet in
+                        // the way of the list you wanted to see.
                         setFormOpen(null);
+                        setOpenGroupId(null);
                         fetchGroups();
-                        // Straight into the group, so adding people after creating
-                        // one is a step rather than a hunt.
-                        setOpenGroupId(id);
                     }}
                 />
             )}
