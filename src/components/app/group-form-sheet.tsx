@@ -42,7 +42,7 @@ export function GroupFormSheet({ group, onClose, onSaved }: GroupFormSheetProps)
 
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<Candidate[]>([]);
-    const [searching, setSearching] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -61,14 +61,14 @@ export function GroupFormSheet({ group, onClose, onSaved }: GroupFormSheetProps)
         const q = query.trim();
         if (q.length < 2) {
             setResults([]);
-            setSearching(false);
+            setSearchLoading(false);
             return;
         }
-        setSearching(true);
+        setSearchLoading(true);
         timer.current = setTimeout(async () => {
             const { data } = await supabase.rpc("search_users", { p_query: q });
             setResults(Array.isArray(data) ? (data as Candidate[]) : []);
-            setSearching(false);
+            setSearchLoading(false);
         }, 300);
         return () => {
             if (timer.current) clearTimeout(timer.current);
@@ -128,6 +128,10 @@ export function GroupFormSheet({ group, onClose, onSaved }: GroupFormSheetProps)
         onSaved(groupId);
     };
 
+    // Same threshold as Profile's follow search: below two characters the
+    // member list stays put rather than flickering on every keystroke.
+    const isSearching = query.trim().length >= 2;
+
     const alreadyIn = (id: string) => members.some((m) => m.id === id) || group?.members.some((m) => m.id === id && m.is_creator);
 
     return (
@@ -173,63 +177,89 @@ export function GroupFormSheet({ group, onClose, onSaved }: GroupFormSheetProps)
                     />
 
                     <div className="flex flex-col gap-2">
-                        <Input
-                            label="Group members"
-                            icon={SearchSm}
-                            placeholder="Search players"
-                            value={query}
-                            onChange={setQuery}
-                            size="sm"
-                            wrapperClassName={FIELD}
-                        />
+                        <label htmlFor="group-member-search" className="text-sm font-medium text-secondary">
+                            Group members
+                        </label>
 
-                        {searching && <p className="text-sm text-tertiary">Searching…</p>}
-                        {!searching && query.trim().length >= 2 && results.length === 0 && (
-                            <p className="text-sm text-tertiary">No players match that.</p>
-                        )}
+                        {/* Hand-rolled rather than the base Input, which has no trailing
+                            slot for the clear button. Filled variant: this sits on
+                            bg-secondary inside the modal, the lighter elevated surface. */}
+                        <div className="flex h-9 items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600">
+                            <SearchSm className="size-5 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
+                            <input
+                                id="group-member-search"
+                                className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
+                                placeholder="Search players"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                autoComplete="off"
+                            />
+                            {query && (
+                                <button
+                                    type="button"
+                                    aria-label="Clear search"
+                                    onClick={() => setQuery("")}
+                                    className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-primary"
+                                >
+                                    <XClose className="size-5" strokeWidth={1} />
+                                </button>
+                            )}
+                        </div>
 
-                        {results.length > 0 && (
+                        {/* Searching REPLACES the member list rather than stacking above
+                            it, matching Profile's follow search — otherwise the same
+                            person can appear twice, once as a result and once as a
+                            member, and it is unclear which list a tap acts on. */}
+                        {isSearching ? (
+                            searchLoading ? (
+                                <p className="py-1 text-sm text-tertiary">Searching…</p>
+                            ) : results.length === 0 ? (
+                                <p className="py-1 text-sm text-tertiary">No players match that.</p>
+                            ) : (
+                                <ul className="flex flex-col gap-1">
+                                    {results.map((r) => (
+                                        <li key={r.id}>
+                                            <button
+                                                type="button"
+                                                disabled={alreadyIn(r.id)}
+                                                onClick={() => add(r)}
+                                                className="flex w-full items-center gap-3 rounded-lg px-1 py-2 text-left transition duration-100 ease-linear enabled:hover:bg-secondary_hover disabled:opacity-50"
+                                            >
+                                                <MemberAvatar member={r} />
+                                                <span className="min-w-0 flex-1 truncate text-sm text-secondary">
+                                                    {nameOf(r)}
+                                                    {r.skill_level && ` · ${skillLabel(r.skill_level)}`}
+                                                </span>
+                                                <span className="shrink-0 text-sm text-brand-500">
+                                                    {alreadyIn(r.id) ? "Added" : "Add"}
+                                                </span>
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )
+                        ) : members.length === 0 ? (
+                            <p className="py-1 text-sm text-tertiary">No players added yet.</p>
+                        ) : (
                             <ul className="flex flex-col gap-1">
-                                {results.map((r) => (
-                                    <li key={r.id}>
+                                {members.map((m) => (
+                                    <li key={m.id} className="flex items-center gap-3 px-1 py-2">
+                                        <MemberAvatar member={m} />
+                                        <span className="min-w-0 flex-1 truncate text-sm text-secondary">
+                                            {nameOf(m)}
+                                            {m.skill_level && ` · ${skillLabel(m.skill_level)}`}
+                                        </span>
                                         <button
                                             type="button"
-                                            disabled={alreadyIn(r.id)}
-                                            onClick={() => add(r)}
-                                            className="flex w-full items-center gap-3 rounded-lg px-1 py-2 text-left transition duration-100 ease-linear enabled:hover:bg-secondary_hover disabled:opacity-50"
+                                            onClick={() => setMembers((list) => list.filter((x) => x.id !== m.id))}
+                                            className="shrink-0 text-sm text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
                                         >
-                                            <MemberAvatar member={r} />
-                                            <span className="min-w-0 flex-1 truncate text-sm text-secondary">
-                                                {nameOf(r)}
-                                                {r.skill_level && ` · ${skillLabel(r.skill_level)}`}
-                                            </span>
-                                            <span className="shrink-0 text-sm font-semibold text-brand-secondary">
-                                                {alreadyIn(r.id) ? "Added" : "Add"}
-                                            </span>
+                                            Remove
                                         </button>
                                     </li>
                                 ))}
                             </ul>
                         )}
-
-                        <ul className="flex flex-col gap-1">
-                            {members.map((m) => (
-                                <li key={m.id} className="flex items-center gap-3 px-1 py-2">
-                                    <MemberAvatar member={m} />
-                                    <span className="min-w-0 flex-1 truncate text-sm text-secondary">
-                                        {nameOf(m)}
-                                        {m.skill_level && ` · ${skillLabel(m.skill_level)}`}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setMembers((list) => list.filter((x) => x.id !== m.id))}
-                                        className="shrink-0 text-sm font-semibold text-brand-secondary transition duration-100 ease-linear hover:text-primary"
-                                    >
-                                        Remove
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
                     </div>
                 </div>
 
