@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
 import { SearchSm, XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Input } from "@/components/base/input/input";
@@ -132,35 +131,29 @@ export function GroupFormSheet({ group, onClose, onSaved }: GroupFormSheetProps)
     const alreadyIn = (id: string) => members.some((m) => m.id === id) || group?.members.some((m) => m.id === id && m.is_creator);
 
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="group-form-title"
-        >
-            <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
-
-            <motion.div
-                className="relative flex max-h-[90vh] w-full max-w-md flex-col gap-4 rounded-t-2xl bg-secondary px-5 pt-5 pb-[calc(2rem_+_var(--safe-bottom))] shadow-xl sm:rounded-2xl"
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                transition={{ type: "spring", damping: 38, stiffness: 420 }}
-            >
-                <div className="flex items-start justify-between gap-3">
-                    <h2 id="group-form-title" className="text-md font-semibold text-primary">
+        <div className="fixed inset-0 z-50 flex justify-center" role="dialog" aria-modal="true" aria-labelledby="group-form-title">
+            {/* Full-page modal, matching Create Post (590:6475). The inset-top padding
+                sits on this container rather than the header: the close button is
+                absolutely positioned against the header's border box, so padding the
+                header alone would push the title down and leave the button under the
+                status bar. */}
+            <div className="flex w-full max-w-lg flex-col overflow-hidden bg-secondary pt-[env(safe-area-inset-top)] shadow-xl">
+                <div className="relative shrink-0 px-5 pt-[18px] pb-5">
+                    <h1 id="group-form-title" className="pr-9 text-lg font-semibold text-primary">
                         {editing ? "Edit group" : "Create group"}
-                    </h2>
+                    </h1>
                     <button
                         type="button"
                         onClick={onClose}
                         aria-label="Close"
-                        className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                        className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-lg text-tertiary transition duration-100 ease-linear hover:text-secondary"
                     >
-                        <XClose className="size-5" strokeWidth={1} />
+                        <XClose className="size-5" />
                     </button>
                 </div>
 
-                <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+                {/* 24px between fields per the design's Content gap. */}
+                <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pb-6">
                     <Input
                         label="Group name"
                         placeholder="e.g. The Racquettes"
@@ -240,17 +233,21 @@ export function GroupFormSheet({ group, onClose, onSaved }: GroupFormSheetProps)
                     </div>
                 </div>
 
-                {error && <p className="text-sm text-error-primary">{error}</p>}
-
-                <div className="flex flex-col gap-3">
-                    <button type="button" onClick={save} disabled={saving || !name.trim()} className={PRIMARY_BTN}>
-                        {saving ? <Spinner size="sm" tone="on-brand" /> : editing ? "Save changes" : "Create group"}
-                    </button>
-                    <button type="button" onClick={onClose} disabled={saving} className={SECONDARY_BTN}>
-                        Cancel
-                    </button>
+                {/* Pinned footer, so the actions stay reachable however long the member
+                    list grows. pb carries the home-indicator inset — the buttons are the
+                    last thing on screen, so nothing else reserves that space. */}
+                <div className="shrink-0 px-5 pt-2 pb-[calc(1.5rem_+_var(--safe-bottom))]">
+                    {error && <p className="mb-3 text-sm text-error-primary">{error}</p>}
+                    <div className="flex flex-col gap-3">
+                        <button type="button" onClick={save} disabled={saving || !name.trim()} className={PRIMARY_BTN}>
+                            {saving ? <Spinner size="sm" tone="on-brand" /> : editing ? "Save changes" : "Create group"}
+                        </button>
+                        <button type="button" onClick={onClose} disabled={saving} className={SECONDARY_BTN}>
+                            Cancel
+                        </button>
+                    </div>
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 }
