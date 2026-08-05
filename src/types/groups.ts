@@ -21,6 +21,12 @@ export interface GroupSummary {
     closed_at: string | null;
     /** When the caller joined. Drives the "you were added" feed banner. */
     joined_at: string;
+    /**
+     * Set when the caller was removed. get_my_groups returns removals from the
+     * last 30 days purely so the feed can say so — anything listing groups you
+     * are actually IN must filter these out.
+     */
+    my_removed_at: string | null;
     member_count: number;
     members: GroupMemberBrief[];
 }

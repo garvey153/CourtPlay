@@ -53,6 +53,9 @@ const group = (over: Record<string, unknown> = {}) => ({
     details: "Westport Social League",
     is_creator: true,
     is_closed: false,
+    closed_at: null,
+    joined_at: "2026-08-04T00:00:00Z",
+    my_removed_at: null,
     member_count: 3,
     members: [
         { id: "u1", first_name: "Chris", last_name: "Bell", photo_url: null },
@@ -175,6 +178,17 @@ describe("profile page", () => {
         expect(await screen.findByText("Closed")).toBeInTheDocument();
         // Still listed — a closed group stays until its remaining members clear it.
         expect(screen.getByText("The Racquettes")).toBeInTheDocument();
+    });
+
+    it("does not list a group you were removed from", async () => {
+        // get_my_groups returns recent removals so the FEED can show a banner;
+        // Profile must not list them as groups you're in.
+        setupMock({ ...completeProfile, is_own_profile: true }, [
+            group({ my_removed_at: "2026-08-04T00:00:00Z" }),
+        ]);
+        renderProfile("me");
+        expect(await screen.findByText("No groups yet")).toBeInTheDocument();
+        expect(screen.queryByText("The Racquettes")).toBeNull();
     });
 
     it("does NOT show groups on someone else's profile", async () => {

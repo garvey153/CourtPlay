@@ -122,7 +122,10 @@ export function Profile() {
             console.error("get_my_groups failed:", rpcError);
             return;
         }
-        setGroups(Array.isArray(data) ? (data as GroupSummary[]) : []);
+        // get_my_groups also returns groups you were recently REMOVED from, so
+        // the feed can say so. Those must not be listed as groups you're in.
+        const all = Array.isArray(data) ? (data as GroupSummary[]) : [];
+        setGroups(all.filter((g) => !g.my_removed_at));
     }, []);
     const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);

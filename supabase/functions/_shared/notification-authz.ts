@@ -101,8 +101,19 @@ export async function resolveUserNotification(
             .maybeSingle();
 
         if (!group) return deny(404, "Group not found");
+
+        // The creator, or an admin acting through the admin Groups tab. Both can
+        // already change this group's membership, so neither gains reach here
+        // that they did not already have.
         if (group.created_by !== callerId) {
-            return deny(403, "Only the group creator may trigger this");
+            const { data: caller } = await supabase
+                .from("users")
+                .select("is_admin")
+                .eq("id", callerId)
+                .maybeSingle();
+            if (!caller?.is_admin) {
+                return deny(403, "Only the group creator or an admin may trigger this");
+            }
         }
 
         const actor_name = await firstName(supabase, callerId);

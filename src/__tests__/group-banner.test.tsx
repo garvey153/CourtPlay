@@ -12,6 +12,7 @@ const group: GroupSummary = {
     is_closed: false,
     closed_at: null,
     joined_at: "2026-08-04T00:00:00Z",
+    my_removed_at: null,
     member_count: 3,
     members: [],
 };
@@ -45,6 +46,22 @@ describe("GroupBanner", () => {
         expect(screen.getByText(/stay on your profile until you remove it/)).toBeInTheDocument();
         await user.click(screen.getByRole("button", { name: "Remove it" }));
         expect(onView).toHaveBeenCalledOnce();
+    });
+
+    it("tells you when you've been removed, with no action to take", () => {
+        render(
+            <GroupBanner
+                group={{ ...group, my_removed_at: "2026-08-04T00:00:00Z" }}
+                kind="removed"
+                onDismiss={vi.fn()}
+                onView={vi.fn()}
+            />,
+        );
+        expect(screen.getByText(/no longer in The Racquettes/)).toBeInTheDocument();
+        // Nothing to open — the group is gone from their profile — so the only
+        // affordances are the two dismissals.
+        expect(screen.queryByRole("button", { name: "View group" })).toBeNull();
+        expect(screen.getAllByRole("button")).toHaveLength(2);
     });
 
     it("dismisses from either the X or the text button", async () => {

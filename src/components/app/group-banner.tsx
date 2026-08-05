@@ -3,7 +3,7 @@ import type { GroupSummary } from "@/types/groups";
 
 interface GroupBannerProps {
     group: GroupSummary;
-    kind: "added" | "closed";
+    kind: "added" | "closed" | "removed";
     onDismiss: () => void;
     /** Opens the group on the profile. */
     onView: () => void;
@@ -12,14 +12,11 @@ interface GroupBannerProps {
 /**
  * Top-of-feed notice that a group you're in changed.
  *
- * Only two kinds, and the omission is deliberate: there is no "you were removed"
- * banner, because a removal leaves no membership row to derive one from. That
- * case is push/email only, and the group vanishing from your profile is the
- * in-app signal. A banner for it would need an events table.
+ * Removal is derivable because the membership row is kept and stamped rather
+ * than deleted (20260804000004) — the row is the event record, so no separate
+ * events table was needed.
  */
 export function GroupBanner({ group, kind, onDismiss, onView }: GroupBannerProps) {
-    const added = kind === "added";
-
     return (
         <div className="relative rounded-lg bg-brand-800 p-4">
             <button
@@ -32,12 +29,14 @@ export function GroupBanner({ group, kind, onDismiss, onView }: GroupBannerProps
             </button>
 
             <p className="pr-6 text-sm font-semibold text-primary">
-                {added ? "You're in a group" : "A group closed"}
+                {kind === "added" ? "You're in a group" : kind === "removed" ? "Group update" : "A group closed"}
             </p>
             <p className="mt-1 text-sm text-secondary">
-                {added
+                {kind === "added"
                     ? `You've been added to ${group.name}.`
-                    : `${group.name} has been closed. It'll stay on your profile until you remove it.`}
+                    : kind === "removed"
+                      ? `You're no longer in ${group.name}.`
+                      : `${group.name} has been closed. It'll stay on your profile until you remove it.`}
             </p>
 
             <div className="mt-3 flex items-center gap-3">
@@ -48,13 +47,17 @@ export function GroupBanner({ group, kind, onDismiss, onView }: GroupBannerProps
                 >
                     Dismiss
                 </button>
-                <button
-                    type="button"
-                    onClick={onView}
-                    className="text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
-                >
-                    {added ? "View group" : "Remove it"}
-                </button>
+                {/* A removed player has nothing left to open, so the notice is
+                    informational and carries no action beyond dismissing it. */}
+                {kind !== "removed" && (
+                    <button
+                        type="button"
+                        onClick={onView}
+                        className="text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
+                    >
+                        {kind === "added" ? "View group" : "Remove it"}
+                    </button>
+                )}
             </div>
         </div>
     );

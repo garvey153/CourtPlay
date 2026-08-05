@@ -463,12 +463,22 @@ export function Feed() {
     const BANNER_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
     const fresh = (iso: string | null) => !!iso && Date.now() - new Date(iso).getTime() < BANNER_WINDOW_MS;
 
+    // get_my_groups also returns recent removals so this banner is possible, so
+    // every other derivation here has to exclude them explicitly.
     const addedGroups = groups.filter(
         // Not your own group: you already know, you made it.
-        (g) => !g.is_creator && !g.is_closed && fresh(g.joined_at) && !dismissedClaims.has(`group_added:${g.id}`),
+        (g) =>
+            !g.my_removed_at &&
+            !g.is_creator &&
+            !g.is_closed &&
+            fresh(g.joined_at) &&
+            !dismissedClaims.has(`group_added:${g.id}`),
     );
     const closedGroups = groups.filter(
-        (g) => g.is_closed && fresh(g.closed_at) && !dismissedClaims.has(`group_closed:${g.id}`),
+        (g) => !g.my_removed_at && g.is_closed && fresh(g.closed_at) && !dismissedClaims.has(`group_closed:${g.id}`),
+    );
+    const removedGroups = groups.filter(
+        (g) => fresh(g.my_removed_at) && !dismissedClaims.has(`group_removed:${g.id}`),
     );
 
     const declinedBanners = myClaims.filter(
@@ -565,6 +575,15 @@ export function Feed() {
                         group={g}
                         kind="added"
                         onDismiss={() => dismissBanner(`group_added:${g.id}`)}
+                        onView={() => navigate("/profile/me")}
+                    />
+                ))}
+                {removedGroups.map((g) => (
+                    <GroupBanner
+                        key={`group_removed:${g.id}`}
+                        group={g}
+                        kind="removed"
+                        onDismiss={() => dismissBanner(`group_removed:${g.id}`)}
                         onView={() => navigate("/profile/me")}
                     />
                 ))}
