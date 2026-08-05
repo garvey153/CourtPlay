@@ -1,17 +1,15 @@
 import { Link, useLocation } from "react-router";
-import { Activity, Atom01, FaceSmile, Home01, Users01 } from "@untitledui/icons";
+import { Activity, Atom01, Home01, User01 } from "@untitledui/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { cx } from "@/utils/cx";
 
-// Order and icons per Figma 178:1737. Five tabs fit: measured in WebKit against
-// the compiled stylesheet at 320px — the narrowest phone — each cell is 64px and
-// the widest label ("Activity") is 44px, so nothing clips or overflows.
+// Order and icons per Figma 588:6254 (Mobile_profile_v2). Groups moved onto the
+// Profile tab, so it is not a destination of its own.
 const baseTabs = [
     { label: "Feed", href: "/feed", icon: Home01 },
-    { label: "Groups", href: "/groups", icon: Users01 },
     { label: "Activity", href: "/activity", icon: Activity },
-    { label: "Profile", href: "/profile/me", icon: FaceSmile },
+    { label: "Profile", href: "/profile/me", icon: User01 },
 ];
 
 export function BottomNav() {
@@ -19,7 +17,7 @@ export function BottomNav() {
     const { user } = useAuth();
     const { profile } = useProfile();
 
-    // Admins get a fifth tab that opens the admin view (defaults to Analytics).
+    // Admins get a fourth tab that opens the admin view (defaults to Analytics).
     const tabs = profile?.is_admin
         ? [...baseTabs, { label: "Admin", href: "/admin", icon: Atom01 }]
         : baseTabs;
