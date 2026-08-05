@@ -13,6 +13,7 @@ const group: GroupSummary = {
     closed_at: null,
     joined_at: "2026-08-04T00:00:00Z",
     my_removed_at: null,
+    removed_by_me: false,
     member_count: 3,
     members: [],
 };

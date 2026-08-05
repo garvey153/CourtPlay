@@ -478,7 +478,9 @@ export function Feed() {
         (g) => !g.my_removed_at && g.is_closed && fresh(g.closed_at) && !dismissedClaims.has(`group_closed:${g.id}`),
     );
     const removedGroups = groups.filter(
-        (g) => fresh(g.my_removed_at) && !dismissedClaims.has(`group_removed:${g.id}`),
+        // Not removed_by_me: leaving is not news to the person who did it, and
+        // removed_at alone cannot tell the two apart.
+        (g) => !g.removed_by_me && fresh(g.my_removed_at) && !dismissedClaims.has(`group_removed:${g.id}`),
     );
 
     const declinedBanners = myClaims.filter(
