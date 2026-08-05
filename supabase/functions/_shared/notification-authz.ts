@@ -48,6 +48,8 @@ const USER_TRIGGERABLE = new Set([
     "friend_new_post",
     "cost_changed",
     "price_drop",
+    "group_added",
+    "group_removed",
 ]);
 
 const deny = (status: number, error: string): Resolution => ({ ok: false, status, error });
@@ -71,12 +73,67 @@ export async function resolveUserNotification(
         // Display-only values the server cannot recover after the fact. See the
         // note on the cost cases below.
         old_cost?: string | null;
+        group_id?: string | null;
+        target_user_id?: string | null;
     },
 ): Promise<Resolution> {
     const type = input.notification_type;
 
     if (!USER_TRIGGERABLE.has(type)) {
         return deny(403, `${type} cannot be triggered by a user`);
+    }
+
+    // ── Group-anchored types ────────────────────────────────────────────────
+    //
+    // The caller names the recipient, which the other branches never do — but a
+    // removal leaves no membership row to look up, so the server cannot re-derive
+    // who it was about. The authorisation is therefore on the GROUP: only its
+    // creator may trigger these, and only about their own group. That bounds the
+    // blast radius to people the creator could already notify by adding them.
+    if (type === "group_added" || type === "group_removed") {
+        if (!input.group_id) return deny(400, `${type} requires group_id`);
+        if (!input.target_user_id) return deny(400, `${type} requires target_user_id`);
+
+        const { data: group } = await supabase
+            .from("groups")
+            .select("id, name, created_by, closed_at")
+            .eq("id", input.group_id)
+            .maybeSingle();
+
+        if (!group) return deny(404, "Group not found");
+
+        // The creator, or an admin acting through the admin Groups tab. Both can
+        // already change this group's membership, so neither gains reach here
+        // that they did not already have.
+        if (group.created_by !== callerId) {
+            const { data: caller } = await supabase
+                .from("users")
+                .select("is_admin")
+                .eq("id", callerId)
+                .maybeSingle();
+            if (!caller?.is_admin) {
+                return deny(403, "Only the group creator or an admin may trigger this");
+            }
+        }
+
+        const actor_name = await firstName(supabase, callerId);
+        const data: Record<string, string> = {
+            group_name: (group.name as string) ?? "a group",
+            actor_name,
+        };
+        // Distinguishes "you were removed" from "the group closed" — same type,
+        // because both mean the same thing to the person receiving it.
+        if (type === "group_removed" && group.closed_at) data.closed = "1";
+
+        return {
+            ok: true,
+            value: {
+                recipients: [input.target_user_id],
+                data,
+                post_id: null,
+                claim_id: null,
+            },
+        };
     }
 
     // ── Claim-anchored types ────────────────────────────────────────────────

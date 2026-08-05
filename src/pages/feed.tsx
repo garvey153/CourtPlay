@@ -12,6 +12,7 @@ import { RegularConnectionsSheet } from "@/components/app/regular-connections-sh
 import { ClaimReceivedBanner } from "@/components/app/claim-received-banner";
 import { ClaimUpdateBanner } from "@/components/app/claim-update-banner";
 import { PushEnableBanner } from "@/components/app/push-enable-banner";
+import { GroupBanner } from "@/components/app/group-banner";
 import { IosInstallPrompt } from "@/components/app/ios-install-prompt";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { WelcomeCard } from "@/components/app/welcome-card";
@@ -22,6 +23,7 @@ import { useProfile } from "@/hooks/use-profile";
 import { postAffectsViewer, useRealtimePosts, type PostChangeRow } from "@/hooks/use-realtime-posts";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
+import type { GroupSummary } from "@/types/groups";
 import { REJECTION_REASONS } from "@/types/claims";
 import { claimToFeedPost } from "@/utils/activity-feed-map";
 import type { ClaimRow, MyClaim, MyPost } from "@/types/activity";
@@ -122,6 +124,10 @@ export function Feed() {
     // posts" at the same time — and the welcome card read it as the latter,
     // flashing on every navigation to the feed for users who do have posts.
     const [myPostsLoaded, setMyPostsLoaded] = useState(false);
+    // Group changes surface here as banners. Derived from state rather than an
+    // events table, which is why there is no "you were removed" banner — see
+    // group-banner.tsx.
+    const [groups, setGroups] = useState<GroupSummary[]>([]);
     // Admin-only: ids of feedback submissions not yet dismissed from the feed banner.
     const [newFeedbackIds, setNewFeedbackIds] = useState<string[]>([]);
     // Success banner shown once after a post is created (flag set by the post form).
@@ -184,6 +190,16 @@ export function Feed() {
         setLoading(false);
     }, []);
 
+    const fetchGroups = useCallback(async () => {
+        if (!user) return;
+        const { data, error: rpcError } = await supabase.rpc("get_my_groups");
+        if (rpcError) {
+            console.error("get_my_groups failed:", rpcError);
+            return;
+        }
+        setGroups(Array.isArray(data) ? (data as GroupSummary[]) : []);
+    }, [user]);
+
     const fetchMyPosts = useCallback(async () => {
         if (!user) return;
         const [postsRes, claimsRes] = await Promise.all([
@@ -199,7 +215,8 @@ export function Feed() {
     useEffect(() => {
         fetchPosts();
         fetchMyPosts();
-    }, [fetchPosts, fetchMyPosts]);
+        fetchGroups();
+    }, [fetchPosts, fetchMyPosts, fetchGroups]);
 
     // Admin-only: surface undismissed feedback as a top-of-feed banner. RLS lets
     // only admins read the feedback table, so this returns nothing for players.
@@ -441,6 +458,29 @@ export function Feed() {
     const approvedBanners = myClaims.filter(
         (c) => c.status === "approved" && !claimPast(c) && !dismissedClaims.has(`approved:${c.id}`),
     );
+    // A week is long enough that someone who opens the app occasionally still
+    // sees it, short enough that it stops being news.
+    const BANNER_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+    const fresh = (iso: string | null) => !!iso && Date.now() - new Date(iso).getTime() < BANNER_WINDOW_MS;
+
+    // get_my_groups also returns recent removals so this banner is possible, so
+    // every other derivation here has to exclude them explicitly.
+    const addedGroups = groups.filter(
+        // Not your own group: you already know, you made it.
+        (g) =>
+            !g.my_removed_at &&
+            !g.is_creator &&
+            !g.is_closed &&
+            fresh(g.joined_at) &&
+            !dismissedClaims.has(`group_added:${g.id}`),
+    );
+    const closedGroups = groups.filter(
+        (g) => !g.my_removed_at && g.is_closed && fresh(g.closed_at) && !dismissedClaims.has(`group_closed:${g.id}`),
+    );
+    const removedGroups = groups.filter(
+        (g) => fresh(g.my_removed_at) && !dismissedClaims.has(`group_removed:${g.id}`),
+    );
+
     const declinedBanners = myClaims.filter(
         (c) => c.status === "rejected" && !claimPast(c) && !dismissedClaims.has(`declined:${c.id}`),
     );
@@ -526,6 +566,34 @@ export function Feed() {
                         claim={claim}
                         status="rejected"
                         onDismiss={() => dismissBanner(`declined:${claim.id}`)}
+                    />
+                ))}
+
+                {addedGroups.map((g) => (
+                    <GroupBanner
+                        key={`group_added:${g.id}`}
+                        group={g}
+                        kind="added"
+                        onDismiss={() => dismissBanner(`group_added:${g.id}`)}
+                        onView={() => navigate("/profile/me")}
+                    />
+                ))}
+                {removedGroups.map((g) => (
+                    <GroupBanner
+                        key={`group_removed:${g.id}`}
+                        group={g}
+                        kind="removed"
+                        onDismiss={() => dismissBanner(`group_removed:${g.id}`)}
+                        onView={() => navigate("/profile/me")}
+                    />
+                ))}
+                {closedGroups.map((g) => (
+                    <GroupBanner
+                        key={`group_closed:${g.id}`}
+                        group={g}
+                        kind="closed"
+                        onDismiss={() => dismissBanner(`group_closed:${g.id}`)}
+                        onView={() => navigate("/profile/me")}
                     />
                 ))}
 

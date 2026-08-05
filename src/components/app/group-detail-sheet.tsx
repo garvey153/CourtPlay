@@ -6,6 +6,7 @@ import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD as SECONDARY_BTN } from "@/comp
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 import { ErrorState } from "@/components/application/loading-indicator/area-state";
 import { supabase } from "@/lib/supabase";
+import { sendNotification } from "@/lib/notifications";
 import { describeActionError } from "@/utils/load-error";
 import { skillLabel } from "@/utils/skill-label";
 import type { GroupDetail } from "@/types/groups";
@@ -77,6 +78,17 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
             setError(data?.error ?? describeActionError(rpcError, verb));
             return;
         }
+
+        // Closing ends the group for everyone still in it. Only the creator can
+        // reach this, and only they are authorised to trigger it, so the fan-out
+        // is bounded to their own group's members.
+        if (rpc === "close_group" && group) {
+            for (const m of group.members) {
+                if (m.id === group.created_by) continue;
+                sendNotification({ notification_type: "group_removed", group_id: group.id, target_user_id: m.id });
+            }
+        }
+
         onChanged();
         onClose();
     };

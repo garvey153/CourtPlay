@@ -17,6 +17,16 @@ export interface GroupSummary {
     is_creator: boolean;
     /** Closed by its creator: still listed, rendered void, until you remove it. */
     is_closed: boolean;
+    /** When the group was closed, or null while it is open. Drives the feed banner. */
+    closed_at: string | null;
+    /** When the caller joined. Drives the "you were added" feed banner. */
+    joined_at: string;
+    /**
+     * Set when the caller was removed. get_my_groups returns removals from the
+     * last 30 days purely so the feed can say so — anything listing groups you
+     * are actually IN must filter these out.
+     */
+    my_removed_at: string | null;
     member_count: number;
     members: GroupMemberBrief[];
 }

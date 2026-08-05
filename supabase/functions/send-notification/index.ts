@@ -226,6 +226,24 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
             : "Someone withdrew their CourtPlay connection",
         deepLink: () => "https://courtplay.app/activity?tab=created",
     },
+    group_added: {
+        title: "You're in a group",
+        body: (d) => d.actor_name
+            ? `${d.actor_name} added you to ${d.group_name}. Spots shared with the group will show up in your feed.`
+            : `You've been added to ${d.group_name}. Spots shared with the group will show up in your feed.`,
+        subject: (d) => `You've been added to ${d.group_name} on CourtPlay`,
+        deepLink: () => "https://courtplay.app/profile/me",
+    },
+    group_removed: {
+        title: "Group update",
+        body: (d) => d.closed === "1"
+            ? `${d.group_name} has been closed.`
+            : `You're no longer in ${d.group_name}.`,
+        subject: (d) => d.closed === "1"
+            ? `${d.group_name} has closed`
+            : `You've been removed from ${d.group_name}`,
+        deepLink: () => "https://courtplay.app/profile/me",
+    },
     feedback_submitted: {
         title: "New feedback submitted",
         body: (d) => {
@@ -502,6 +520,8 @@ serve(async (req) => {
         claim_id,
         data: extraData,
         old_cost,
+        group_id,
+        target_user_id,
         test,
     } = body as {
         user_id?: string;
@@ -510,6 +530,8 @@ serve(async (req) => {
         claim_id?: string;
         data?: Record<string, string>;
         old_cost?: string;
+        group_id?: string;
+        target_user_id?: string;
         test?: boolean;
     };
 
@@ -596,6 +618,8 @@ serve(async (req) => {
         post_id,
         claim_id,
         old_cost,
+        group_id,
+        target_user_id,
     });
 
     if (!resolved.ok) {
