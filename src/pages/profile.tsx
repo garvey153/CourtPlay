@@ -419,7 +419,7 @@ export function Profile() {
                             OUTLINE on the darker page background (bg-primary), FILLED on
                             lighter elevated surfaces like bottom sheets (bg-secondary),
                             where an outline alone would disappear. */}
-                        <div className="mb-3 flex h-9 items-center gap-2 rounded-lg border border-primary px-3 shadow-xs">
+                        <div className="mb-4 flex h-9 items-center gap-2 rounded-lg border border-primary px-3 shadow-xs">
                             <SearchSm className="size-5 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
                             <input
                                 className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
