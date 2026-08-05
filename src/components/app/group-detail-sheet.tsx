@@ -26,11 +26,16 @@ interface GroupDetailSheetProps {
  * Three exits, all confirmed, and which one you get depends on who you are and
  * whether the group is still open:
  *
- *   creator, open    Close group   — their only way out. Ends it for everyone.
+ *   creator, open    Delete group  — their only way out. Ends it for everyone.
  *   member, open     Leave group   — available at any time.
  *   anyone, closed   Remove group  — clears the tombstone from your profile.
  *
- * The creator cannot leave an open group: closing is their exit, and leaving
+ * "Delete group" runs close_group rather than a hard delete: the row survives so
+ * the other members keep seeing it, marked closed, until each of them clears it.
+ * The disclaimer above the buttons says so, since the label alone implies more
+ * than happens.
+ *
+ * The creator cannot leave an open group: deleting is their exit, and leaving
  * would strand the rest with a group nobody can administer. Editing is
  * creator-only and disappears once closed — a finished group is not editable.
  */
@@ -95,13 +100,46 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
 
     const memberCount = group?.members.length ?? 0;
     const closed = !!group?.is_closed;
-    // Which exit this viewer gets. Closed wins over role: once a group is over,
-    // everyone left is just clearing a tombstone.
+    /**
+     * Which exit this viewer gets, and what to warn them about. Closed wins over
+     * role: once a group is over, everyone left is just clearing a tombstone.
+     *
+     * "Delete group" runs close_group, not a hard delete — the row survives so
+     * the other members keep seeing it, marked closed, until each of them clears
+     * it. The disclaimer says so rather than letting the label imply otherwise.
+     */
     const exit = closed
-        ? { label: "Remove group", title: "Remove group?", rpc: "leave_group" as const, verb: "remove that group" }
+        ? {
+              label: "Remove group",
+              title: "Remove this group?",
+              rpc: "leave_group" as const,
+              verb: "remove that group",
+              confirmCta: "Yes, remove",
+              disclaimer:
+                  memberCount <= 1
+                      ? "You're the last player here, so removing it deletes the group for good."
+                      : "Removing it clears it from your profile. Everyone else keeps their copy until they clear it too.",
+          }
         : group?.is_creator
-          ? { label: "Close group", title: "Close group?", rpc: "close_group" as const, verb: "close that group" }
-          : { label: "Leave group", title: "Leave group?", rpc: "leave_group" as const, verb: "leave that group" };
+          ? {
+                label: "Delete group",
+                title: "Delete this group?",
+                rpc: "close_group" as const,
+                verb: "delete that group",
+                confirmCta: "Yes, delete",
+                disclaimer:
+                    memberCount <= 1
+                        ? "Deleting removes this group for good. Nobody else is in it."
+                        : "Deleting closes the group for everyone. It stays on their profile, marked closed, until they clear it.",
+            }
+          : {
+                label: "Leave group",
+                title: "Leave this group?",
+                rpc: "leave_group" as const,
+                verb: "leave that group",
+                confirmCta: "Yes, leave",
+                disclaimer: `You'll drop out of ${group?.name ?? "this group"} and stop seeing spots shared with it.`,
+            };
 
     return (
         <div
@@ -179,6 +217,10 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
                             ))}
                         </ul>
 
+                        {/* Disclaimer sits between the roster and the actions, so what the
+                            destructive button does is read before it is reached. */}
+                        <p className="shrink-0 text-sm text-tertiary">{exit.disclaimer}</p>
+
                         {error && <p className="text-sm text-error-primary">{error}</p>}
 
                         <div className="flex flex-col gap-3">
@@ -198,27 +240,35 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
                     </>
                 )}
 
+                {/* Confirmation, inline in the same sheet — the pattern the post delete
+                    uses (created-detail-sheet, design 274-5651): a restated question, a
+                    card naming what is about to go, then Yes / No. */}
                 {!loading && group && confirming && (
                     <>
-                        <p className="text-sm text-tertiary">
-                            {closed
-                                ? `${group.name} is over. Removing it clears it from your profile${memberCount === 1 ? " and deletes it for good, since you're the last one in it" : ""}.`
-                                : group.is_creator
-                                  ? `Closing ${group.name} ends it for everyone. It stays on their profiles, marked closed, until each of them removes it.`
-                                  : `You'll drop out of ${group.name}.`}
-                        </p>
+                        <p className="text-sm text-secondary">{exit.disclaimer}</p>
+
+                        <div className="flex flex-col gap-1 rounded-lg border border-neutral-600 p-4">
+                            <p className="text-md font-semibold text-primary">{group.name}</p>
+                            <p className="text-sm text-secondary">
+                                {[group.details, `${memberCount} player${memberCount === 1 ? "" : "s"}`]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                            </p>
+                        </div>
+
                         {error && <p className="text-sm text-error-primary">{error}</p>}
-                        <div className="flex flex-col gap-3">
+
+                        <div className="mt-2 flex flex-col gap-3">
                             <button
                                 type="button"
                                 onClick={() => run(exit.rpc, exit.verb)}
                                 disabled={busy}
                                 className={PRIMARY_BTN}
                             >
-                                {busy ? <Spinner size="sm" tone="on-brand" /> : exit.label}
+                                {busy ? <Spinner size="sm" tone="on-brand" /> : exit.confirmCta}
                             </button>
                             <button type="button" onClick={() => setConfirming(false)} disabled={busy} className={SECONDARY_BTN}>
-                                Cancel
+                                No, keep it
                             </button>
                         </div>
                     </>

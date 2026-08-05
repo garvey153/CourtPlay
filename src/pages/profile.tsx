@@ -357,12 +357,7 @@ export function Profile() {
                                     <button
                                         key={g.id}
                                         type="button"
-                                        onClick={() =>
-                                            // The creator's view of their own group IS the
-                                            // edit screen — there is nothing in the roster
-                                            // sheet they cannot do better there.
-                                            g.is_creator ? setFormOpen({ groupId: g.id }) : setOpenGroupId(g.id)
-                                        }
+                                        onClick={() => setOpenGroupId(g.id)}
                                         // A closed group is a tombstone until its remaining members
                                         // clear it, so it gets the same dimmed treatment an expired
                                         // post does rather than being hidden or looking live.
@@ -564,9 +559,12 @@ export function Profile() {
                 <GroupFormSheet
                     groupId={formOpen.groupId}
                     onClose={() => setFormOpen(null)}
-                    onSaved={() => {
+                    onSaved={(id) => {
                         setFormOpen(null);
                         fetchGroups();
+                        // Straight into the group, so adding people after creating
+                        // one is a step rather than a hunt.
+                        setOpenGroupId(id);
                     }}
                 />
             )}
