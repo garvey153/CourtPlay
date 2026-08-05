@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useLocation, useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { DotsVertical, SearchSm, XClose } from "@untitledui/icons";
-import { SubCard } from "@/components/app/sub-card";
+import { Avatar } from "@/components/base/avatar/avatar";
 import { ReportUserSheet } from "@/components/app/report-user-sheet";
 import { FeedbackSheet } from "@/components/app/feedback-sheet";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
-import { usePostSheets } from "@/hooks/use-post-sheets";
 import { supabase } from "@/lib/supabase";
-import type { FeedPost } from "@/types/feed";
 import { skillLabel } from "@/utils/skill-label";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
+import { GroupFormSheet } from "@/components/app/group-form-sheet";
+import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
+import { describeMembers, type GroupDetail, type GroupSummary } from "@/types/groups";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -68,45 +69,6 @@ interface ProfileData {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-/** Build a feed-style FeedPost from a profile's open post (author = the profile). */
-function toFeedPost(post: ProfilePost, profile: ProfileData): FeedPost {
-    return {
-        id: post.id,
-        author_id: profile.id,
-        author_type: "player",
-        post_type: post.post_type as FeedPost["post_type"],
-        format: post.format,
-        play_type: post.play_type,
-        duration: post.duration,
-        total_players: null,
-        game_date: post.game_date,
-        game_time: post.game_time,
-        skill_level: post.skill_level,
-        location: post.location,
-        court_id: null,
-        custom_court: post.custom_court,
-        pro_name: null,
-        cost: post.cost,
-        original_cost: null,
-        spots_total: post.spots_total,
-        series_id: null,
-        notes: post.notes,
-        status: post.status,
-        view_count: 0,
-        expires_at: null,
-        preferred_days: null,
-        preferred_times: null,
-        created_at: post.created_at,
-        first_name: profile.first_name,
-        last_name: profile.last_name,
-        photo_url: profile.photo_url,
-        is_friend: false,
-        spots_available: post.spots_available,
-        user_claim_status: null,
-        user_claim_id: null,
-        user_notify_me: false,
-    };
-}
 
 /** Small avatar (photo or initial) used in the following/search rows. */
 function RowAvatar({ photo, name }: { photo: string | null; name: string }) {
@@ -130,7 +92,6 @@ function rowName(first: string, last: string, level: string | null): string {
 
 export function Profile() {
     const { id } = useParams<{ id: string }>();
-    const location = useLocation();
     const { user, loading: authLoading } = useAuth();
     const profileId = (!id || id === "me") ? user?.id : id;
 
@@ -145,6 +106,23 @@ export function Profile() {
 
     // Search state (own profile only)
     const [searchQuery, setSearchQuery] = useState("");
+
+    // Groups live on the caller's own profile only, so they load from
+    // get_my_groups rather than being folded into get_profile — which is shared
+    // with other players' profiles and has no business returning them.
+    const [groups, setGroups] = useState<GroupSummary[]>([]);
+    const [openGroupId, setOpenGroupId] = useState<string | null>(null);
+    /** `{}` opens the create form; `{group}` opens it in edit mode. */
+    const [formOpen, setFormOpen] = useState<{ group?: GroupDetail } | null>(null);
+
+    const fetchGroups = useCallback(async () => {
+        const { data, error: rpcError } = await supabase.rpc("get_my_groups");
+        if (rpcError) {
+            console.error("get_my_groups failed:", rpcError);
+            return;
+        }
+        setGroups(Array.isArray(data) ? (data as GroupSummary[]) : []);
+    }, []);
     const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
 
@@ -178,6 +156,12 @@ export function Profile() {
     useEffect(() => {
         fetchProfile();
     }, [fetchProfile]);
+
+    // Own profile only; get_my_groups is scoped to the caller regardless, but
+    // there is no reason to call it while looking at someone else.
+    useEffect(() => {
+        if (profile?.is_own_profile) fetchGroups();
+    }, [profile?.is_own_profile, fetchGroups]);
 
     // Search users (finds any player with an active account)
     useEffect(() => {
@@ -230,10 +214,6 @@ export function Profile() {
         if (rpcError) fetchProfile();
     }, [profileId, fetchProfile]);
 
-    // Tapping a post opens the same bottom sheet as the feed (creator sheet for your
-    // own post, claim/connect sheet for others'). Refresh the profile after any change.
-    const { openDetail, sheets } = usePostSheets({ onChanged: fetchProfile, editReturnTo: location.pathname });
-
     if (loading) {
         return (
             <AppLayout>
@@ -260,13 +240,6 @@ export function Profile() {
 
     const label = skillLabel(profile.skill_level);
     const isSearching = searchQuery.trim().length >= 2;
-    // The Posts section shows the user's Open, Claimed, and Expired posts (the
-    // SubCard derives which from status + spots + game time). Hide posts missing
-    // required info: every post needs a court, and dated (sub_need) posts need a
-    // date. Regular-game posts are dateless by design, so they're exempt.
-    const posts = profile.active_posts.filter(
-        (p) => (p.location || p.custom_court) && (p.post_type === "regular_game" || p.game_date),
-    );
 
     return (
         <AppLayout>
@@ -321,8 +294,17 @@ export function Profile() {
                     )}
                 </div>
 
-                {/* Stats cards */}
+                {/* Stats cards. Groups is own-profile only — group membership is
+                    private, so there is nothing to show on someone else's profile. */}
                 <div className="mt-5 flex gap-3">
+                    {profile.is_own_profile && (
+                        <div className="w-[86px] rounded-lg bg-secondary px-4 py-3">
+                            <p className="text-lg font-semibold leading-7 text-brand-500">{groups.length}</p>
+                            <p className="mt-0.5 text-xs text-tertiary">
+                                {groups.length === 1 ? "Group" : "Groups"}
+                            </p>
+                        </div>
+                    )}
                     <div className="w-[86px] rounded-lg bg-secondary px-4 py-3">
                         <p className="text-lg font-semibold leading-7 text-brand-500">{profile.follower_count}</p>
                         <p className="mt-0.5 text-xs text-tertiary">Followers</p>
@@ -343,26 +325,68 @@ export function Profile() {
                     </button>
                 )}
 
-                {/* Posts (feed-style cards) — Open, Claimed, and Expired */}
-                <div className="mt-6">
-                    <p className="mb-3 text-sm font-semibold text-tertiary">
-                        Posts ({posts.length})
-                    </p>
-                    {posts.length === 0 ? (
-                        <p className="text-sm text-tertiary">Nothing on the board yet.</p>
-                    ) : (
-                        <div className="flex flex-col gap-3">
-                            {posts.map((post) => (
-                                <SubCard
-                                    key={post.id}
-                                    post={toFeedPost(post, profile)}
-                                    currentUserId={user?.id}
-                                    onOpenDetail={openDetail}
-                                />
-                            ))}
+                {/* Groups (own profile only) */}
+                {profile.is_own_profile && (
+                    <div className="mt-6">
+                        <div className="mb-3 flex items-center justify-between">
+                            <p className="text-sm font-semibold text-tertiary">Groups ({groups.length})</p>
+                            <button
+                                type="button"
+                                onClick={() => setFormOpen({})}
+                                className="text-sm font-semibold text-brand-secondary transition duration-100 ease-linear hover:text-primary"
+                            >
+                                Create group
+                            </button>
                         </div>
-                    )}
-                </div>
+                        {groups.length === 0 ? (
+                            <EmptyState
+                                variant="grow"
+                                className="min-h-0 py-6"
+                                title="No groups yet"
+                                description="Make one for the people you play with, and you'll be able to share spots with just them."
+                                actionLabel="Create group"
+                                onAction={() => setFormOpen({})}
+                            />
+                        ) : (
+                            <div className="flex flex-col gap-3">
+                                {groups.map((g) => (
+                                    <button
+                                        key={g.id}
+                                        type="button"
+                                        onClick={() => setOpenGroupId(g.id)}
+                                        className="flex w-full flex-col gap-2 rounded-lg bg-secondary p-4 text-left transition duration-100 ease-linear hover:bg-secondary_hover"
+                                    >
+                                        <div>
+                                            <p className="truncate text-sm font-semibold text-primary">{g.name}</p>
+                                            <p className="truncate text-sm text-tertiary">
+                                                {[g.details, `${g.member_count} player${g.member_count === 1 ? "" : "s"}`]
+                                                    .filter(Boolean)
+                                                    .join(" \u00b7 ")}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex shrink-0 -space-x-2">
+                                                {g.members.slice(0, 5).map((m) => (
+                                                    <Avatar
+                                                        key={m.id}
+                                                        size="xs"
+                                                        src={m.photo_url ?? undefined}
+                                                        alt={m.first_name}
+                                                        initials={m.first_name.charAt(0).toUpperCase()}
+                                                        className="bg-white p-px shadow-xs ring-2 ring-bg-secondary"
+                                                    />
+                                                ))}
+                                            </div>
+                                            <span className="min-w-0 truncate text-sm text-tertiary">
+                                                {describeMembers(g.members)}
+                                            </span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Following + search (own profile only) */}
                 {profile.is_own_profile && (
@@ -483,7 +507,32 @@ export function Profile() {
 
             {showFeedback && <FeedbackSheet onClose={() => setShowFeedback(false)} />}
 
-            {sheets}
+
+            {openGroupId && (
+                <GroupDetailSheet
+                    groupId={openGroupId}
+                    onClose={() => setOpenGroupId(null)}
+                    onChanged={fetchGroups}
+                    onEdit={(g) => {
+                        setOpenGroupId(null);
+                        setFormOpen({ group: g });
+                    }}
+                />
+            )}
+
+            {formOpen && (
+                <GroupFormSheet
+                    group={formOpen.group}
+                    onClose={() => setFormOpen(null)}
+                    onSaved={(id) => {
+                        setFormOpen(null);
+                        fetchGroups();
+                        // Straight into the group, so adding people after
+                        // creating one is a step rather than a hunt.
+                        setOpenGroupId(id);
+                    }}
+                />
+            )}
         </AppLayout>
     );
 }

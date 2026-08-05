@@ -39,12 +39,27 @@ const minimalProfile = {
     follower_count: 0, following_count: 0, active_posts: [], following_list: [],
 };
 
-function setupMock(profileData: unknown) {
+function setupMock(profileData: unknown, groups: unknown[] = []) {
     rpc.mockImplementation(((fn: string) => {
         if (fn === "get_profile") return Promise.resolve({ data: profileData, error: null });
+        if (fn === "get_my_groups") return Promise.resolve({ data: groups, error: null });
         return Promise.resolve({ data: { success: true }, error: null });
     }) as typeof rpc);
 }
+
+const group = (over: Record<string, unknown> = {}) => ({
+    id: "g-1",
+    name: "The Racquettes",
+    details: "Westport Social League",
+    is_creator: true,
+    member_count: 3,
+    members: [
+        { id: "u1", first_name: "Chris", last_name: "Bell", photo_url: null },
+        { id: "u2", first_name: "Sara", last_name: "Hall", photo_url: null },
+        { id: "u3", first_name: "Mike", last_name: "Chen", photo_url: null },
+    ],
+    ...over,
+});
 
 function renderProfile(userId: string) {
     return render(
@@ -137,18 +152,35 @@ describe("profile page", () => {
         expect(screen.queryByPlaceholderText("Search for players to follow...")).not.toBeInTheDocument();
     });
 
-    it("shows open posts as feed cards", async () => {
-        setupMock(completeProfile);
-        renderProfile("aaaaaaaa-0000-0000-0000-000000000001");
-        // SubCard title: "Doubles Tennis · <when>"
-        expect(await screen.findByText(/Doubles Tennis/)).toBeInTheDocument();
-        expect(screen.getByText("Posts (1)")).toBeInTheDocument();
+    it("lists your groups with their details and member line", async () => {
+        setupMock({ ...completeProfile, is_own_profile: true }, [group()]);
+        renderProfile("me");
+        expect(await screen.findByText("The Racquettes")).toBeInTheDocument();
+        expect(screen.getByText("Westport Social League · 3 players")).toBeInTheDocument();
+        expect(screen.getByText("Chris B., Sara H., & 1 more")).toBeInTheDocument();
+        expect(screen.getByText("Groups (1)")).toBeInTheDocument();
     });
 
-    it("shows empty state for no posts", async () => {
-        setupMock(minimalProfile);
-        renderProfile("cccccccc-0000-0000-0000-000000000003");
-        expect(await screen.findByText("Nothing on the board yet.")).toBeInTheDocument();
+    it("shows the empty state with a Create group CTA when you have none", async () => {
+        setupMock({ ...completeProfile, is_own_profile: true }, []);
+        renderProfile("me");
+        expect(await screen.findByText("No groups yet")).toBeInTheDocument();
+        expect(screen.getAllByRole("button", { name: "Create group" }).length).toBeGreaterThan(0);
+    });
+
+    it("does NOT show groups on someone else's profile", async () => {
+        setupMock({ ...completeProfile, is_own_profile: false }, [group()]);
+        renderProfile("aaaaaaaa-0000-0000-0000-000000000001");
+        await screen.findByText("Jane Doe");
+        expect(screen.queryByText(/^Groups \(/)).toBeNull();
+        expect(screen.queryByText("The Racquettes")).toBeNull();
+    });
+
+    it("no longer renders a Posts section", async () => {
+        setupMock({ ...completeProfile, is_own_profile: true }, []);
+        renderProfile("me");
+        await screen.findByText("Jane Doe");
+        expect(screen.queryByText(/^Posts \(/)).toBeNull();
     });
 
     it("shows report menu on other profiles", async () => {
