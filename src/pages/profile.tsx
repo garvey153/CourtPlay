@@ -112,6 +112,11 @@ export function Profile() {
     // get_my_groups rather than being folded into get_profile — which is shared
     // with other players' profiles and has no business returning them.
     const [groups, setGroups] = useState<GroupSummary[]>([]);
+    // Whether get_my_groups has answered. `groups.length === 0` cannot tell "not
+    // fetched yet" from "you have none", and rendering the empty state during
+    // that window made it flash on every page load — the same defect the welcome
+    // banner had (see welcome-banner-flash.test.ts).
+    const [groupsLoaded, setGroupsLoaded] = useState(false);
     const [openGroupId, setOpenGroupId] = useState<string | null>(null);
     /** `{}` opens the create form; `{groupId}` opens it in edit mode. */
     const [formOpen, setFormOpen] = useState<{ groupId?: string } | null>(null);
@@ -120,12 +125,16 @@ export function Profile() {
         const { data, error: rpcError } = await supabase.rpc("get_my_groups");
         if (rpcError) {
             console.error("get_my_groups failed:", rpcError);
+            // Still "loaded": the section shows its empty state rather than
+            // hanging, and Profile has no retry affordance for this sub-fetch.
+            setGroupsLoaded(true);
             return;
         }
         // get_my_groups also returns groups you were recently REMOVED from, so
         // the feed can say so. Those must not be listed as groups you're in.
         const all = Array.isArray(data) ? (data as GroupSummary[]) : [];
         setGroups(all.filter((g) => !g.my_removed_at));
+        setGroupsLoaded(true);
     }, []);
     const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -163,9 +172,14 @@ export function Profile() {
 
     // Own profile only; get_my_groups is scoped to the caller regardless, but
     // there is no reason to call it while looking at someone else.
+    //
+    // Keyed off the URL rather than profile.is_own_profile, which only arrives
+    // once get_profile resolves — waiting for it guaranteed a gap where the
+    // groups section had no data to show.
+    const isOwnProfile = !!user?.id && profileId === user.id;
     useEffect(() => {
-        if (profile?.is_own_profile) fetchGroups();
-    }, [profile?.is_own_profile, fetchGroups]);
+        if (isOwnProfile) fetchGroups();
+    }, [isOwnProfile, fetchGroups]);
 
     // Search users (finds any player with an active account)
     useEffect(() => {
@@ -303,9 +317,11 @@ export function Profile() {
                 <div className="mt-5 flex gap-3">
                     {profile.is_own_profile && (
                         <div className="w-[86px] rounded-lg bg-secondary px-4 py-3">
-                            <p className="text-lg font-semibold leading-7 text-brand-500">{groups.length}</p>
+                            <p className="text-lg font-semibold leading-7 text-brand-500">
+                                {groupsLoaded ? groups.length : "—"}
+                            </p>
                             <p className="mt-0.5 text-xs text-tertiary">
-                                {groups.length === 1 ? "Group" : "Groups"}
+                                {groupsLoaded && groups.length === 1 ? "Group" : "Groups"}
                             </p>
                         </div>
                     )}
@@ -333,7 +349,9 @@ export function Profile() {
                 {profile.is_own_profile && (
                     <div className="mt-6">
                         <div className="mb-1.5 flex items-center justify-between">
-                            <p className="text-sm font-semibold text-tertiary">Groups ({groups.length})</p>
+                            <p className="text-sm font-semibold text-tertiary">
+                                Groups{groupsLoaded ? ` (${groups.length})` : ""}
+                            </p>
                             <button
                                 type="button"
                                 onClick={() => setFormOpen({})}
@@ -342,7 +360,12 @@ export function Profile() {
                                 Create group
                             </button>
                         </div>
-                        {groups.length === 0 ? (
+                        {!groupsLoaded ? (
+                            /* Reserve the space rather than showing either answer.
+                               py-6 matches the empty state, so nothing jumps when the
+                               real content arrives. */
+                            <div className="py-6" aria-hidden="true" />
+                        ) : groups.length === 0 ? (
                             <EmptyState
                                 variant="grow"
                                 className="min-h-0 py-6"
@@ -559,12 +582,15 @@ export function Profile() {
                 <GroupFormSheet
                     groupId={formOpen.groupId}
                     onClose={() => setFormOpen(null)}
-                    onSaved={(id) => {
+                    onSaved={() => {
+                        // Saving returns to Profile — both the form and the sheet
+                        // behind it close. Reopening the group afterwards used to
+                        // make sense when members were added from the sheet; they
+                        // are added in this form now, so it only put a sheet in
+                        // the way of the list you wanted to see.
                         setFormOpen(null);
+                        setOpenGroupId(null);
                         fetchGroups();
-                        // Straight into the group, so adding people after creating
-                        // one is a step rather than a hunt.
-                        setOpenGroupId(id);
                     }}
                 />
             )}

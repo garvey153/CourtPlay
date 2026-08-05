@@ -142,8 +142,8 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
                 confirmCta: "Yes, delete",
                 disclaimer:
                     memberCount <= 1
-                        ? "Deleting removes this group for good. Nobody else is in it."
-                        : "Deleting closes the group for everyone. It stays on their profile, marked closed, until they clear it.",
+                        ? "Delete group removes this group for good. Nobody else is in it."
+                        : "Delete group closes the group for everyone. It stays on their profiles, marked closed, until they remove it.",
             }
           : {
                 label: "Leave group",
@@ -225,14 +225,16 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
                                         {m.last_name ? ` ${m.last_name.charAt(0)}.` : ""}
                                         {m.skill_level && ` · ${skillLabel(m.skill_level)}`}
                                     </span>
-                                    {m.is_creator && <span className="shrink-0 text-xs text-tertiary">Creator</span>}
+                                    {m.is_creator && <span className="shrink-0 text-sm text-brand-500">Owner</span>}
                                 </li>
                             ))}
                         </ul>
 
                         {/* Disclaimer sits between the roster and the actions, so what the
-                            destructive button does is read before it is reached. */}
-                        <p className="shrink-0 text-sm text-tertiary">{exit.disclaimer}</p>
+                            destructive button does is read before it is reached. mb carries
+                            the remainder of the 32px gap: the sheet's own gap-4 supplies
+                            16px of it. */}
+                        <p className="mb-4 shrink-0 text-sm text-tertiary">{exit.disclaimer}</p>
 
                         {error && <p className="text-sm text-error-primary">{error}</p>}
 
