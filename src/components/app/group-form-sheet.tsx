@@ -7,6 +7,7 @@ import { FIELD } from "@/components/base/input/field-styles";
 import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { supabase } from "@/lib/supabase";
+import { sendNotification } from "@/lib/notifications";
 import { describeActionError } from "@/utils/load-error";
 import { skillLabel } from "@/utils/skill-label";
 import type { GroupDetail, GroupMemberBrief } from "@/types/groups";
@@ -110,7 +111,22 @@ export function GroupFormSheet({ group, onClose, onSaved }: GroupFormSheetProps)
             setError(data?.error ?? describeActionError(rpcError, editing ? "save that group" : "create that group"));
             return;
         }
-        onSaved((data.group_id as string) ?? group!.id);
+
+        // Tell the people whose membership actually changed. The diff is
+        // computed here because the RPC returns only success — and it is a diff
+        // rather than "everyone currently in the group", so re-saving a group
+        // without touching its members notifies nobody.
+        const groupId = (data.group_id as string) ?? group!.id;
+        const before = new Set((group?.members ?? []).filter((m) => !m.is_creator).map((m) => m.id));
+        const after = new Set(ids);
+        for (const id of after) {
+            if (!before.has(id)) sendNotification({ notification_type: "group_added", group_id: groupId, target_user_id: id });
+        }
+        for (const id of before) {
+            if (!after.has(id)) sendNotification({ notification_type: "group_removed", group_id: groupId, target_user_id: id });
+        }
+
+        onSaved(groupId);
     };
 
     const alreadyIn = (id: string) => members.some((m) => m.id === id) || group?.members.some((m) => m.id === id && m.is_creator);

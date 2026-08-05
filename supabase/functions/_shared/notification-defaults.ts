@@ -27,7 +27,9 @@ export type NotificationType =
     | "connection_request"
     | "connection_closed"
     | "connection_withdrawn"
-    | "feedback_submitted";
+    | "feedback_submitted"
+    | "group_added"
+    | "group_removed";
 
 export const DEFAULT_CHANNELS: Record<NotificationType, { push: boolean; email: boolean }> = {
     // Claim lifecycle (claimed / approved / declined) pushes by default.
@@ -48,5 +50,7 @@ export const DEFAULT_CHANNELS: Record<NotificationType, { push: boolean; email: 
     connection_request: { push: true, email: true },   // N14 — like a new claim
     connection_closed:  { push: false, email: true },  // N15
     connection_withdrawn: { push: false, email: true }, // N16 — informational, like connection_closed
+    group_added: { push: true, email: true },
+    group_removed: { push: false, email: true },
     feedback_submitted: { push: true, email: true },   // N16 — admin-only
 };

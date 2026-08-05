@@ -17,6 +17,10 @@ export interface GroupSummary {
     is_creator: boolean;
     /** Closed by its creator: still listed, rendered void, until you remove it. */
     is_closed: boolean;
+    /** When the group was closed, or null while it is open. Drives the feed banner. */
+    closed_at: string | null;
+    /** When the caller joined. Drives the "you were added" feed banner. */
+    joined_at: string;
     member_count: number;
     members: GroupMemberBrief[];
 }

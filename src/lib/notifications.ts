@@ -18,7 +18,9 @@ export type NotificationType =
     | "connection_request"    // N14 — responder taps Connect on a regular post
     | "connection_closed"     // N15 — seeker removes their regular post (spot found)
     | "connection_withdrawn"  // N16 — responder withdraws their connection
-    | "feedback_submitted";   // N16 — admin-only: a player submitted feedback
+    | "feedback_submitted"    // N16 — admin-only: a player submitted feedback
+    | "group_added"           // N17 — the group's creator added you
+    | "group_removed";        // N18 — the creator removed you, or closed the group
 
 export type NotificationChannel = "push" | "email";
 
@@ -70,6 +72,8 @@ export const NOTIFICATION_TYPES: readonly NotificationTypeMeta[] = [
     { key: "connection_request", label: "New connection request", hint: "When someone responds to your regular play post", defaultEmail: true, defaultPush: true },
     { key: "connection_closed", label: "Group filled up", hint: "When a regular play post you responded to closes", defaultEmail: true, defaultPush: false },
     { key: "connection_withdrawn", label: "Connection withdrawn", hint: "When someone withdraws their response to your regular play post", defaultEmail: true, defaultPush: false },
+    { key: "group_added", label: "Added to a group", hint: "When someone adds you to one of their groups", defaultEmail: true, defaultPush: true },
+    { key: "group_removed", label: "Removed from a group", hint: "When you're removed from a group, or it's closed", defaultEmail: true, defaultPush: false },
     { key: "feedback_submitted", label: "New feedback", hint: "When a player submits feedback", defaultEmail: true, defaultPush: true, adminOnly: true },
 ] as const;
 
@@ -97,6 +101,15 @@ interface NotificationRequest {
     post_id?: string;
     claim_id?: string;
     old_cost?: string;
+    /** Group-anchored types. The server re-derives the group and its creator. */
+    group_id?: string;
+    /**
+     * Who the group change was about. Required for group types because the
+     * server cannot infer it: for a removal the person no longer has a
+     * membership row to look up. The resolver still checks the caller owns the
+     * group, so this names a recipient rather than choosing one freely.
+     */
+    target_user_id?: string;
 }
 
 export interface DispatchResult {
