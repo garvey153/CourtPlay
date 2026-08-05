@@ -7,6 +7,7 @@ import { FeedbackSheet } from "@/components/app/feedback-sheet";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
+import { cx } from "@/utils/cx";
 import { skillLabel } from "@/utils/skill-label";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
@@ -354,10 +355,23 @@ export function Profile() {
                                         key={g.id}
                                         type="button"
                                         onClick={() => setOpenGroupId(g.id)}
-                                        className="flex w-full flex-col gap-2 rounded-lg bg-secondary p-4 text-left transition duration-100 ease-linear hover:bg-secondary_hover"
+                                        // A closed group is a tombstone until its remaining members
+                                        // clear it, so it gets the same dimmed treatment an expired
+                                        // post does rather than being hidden or looking live.
+                                        className={cx(
+                                            "flex w-full flex-col gap-2 rounded-lg bg-secondary p-4 text-left transition duration-100 ease-linear hover:bg-secondary_hover",
+                                            g.is_closed && "opacity-60",
+                                        )}
                                     >
-                                        <div>
+                                        <div className="flex items-start justify-between gap-2">
                                             <p className="truncate text-sm font-semibold text-primary">{g.name}</p>
+                                            {g.is_closed && (
+                                                <span className="shrink-0 rounded-lg bg-red-900 px-2 py-0.5 text-xs font-semibold text-red-400">
+                                                    Closed
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div>
                                             <p className="truncate text-sm text-tertiary">
                                                 {[g.details, `${g.member_count} player${g.member_count === 1 ? "" : "s"}`]
                                                     .filter(Boolean)

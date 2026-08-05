@@ -52,6 +52,7 @@ const group = (over: Record<string, unknown> = {}) => ({
     name: "The Racquettes",
     details: "Westport Social League",
     is_creator: true,
+    is_closed: false,
     member_count: 3,
     members: [
         { id: "u1", first_name: "Chris", last_name: "Bell", photo_url: null },
@@ -166,6 +167,14 @@ describe("profile page", () => {
         renderProfile("me");
         expect(await screen.findByText("No groups yet")).toBeInTheDocument();
         expect(screen.getAllByRole("button", { name: "Create group" }).length).toBeGreaterThan(0);
+    });
+
+    it("renders a closed group as void, with a Closed badge", async () => {
+        setupMock({ ...completeProfile, is_own_profile: true }, [group({ is_closed: true })]);
+        renderProfile("me");
+        expect(await screen.findByText("Closed")).toBeInTheDocument();
+        // Still listed — a closed group stays until its remaining members clear it.
+        expect(screen.getByText("The Racquettes")).toBeInTheDocument();
     });
 
     it("does NOT show groups on someone else's profile", async () => {

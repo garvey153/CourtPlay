@@ -15,6 +15,8 @@ export interface GroupSummary {
     /** The "Westport Social League" line. Optional. */
     details: string | null;
     is_creator: boolean;
+    /** Closed by its creator: still listed, rendered void, until you remove it. */
+    is_closed: boolean;
     member_count: number;
     members: GroupMemberBrief[];
 }
@@ -32,6 +34,7 @@ export interface GroupDetail {
     details: string | null;
     created_by: string;
     is_creator: boolean;
+    is_closed: boolean;
     members: GroupMember[];
 }
 

@@ -20,12 +20,18 @@ interface GroupDetailSheetProps {
 }
 
 /**
- * A group's roster.
+ * A group's roster, and the only place its lifecycle is driven.
  *
- * Everyone sees the member list and can remove themselves; only the creator
- * gets Edit, which is where adding and removing other players lives. That split
- * is the whole permission model — a non-creator has no affordance here that
- * changes anyone but themselves.
+ * Three exits, all confirmed, and which one you get depends on who you are and
+ * whether the group is still open:
+ *
+ *   creator, open    Close group   — their only way out. Ends it for everyone.
+ *   member, open     Leave group   — available at any time.
+ *   anyone, closed   Remove group  — clears the tombstone from your profile.
+ *
+ * The creator cannot leave an open group: closing is their exit, and leaving
+ * would strand the rest with a group nobody can administer. Editing is
+ * creator-only and disappears once closed — a finished group is not editable.
  */
 export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupDetailSheetProps) {
     const [group, setGroup] = useState<GroupDetail | null>(null);
@@ -61,14 +67,14 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
         return () => document.removeEventListener("keydown", handler);
     }, [onClose]);
 
-    const leave = async () => {
+    const run = async (rpc: "leave_group" | "close_group", verb: string) => {
         setBusy(true);
         setError(null);
-        const { data, error: rpcError } = await supabase.rpc("leave_group", { p_group_id: groupId });
+        const { data, error: rpcError } = await supabase.rpc(rpc, { p_group_id: groupId });
         setBusy(false);
         if (rpcError || !data?.success) {
-            console.error("leave_group failed:", rpcError ?? data);
-            setError(data?.error ?? describeActionError(rpcError, "leave that group"));
+            console.error(`${rpc} failed:`, rpcError ?? data);
+            setError(data?.error ?? describeActionError(rpcError, verb));
             return;
         }
         onChanged();
@@ -76,6 +82,14 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
     };
 
     const memberCount = group?.members.length ?? 0;
+    const closed = !!group?.is_closed;
+    // Which exit this viewer gets. Closed wins over role: once a group is over,
+    // everyone left is just clearing a tombstone.
+    const exit = closed
+        ? { label: "Remove group", title: "Remove group?", rpc: "leave_group" as const, verb: "remove that group" }
+        : group?.is_creator
+          ? { label: "Close group", title: "Close group?", rpc: "close_group" as const, verb: "close that group" }
+          : { label: "Leave group", title: "Leave group?", rpc: "leave_group" as const, verb: "leave that group" };
 
     return (
         <div
@@ -95,14 +109,21 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                         <h2 id="group-detail-title" className="truncate text-md font-semibold text-primary">
-                            {confirming ? "Leave group?" : (group?.name ?? "Group")}
+                            {confirming ? exit.title : (group?.name ?? "Group")}
                         </h2>
                         {!confirming && group && (
-                            <p className="truncate text-sm text-tertiary">
-                                {[group.details, `${memberCount} player${memberCount === 1 ? "" : "s"}`]
-                                    .filter(Boolean)
-                                    .join(" · ")}
-                            </p>
+                            <>
+                                <p className="truncate text-sm text-tertiary">
+                                    {[group.details, `${memberCount} player${memberCount === 1 ? "" : "s"}`]
+                                        .filter(Boolean)
+                                        .join(" · ")}
+                                </p>
+                                {closed && (
+                                    <span className="mt-1 inline-block rounded-lg bg-red-900 px-2 py-0.5 text-xs font-semibold text-red-400">
+                                        Closed
+                                    </span>
+                                )}
+                            </>
                         )}
                     </div>
                     <button
@@ -149,13 +170,17 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
                         {error && <p className="text-sm text-error-primary">{error}</p>}
 
                         <div className="flex flex-col gap-3">
-                            {group.is_creator && (
+                            {group.is_creator && !closed && (
                                 <button type="button" onClick={() => onEdit(group)} className={PRIMARY_BTN}>
                                     Edit group
                                 </button>
                             )}
-                            <button type="button" onClick={() => setConfirming(true)} className={SECONDARY_BTN}>
-                                Leave group
+                            <button
+                                type="button"
+                                onClick={() => setConfirming(true)}
+                                className={group.is_creator && !closed ? SECONDARY_BTN : PRIMARY_BTN}
+                            >
+                                {exit.label}
                             </button>
                         </div>
                     </>
@@ -164,18 +189,24 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
                 {!loading && group && confirming && (
                     <>
                         <p className="text-sm text-tertiary">
-                            {memberCount === 1
-                                ? `You're the last player in ${group.name}, so leaving deletes it.`
-                                : `You'll drop out of ${group.name}.`}
-                            {group.is_creator && memberCount > 1 && " Nobody else can add or remove players once you're out."}
+                            {closed
+                                ? `${group.name} is over. Removing it clears it from your profile${memberCount === 1 ? " and deletes it for good, since you're the last one in it" : ""}.`
+                                : group.is_creator
+                                  ? `Closing ${group.name} ends it for everyone. It stays on their profiles, marked closed, until each of them removes it.`
+                                  : `You'll drop out of ${group.name}.`}
                         </p>
                         {error && <p className="text-sm text-error-primary">{error}</p>}
                         <div className="flex flex-col gap-3">
-                            <button type="button" onClick={leave} disabled={busy} className={PRIMARY_BTN}>
-                                {busy ? <Spinner size="sm" tone="on-brand" /> : "Leave group"}
+                            <button
+                                type="button"
+                                onClick={() => run(exit.rpc, exit.verb)}
+                                disabled={busy}
+                                className={PRIMARY_BTN}
+                            >
+                                {busy ? <Spinner size="sm" tone="on-brand" /> : exit.label}
                             </button>
                             <button type="button" onClick={() => setConfirming(false)} disabled={busy} className={SECONDARY_BTN}>
-                                Stay
+                                Cancel
                             </button>
                         </div>
                     </>
