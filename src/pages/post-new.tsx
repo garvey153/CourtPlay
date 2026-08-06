@@ -10,11 +10,13 @@ import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
 import { SelectItem } from "@/components/base/select/select-item";
 import { TextArea } from "@/components/base/textarea/textarea";
+import { Toggle } from "@/components/base/toggle/toggle";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { upsertCustomCourt } from "@/lib/custom-court";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
+import type { GroupSummary } from "@/types/groups";
 import type { Selection } from "react-aria-components";
 import { cx } from "@/utils/cx";
 import { menuWidth, multiMenuWidth } from "@/utils/menu-width";
@@ -108,9 +110,26 @@ interface FormFields {
     rgTimes: string[];
     rgCourts: string[];
     rgNote: string;
+    visibility: string;
+    /** Selected audience keys: ALL_FOLLOWING and/or group ids. */
+    audience: string[];
 }
 
 const keysOf = (s: Selection): string[] => (s instanceof Set ? [...s].map(String) : []);
+
+/**
+ * The audience picker is one MultiSelect holding two different kinds of thing:
+ * this sentinel for "everyone I follow", plus group ids. A sentinel keeps it a
+ * single control — which is what the design shows — at the cost of having to
+ * split the two apart on save. The `__` bracketing matches the existing
+ * `__custom__` court sentinel in this file.
+ */
+const ALL_FOLLOWING = "__all_following__";
+
+const splitAudience = (keys: string[]) => ({
+    allFollowing: keys.includes(ALL_FOLLOWING),
+    groupIds: keys.filter((k) => k !== ALL_FOLLOWING),
+});
 
 // CourtPlay is a Westport-scoped app, so a custom court's area defaults to the town.
 const DEFAULT_CUSTOM_AREA = "Westport";
@@ -125,6 +144,7 @@ const buildFormSig = (v: FormFields): string =>
         rgDays: [...v.rgDays].sort(),
         rgTimes: [...v.rgTimes].sort(),
         rgCourts: [...v.rgCourts].sort(),
+        audience: [...v.audience].sort(),
     });
 
 export function PostNew() {
@@ -169,6 +189,11 @@ export function PostNew() {
     const [rgCourts, setRgCourts] = useState<Selection>(new Set());
     const [rgNote, setRgNote] = useState("");
 
+    // Post visibility (sub_need only — the regular-play form has no audience).
+    const [isPrivate, setIsPrivate] = useState(false);
+    const [audience, setAudience] = useState<Selection>(new Set());
+    const [myGroups, setMyGroups] = useState<GroupSummary[]>([]);
+
     // edit mode state — init from the URL so the header/fields never flash the
     // "create" state before the edit data loads.
     const [existingClaims, setExistingClaims] = useState(false);
@@ -180,6 +205,16 @@ export function PostNew() {
     useEffect(() => {
         supabase.from("courts").select("id, name, area").eq("active", true).order("name")
             .then(({ data }) => setCourts(data ?? []));
+    }, []);
+
+    // Groups for the audience picker. get_my_groups also returns groups you were
+    // recently removed from (so the feed can say so), and closed ones — neither
+    // can receive a new post, so both are filtered out here.
+    useEffect(() => {
+        supabase.rpc("get_my_groups").then(({ data }) => {
+            const all = Array.isArray(data) ? (data as GroupSummary[]) : [];
+            setMyGroups(all.filter((g) => !g.my_removed_at && !g.is_closed));
+        });
     }, []);
 
     // Close the form sheet on Escape (matches the other bottom sheets).
@@ -203,11 +238,20 @@ export function PostNew() {
         Promise.all([
             supabase.from("posts").select("*").eq("id", editPostId).single(),
             supabase.from("claims").select("id").eq("post_id", editPostId).in("status", ["pending", "approved"]).limit(1),
-        ]).then(([{ data: post }, { data: claims }]) => {
+            // The saved audience has to load with the post, not after it: the
+            // dirty baseline is captured in this callback, and a late-arriving
+            // audience would read as an edit the user never made.
+            supabase.rpc("get_post_audience", { p_post_id: editPostId }),
+        ]).then(([{ data: post }, { data: claims }, { data: savedAudience }]) => {
             if (!post) {
                 setLoaded(true);
                 return;
             }
+            const groupIds: string[] = Array.isArray(savedAudience?.group_ids) ? savedAudience.group_ids : [];
+            const audienceKeys = [
+                ...(post.audience_all_following ? [ALL_FOLLOWING] : []),
+                ...groupIds,
+            ];
             setPostType(post.post_type);
             setExistingClaims((claims ?? []).length > 0);
             if (post.post_type === "sub_need") {
@@ -226,6 +270,8 @@ export function PostNew() {
                 setCost(postCost);
                 setOriginalCost(postCost);
                 setNotes(post.notes ?? "");
+                setIsPrivate(post.visibility === "private");
+                setAudience(new Set(audienceKeys));
             } else {
                 setRgPlayTypes(new Set(post.play_type ? [post.play_type] : []));
                 setRgGroupSizes(new Set(post.total_players != null ? [String(post.total_players)] : []));
@@ -261,6 +307,8 @@ export function PostNew() {
                               rgTimes: [],
                               rgCourts: [],
                               rgNote: "",
+                              visibility: post.visibility ?? "public",
+                              audience: audienceKeys,
                           }
                         : {
                               postType: post.post_type,
@@ -283,6 +331,12 @@ export function PostNew() {
                               rgTimes: post.preferred_times ?? [],
                               rgCourts: post.court_id ? [post.court_id] : [],
                               rgNote: post.notes ?? "",
+                              // Regular-play posts have no visibility control,
+                              // so this branch pins the defaults rather than
+                              // reading the row — otherwise a regular post that
+                              // somehow carried a value would read as dirty.
+                              visibility: "public",
+                              audience: [],
                           },
                 ),
             );
@@ -312,10 +366,23 @@ export function PostNew() {
     const courtMissing =
         isEditing && !showCustomCourt && courtId != null && courts.length > 0 && !courts.some((c) => c.id === courtId);
 
+    const audienceKeys = keysOf(audience);
+
+    // "All players followed" heads the list, then the groups — the order the
+    // design shows, and the order the divider assumes.
+    const audienceItems = [
+        { id: ALL_FOLLOWING, label: "All players followed" },
+        ...myGroups.map((g) => ({ id: g.id, label: g.name })),
+    ];
+
     const validateSubNeed = () => {
         // Custom courts require both a name and an area; listed courts just need a valid selection.
         const courtOk = showCustomCourt ? !!(customCourt.trim() && customArea.trim()) : !!courtId && !courtMissing;
-        return !!(playType && gameDate && gameTime && duration != null && skillLevel && courtOk && cost !== null && notes.trim());
+        // A private post with nobody selected would be visible to its author
+        // alone, so the recipients field is required once the toggle is on —
+        // which is what the asterisk in the design means.
+        const audienceOk = !isPrivate || audienceKeys.length > 0;
+        return !!(playType && gameDate && gameTime && duration != null && skillLevel && courtOk && cost !== null && notes.trim() && audienceOk);
     };
 
     const setSize = (s: Selection) => (s instanceof Set ? s.size : 0);
@@ -348,8 +415,10 @@ export function PostNew() {
                 rgTimes: keysOf(rgTimes),
                 rgCourts: keysOf(rgCourts),
                 rgNote,
+                visibility: isPrivate ? "private" : "public",
+                audience: keysOf(audience),
             }),
-        [postType, playType, duration, gameDate, gameTime, skillLevel, courtId, showCustomCourt, customCourt, customArea, proName, cost, notes, rgPlayTypes, rgGroupSizes, rgSkillLevels, rgDays, rgTimes, rgCourts, rgNote],
+        [postType, playType, duration, gameDate, gameTime, skillLevel, courtId, showCustomCourt, customCourt, customArea, proName, cost, notes, rgPlayTypes, rgGroupSizes, rgSkillLevels, rgDays, rgTimes, rgCourts, rgNote, isPrivate, audience],
     );
     // Baseline captured directly from the loaded post (in the load effect), so it's
     // race-free — no dependency on when state/effects flush.
@@ -399,8 +468,23 @@ export function PostNew() {
                         }),
                         cost,
                         notes: notes || null,
+                        // Sharing stays editable even once the post has claims —
+                        // it is the author's control over who sees it, not a
+                        // detail of the game. Existing claimers keep access
+                        // regardless (can_see_post has a claim clause).
+                        visibility: isPrivate ? "private" : "public",
+                        audience_all_following: isPrivate && splitAudience(audienceKeys).allFollowing,
                     }).eq("id", editPostId);
                     if (updateError) throw updateError;
+
+                    // Groups live in their own table, so they need a second call.
+                    // Going public clears the audience rather than leaving stale
+                    // rows behind to be resurrected by a later re-privatising.
+                    const { data: audRes } = await supabase.rpc("set_post_audience", {
+                        p_post_id: editPostId,
+                        p_group_ids: isPrivate ? splitAudience(audienceKeys).groupIds : [],
+                    });
+                    if (audRes && audRes.success === false) throw new Error(audRes.error ?? "Could not save who can see this post");
 
                     // A custom court lives only on this post; record its name for the admin Custom list.
                     if (usedCustomCourt && !existingClaims) await upsertCustomCourt(customCourt.trim(), customArea.trim());
@@ -440,15 +524,32 @@ export function PostNew() {
                         cost,
                         spots_total: 1,
                         notes: notes || null,
+                        visibility: isPrivate ? "private" : "public",
+                        audience_all_following: isPrivate && splitAudience(audienceKeys).allFollowing,
                     }).select("id");
                     if (insertError) throw insertError;
                     newPostId = inserted?.[0]?.id ?? null;
+
+                    // Order matters twice here. The audience is written before
+                    // the notification, because the server derives recipients
+                    // from it — fire first and a private post notifies nobody.
+                    // And visibility is on the INSERT rather than being set
+                    // afterwards, so the post is never briefly public: if this
+                    // call fails, the post is visible to its author alone.
+                    if (newPostId && isPrivate) {
+                        const { data: audRes } = await supabase.rpc("set_post_audience", {
+                            p_post_id: newPostId,
+                            p_group_ids: splitAudience(audienceKeys).groupIds,
+                        });
+                        if (audRes && audRes.success === false) throw new Error(audRes.error ?? "Could not save who can see this post");
+                    }
 
                     // A custom court lives only on this post; record its name so it shows in the
                     // admin Custom list. The post itself goes live in the feed immediately.
                     if (usedCustomCourt) await upsertCustomCourt(customCourt.trim(), customArea.trim());
 
-                    // N13: Friend new post — the server resolves the follower list.
+                    // N13: Friend new post — the server resolves the recipients
+                    // (followers for a public post, the audience for a private one).
                     if (inserted && inserted.length > 0) {
                         sendNotification({ notification_type: "friend_new_post", post_id: inserted[0].id });
                     }
@@ -766,6 +867,59 @@ export function PostNew() {
                                 />
                             </div>
                         </div>
+
+                        {/* Post visibility — sub posts only. A regular-play post is a
+                            standing "looking for a game" ad with no audience to narrow. */}
+                        <div className="flex flex-col gap-2">
+                            <FieldLabel>Post visibility</FieldLabel>
+                            <div className="flex items-center gap-2">
+                                <Toggle
+                                    size="md"
+                                    aria-label="Make this post private"
+                                    isSelected={isPrivate}
+                                    onChange={setIsPrivate}
+                                />
+                                <span className={cx("text-sm", isPrivate ? "text-primary" : "text-tertiary")}>
+                                    {isPrivate ? "Private" : "Public"}
+                                </span>
+                            </div>
+                            <p className="text-xs text-tertiary">
+                                {isPrivate
+                                    ? "Only selected groups or players can claim."
+                                    : "Anyone at the required level or above can claim."}
+                            </p>
+                        </div>
+
+                        {isPrivate && (
+                            <MultiSelect
+                                label="Private post recipients"
+                                placeholder="Select groups or players"
+                                items={audienceItems}
+                                selectedKeys={audience}
+                                onSelectionChange={(k) => setAudience(k)}
+                                isRequired
+                                size="sm"
+                                showSearch={false}
+                                showFooter={false}
+                                isNonModal
+                                triggerClassName={FIELD_SELECT}
+                            >
+                                {(item) => (
+                                    <SelectItem
+                                        id={item.id}
+                                        selectionIndicator="checkbox"
+                                        selectionIndicatorAlign="left"
+                                        // The divider belongs to the all-followed row rather than
+                                        // a listbox section: it separates two kinds of audience
+                                        // (everyone you follow vs. named groups), and a Section
+                                        // would add its own header slot the design doesn't have.
+                                        className={item.id === ALL_FOLLOWING ? "border-b border-tertiary pb-1" : undefined}
+                                    >
+                                        {item.label}
+                                    </SelectItem>
+                                )}
+                            </MultiSelect>
+                        )}
 
                         <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">

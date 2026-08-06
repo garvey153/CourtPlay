@@ -22,6 +22,10 @@ const { mockFrom } = vi.hoisted(() => ({ mockFrom: vi.fn() }));
 vi.mock("@/lib/supabase", () => ({
     supabase: {
         from: mockFrom,
+        // get_my_groups (audience picker) and set_post_audience (save). The
+        // default success shape keeps the create path from throwing; the
+        // visibility tests below assert against this mock directly.
+        rpc: vi.fn().mockResolvedValue({ data: { success: true, group_ids: [] }, error: null }),
         functions: {
             invoke: vi.fn().mockResolvedValue({ data: { success: true }, error: null }),
         },
@@ -161,7 +165,46 @@ describe("PostNew — sub need form (rendering)", () => {
         await waitFor(() => screen.getByText("Play type"));
         expect(screen.queryByText(/spots open/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/total players/i)).not.toBeInTheDocument();
-        expect(document.querySelector('input[role="switch"]')).toBeNull();
+        // This used to assert no switch at all, standing in for the removed
+        // multi-date toggle. Post visibility is a switch now, so the check has
+        // to name it: exactly one, and it's that one.
+        const switches = document.querySelectorAll('input[role="switch"]');
+        expect(switches).toHaveLength(1);
+        expect(screen.getByLabelText("Make this post private")).toBeInTheDocument();
+    });
+});
+
+describe("PostNew — post visibility", () => {
+    it("defaults to Public, with the public claim rule as the hint", async () => {
+        renderPostNew();
+        await waitFor(() => expect(screen.getByText("Post visibility")).toBeInTheDocument());
+        expect(screen.getByText("Public")).toBeInTheDocument();
+        expect(screen.getByText("Anyone at the required level or above can claim.")).toBeInTheDocument();
+        // The recipients picker is private-only.
+        expect(screen.queryByText("Private post recipients")).not.toBeInTheDocument();
+    });
+
+    it("toggling to Private swaps the word, the hint, and reveals the recipients picker", async () => {
+        const user = userEvent.setup();
+        renderPostNew();
+        await waitFor(() => expect(screen.getByText("Post visibility")).toBeInTheDocument());
+
+        await user.click(screen.getByLabelText("Make this post private"));
+
+        expect(screen.getByText("Private")).toBeInTheDocument();
+        expect(screen.queryByText("Public")).not.toBeInTheDocument();
+        expect(screen.getByText("Only selected groups or players can claim.")).toBeInTheDocument();
+        expect(screen.getByText("Private post recipients")).toBeInTheDocument();
+    });
+
+    it("is absent from the regular-play form, which has no audience", async () => {
+        const user = userEvent.setup();
+        renderPostNew();
+        await waitFor(() => expect(screen.getByText("Post visibility")).toBeInTheDocument());
+
+        await user.click(screen.getByText("Find a regular game"));
+
+        expect(screen.queryByText("Post visibility")).not.toBeInTheDocument();
     });
 });
 

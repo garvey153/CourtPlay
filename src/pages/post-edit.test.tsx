@@ -22,6 +22,10 @@ const { mockFrom } = vi.hoisted(() => ({ mockFrom: vi.fn() }));
 vi.mock("@/lib/supabase", () => ({
     supabase: {
         from: mockFrom,
+        // get_my_groups feeds the audience picker; get_post_audience loads the
+        // saved audience alongside the post so the dirty baseline is complete.
+        // Both answer empty here — these tests are about the other fields.
+        rpc: vi.fn().mockResolvedValue({ data: { group_ids: [] }, error: null }),
         auth: {
             getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
             onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
