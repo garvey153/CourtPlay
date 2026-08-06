@@ -17,7 +17,7 @@
  * all of this and keep passing explicit payloads; they aren't the threat.
  */
 
-import { excluding, others } from "./notification-recipients.ts";
+import { excluding, newPostRecipients, others } from "./notification-recipients.ts";
 
 // deno-lint-ignore no-explicit-any
 type Supabase = any;
@@ -260,7 +260,7 @@ export async function resolveUserNotification(
 
     const { data: post } = await supabase
         .from("posts")
-        .select("id, author_id, location, custom_court, cost")
+        .select("id, author_id, location, custom_court, cost, visibility, audience_all_following")
         .eq("id", input.post_id)
         .single();
 
@@ -332,15 +332,54 @@ export async function resolveUserNotification(
         }
 
         case "friend_new_post": {
-            const { data: followers } = await supabase
-                .from("follows")
-                .select("follower_id")
-                .eq("following_id", callerId);
+            const isPrivate = post.visibility === "private";
+
+            // Two different questions of the same table, and the columns are
+            // swapped between them. `following_id = caller` finds people who
+            // follow the poster; `follower_id = caller` finds people the poster
+            // follows. Only the second is an audience.
+            const { data: followerRows } = isPrivate
+                ? { data: [] }
+                : await supabase.from("follows").select("follower_id").eq("following_id", callerId);
+
+            const { data: followingRows } = isPrivate && post.audience_all_following
+                ? await supabase.from("follows").select("following_id").eq("follower_id", callerId)
+                : { data: [] };
+
+            // Group audiences resolve to their members, in two hops rather than
+            // a nested embed: post_audience_groups points at `groups`, so
+            // reaching group_members through it would be a two-level join for
+            // no gain. removed_at is stamped rather than the row deleted
+            // (20260804000004), so it has to be filtered explicitly.
+            let groupMembers: string[] = [];
+            if (isPrivate) {
+                const { data: audienceGroups } = await supabase
+                    .from("post_audience_groups")
+                    .select("group_id")
+                    .eq("post_id", post.id);
+                const groupIds = (audienceGroups ?? []).map((g: { group_id: string }) => g.group_id);
+                if (groupIds.length > 0) {
+                    const { data: members } = await supabase
+                        .from("group_members")
+                        .select("user_id")
+                        .in("group_id", groupIds)
+                        .is("removed_at", null);
+                    groupMembers = (members ?? []).map((m: { user_id: string }) => m.user_id);
+                }
+            }
+
             const poster_name = await firstName(supabase, callerId);
             return {
                 ok: true,
                 value: {
-                    recipients: others((followers ?? []).map((f: { follower_id: string }) => f.follower_id), callerId),
+                    recipients: newPostRecipients({
+                        isPrivate,
+                        followers: (followerRows ?? []).map((f: { follower_id: string }) => f.follower_id),
+                        following: (followingRows ?? []).map((f: { following_id: string }) => f.following_id),
+                        allFollowing: !!post.audience_all_following,
+                        groupMembers,
+                        posterId: callerId,
+                    }),
                     data: { poster_name, post_summary: summary },
                     ...base,
                 },

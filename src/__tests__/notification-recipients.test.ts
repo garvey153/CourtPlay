@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { excluding, others } from "../../supabase/functions/_shared/notification-recipients.ts";
+import { excluding, newPostRecipients, others } from "../../supabase/functions/_shared/notification-recipients.ts";
 
 /**
  * The recipient rules that used to be asserted from the browser.
@@ -48,5 +48,65 @@ describe("excluding", () => {
 
     it("accepts a Set, which is how the caller holds the claimer list", () => {
         expect(excluding(["a", "b"], new Set(["b"]))).toEqual(["a"]);
+    });
+});
+
+/**
+ * The private case points the OPPOSITE way along `follows` from the public one,
+ * and getting it backwards notifies a plausible-looking set of the wrong
+ * people. Both directions are asserted separately for that reason.
+ */
+describe("newPostRecipients", () => {
+    const base = {
+        followers: ["follower"],
+        following: ["followed"],
+        groupMembers: ["groupmate"],
+        posterId: "poster",
+        allFollowing: false,
+    };
+
+    it("public: goes to the poster's followers", () => {
+        expect(newPostRecipients({ ...base, isPrivate: false })).toEqual(["follower"]);
+    });
+
+    it("public: ignores the audience fields entirely", () => {
+        expect(newPostRecipients({ ...base, isPrivate: false, allFollowing: true })).toEqual(["follower"]);
+    });
+
+    it("private: never reaches a follower who is outside the audience", () => {
+        const got = newPostRecipients({ ...base, isPrivate: true, allFollowing: true });
+        expect(got).not.toContain("follower");
+    });
+
+    it("private + all-following: goes to people the POSTER follows, not to their followers", () => {
+        expect(newPostRecipients({ ...base, isPrivate: true, allFollowing: true, groupMembers: [] })).toEqual(["followed"]);
+    });
+
+    it("private: group members hear even though they don't follow the poster", () => {
+        expect(newPostRecipients({ ...base, isPrivate: true, allFollowing: false })).toEqual(["groupmate"]);
+    });
+
+    it("private: without all-following, the followed player is not in the audience", () => {
+        expect(newPostRecipients({ ...base, isPrivate: true, allFollowing: false })).not.toContain("followed");
+    });
+
+    it("private: someone both followed and in a group hears exactly once", () => {
+        const got = newPostRecipients({
+            ...base,
+            isPrivate: true,
+            allFollowing: true,
+            following: ["both"],
+            groupMembers: ["both"],
+        });
+        expect(got).toEqual(["both"]);
+    });
+
+    it("private with nothing selected reaches nobody — it fails closed", () => {
+        expect(newPostRecipients({ ...base, isPrivate: true, allFollowing: false, groupMembers: [] })).toEqual([]);
+    });
+
+    it("never notifies the poster, even when they're in one of their own groups", () => {
+        const got = newPostRecipients({ ...base, isPrivate: true, groupMembers: ["poster", "groupmate"] });
+        expect(got).toEqual(["groupmate"]);
     });
 });

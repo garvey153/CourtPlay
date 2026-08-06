@@ -29,3 +29,37 @@ export function excluding(ids: string[], exclude: Iterable<string>): string[] {
     const skip = new Set(exclude);
     return ids.filter((id) => !skip.has(id));
 }
+
+/**
+ * Who hears that a post went up.
+ *
+ * The two cases point in OPPOSITE directions along `follows`, which is the
+ * whole reason this is a named function rather than a filter at the call site:
+ *
+ *   public  → the poster's FOLLOWERS. You followed someone, so you hear when
+ *             they post. Their own following list is irrelevant.
+ *   private → the AUDIENCE, and nothing else: the people the POSTER FOLLOWS
+ *             (when "All players followed" is ticked) plus every member of a
+ *             picked group. A follower who is not in the audience must not
+ *             hear — that is the leak this closes — and a group member who
+ *             does not follow the poster must, which no filter over followers
+ *             could ever produce.
+ *
+ * Deriving the private list from `followers` is the mistake to avoid: it looks
+ * right, it notifies plausible people, and it is wrong in both directions.
+ */
+export function newPostRecipients(args: {
+    isPrivate: boolean;
+    /** Users who follow the poster. */
+    followers: string[];
+    /** Users the poster follows — only consulted when allFollowing is set. */
+    following: string[];
+    allFollowing: boolean;
+    /** Members of every group on the post's audience. */
+    groupMembers: string[];
+    posterId: string;
+}): string[] {
+    const { isPrivate, followers, following, allFollowing, groupMembers, posterId } = args;
+    if (!isPrivate) return others(followers, posterId);
+    return others([...(allFollowing ? following : []), ...groupMembers], posterId);
+}
