@@ -363,7 +363,10 @@ export function Activity() {
         // Group into the same section style as the Claimed tab.
         const allSections: Array<{ label: string; kind: CardKind; posts: MyPost[] }> = [
             { label: "Pending", kind: "pending", posts: visiblePosts.filter((p) => hasPending(p)) },
-            { label: "Approved", kind: "approved", posts: visiblePosts.filter((p) => !hasPending(p) && hasApproved(p)) },
+            // "claimed", not "approved": these are my posts, so an approved claim means
+            // the spot is gone. The brand-green "Approved" treatment reads as still-open,
+            // which is the claimer's view of the same event, not the poster's.
+            { label: "Approved", kind: "claimed", posts: visiblePosts.filter((p) => !hasPending(p) && hasApproved(p)) },
             {
                 label: "Active",
                 kind: "open",

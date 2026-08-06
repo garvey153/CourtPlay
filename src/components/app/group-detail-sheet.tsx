@@ -225,7 +225,9 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
                                         {m.last_name ? ` ${m.last_name.charAt(0)}.` : ""}
                                         {m.skill_level && ` · ${skillLabel(m.skill_level)}`}
                                     </span>
-                                    {m.is_creator && <span className="shrink-0 text-sm text-brand-500">Owner</span>}
+                                    {/* Tertiary, matching the Edit group roster: Owner is a
+                                        label, and green would read as something you could tap. */}
+                                    {m.is_creator && <span className="shrink-0 text-sm text-tertiary">Owner</span>}
                                 </li>
                             ))}
                         </ul>
