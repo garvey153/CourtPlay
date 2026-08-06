@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { applyFilters } from "@/utils/feed-filter";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
@@ -31,7 +32,10 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
         status: "active",
         format: "point_play",
         total_players: 4,
-        game_date: "2026-05-10",
+        // Must stay in the future: applyFilters now really does drop posts past
+        // their game window. The old hand-copied mirror skipped that check, so a
+        // stale date went unnoticed here for months.
+        game_date: new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10),
         game_time: "09:00",
         skill_level: "4.0",
         location: "Longshore Club",
@@ -53,21 +57,12 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
         last_name: "User",
         photo_url: null,
         is_friend: false,
+        is_connected: false,
         ...overrides,
     };
 }
 
-/** Client-side filter function mirroring feed.tsx applyFilters */
-function applyFilters(posts: FeedPost[], f: FilterState): FeedPost[] {
-    return posts.filter((p) => {
-        if (f.skillLevels.length > 0 && !f.skillLevels.includes(p.skill_level ?? "")) return false;
-        if (f.formats.length > 0 && !f.formats.includes(p.play_type ?? p.format ?? "")) return false;
-        if (f.dateFrom && p.game_date && p.game_date < f.dateFrom) return false;
-        if (f.dateTo && p.game_date && p.game_date > f.dateTo) return false;
-        if (f.courtIds.length > 0 && !f.courtIds.includes(p.court_id ?? "")) return false;
-        return true;
-    });
-}
+
 
 // ---------------------------------------------------------------------------
 // Controlled FeedFilters wrapper for interaction tests

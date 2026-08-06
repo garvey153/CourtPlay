@@ -47,6 +47,7 @@ interface FormState {
     skill_level: string;
     court_preferences: Selection;
     new_to_westport: boolean;
+    feed_connected_only: boolean;
     phone: string;
     venmo_handle: string;
     photo_url: string;
@@ -63,6 +64,7 @@ function serialize(form: FormState, prefs: Map<string, NotifPref>): string {
         skill: form.skill_level,
         courts,
         moved: form.new_to_westport,
+        feedConnected: form.feed_connected_only,
         phone: form.phone.trim(),
         venmo: form.venmo_handle.trim(),
         photo: form.photo_url,
@@ -109,6 +111,7 @@ export function EditProfile() {
         skill_level: "",
         court_preferences: new Set<string>(),
         new_to_westport: false,
+        feed_connected_only: false,
         phone: "",
         venmo_handle: "",
         photo_url: "",
@@ -140,7 +143,7 @@ export function EditProfile() {
         (async () => {
             const { data: row } = await supabase
                 .from("users")
-                .select("first_name, last_name, email, skill_level, court_preferences, new_to_westport, phone, venmo_handle, photo_url")
+                .select("first_name, last_name, email, skill_level, court_preferences, new_to_westport, phone, venmo_handle, photo_url, feed_connected_only")
                 .eq("id", user.id)
                 .single();
 
@@ -171,6 +174,7 @@ export function EditProfile() {
                 skill_level: row?.skill_level ?? "",
                 court_preferences: new Set<string>(row?.court_preferences ?? []),
                 new_to_westport: row?.new_to_westport ?? false,
+                feed_connected_only: row?.feed_connected_only ?? false,
                 phone,
                 venmo_handle: venmo,
                 photo_url: row?.photo_url ?? "",
@@ -264,6 +268,7 @@ export function EditProfile() {
                     skill_level: form.skill_level || null,
                     court_preferences: courtPrefs.length > 0 ? courtPrefs : null,
                     new_to_westport: form.new_to_westport,
+                    feed_connected_only: form.feed_connected_only,
                     phone: encryptedPhone,
                     venmo_handle: encryptedVenmo,
                     photo_url: form.photo_url || null,
@@ -412,6 +417,22 @@ export function EditProfile() {
                             value={form.venmo_handle}
                             onChange={(v) => set("venmo_handle", v)}
                             hint="Used to generate payment requests. Encrypted and only visible after approval."
+                        />
+                    </section>
+
+                    {/* Feed */}
+                    <section className="flex flex-col gap-4">
+                        <div>
+                            <h2 className="text-md font-semibold text-primary">Feed</h2>
+                            <p className="mt-1 text-sm text-tertiary">
+                                Choose whose posts you see.
+                            </p>
+                        </div>
+                        <Checkbox
+                            label="Only show posts from my groups and players I'm following."
+                            hint="Selecting this will limit the feed view at all times."
+                            isSelected={form.feed_connected_only}
+                            onChange={(v) => set("feed_connected_only", v)}
                         />
                     </section>
 
