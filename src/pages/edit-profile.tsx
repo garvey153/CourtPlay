@@ -422,15 +422,9 @@ export function EditProfile() {
 
                     {/* Feed */}
                     <section className="flex flex-col gap-4">
-                        <div>
-                            <h2 className="text-md font-semibold text-primary">Feed</h2>
-                            <p className="mt-1 text-sm text-tertiary">
-                                Choose whose posts you see.
-                            </p>
-                        </div>
+                        <h2 className="text-md font-semibold text-primary">Feed</h2>
                         <Checkbox
                             label="Only show posts from my groups and players I'm following."
-                            hint="Selecting this will limit the feed view at all times."
                             isSelected={form.feed_connected_only}
                             onChange={(v) => set("feed_connected_only", v)}
                         />
