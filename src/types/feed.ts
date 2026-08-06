@@ -29,6 +29,12 @@ export interface FeedPost {
     last_name: string;
     photo_url: string | null;
     is_friend: boolean;
+    /**
+     * You follow this author, or you share an active group with them. Broader
+     * than is_friend, which stays follow-only because the "Friend" badge on the
+     * card reads from it.
+     */
+    is_connected: boolean;
     spots_available: number;
     user_claim_status: "pending" | "approved" | "rejected" | "unclaimed" | "cancelled" | null;
     user_claim_id: string | null;

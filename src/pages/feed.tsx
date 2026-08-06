@@ -28,6 +28,7 @@ import { REJECTION_REASONS } from "@/types/claims";
 import { claimToFeedPost } from "@/utils/activity-feed-map";
 import type { ClaimRow, MyClaim, MyPost } from "@/types/activity";
 import type { FeedPost, FilterState } from "@/types/feed";
+import { applyFilters } from "@/utils/feed-filter";
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
 
@@ -60,30 +61,10 @@ interface Court {
     name: string;
 }
 
-// Dated posts stay in the feed until 24h after their game date/time; after that
-// they drop off. Undated posts (e.g. regular-game availability) are unaffected.
-const FEED_GRACE_MS = 24 * 60 * 60 * 1000;
-function withinFeedWindow(post: FeedPost): boolean {
-    const end = gameEndMs(post);
-    return end === null || Date.now() <= end + FEED_GRACE_MS;
-}
-
-function applyFilters(posts: FeedPost[], f: FilterState): FeedPost[] {
-    return posts.filter((p) => {
-        if (!withinFeedWindow(p)) return false;
-        if (f.skillLevels.length > 0 && !f.skillLevels.includes(p.skill_level ?? "")) return false;
-        // sub_need posts store their type in play_type; regular_game in format.
-        if (f.formats.length > 0 && !f.formats.includes(p.play_type ?? p.format ?? "")) return false;
-        if (f.dateFrom && p.game_date && p.game_date < f.dateFrom) return false;
-        if (f.dateTo && p.game_date && p.game_date > f.dateTo) return false;
-        if (f.courtIds.length > 0 && !f.courtIds.includes(p.court_id ?? "")) return false;
-        return true;
-    });
-}
-
 export function Feed() {
     const { user } = useAuth();
     const { profile } = useProfile();
+    const connectedOnly = !!profile?.feed_connected_only;
     const navigate = useNavigate();
 
     const [posts, setPosts] = useState<FeedPost[]>([]);
@@ -491,7 +472,7 @@ export function Feed() {
         !!profile && !!(profile.skill_level) && !!(profile.headline || profile.photo_url);
 
     const filteredPosts = useMemo(() => {
-        const visible = applyFilters(posts, filters);
+        const visible = applyFilters(posts, filters, connectedOnly);
         // Keep the RPC order, but sink posts whose game time has passed (expired /
         // past-claimed) to the bottom so they sit below still-upcoming spots.
         const isPast = (p: FeedPost) => {
@@ -502,7 +483,7 @@ export function Feed() {
             .map((p, i) => ({ p, i }))
             .sort((a, b) => Number(isPast(a.p)) - Number(isPast(b.p)) || a.i - b.i)
             .map(({ p }) => p);
-    }, [posts, filters]);
+    }, [posts, filters, connectedOnly]);
     // First-run welcome: shown once to users who haven't posted yet (until they
     // dismiss it). Deliberately independent of the feed/filter count — an empty or
     // filtered feed is handled by the "No open spots" state below, not this card.

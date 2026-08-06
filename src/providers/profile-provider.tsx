@@ -15,6 +15,8 @@ export interface UserProfile {
     pro_preference: string | null;
     new_to_westport: boolean;
     is_admin: boolean;
+    /** Limit the feed to posts from my groups and the players I follow. */
+    feed_connected_only: boolean;
     onesignal_player_id: string | null;
 }
 
