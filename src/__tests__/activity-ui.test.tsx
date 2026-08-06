@@ -94,6 +94,21 @@ describe("Activity redesign", () => {
         expect(rpc).toHaveBeenCalledWith("approve_claim", { p_claim_id: "claim-1" });
     });
 
+    it("created tab: a post with an approved claim badges as Claimed, not Approved", async () => {
+        // The poster's spot is gone, so the card must not keep the brand-green
+        // still-open treatment "Approved" carries on the Answered tab.
+        const approvedPost = { ...createdPost, claims: [{ ...createdPost.claims[0], status: "approved" }] };
+        setup([approvedPost], []);
+        const user = userEvent.setup();
+        render(<MemoryRouter><Activity /></MemoryRouter>);
+        await user.click(await screen.findByRole("button", { name: "Created posts" }));
+        await screen.findByText(/Round Robin Tennis/);
+        // "Approved" survives as the section heading; the card badge reads Claimed.
+        const card = screen.getByText(/Round Robin Tennis/).closest("button")!;
+        expect(card).toHaveTextContent("Claimed");
+        expect(card).not.toHaveTextContent("Approved");
+    });
+
     it("created post with no claims shows Edit / Delete actions in the sheet", async () => {
         setup([{ ...createdPost, spots_available: 1, claims: [] }], []);
         const user = userEvent.setup();
