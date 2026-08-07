@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef } from "react";
 import { Avatar } from "@/components/base/avatar/avatar";
+import { FriendBadge } from "./friend-badge";
 import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
 
@@ -97,11 +98,10 @@ export const RegularPlayCard = memo(function RegularPlayCard({ post, currentUser
                         {" · "}
                         {timeAgo(post.created_at)}
                     </span>
-                    {post.is_friend && (
-                        <span className="shrink-0 rounded-lg bg-blue-900 px-2 py-0.5 text-xs font-semibold text-blue-400">
-                            Friend
-                        </span>
-                    )}
+                    {/* Regular-play posts carry no status badge, so the accent
+                        bar's blue is this card's status colour — the same rule
+                        as the sub card, applied to what this one has. */}
+                    {post.is_friend && <FriendBadge accent="bg-blue-500" />}
                 </div>
 
                 {/* Notes speech-bubble (only when the poster added a note) */}
