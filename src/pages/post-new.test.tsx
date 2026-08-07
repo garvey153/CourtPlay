@@ -17,15 +17,28 @@ vi.mock("react-router", async (importOriginal) => {
     return { ...actual, useNavigate: () => mockNavigate };
 });
 
-const { mockFrom } = vi.hoisted(() => ({ mockFrom: vi.fn() }));
+const { mockFrom, MOCK_GROUPS } = vi.hoisted(() => ({
+    mockFrom: vi.fn(),
+    MOCK_GROUPS: [
+        { id: "g1", name: "The Racquettes", details: null, is_creator: true, is_closed: false, closed_at: null,
+          joined_at: "2026-08-01T00:00:00Z", my_removed_at: null, removed_by_me: false, member_count: 4, members: [] },
+        { id: "g2", name: "Sunday Doubles", details: null, is_creator: false, is_closed: false, closed_at: null,
+          joined_at: "2026-08-01T00:00:00Z", my_removed_at: null, removed_by_me: false, member_count: 6, members: [] },
+    ],
+}));
 
 vi.mock("@/lib/supabase", () => ({
     supabase: {
         from: mockFrom,
-        // get_my_groups (audience picker) and set_post_audience (save). The
-        // default success shape keeps the create path from throwing; the
-        // visibility tests below assert against this mock directly.
-        rpc: vi.fn().mockResolvedValue({ data: { success: true, group_ids: [] }, error: null }),
+        // get_my_groups feeds both group pickers; everything else gets the
+        // generic success shape so the create path doesn't throw.
+        rpc: vi.fn((fn: string) =>
+            Promise.resolve(
+                fn === "get_my_groups"
+                    ? { data: MOCK_GROUPS, error: null }
+                    : { data: { success: true, group_ids: [] }, error: null },
+            ),
+        ),
         functions: {
             invoke: vi.fn().mockResolvedValue({ data: { success: true }, error: null }),
         },
@@ -195,6 +208,45 @@ describe("PostNew — post visibility", () => {
         expect(screen.queryByText("Public")).not.toBeInTheDocument();
         expect(screen.getByText("Only selected groups or players can claim.")).toBeInTheDocument();
         expect(screen.getByText("Private post recipients")).toBeInTheDocument();
+    });
+
+    it("Tag your group is hidden until the post is private", async () => {
+        const user = userEvent.setup();
+        renderPostNew();
+        await waitFor(() => expect(screen.getByText("Post visibility")).toBeInTheDocument());
+        expect(screen.queryByText("Tag your group (optional)")).not.toBeInTheDocument();
+
+        await user.click(screen.getByLabelText("Make this post private"));
+        expect(screen.getByText("Tag your group (optional)")).toBeInTheDocument();
+    });
+
+    it("going back to public hides the tag field AND clears the selection", async () => {
+        const user = userEvent.setup();
+        renderPostNew();
+        await waitFor(() => expect(screen.getByText("Post visibility")).toBeInTheDocument());
+
+        await user.click(screen.getByLabelText("Make this post private"));
+        // By text, not accessible name: React Aria composes the trigger's name
+        // from the label too, and "Select groups or players" would also match a
+        // loose regex.
+        await user.click(screen.getByText("Select groups").closest("button")!);
+        await user.click(await screen.findByRole("option", { name: "The Racquettes" }));
+        // getAllByText: right after selecting, the trigger's value and the
+        // listbox option are both still mounted.
+        await waitFor(() => expect(screen.getAllByText("The Racquettes").length).toBeGreaterThan(0));
+
+        await user.click(screen.getByLabelText("Make this post private"));
+        expect(screen.queryByText("Tag your group (optional)")).not.toBeInTheDocument();
+
+        // Back to private: the field returns EMPTY. A retained value would be a
+        // form remembering something it stopped showing.
+        await user.click(screen.getByLabelText("Make this post private"));
+        expect(screen.getByText("Tag your group (optional)")).toBeInTheDocument();
+        // Assert on the TRIGGER's own text rather than a page-wide text query:
+        // the group name also appears as an option in the audience picker's
+        // list, so a global query is ambiguous. The placeholder showing is what
+        // "nothing selected" means.
+        expect(screen.getByText("Select groups").closest("button")).toHaveTextContent(/^Select groups$/);
     });
 
     it("is absent from the regular-play form, which has no audience", async () => {

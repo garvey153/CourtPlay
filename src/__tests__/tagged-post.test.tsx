@@ -53,10 +53,29 @@ describe("SubCard — tagged variant", () => {
         expect(screen.getByText("$25")).toBeInTheDocument();
     });
 
-    it("replaces the price with the two-person mark for a tagged viewer", () => {
+    it("keeps the price for a tagged viewer, one shade back", () => {
         render(<SubCard post={post({ is_tagged: true })} />);
-        expect(screen.queryByText("$25")).not.toBeInTheDocument();
-        expect(screen.getByLabelText("You're in the group playing this game")).toBeInTheDocument();
+        const price = screen.getByText("$25");
+        expect(price).toBeInTheDocument();
+        // Secondary, not the tertiary a claimed card drops to — a tagged post is
+        // still live, just not yours to act on.
+        expect(price.className).toContain("text-secondary");
+    });
+
+    it("names the group in the byline, which is why the post is in your feed", () => {
+        render(<SubCard post={post({ is_tagged: true, tagged_group_name: "The Racquettes" })} />);
+        expect(screen.getByText(/The Racquettes/)).toBeInTheDocument();
+        expect(screen.getByText(/^Test · The Racquettes · /)).toBeInTheDocument();
+    });
+
+    it("leaves the byline alone for an ordinary viewer", () => {
+        render(<SubCard post={post({ tagged_group_name: "The Racquettes" })} />);
+        expect(screen.queryByText(/The Racquettes/)).not.toBeInTheDocument();
+    });
+
+    it("a claimed tagged post keeps the claimed dimming — status carries more", () => {
+        render(<SubCard post={post({ is_tagged: true, spots_available: 0 })} />);
+        expect(screen.getByText("$25").className).toContain("text-tertiary");
     });
 
     it("keeps the status badge — a player in the game still wants to know it's open", () => {
@@ -64,12 +83,12 @@ describe("SubCard — tagged variant", () => {
         expect(screen.getByText("Open")).toBeInTheDocument();
     });
 
-    it("steps the accent bar down to brand-700, leaving the badge dot alone", () => {
+    it("steps the accent bar down to brand-800, leaving the badge dot alone", () => {
         // Scoped to the bar (the leading w-1 span). A bare search for
         // .bg-brand-500 would also match the Open badge's dot, which correctly
         // keeps its colour — the status still reads as open.
         const bar = (p: FeedPost) => render(<SubCard post={p} />).container.querySelector("span.w-1");
-        expect(bar(post({ is_tagged: true }))?.className).toContain("bg-brand-700");
+        expect(bar(post({ is_tagged: true }))?.className).toContain("bg-brand-800");
         expect(bar(post())?.className).toContain("bg-brand-500");
     });
 
@@ -166,5 +185,40 @@ describe("TaggedPostBanner", () => {
         // aria-label, the text button carries text. getByText picks the latter.
         await user.click(screen.getByText("Dismiss"));
         expect(onDismiss).toHaveBeenCalled();
+    });
+});
+
+/**
+ * The Friend badge takes its colour FROM the card's status rather than having
+ * one of its own — background = the status text colour, text = the card
+ * background. So it stays part of the status as the status changes.
+ */
+describe("FriendBadge on a post card", () => {
+    const friend = (o: Record<string, unknown> = {}) => post({ is_friend: true, ...o });
+
+    it("is green while the post is open", () => {
+        render(<SubCard post={friend()} />);
+        const badge = screen.getByText("Friend");
+        expect(badge.className).toContain("bg-brand-500");
+        expect(badge.className).toContain("text-[var(--color-bg-secondary)]");
+    });
+
+    it("follows the status to neutral once claimed", () => {
+        render(<SubCard post={friend({ spots_available: 0 })} />);
+        const badge = screen.getByText("Friend");
+        expect(badge.className).toContain("bg-neutral-400");
+        expect(badge.className).not.toContain("bg-brand-500");
+    });
+
+    it("carries no colour of its own — the old fixed blue is gone", () => {
+        render(<SubCard post={friend()} />);
+        const badge = screen.getByText("Friend");
+        expect(badge.className).not.toContain("bg-blue-900");
+        expect(badge.className).not.toContain("text-blue-400");
+    });
+
+    it("is absent when the poster isn't a friend", () => {
+        render(<SubCard post={post()} />);
+        expect(screen.queryByText("Friend")).not.toBeInTheDocument();
     });
 });

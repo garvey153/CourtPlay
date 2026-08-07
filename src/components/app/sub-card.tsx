@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef } from "react";
-import { Users01 } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
+import { FriendBadge } from "./friend-badge";
 import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
 
@@ -21,21 +21,23 @@ interface KindConfig {
     label: string;
     badgeBg: string;
     badgeFg: string;
+    /** bg-* twin of badgeFg — the Friend badge is knocked out of this colour. */
+    accent: string;
     dot: string | null; // null = solid badge, no dot
     dim: boolean;
 }
 
 export const KIND_CONFIG: Record<CardKind, KindConfig> = {
-    open: { bar: "bg-brand-500", label: "Open", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", dot: "bg-brand-500", dim: false },
-    approved: { bar: "bg-brand-500", label: "Approved", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", dot: "bg-brand-500", dim: false },
-    claimed: { bar: "bg-neutral-400", label: "Claimed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: true },
-    pending: { bar: "bg-neutral-400", label: "Pending", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: false },
-    expired: { bar: "bg-red-500", label: "Expired", badgeBg: "bg-red-900", badgeFg: "text-red-400", dot: "bg-red-400", dim: true },
-    filled: { bar: "bg-neutral-400", label: "Filled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: "bg-neutral-400", dim: true },
-    completed: { bar: "bg-neutral-400", label: "Completed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
-    cancelled: { bar: "bg-neutral-400", label: "Cancelled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
-    rejected: { bar: "bg-red-500", label: "Declined", badgeBg: "bg-red-900", badgeFg: "text-red-400", dot: "bg-red-400", dim: true },
-    backed_out: { bar: "bg-neutral-400", label: "Backed out", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", dot: null, dim: true },
+    open: { bar: "bg-brand-500", label: "Open", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", accent: "bg-brand-500", dot: "bg-brand-500", dim: false },
+    approved: { bar: "bg-brand-500", label: "Approved", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", accent: "bg-brand-500", dot: "bg-brand-500", dim: false },
+    claimed: { bar: "bg-neutral-400", label: "Claimed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: "bg-neutral-400", dim: true },
+    pending: { bar: "bg-neutral-400", label: "Pending", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: "bg-neutral-400", dim: false },
+    expired: { bar: "bg-red-500", label: "Expired", badgeBg: "bg-red-900", badgeFg: "text-red-400", accent: "bg-red-400", dot: "bg-red-400", dim: true },
+    filled: { bar: "bg-neutral-400", label: "Filled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: "bg-neutral-400", dim: true },
+    completed: { bar: "bg-neutral-400", label: "Completed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: null, dim: true },
+    cancelled: { bar: "bg-neutral-400", label: "Cancelled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: null, dim: true },
+    rejected: { bar: "bg-red-500", label: "Declined", badgeBg: "bg-red-900", badgeFg: "text-red-400", accent: "bg-red-400", dot: "bg-red-400", dim: true },
+    backed_out: { bar: "bg-neutral-400", label: "Backed out", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: null, dim: true },
 };
 
 /** Epoch ms of a dated post's end (game date + time). Null for undated posts. */
@@ -157,10 +159,11 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
         .filter(Boolean)
         .join(" · ");
 
-    const primaryText = config.dim || isTagged ? "text-tertiary" : "text-primary";
-    // The tagged title sits at secondary — a step down from primary, but not as
-    // far as the tertiary a dimmed (claimed/expired) card uses.
-    const titleText = isTagged && !config.dim ? "text-secondary" : primaryText;
+    const primaryText = config.dim ? "text-tertiary" : "text-primary";
+    // A tagged card sits ONE step back — title and price at secondary — while a
+    // dimmed (claimed/expired) one goes the whole way to tertiary. When a post is
+    // both, the status treatment wins: it carries more information.
+    const taggedText = isTagged && !config.dim ? "text-secondary" : primaryText;
 
     return (
         <button
@@ -171,7 +174,7 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
             className={cx("flex w-full overflow-hidden rounded text-left", isExpired && "cursor-default")}
         >
             {/* Left status accent bar */}
-            <span className={cx("w-1 shrink-0 self-stretch", isTagged ? "bg-brand-700" : config.bar)} aria-hidden="true" />
+            <span className={cx("w-1 shrink-0 self-stretch", isTagged ? "bg-brand-800" : config.bar)} aria-hidden="true" />
 
             {/* Card body */}
             <div
@@ -183,7 +186,7 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
                 {/* Top row: title/subtitle + status badge */}
                 <div className="flex w-full items-start gap-3">
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
-                        <p className={cx("text-md font-semibold", titleText)}>
+                        <p className={cx("text-md font-semibold", taggedText)}>
                             {title}
                             {when && ` · ${when}`}
                         </p>
@@ -214,24 +217,19 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
                             className="shrink-0 bg-white p-px shadow-xs"
                         />
                         <span className="truncate text-xs text-tertiary">
-                            {post.first_name} · {timeAgo(post.created_at)}
+                            {/* The group name sits between poster and time on a
+                                tagged card — it is the reason this post is in
+                                your feed, so it belongs in the byline rather
+                                than needing the sheet to explain it. */}
+                            {[post.first_name, isTagged ? post.tagged_group_name : null, timeAgo(post.created_at)]
+                                .filter(Boolean)
+                                .join(" · ")}
                         </span>
-                        {post.is_friend && (
-                            <span className="shrink-0 rounded-lg bg-blue-900 px-2 py-0.5 text-xs font-semibold text-blue-400">
-                                Friend
-                            </span>
-                        )}
+                        {post.is_friend && <FriendBadge accent={config.accent} />}
                     </div>
-                    {isTagged ? (
-                        <Users01
-                            aria-label="You're in the group playing this game"
-                            className="size-5 shrink-0 text-fg-quaternary"
-                        />
-                    ) : (
-                        <span className={cx("shrink-0 text-sm font-semibold", primaryText)}>
-                            {post.cost != null ? `$${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Free"}
-                        </span>
-                    )}
+                    <span className={cx("shrink-0 text-sm font-semibold", taggedText)}>
+                        {post.cost != null ? `$${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Free"}
+                    </span>
                 </div>
 
                 {/* Notes speech-bubble (only when the poster added a note) */}
