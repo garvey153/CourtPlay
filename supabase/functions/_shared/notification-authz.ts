@@ -17,7 +17,7 @@
  * all of this and keep passing explicit payloads; they aren't the threat.
  */
 
-import { excluding, newPostRecipients, others } from "./notification-recipients.ts";
+import { excluding, newPostRecipients, others, taggedRecipients } from "./notification-recipients.ts";
 
 // deno-lint-ignore no-explicit-any
 type Supabase = any;
@@ -50,6 +50,9 @@ const USER_TRIGGERABLE = new Set([
     "price_drop",
     "group_added",
     "group_removed",
+    "tagged_post_created",
+    "tagged_post_claimed",
+    "tagged_claim_approved",
 ]);
 
 const deny = (status: number, error: string): Resolution => ({ ok: false, status, error });
@@ -61,6 +64,33 @@ function postSummary(post: { location?: string | null; custom_court?: string | n
 async function firstName(supabase: Supabase, userId: string): Promise<string> {
     const { data } = await supabase.from("users").select("first_name").eq("id", userId).single();
     return data?.first_name ?? "";
+}
+
+/**
+ * The group a post is being played with, and who is in it.
+ *
+ * Used by the three tagged_* cases for their recipients, and by
+ * friend_new_post to EXCLUDE those same people — one lookup, so the two can
+ * never disagree about who counts as tagged. removed_at is stamped rather than
+ * the row deleted (20260804000004), so it has to be filtered explicitly.
+ */
+async function taggedGroup(
+    supabase: Supabase,
+    groupId: string | null | undefined,
+): Promise<{ name: string; members: string[] }> {
+    if (!groupId) return { name: "", members: [] };
+    const [{ data: group }, { data: members }] = await Promise.all([
+        supabase.from("groups").select("name, deleted_at").eq("id", groupId).single(),
+        supabase.from("group_members").select("user_id").eq("group_id", groupId).is("removed_at", null),
+    ]);
+    // A deleted group stops being an audience for anything, notifications
+    // included. Closing it does not — a closed group is a tombstone for posting
+    // to, not for hearing about a game already arranged.
+    if (!group || group.deleted_at) return { name: "", members: [] };
+    return {
+        name: group.name ?? "",
+        members: (members ?? []).map((m: { user_id: string }) => m.user_id),
+    };
 }
 
 export async function resolveUserNotification(
@@ -260,18 +290,19 @@ export async function resolveUserNotification(
 
     const { data: post } = await supabase
         .from("posts")
-        .select("id, author_id, location, custom_court, cost, visibility, audience_all_following")
+        .select("id, author_id, location, custom_court, cost, visibility, audience_all_following, tagged_group_id")
         .eq("id", input.post_id)
         .single();
 
     if (!post) return deny(404, "Post not found");
 
     // Every post-anchored type is something only the post's author can cause —
-    // except spot_reopened, which a claimer also causes by withdrawing. A spot is
+    // except spot_reopened, which a claimer also causes by withdrawing, and
+    // tagged_post_claimed, which the claimer causes by claiming. A spot is
     // occupied by any pending *or* approved claim, so dropping either frees it,
     // and the person who freed it is the claimer rather than the author.
     if (post.author_id !== callerId) {
-        if (type !== "spot_reopened") {
+        if (type !== "spot_reopened" && type !== "tagged_post_claimed") {
             return deny(403, "Only the post author may trigger this");
         }
 
@@ -368,6 +399,11 @@ export async function resolveUserNotification(
                 }
             }
 
+            // Anyone in the tagged group hears through tagged_post_created
+            // instead — a more specific reason for the same post. Without this
+            // a follower who is also playing gets told twice.
+            const tagged = await taggedGroup(supabase, post.tagged_group_id);
+
             const poster_name = await firstName(supabase, callerId);
             return {
                 ok: true,
@@ -378,9 +414,67 @@ export async function resolveUserNotification(
                         following: (followingRows ?? []).map((f: { following_id: string }) => f.following_id),
                         allFollowing: !!post.audience_all_following,
                         groupMembers,
+                        taggedMembers: tagged.members,
                         posterId: callerId,
                     }),
                     data: { poster_name, post_summary: summary },
+                    ...base,
+                },
+            };
+        }
+
+        // ── The group the sub is playing with ───────────────────────────────
+        //
+        // All three share a recipient rule — the tagged group minus the poster
+        // minus the claimer — so they share a branch. What differs is who is
+        // allowed to trigger them and what the copy needs.
+        case "tagged_post_created":
+        case "tagged_post_claimed":
+        case "tagged_claim_approved": {
+            // Entitlement is already settled above: created and approved are
+            // author-only, claimed additionally allows someone holding a claim,
+            // which is who actually triggers it.
+            const tagged = await taggedGroup(supabase, post.tagged_group_id);
+            // No tag, a deleted group, or an empty roster: nothing to send. Not
+            // an error — the poster simply didn't tag anyone.
+            if (tagged.members.length === 0) {
+                return { ok: true, value: { recipients: [], data: {}, ...base } };
+            }
+
+            // The claimer gets the specific claim notification instead, so they
+            // are dropped even when they're in the tagged group. On the claimed
+            // event the caller IS the claimer, which is more certain than
+            // re-deriving them from the table.
+            let claimerId: string | null = null;
+            let claimer_name = "";
+            if (type === "tagged_post_claimed" && post.author_id !== callerId) {
+                claimerId = callerId;
+            } else if (type !== "tagged_post_created") {
+                const { data: latest } = await supabase
+                    .from("claims")
+                    .select("claimer_id")
+                    .eq("post_id", post.id)
+                    .in("status", type === "tagged_claim_approved" ? ["approved"] : ["pending", "approved"])
+                    .order("created_at", { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                claimerId = latest?.claimer_id ?? null;
+            }
+            if (claimerId) claimer_name = await firstName(supabase, claimerId);
+
+            // post.author_id, NOT callerId. On the claimed event the caller is
+            // the claimer, so using callerId here would leave the poster in
+            // their own notification and label it with the claimer's name.
+            const poster_name = await firstName(supabase, post.author_id);
+            return {
+                ok: true,
+                value: {
+                    recipients: taggedRecipients({
+                        groupMembers: tagged.members,
+                        posterId: post.author_id,
+                        claimerId,
+                    }),
+                    data: { poster_name, claimer_name, group_name: tagged.name, post_summary: summary },
                     ...base,
                 },
             };

@@ -29,7 +29,10 @@ export type NotificationType =
     | "connection_withdrawn"
     | "feedback_submitted"
     | "group_added"
-    | "group_removed";
+    | "group_removed"
+    | "tagged_post_created"
+    | "tagged_post_claimed"
+    | "tagged_claim_approved";
 
 export const DEFAULT_CHANNELS: Record<NotificationType, { push: boolean; email: boolean }> = {
     // Claim lifecycle (claimed / approved / declined) pushes by default.
@@ -52,5 +55,10 @@ export const DEFAULT_CHANNELS: Record<NotificationType, { push: boolean; email: 
     connection_withdrawn: { push: false, email: true }, // N16 — informational, like connection_closed
     group_added: { push: true, email: true },
     group_removed: { push: false, email: true },
+    // N19–N21 — the group the sub is playing with. Posting is opt-in; the two
+    // status updates are what the post itself promises them.
+    tagged_post_created:   { push: false, email: false },
+    tagged_post_claimed:   { push: true, email: true },
+    tagged_claim_approved: { push: true, email: true },
     feedback_submitted: { push: true, email: true },   // N16 — admin-only
 };

@@ -20,7 +20,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  * responses, including the rejection path, so freshness is checkable with a
  * curl and an anon key.
  */
-const FN_BUILD = "2026-08-07a";
+const FN_BUILD = "2026-08-08a";
 
 interface TemplateConfig {
     title: string;
@@ -243,6 +243,37 @@ const TEMPLATES: Record<NotificationType, TemplateConfig> = {
             ? `${d.group_name} has closed`
             : `You've been removed from ${d.group_name}`,
         deepLink: () => "https://courtplay.app/profile/me",
+    },
+    // N19–N21 — your group is the one this sub will be playing with. All three
+    // deep-link to the post, which the tagged member can open: tagging grants
+    // read access precisely so these links land somewhere.
+    tagged_post_created: {
+        title: "Sub needed in your group's game",
+        body: (d) => d.poster_name
+            ? `${d.poster_name} is looking for a sub for your ${d.group_name ?? "group"} game${d.post_summary ? ` at ${d.post_summary}` : ""}.`
+            : `Someone is looking for a sub for your group's game.`,
+        subject: (d) => d.poster_name
+            ? `${d.poster_name} needs a sub for your ${d.group_name ?? "group"} game`
+            : "A sub is needed for your group's game",
+        deepLink: (postId) => postId ? `https://courtplay.app/post/${postId}` : "https://courtplay.app/feed",
+    },
+    tagged_post_claimed: {
+        title: "Someone claimed your group's sub spot",
+        body: (d) => d.claimer_name
+            ? `${d.claimer_name} claimed the sub spot in your ${d.group_name ?? "group"} game. Waiting on ${d.poster_name ?? "the poster"} to approve.`
+            : "Someone claimed the sub spot in your group's game.",
+        subject: (d) => `The sub spot in your ${d.group_name ?? "group"} game has been claimed`,
+        deepLink: (postId) => postId ? `https://courtplay.app/post/${postId}` : "https://courtplay.app/feed",
+    },
+    tagged_claim_approved: {
+        title: "Your group's sub is confirmed",
+        body: (d) => d.claimer_name
+            ? `${d.claimer_name} is filling the sub spot in your ${d.group_name ?? "group"} game.`
+            : "The sub spot in your group's game has been filled.",
+        subject: (d) => d.claimer_name
+            ? `${d.claimer_name} is subbing in your ${d.group_name ?? "group"} game`
+            : "Your group's sub spot is filled",
+        deepLink: (postId) => postId ? `https://courtplay.app/post/${postId}` : "https://courtplay.app/feed",
     },
     feedback_submitted: {
         title: "New feedback submitted",

@@ -58,10 +58,12 @@ export function claimToFeedPost(claim: MyClaim): FeedPost {
         last_name: claim.poster_last_name,
         photo_url: claim.poster_photo_url,
         is_friend: false,
-        // Activity builds these from a claim/post, not from get_feed, and neither
-        // flag is known here. Both only drive feed ordering and the Friend badge,
-        // neither of which applies on this tab.
+        // Activity builds these from a claim/post, not from get_feed, so none of
+        // the viewer-relative flags are known here. is_connected only drives feed
+        // ordering and is_tagged only drives the tagged card variant — neither
+        // applies on these tabs, which show your own claims and your own posts.
         is_connected: false,
+        is_tagged: false,
         spots_available: 0,
         user_claim_status: claim.status,
         user_claim_id: claim.id,
@@ -112,10 +114,12 @@ export function postToFeedPost(post: MyPost, me: Me): FeedPost {
         last_name: me.last_name,
         photo_url: me.photo_url,
         is_friend: false,
-        // Activity builds these from a claim/post, not from get_feed, and neither
-        // flag is known here. Both only drive feed ordering and the Friend badge,
-        // neither of which applies on this tab.
+        // Activity builds these from a claim/post, not from get_feed, so none of
+        // the viewer-relative flags are known here. is_connected only drives feed
+        // ordering and is_tagged only drives the tagged card variant — neither
+        // applies on these tabs, which show your own claims and your own posts.
         is_connected: false,
+        is_tagged: false,
         spots_available: post.spots_available,
         user_claim_status: null,
         user_claim_id: null,

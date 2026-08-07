@@ -48,6 +48,25 @@ export function excluding(ids: string[], exclude: Iterable<string>): string[] {
  * Deriving the private list from `followers` is the mistake to avoid: it looks
  * right, it notifies plausible people, and it is wrong in both directions.
  */
+/**
+ * Who hears about a post because they're playing in the game it belongs to.
+ *
+ * The tagged group is the people already in the game — a different set from the
+ * audience, who are candidates to fill the spot. Both the poster and whoever
+ * claimed the spot are dropped: the poster caused the event, and the claimer is
+ * getting the specific claim notification instead.
+ */
+export function taggedRecipients(args: {
+    /** Members of the post's tagged group, removals already filtered out. */
+    groupMembers: string[];
+    posterId: string;
+    /** The claimer, when the event is a claim or an approval. */
+    claimerId?: string | null;
+}): string[] {
+    const { groupMembers, posterId, claimerId } = args;
+    return excluding(others(groupMembers, posterId), claimerId ? [claimerId] : []);
+}
+
 export function newPostRecipients(args: {
     isPrivate: boolean;
     /** Users who follow the poster. */
@@ -57,9 +76,17 @@ export function newPostRecipients(args: {
     allFollowing: boolean;
     /** Members of every group on the post's audience. */
     groupMembers: string[];
+    /** Members of the post's TAGGED group, who get their own notification instead. */
+    taggedMembers?: string[];
     posterId: string;
 }): string[] {
-    const { isPrivate, followers, following, allFollowing, groupMembers, posterId } = args;
-    if (!isPrivate) return others(followers, posterId);
-    return others([...(allFollowing ? following : []), ...groupMembers], posterId);
+    const { isPrivate, followers, following, allFollowing, groupMembers, taggedMembers = [], posterId } = args;
+    // Group membership wins over following: someone in the tagged group is
+    // hearing about this post already, for a more specific reason. Applies to
+    // public posts too — a follower who is also playing in the game would
+    // otherwise get two notifications for one post.
+    const base = isPrivate
+        ? others([...(allFollowing ? following : []), ...groupMembers], posterId)
+        : others(followers, posterId);
+    return excluding(base, taggedMembers);
 }

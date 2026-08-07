@@ -20,7 +20,11 @@ export type NotificationType =
     | "connection_withdrawn"  // N16 — responder withdraws their connection
     | "feedback_submitted"    // N16 — admin-only: a player submitted feedback
     | "group_added"           // N17 — the group's creator added you
-    | "group_removed";        // N18 — the creator removed you, or closed the group
+    | "group_removed"         // N18 — the creator removed you, or closed the group
+    // N19–N21 — your group is the one the sub will be playing with.
+    | "tagged_post_created"
+    | "tagged_post_claimed"
+    | "tagged_claim_approved";
 
 export type NotificationChannel = "push" | "email";
 
@@ -74,6 +78,13 @@ export const NOTIFICATION_TYPES: readonly NotificationTypeMeta[] = [
     { key: "connection_withdrawn", label: "Connection withdrawn", hint: "When someone withdraws their response to your regular play post", defaultEmail: true, defaultPush: false },
     { key: "group_added", label: "Added to a group", hint: "When someone adds you to one of their groups", defaultEmail: true, defaultPush: true },
     { key: "group_removed", label: "Removed from a group", hint: "When you're removed from a group, or it's closed", defaultEmail: true, defaultPush: false },
+    // Posting is opt-in; the two status updates are what the tagged group is
+    // promised on the post itself ("You will be notified with status updates"),
+    // so they arrive by default. Existing users have no preference row for a new
+    // type, so these defaults ARE the decision for everyone already onboarded.
+    { key: "tagged_post_created", label: "Sub needed in your group's game", hint: "When someone posts a sub for a game your group is playing", defaultEmail: false, defaultPush: false },
+    { key: "tagged_post_claimed", label: "Your group's sub spot claimed", hint: "When someone claims the spot in a game your group is playing", defaultEmail: true, defaultPush: true },
+    { key: "tagged_claim_approved", label: "Your group's sub confirmed", hint: "When the poster approves who's filling the spot in your group's game", defaultEmail: true, defaultPush: true },
     { key: "feedback_submitted", label: "New feedback", hint: "When a player submits feedback", defaultEmail: true, defaultPush: true, adminOnly: true },
 ] as const;
 

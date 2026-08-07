@@ -87,18 +87,24 @@ describe("edit profile — notification preferences", () => {
         expect(screen.queryByText("Soon")).not.toBeInTheDocument();
     });
 
-    it("default state: email on everywhere; push on only for claim lifecycle", async () => {
+    it("default state: every toggle matches the registry's default for its type", async () => {
         renderPage();
         await screen.findByText(ALL_LABELS[0]);
 
+        // Both channels derive from NOTIFICATION_TYPES rather than being spelled
+        // out here. This used to assert "email on everywhere" with a hardcoded
+        // exception for the one opt-in type, which meant every new opt-in type
+        // broke the test rather than being covered by it.
         const pushOnByDefault = VISIBLE.filter((t) => t.defaultPush).map((t) => t.label);
+        const emailOnByDefault = VISIBLE.filter((t) => t.defaultEmail).map((t) => t.label);
         for (const label of ALL_LABELS) {
             const pushToggle = screen.getByLabelText(`${label} push`);
             if (pushOnByDefault.includes(label)) expect(pushToggle).toBeChecked();
             else expect(pushToggle).not.toBeChecked();
 
-            if (label === "Friend posts new sub need") continue; // email also off for this one
-            expect(screen.getByLabelText(`${label} email`)).toBeChecked();
+            const emailToggle = screen.getByLabelText(`${label} email`);
+            if (emailOnByDefault.includes(label)) expect(emailToggle).toBeChecked();
+            else expect(emailToggle).not.toBeChecked();
         }
     });
 

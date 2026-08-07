@@ -113,6 +113,7 @@ interface FormFields {
     visibility: string;
     /** Selected audience keys: ALL_FOLLOWING and/or group ids. */
     audience: string[];
+    taggedGroupId: string | null;
 }
 
 const keysOf = (s: Selection): string[] => (s instanceof Set ? [...s].map(String) : []);
@@ -193,6 +194,10 @@ export function PostNew() {
     const [isPrivate, setIsPrivate] = useState(false);
     const [audience, setAudience] = useState<Selection>(new Set());
     const [myGroups, setMyGroups] = useState<GroupSummary[]>([]);
+    // The group this sub will be playing with. Optional, and at most one — a
+    // different question from the audience: who is already in the game, rather
+    // than who might fill the spot.
+    const [taggedGroupId, setTaggedGroupId] = useState<string | null>(null);
 
     // edit mode state — init from the URL so the header/fields never flash the
     // "create" state before the edit data loads.
@@ -252,6 +257,7 @@ export function PostNew() {
                 ...(post.audience_all_following ? [ALL_FOLLOWING] : []),
                 ...groupIds,
             ];
+            const savedTag: string | null = savedAudience?.tagged_group_id ?? null;
             setPostType(post.post_type);
             setExistingClaims((claims ?? []).length > 0);
             if (post.post_type === "sub_need") {
@@ -272,6 +278,7 @@ export function PostNew() {
                 setNotes(post.notes ?? "");
                 setIsPrivate(post.visibility === "private");
                 setAudience(new Set(audienceKeys));
+                setTaggedGroupId(savedTag);
             } else {
                 setRgPlayTypes(new Set(post.play_type ? [post.play_type] : []));
                 setRgGroupSizes(new Set(post.total_players != null ? [String(post.total_players)] : []));
@@ -309,6 +316,7 @@ export function PostNew() {
                               rgNote: "",
                               visibility: post.visibility ?? "public",
                               audience: audienceKeys,
+                              taggedGroupId: savedTag,
                           }
                         : {
                               postType: post.post_type,
@@ -337,6 +345,7 @@ export function PostNew() {
                               // somehow carried a value would read as dirty.
                               visibility: "public",
                               audience: [],
+                              taggedGroupId: null,
                           },
                 ),
             );
@@ -367,13 +376,31 @@ export function PostNew() {
         isEditing && !showCustomCourt && courtId != null && courts.length > 0 && !courts.some((c) => c.id === courtId);
 
     const audienceKeys = keysOf(audience);
+    // What the audience picker actually commits. A public post is saved with an
+    // empty audience whatever is ticked, so a selection left over from toggling
+    // Private and back must not go on reserving a group — the poster would find
+    // it missing from the tag list with nothing on screen to explain why.
+    const effectiveAudienceGroupIds = isPrivate ? splitAudience(audienceKeys).groupIds : [];
 
-    // "All players followed" heads the list, then the groups — the order the
-    // design shows, and the order the divider assumes.
+    // The audience and the tag name two different kinds of people — who might
+    // fill the spot, and who is already playing — so a group can never be both.
+    // Whichever picker has NOT taken a group still lists it, disabled: dropping
+    // it entirely reads as the group having vanished, while a greyed row shows
+    // it exists and is spoken for. The server enforces the rule regardless
+    // (set_post_audience refuses an overlap); this is so the poster is never
+    // told off for a choice the form offered them.
     const audienceItems = [
-        { id: ALL_FOLLOWING, label: "All players followed" },
-        ...myGroups.map((g) => ({ id: g.id, label: g.name })),
+        // "All players followed" heads the list, then the groups — the order the
+        // design shows, and the order the divider assumes.
+        { id: ALL_FOLLOWING, label: "All players followed", isDisabled: false },
+        ...myGroups.map((g) => ({ id: g.id, label: g.name, isDisabled: g.id === taggedGroupId })),
     ];
+
+    const tagItems = myGroups.map((g) => ({
+        id: g.id,
+        label: g.name,
+        isDisabled: effectiveAudienceGroupIds.includes(g.id),
+    }));
 
     const validateSubNeed = () => {
         // Custom courts require both a name and an area; listed courts just need a valid selection.
@@ -417,8 +444,9 @@ export function PostNew() {
                 rgNote,
                 visibility: isPrivate ? "private" : "public",
                 audience: keysOf(audience),
+                taggedGroupId,
             }),
-        [postType, playType, duration, gameDate, gameTime, skillLevel, courtId, showCustomCourt, customCourt, customArea, proName, cost, notes, rgPlayTypes, rgGroupSizes, rgSkillLevels, rgDays, rgTimes, rgCourts, rgNote, isPrivate, audience],
+        [postType, playType, duration, gameDate, gameTime, skillLevel, courtId, showCustomCourt, customCourt, customArea, proName, cost, notes, rgPlayTypes, rgGroupSizes, rgSkillLevels, rgDays, rgTimes, rgCourts, rgNote, isPrivate, audience, taggedGroupId],
     );
     // Baseline captured directly from the loaded post (in the load effect), so it's
     // race-free — no dependency on when state/effects flush.
@@ -477,12 +505,15 @@ export function PostNew() {
                     }).eq("id", editPostId);
                     if (updateError) throw updateError;
 
-                    // Groups live in their own table, so they need a second call.
-                    // Going public clears the audience rather than leaving stale
-                    // rows behind to be resurrected by a later re-privatising.
+                    // Groups live outside the posts row, so they need a second
+                    // call. It REPLACES both fields wholesale — always send all
+                    // three arguments, or an omitted one is cleared. Going
+                    // public clears the audience rather than leaving stale rows
+                    // behind to be resurrected by a later re-privatising.
                     const { data: audRes } = await supabase.rpc("set_post_audience", {
                         p_post_id: editPostId,
                         p_group_ids: isPrivate ? splitAudience(audienceKeys).groupIds : [],
+                        p_tagged_group_id: taggedGroupId,
                     });
                     if (audRes && audRes.success === false) throw new Error(audRes.error ?? "Could not save who can see this post");
 
@@ -536,10 +567,13 @@ export function PostNew() {
                     // And visibility is on the INSERT rather than being set
                     // afterwards, so the post is never briefly public: if this
                     // call fails, the post is visible to its author alone.
-                    if (newPostId && isPrivate) {
+                    // Now also runs for a public post that tags a group, since
+                    // this RPC owns tagged_group_id as well as the audience.
+                    if (newPostId && (isPrivate || taggedGroupId)) {
                         const { data: audRes } = await supabase.rpc("set_post_audience", {
                             p_post_id: newPostId,
-                            p_group_ids: splitAudience(audienceKeys).groupIds,
+                            p_group_ids: isPrivate ? splitAudience(audienceKeys).groupIds : [],
+                            p_tagged_group_id: taggedGroupId,
                         });
                         if (audRes && audRes.success === false) throw new Error(audRes.error ?? "Could not save who can see this post");
                     }
@@ -552,6 +586,13 @@ export function PostNew() {
                     // (followers for a public post, the audience for a private one).
                     if (inserted && inserted.length > 0) {
                         sendNotification({ notification_type: "friend_new_post", post_id: inserted[0].id });
+                        // N19. Separate from the above rather than folded into
+                        // it: the tagged group hears for a different reason and
+                        // reads different copy. The server drops anyone who
+                        // would otherwise get both.
+                        if (taggedGroupId) {
+                            sendNotification({ notification_type: "tagged_post_created", post_id: inserted[0].id });
+                        }
                     }
                 }
             } else {
@@ -907,6 +948,7 @@ export function PostNew() {
                                 {(item) => (
                                     <SelectItem
                                         id={item.id}
+                                        isDisabled={item.isDisabled}
                                         selectionIndicator="checkbox"
                                         selectionIndicatorAlign="left"
                                         // The divider belongs to the all-followed row rather than
@@ -920,6 +962,30 @@ export function PostNew() {
                                 )}
                             </MultiSelect>
                         )}
+
+                        {/* Who the sub will be playing with. Independent of the
+                            visibility toggle — a public post can tag a group too. */}
+                        <div className="flex flex-col gap-2">
+                            <Select
+                                label="Tag your group (optional)"
+                                placeholder="Select groups"
+                                isNonModal
+                                items={tagItems}
+                                selectedKey={taggedGroupId}
+                                onSelectionChange={(k) => setTaggedGroupId((k as string | null) ?? null)}
+                                size="sm"
+                                triggerClassName={FIELD_SELECT}
+                            >
+                                {(item) => (
+                                    <SelectItem id={item.id} isDisabled={item.isDisabled}>
+                                        {item.label}
+                                    </SelectItem>
+                                )}
+                            </Select>
+                            <p className="text-xs text-tertiary">
+                                Notify other players in the group playing with the sub
+                            </p>
+                        </div>
 
                         <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">

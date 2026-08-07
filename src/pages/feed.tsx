@@ -6,6 +6,7 @@ import { SubCard, gameEndMs } from "@/components/app/sub-card";
 import { ClaimCancelledBanner } from "@/components/app/claim-cancelled-banner";
 import { PostSuccessBanner } from "@/components/app/post-success-banner";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
+import { TaggedDetailSheet } from "@/components/app/tagged-detail-sheet";
 import { RegularPlaySheet } from "@/components/app/regular-play-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
 import { RegularConnectionsSheet } from "@/components/app/regular-connections-sheet";
@@ -13,6 +14,7 @@ import { ClaimReceivedBanner } from "@/components/app/claim-received-banner";
 import { ClaimUpdateBanner } from "@/components/app/claim-update-banner";
 import { PushEnableBanner } from "@/components/app/push-enable-banner";
 import { GroupBanner } from "@/components/app/group-banner";
+import { TaggedPostBanner } from "@/components/app/tagged-post-banner";
 import { IosInstallPrompt } from "@/components/app/ios-install-prompt";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { WelcomeCard } from "@/components/app/welcome-card";
@@ -27,7 +29,7 @@ import type { GroupSummary } from "@/types/groups";
 import { REJECTION_REASONS } from "@/types/claims";
 import { claimToFeedPost } from "@/utils/activity-feed-map";
 import type { ClaimRow, MyClaim, MyPost } from "@/types/activity";
-import type { FeedPost, FilterState } from "@/types/feed";
+import type { FeedPost, FilterState, TaggedPost } from "@/types/feed";
 import { applyFilters } from "@/utils/feed-filter";
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
@@ -109,6 +111,8 @@ export function Feed() {
     // events table, which is why there is no "you were removed" banner — see
     // group-banner.tsx.
     const [groups, setGroups] = useState<GroupSummary[]>([]);
+    // Posts whose tagged group you're in — drives the two tagged banners.
+    const [taggedPosts, setTaggedPosts] = useState<TaggedPost[]>([]);
     // Admin-only: ids of feedback submissions not yet dismissed from the feed banner.
     const [newFeedbackIds, setNewFeedbackIds] = useState<string[]>([]);
     // Success banner shown once after a post is created (flag set by the post form).
@@ -181,6 +185,21 @@ export function Feed() {
         setGroups(Array.isArray(data) ? (data as GroupSummary[]) : []);
     }, [user]);
 
+    // Posts whose tagged group you're in, with the live claim's status — the
+    // source for the two tagged banners. A separate RPC rather than reading
+    // get_feed, because the banner has to appear for a post you may have
+    // scrolled past, and it carries the claimer's name, which the feed row
+    // deliberately doesn't.
+    const fetchTaggedPosts = useCallback(async () => {
+        if (!user) return;
+        const { data, error: rpcError } = await supabase.rpc("get_my_tagged_posts");
+        if (rpcError) {
+            console.error("get_my_tagged_posts failed:", rpcError);
+            return;
+        }
+        setTaggedPosts(Array.isArray(data) ? (data as TaggedPost[]) : []);
+    }, [user]);
+
     const fetchMyPosts = useCallback(async () => {
         if (!user) return;
         const [postsRes, claimsRes] = await Promise.all([
@@ -197,7 +216,8 @@ export function Feed() {
         fetchPosts();
         fetchMyPosts();
         fetchGroups();
-    }, [fetchPosts, fetchMyPosts, fetchGroups]);
+        fetchTaggedPosts();
+    }, [fetchPosts, fetchMyPosts, fetchGroups, fetchTaggedPosts]);
 
     // Admin-only: surface undismissed feedback as a top-of-feed banner. RLS lets
     // only admins read the feedback table, so this returns nothing for players.
@@ -464,6 +484,16 @@ export function Feed() {
         (g) => !g.removed_by_me && fresh(g.my_removed_at) && !dismissedClaims.has(`group_removed:${g.id}`),
     );
 
+    // The tagged banners. `fresh` bounds them the same way the group ones are
+    // bounded — a claim from three weeks ago is not news — and the claim's
+    // status picks which of the two notices to show.
+    const taggedClaimed = taggedPosts.filter(
+        (p) => p.claim_status === "pending" && !dismissedClaims.has(`tagged_claimed:${p.claim_id}`),
+    );
+    const taggedApproved = taggedPosts.filter(
+        (p) => p.claim_status === "approved" && !dismissedClaims.has(`tagged_approved:${p.claim_id}`),
+    );
+
     const declinedBanners = myClaims.filter(
         (c) => c.status === "rejected" && !claimPast(c) && !dismissedClaims.has(`declined:${c.id}`),
     );
@@ -580,6 +610,25 @@ export function Feed() {
                     />
                 ))}
 
+                {taggedApproved.map((p) => (
+                    <TaggedPostBanner
+                        key={`tagged_approved:${p.claim_id}`}
+                        post={p}
+                        kind="approved"
+                        onDismiss={() => dismissBanner(`tagged_approved:${p.claim_id}`)}
+                        onView={() => navigate(`/post/${p.id}`)}
+                    />
+                ))}
+                {taggedClaimed.map((p) => (
+                    <TaggedPostBanner
+                        key={`tagged_claimed:${p.claim_id}`}
+                        post={p}
+                        kind="claimed"
+                        onDismiss={() => dismissBanner(`tagged_claimed:${p.claim_id}`)}
+                        onView={() => navigate(`/post/${p.id}`)}
+                    />
+                ))}
+
                 {/* Prompt to enable push if not granted (banner pattern). */}
                 <PushEnableBanner />
 
@@ -664,7 +713,17 @@ export function Feed() {
             </PullToRefresh>
 
             {detailPost &&
-                (detailPost.post_type === "sub_need" ? (
+                (detailPost.post_type === "sub_need" && detailPost.is_tagged ? (
+                    // You're in the group playing this game: context and a share
+                    // action, no claim. Checked before the claim sheet so the
+                    // tagged experience wins for someone who is also in the
+                    // post's audience.
+                    <TaggedDetailSheet
+                        post={detailPost}
+                        groupName={detailPost.tagged_group_name}
+                        onClose={() => setDetailPost(null)}
+                    />
+                ) : detailPost.post_type === "sub_need" ? (
                     <ClaimDetailSheet
                         post={detailPost}
                         contact={claimContact ?? undefined}

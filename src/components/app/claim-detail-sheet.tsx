@@ -176,6 +176,14 @@ export function ClaimDetailSheet({
             notification_type: "claim_submitted",
             claim_id: data.claim_id as string,
         });
+        // N20 — the group playing with this sub hears that the spot went. Sent
+        // unconditionally: whether the post is tagged at all, and who is in that
+        // group, are the server's to decide, and it answers with an empty
+        // recipient list when there's no tag.
+        sendNotification({
+            notification_type: "tagged_post_claimed",
+            post_id: post.id,
+        });
         // Transition the sheet to the pending state in place (keep it open).
         setClaimId(data.claim_id as string);
         setClaimStatus("pending");
