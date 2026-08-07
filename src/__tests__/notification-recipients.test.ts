@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { excluding, newPostRecipients, others } from "../../supabase/functions/_shared/notification-recipients.ts";
+import { excluding, newPostRecipients, others, taggedRecipients } from "../../supabase/functions/_shared/notification-recipients.ts";
 
 /**
  * The recipient rules that used to be asserted from the browser.
@@ -108,5 +108,73 @@ describe("newPostRecipients", () => {
     it("never notifies the poster, even when they're in one of their own groups", () => {
         const got = newPostRecipients({ ...base, isPrivate: true, groupMembers: ["poster", "groupmate"] });
         expect(got).toEqual(["groupmate"]);
+    });
+});
+
+/**
+ * One post must never produce two notifications for the same person. The rule
+ * is that group membership beats following, and it has two halves that behave
+ * very differently underneath.
+ */
+describe("no one hears twice about one post", () => {
+    it("audience group ∩ followed: one recipient, because both reasons are the same type", () => {
+        // This half needs no special handling — a single friend_new_post whose
+        // recipient list is deduped by id. The test exists to keep it that way.
+        const got = newPostRecipients({
+            isPrivate: true,
+            followers: [],
+            following: ["both"],
+            allFollowing: true,
+            groupMembers: ["both"],
+            posterId: "poster",
+        });
+        expect(got).toEqual(["both"]);
+    });
+
+    it("tagged group ∩ followed: the tagged notification wins, so friend_new_post skips them", () => {
+        // This half DOES need handling: they are two different types, and
+        // nothing would otherwise stop both firing.
+        const got = newPostRecipients({
+            isPrivate: false,
+            followers: ["follower", "playing-and-following"],
+            following: [],
+            allFollowing: false,
+            groupMembers: [],
+            taggedMembers: ["playing-and-following"],
+            posterId: "poster",
+        });
+        expect(got).toEqual(["follower"]);
+    });
+
+    it("tagged members are excluded from a PRIVATE post's new-post notification too", () => {
+        const got = newPostRecipients({
+            isPrivate: true,
+            followers: [],
+            following: ["audience-member", "playing"],
+            allFollowing: true,
+            groupMembers: [],
+            taggedMembers: ["playing"],
+            posterId: "poster",
+        });
+        expect(got).toEqual(["audience-member"]);
+    });
+});
+
+describe("taggedRecipients", () => {
+    it("notifies the group playing with the sub", () => {
+        expect(taggedRecipients({ groupMembers: ["a", "b"], posterId: "poster" })).toEqual(["a", "b"]);
+    });
+
+    it("drops the poster, who is normally in the group they tagged", () => {
+        expect(taggedRecipients({ groupMembers: ["poster", "a"], posterId: "poster" })).toEqual(["a"]);
+    });
+
+    it("drops the claimer — they get the claim notification instead", () => {
+        const got = taggedRecipients({ groupMembers: ["a", "claimer"], posterId: "poster", claimerId: "claimer" });
+        expect(got).toEqual(["a"]);
+    });
+
+    it("is empty when no group was tagged", () => {
+        expect(taggedRecipients({ groupMembers: [], posterId: "poster" })).toEqual([]);
     });
 });

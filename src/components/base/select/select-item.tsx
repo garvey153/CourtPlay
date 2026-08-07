@@ -108,7 +108,17 @@ export const SelectItem = ({
                     ) : null}
 
                     <div className={cx("flex w-full min-w-0 flex-1 flex-wrap", sizes[size].textContainer)}>
-                        <AriaText slot="label" className={cx("truncate font-medium whitespace-nowrap text-primary", sizes[size].text)}>
+                        <AriaText
+                            slot="label"
+                            className={cx(
+                                "truncate font-medium whitespace-nowrap",
+                                // Tertiary rather than primary when disabled: the row stays
+                                // readable — the point of showing it at all is that you can
+                                // see WHICH option is unavailable — while reading as inert.
+                                state.isDisabled ? "text-tertiary" : "text-primary",
+                                sizes[size].text,
+                            )}
+                        >
                             {label || (typeof children === "function" ? children(state) : children)}
                         </AriaText>
 

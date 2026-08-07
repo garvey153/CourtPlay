@@ -35,10 +35,42 @@ export interface FeedPost {
      * card reads from it.
      */
     is_connected: boolean;
+    /**
+     * You're in the group this sub will be playing with — so the post is about
+     * your own game, and the spot isn't yours to take. Drives the dimmed card
+     * variant and the no-claim sheet, and the server refuses your claim to
+     * match. Independent of visibility: can_see_post already decided that, and
+     * a false value on a visible post is the ordinary case, not a denial.
+     */
+    is_tagged: boolean;
+    /** Name of that group, returned only to its members. Null otherwise. */
+    tagged_group_name?: string | null;
     spots_available: number;
     user_claim_status: "pending" | "approved" | "rejected" | "unclaimed" | "cancelled" | null;
     user_claim_id: string | null;
     user_notify_me: boolean;
+}
+
+/**
+ * A post whose tagged group you're in, from get_my_tagged_posts.
+ *
+ * Only what the feed banners need — the claim's status is what decides between
+ * the "claimed" and "approved" notices, so no separate events table is needed.
+ */
+export interface TaggedPost {
+    id: string;
+    play_type: string | null;
+    format: string | null;
+    game_date: string | null;
+    game_time: string | null;
+    location: string | null;
+    custom_court: string | null;
+    created_at: string;
+    group_name: string;
+    poster_first_name: string;
+    claim_id: string | null;
+    claim_status: "pending" | "approved" | null;
+    claimer_first_name: string | null;
 }
 
 export interface FilterState {

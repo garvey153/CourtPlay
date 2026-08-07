@@ -93,6 +93,9 @@ export function usePostSheets({ onChanged, editReturnTo = "/feed", onClaimCancel
             const { data, error } = await supabase.rpc("approve_claim", { p_claim_id: claim.id });
             if (!error && data?.success) {
                 sendNotification({ notification_type: "claim_approved", claim_id: claim.id });
+                // N21 — and the group playing with the sub, who were told when
+                // it was claimed and are owed the outcome.
+                sendNotification({ notification_type: "tagged_claim_approved", post_id: post.id });
                 onChanged?.();
                 await refreshCreated(post.id);
             }

@@ -5,6 +5,7 @@ import { Button } from "@/components/base/buttons/button";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { SubCard } from "@/components/app/sub-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
+import { TaggedDetailSheet } from "@/components/app/tagged-detail-sheet";
 import { RegularPlayCard } from "@/components/app/regular-play-card";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -177,14 +178,24 @@ export function PostDetail() {
                     )}
                 </div>
 
-                {claimOpen && (
-                    <ClaimDetailSheet
-                        post={post}
-                        currentUserId={user.id}
-                        onClose={() => setClaimOpen(false)}
-                        onClaimChange={fetchPost}
-                    />
-                )}
+                {claimOpen &&
+                    (post.is_tagged ? (
+                        // Same precedence as the feed: tagged beats claimable.
+                        // This is the share-link path, so it is also what a
+                        // tagged member lands on from their notification.
+                        <TaggedDetailSheet
+                            post={post}
+                            groupName={post.tagged_group_name}
+                            onClose={() => setClaimOpen(false)}
+                        />
+                    ) : (
+                        <ClaimDetailSheet
+                            post={post}
+                            currentUserId={user.id}
+                            onClose={() => setClaimOpen(false)}
+                            onClaimChange={fetchPost}
+                        />
+                    ))}
             </AppLayout>
         );
     }

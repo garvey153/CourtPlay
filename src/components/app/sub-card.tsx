@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef } from "react";
+import { Users01 } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
@@ -135,6 +136,15 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
     const kind = kindOverride ?? getCardKind(post);
     const config = KIND_CONFIG[kind];
 
+    // You're in the group this sub is playing with. The card steps back: darker
+    // bar, text one shade quieter, and the price replaced by a two-person mark,
+    // because the spot isn't yours to take and the money isn't yours to pay.
+    //
+    // Applied on top of whatever status the post is in rather than as another
+    // KIND_CONFIG entry — the badge still needs to say Open or Claimed, which is
+    // information a player in the game wants. Only the acting affordances go.
+    const isTagged = post.is_tagged;
+
     // Expired posts are dead — tapping them opens nothing.
     const isExpired = kind === "expired";
 
@@ -147,7 +157,10 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
         .filter(Boolean)
         .join(" · ");
 
-    const primaryText = config.dim ? "text-tertiary" : "text-primary";
+    const primaryText = config.dim || isTagged ? "text-tertiary" : "text-primary";
+    // The tagged title sits at secondary — a step down from primary, but not as
+    // far as the tertiary a dimmed (claimed/expired) card uses.
+    const titleText = isTagged && !config.dim ? "text-secondary" : primaryText;
 
     return (
         <button
@@ -158,7 +171,7 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
             className={cx("flex w-full overflow-hidden rounded text-left", isExpired && "cursor-default")}
         >
             {/* Left status accent bar */}
-            <span className={cx("w-1 shrink-0 self-stretch", config.bar)} aria-hidden="true" />
+            <span className={cx("w-1 shrink-0 self-stretch", isTagged ? "bg-brand-700" : config.bar)} aria-hidden="true" />
 
             {/* Card body */}
             <div
@@ -170,11 +183,11 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
                 {/* Top row: title/subtitle + status badge */}
                 <div className="flex w-full items-start gap-3">
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
-                        <p className={cx("text-md font-semibold", primaryText)}>
+                        <p className={cx("text-md font-semibold", titleText)}>
                             {title}
                             {when && ` · ${when}`}
                         </p>
-                        {subtitle && <p className={cx("text-xs", config.dim ? "text-tertiary" : "text-secondary")}>{subtitle}</p>}
+                        {subtitle && <p className={cx("text-xs", config.dim || isTagged ? "text-tertiary" : "text-secondary")}>{subtitle}</p>}
                     </div>
 
                     {/* Status badge */}
@@ -209,9 +222,16 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
                             </span>
                         )}
                     </div>
-                    <span className={cx("shrink-0 text-sm font-semibold", primaryText)}>
-                        {post.cost != null ? `$${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Free"}
-                    </span>
+                    {isTagged ? (
+                        <Users01
+                            aria-label="You're in the group playing this game"
+                            className="size-5 shrink-0 text-fg-quaternary"
+                        />
+                    ) : (
+                        <span className={cx("shrink-0 text-sm font-semibold", primaryText)}>
+                            {post.cost != null ? `$${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Free"}
+                        </span>
+                    )}
                 </div>
 
                 {/* Notes speech-bubble (only when the poster added a note) */}

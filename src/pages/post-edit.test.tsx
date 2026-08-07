@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mockCourts } from "@/test/mocks/fixtures";
+import { supabase } from "@/lib/supabase";
 import { PostNew } from "./post-new";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -253,6 +254,27 @@ describe("PostNew — edit mode save submission", () => {
         await waitFor(() => {
             expect(postsChain.update).toHaveBeenCalled();
         });
+    });
+
+    it("saving sends the tag through set_post_audience, which owns that column", async () => {
+        // The composer's posts.update never carries tagged_group_id — the RPC is
+        // the single writer, because the tag has to be checked against the
+        // audience and two writers could each pass their own check.
+        const user = userEvent.setup();
+        const { postsChain } = renderEditMode(false);
+        await waitFor(() => screen.getByText("Edit post"));
+
+        fireEvent.change(await screen.findByLabelText("Message"), { target: { value: "Updated message" } });
+        await waitFor(() => expect(screen.getByRole("button", { name: /Save changes/i })).not.toBeDisabled());
+        await user.click(screen.getByRole("button", { name: /Save changes/i }));
+
+        await waitFor(() => expect(postsChain.update).toHaveBeenCalled());
+        expect(postsChain.update.mock.calls[0][0]).not.toHaveProperty("tagged_group_id");
+        // All three arguments, always: this RPC replaces sharing rather than
+        // patching it, so an omitted p_tagged_group_id would clear the tag.
+        const audienceCall = vi.mocked(supabase.rpc).mock.calls.find((c) => c[0] === "set_post_audience");
+        expect(audienceCall).toBeDefined();
+        expect(audienceCall?.[1]).toHaveProperty("p_tagged_group_id");
     });
 
     it("does not call posts.insert when saving in edit mode", async () => {
