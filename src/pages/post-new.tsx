@@ -199,20 +199,6 @@ export function PostNew() {
     // than who might fill the spot. Private posts only.
     const [taggedGroupId, setTaggedGroupId] = useState<string | null>(null);
 
-    /**
-     * Going public CLEARS the tag rather than merely hiding it.
-     *
-     * Keeping the value while the field is off-screen would let a selection the
-     * poster can no longer see travel to the server, and reappear if they
-     * toggled back — a form remembering something it stopped showing. Clearing
-     * also keeps the state honest: a public post has no tag, so nothing
-     * downstream needs to special-case one.
-     */
-    const setPrivate = (next: boolean) => {
-        setIsPrivate(next);
-        if (!next) setTaggedGroupId(null);
-    };
-
     // edit mode state — init from the URL so the header/fields never flash the
     // "create" state before the edit data loads.
     const [existingClaims, setExistingClaims] = useState(false);
@@ -271,11 +257,7 @@ export function PostNew() {
                 ...(post.audience_all_following ? [ALL_FOLLOWING] : []),
                 ...groupIds,
             ];
-            // A public post has no tag. Normalising here rather than only on save
-            // keeps state and baseline in agreement, so a legacy public+tagged
-            // row doesn't open the form already dirty.
-            const savedTag: string | null =
-                post.visibility === "private" ? (savedAudience?.tagged_group_id ?? null) : null;
+            const savedTag: string | null = savedAudience?.tagged_group_id ?? null;
             setPostType(post.post_type);
             setExistingClaims((claims ?? []).length > 0);
             if (post.post_type === "sub_need") {
@@ -531,7 +513,7 @@ export function PostNew() {
                     const { data: audRes } = await supabase.rpc("set_post_audience", {
                         p_post_id: editPostId,
                         p_group_ids: isPrivate ? splitAudience(audienceKeys).groupIds : [],
-                        p_tagged_group_id: isPrivate ? taggedGroupId : null,
+                        p_tagged_group_id: taggedGroupId,
                     });
                     if (audRes && audRes.success === false) throw new Error(audRes.error ?? "Could not save who can see this post");
 
@@ -585,13 +567,13 @@ export function PostNew() {
                     // And visibility is on the INSERT rather than being set
                     // afterwards, so the post is never briefly public: if this
                     // call fails, the post is visible to its author alone.
-                    // Private only: the tag lives behind the same toggle, so a
-                    // public post has neither an audience nor a tag to write.
-                    if (newPostId && isPrivate) {
+                    // Runs for a public post that tags a group too, since this
+                    // RPC owns tagged_group_id as well as the audience.
+                    if (newPostId && (isPrivate || taggedGroupId)) {
                         const { data: audRes } = await supabase.rpc("set_post_audience", {
                             p_post_id: newPostId,
                             p_group_ids: isPrivate ? splitAudience(audienceKeys).groupIds : [],
-                            p_tagged_group_id: isPrivate ? taggedGroupId : null,
+                            p_tagged_group_id: taggedGroupId,
                         });
                         if (audRes && audRes.success === false) throw new Error(audRes.error ?? "Could not save who can see this post");
                     }
@@ -936,7 +918,7 @@ export function PostNew() {
                                     size="md"
                                     aria-label="Make this post private"
                                     isSelected={isPrivate}
-                                    onChange={setPrivate}
+                                    onChange={setIsPrivate}
                                 />
                                 <span className={cx("text-sm", isPrivate ? "text-primary" : "text-tertiary")}>
                                     {isPrivate ? "Private" : "Public"}
@@ -981,11 +963,10 @@ export function PostNew() {
                             </MultiSelect>
                         )}
 
-                        {/* Who the sub will be playing with. Private posts only —
-                            a public post has no audience to distinguish the players
-                            from, and going public clears any selection. */}
-                        {isPrivate && (
-                            <div className="flex flex-col gap-2">
+                        {/* Who the sub will be playing with. Independent of the
+                            visibility toggle — a public post can tag a group too,
+                            and the tagged group hears about it either way. */}
+                        <div className="flex flex-col gap-2">
                             <Select
                                 label="Tag your group (optional)"
                                 placeholder="Select groups"
@@ -1005,8 +986,7 @@ export function PostNew() {
                             <p className="text-xs text-tertiary">
                                 Notify other players in the group playing with the sub
                             </p>
-                            </div>
-                        )}
+                        </div>
 
                         <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">
