@@ -160,10 +160,12 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
         .join(" · ");
 
     const primaryText = config.dim ? "text-tertiary" : "text-primary";
-    // A tagged card sits ONE step back — title and price at secondary — while a
-    // dimmed (claimed/expired) one goes the whole way to tertiary. When a post is
-    // both, the status treatment wins: it carries more information.
+    // A tagged card's TITLE sits one step back, at secondary.
     const taggedText = isTagged && !config.dim ? "text-secondary" : primaryText;
+    // Its PRICE goes a step further, to the tertiary a claimed card uses: the
+    // money isn't this viewer's to pay, so it reads the same as a spot already
+    // settled rather than one still being offered.
+    const priceText = isTagged ? "text-tertiary" : primaryText;
 
     return (
         <button
@@ -227,7 +229,7 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
                         </span>
                         {post.is_friend && <FriendBadge accent={config.accent} />}
                     </div>
-                    <span className={cx("shrink-0 text-sm font-semibold", taggedText)}>
+                    <span className={cx("shrink-0 text-sm font-semibold", priceText)}>
                         {post.cost != null ? `$${post.cost % 1 === 0 ? post.cost : post.cost.toFixed(2)}` : "Free"}
                     </span>
                 </div>
