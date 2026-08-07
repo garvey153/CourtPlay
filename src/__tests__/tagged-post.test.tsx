@@ -53,13 +53,15 @@ describe("SubCard — tagged variant", () => {
         expect(screen.getByText("$25")).toBeInTheDocument();
     });
 
-    it("keeps the price for a tagged viewer, one shade back", () => {
+    it("keeps the price for a tagged viewer, in the claimed treatment", () => {
         render(<SubCard post={post({ is_tagged: true })} />);
         const price = screen.getByText("$25");
         expect(price).toBeInTheDocument();
-        // Secondary, not the tertiary a claimed card drops to — a tagged post is
-        // still live, just not yours to act on.
-        expect(price.className).toContain("text-secondary");
+        // Tertiary — the same as a claimed post. The money isn't this viewer's
+        // to pay, so it reads as settled rather than on offer. The TITLE stays a
+        // step brighter at secondary, which is what keeps the two distinct.
+        expect(price.className).toContain("text-tertiary");
+        expect(screen.getByText(/Tennis/).className).toContain("text-secondary");
     });
 
     it("names the group in the byline, which is why the post is in your feed", () => {
