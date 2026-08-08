@@ -25,8 +25,29 @@
              them to 16px would break the sm type scale across buttons, tabs and labels.
              Trade-off: in the installed PWA this also disables pinch-to-zoom. -->
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
-        <meta name="description" content="CourtPlay — find a tennis sub in Westport in under 10 minutes." />
+        <meta name="description" content="CourtPlay helps tennis players in Westport, Connecticut fill an open spot in a game. Post a spot when someone drops out, or claim one when you want to play." />
         <meta name="theme-color" content="#08180e" />
+
+        <!-- The name and the purpose, in the form automated readers look for. The
+             page itself says both in prose; these say it in metadata, so a fetcher
+             that never renders the body still gets an answer.
+             og:title/og:description are overwritten per post by post-detail.tsx. -->
+        <meta property="og:site_name" content="CourtPlay" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.courtplay.app/" />
+        <meta property="og:title" content="CourtPlay" />
+        <meta property="og:description" content="CourtPlay helps tennis players in Westport, Connecticut fill an open spot in a game. Post a spot when someone drops out, or claim one when you want to play." />
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "WebApplication",
+                "name": "CourtPlay",
+                "url": "https://www.courtplay.app/",
+                "applicationCategory": "SportsApplication",
+                "description": "CourtPlay helps tennis players in Westport, Connecticut fill an open spot in a game. Post a spot when someone drops out, or claim one when you want to play.",
+                "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+            }
+        </script>
 
         <!-- Installed PWA (home-screen app) chrome. CourtPlay ships dark-only. -->
         <meta name="mobile-web-app-capable" content="yes" />
@@ -38,26 +59,20 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..700&display=swap" rel="stylesheet" />
 
-        <title>CourtPlay</title>
+        <title>CourtPlay — fill an open spot in a tennis game</title>
     </head>
 
     <body class="size-full bg-primary antialiased">
         <!--
             The app is client-rendered, so anything that fetches this page without
-            running JavaScript sees an empty body. Google's OAuth brand review is one
-            of those: it rejected the home page for "does not explain the purpose of
-            your app" and for an app name that "does not match", because there was
-            literally no text to read — and even once React mounts, the only "CourtPlay"
-            on the page is the alt text of an SVG logo, while the <h1> is a rotating
-            tennis pun.
+            running JavaScript sees an empty body. This fallback lives INSIDE #root,
+            so React's createRoot().render() replaces it the moment the bundle runs:
+            users never see it, and a fetcher that executes no JavaScript still gets
+            the app's name and a plain description of what it does.
 
-            This fallback lives INSIDE #root, so React's createRoot().render() replaces
-            it the moment the bundle executes. Crawlers and reviewers get a real page;
-            users never see it. It is styled to match the app's dark shell so a slow
-            connection shows something on-brand rather than a flash of white.
-
-            Keep it truthful and keep the name as literal text — it is the copy Google
-            checks the OAuth "App name" against.
+            Styled to match the dark shell so a slow connection shows something
+            on-brand rather than a flash of white. Keep it accurate, and keep the
+            product name as literal text.
         -->
         <div id="root">
             <main style="max-width: 34rem; margin: 0 auto; padding: 4rem 1.25rem; color: #a2b5aa; font-family: Inter, system-ui, sans-serif; line-height: 1.5">
