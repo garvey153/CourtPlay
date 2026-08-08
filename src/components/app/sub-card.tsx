@@ -111,9 +111,19 @@ interface SubCardProps {
     onOpenDetail?: (post: FeedPost) => void;
     /** Force the card state (Activity uses this from the claim/post display state). */
     kindOverride?: CardKind;
+    /**
+     * Badge text, when it differs from the kind's own label. The kind still
+     * picks the colours — this only renames what the badge says.
+     *
+     * Created posts need it: an approved claim leaves the poster's spot gone,
+     * so the card wears the Claimed treatment, but "Claimed" is not the event
+     * that happened. Same split the admin cards already make, where
+     * adminCardKind returns a kind and a label separately.
+     */
+    labelOverride?: string;
 }
 
-export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, onOpenDetail, kindOverride }: SubCardProps) {
+export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, onOpenDetail, kindOverride, labelOverride }: SubCardProps) {
     const cardRef = useRef<HTMLButtonElement>(null);
     const didTrack = useRef(false);
 
@@ -204,7 +214,7 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
                         )}
                     >
                         {config.dot && <span className={cx("size-1.5 rounded-full", config.dot)} aria-hidden="true" />}
-                        {config.label}
+                        {labelOverride ?? config.label}
                     </span>
                 </div>
 
