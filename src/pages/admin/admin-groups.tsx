@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 import { AdminGroupCard, type AdminGroupRow } from "./admin-group-card";
-import { AdminGroupSheet } from "./admin-group-sheet";
+import { GroupFormSheet } from "@/components/app/group-form-sheet";
 
 /**
  * Admin Groups tab — every group in the app, with its roster behind a tap.
@@ -111,11 +111,22 @@ export function AdminGroups() {
                 )}
             </PullToRefresh>
 
+            {/* The same Edit group screen a creator gets, in admin mode — one
+                component, so "identical" stays true rather than being a claim
+                two files have to keep agreeing on. */}
             {openGroup && (
-                <AdminGroupSheet
-                    group={openGroup}
+                <GroupFormSheet
+                    admin
+                    groupId={openGroup.id}
                     onClose={() => setSheet(null)}
-                    onSaved={() => fetchData({ silent: true })}
+                    onSaved={() => {
+                        setSheet(null);
+                        fetchData({ silent: true });
+                    }}
+                    onDeleted={() => {
+                        setSheet(null);
+                        fetchData({ silent: true });
+                    }}
                 />
             )}
         </>
