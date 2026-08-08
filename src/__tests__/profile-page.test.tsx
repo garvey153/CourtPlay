@@ -147,14 +147,14 @@ describe("profile page", () => {
         setupMock({ ...completeProfile, is_own_profile: true });
         mockUseAuth.mockReturnValue({ user: { id: "aaaaaaaa-0000-0000-0000-000000000001" }, loading: false });
         renderProfile("me");
-        expect(await screen.findByPlaceholderText("Search for players to follow...")).toBeInTheDocument();
+        expect(await screen.findByPlaceholderText("Search for friends to follow")).toBeInTheDocument();
     });
 
     it("does NOT show follow search on another user's profile", async () => {
         setupMock(completeProfile);
         renderProfile("aaaaaaaa-0000-0000-0000-000000000001");
         await screen.findByText("Jane Doe");
-        expect(screen.queryByPlaceholderText("Search for players to follow...")).not.toBeInTheDocument();
+        expect(screen.queryByPlaceholderText("Search for friends to follow")).not.toBeInTheDocument();
     });
 
     it("lists your groups with their details and member line", async () => {

@@ -430,11 +430,11 @@ export function Profile() {
                     </div>
                 )}
 
-                {/* Following + search (own profile only) */}
+                {/* Friends + search (own profile only) — the people you follow. */}
                 {profile.is_own_profile && (
                     <div className="mt-6">
                         <p className="mb-1.5 text-sm font-semibold text-tertiary">
-                            Following ({profile.following_count})
+                            Friends ({profile.following_count})
                         </p>
 
                         {/* Chosen by the surface: OUTLINE on the darker page background
@@ -444,7 +444,7 @@ export function Profile() {
                             variant="outline"
                             value={searchQuery}
                             onChange={setSearchQuery}
-                            placeholder="Search for players to follow..."
+                            placeholder="Search for friends to follow"
                         />
 
                         {/* Search results, or the current Following list */}
