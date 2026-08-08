@@ -444,7 +444,7 @@ export function Profile() {
                             variant="outline"
                             value={searchQuery}
                             onChange={setSearchQuery}
-                            placeholder="Search for friends to follow"
+                            placeholder="Search for friends to follow..."
                         />
 
                         {/* Search results, or the current Following list */}
