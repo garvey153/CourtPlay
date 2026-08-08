@@ -120,7 +120,7 @@ export function Landing() {
                             for a statement of purpose; with a rotating pun as the only
                             heading and "CourtPlay" appearing solely as the logo's alt text,
                             it failed both. Keep the name here as literal text. */}
-                        <h1 className="text-balance text-display-sm font-semibold tracking-tight text-primary md:text-display-md lg:text-display-lg">
+                        <h1 className="text-balance text-display-md font-semibold tracking-tight text-primary md:text-display-lg lg:text-display-xl">
                             CourtPlay
                         </h1>
                         <p className="text-balance text-display-md font-semibold tracking-tight text-primary md:text-display-lg lg:text-display-xl">
@@ -131,11 +131,11 @@ export function Landing() {
                         {/* States plainly what the app is for. Google's OAuth brand
                             verification rejected the previous line ("instantly connects
                             you with available players in your area") as not explaining
-                            the purpose — it was positioning, and never said the app is
+                            the purpose: it was positioning, and never said the app is
                             for tennis or what a user actually does with it. Keep this
                             concrete if it is ever rewritten. */}
                         <p className="text-sm text-secondary md:text-base lg:max-w-md lg:text-lg">
-                            CourtPlay helps tennis players in Westport fill an open spot in a game — post a spot
+                            CourtPlay helps tennis players in Westport fill an open spot in a game. Post a spot
                             when someone drops out, or claim one when you want to play.
                         </p>
                         {/* Desktop only: Get started sits in the hero. The Download button is
