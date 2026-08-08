@@ -442,8 +442,8 @@ export function ClaimDetailSheet({
                     and the button it disables, so the reason is next to the effect. */}
                 {belowLevel && (
                     <p className="mt-3 text-xs text-error-primary">
-                        This game is for NTRP {post.skill_level} players. Your NTRP {profile?.skill_level} is below
-                        that, so you can't claim this spot.
+                        Sorry! This game is for NTRP {post.skill_level} and up. Your {profile?.skill_level} will have
+                        to sit this one out.
                     </p>
                 )}
 

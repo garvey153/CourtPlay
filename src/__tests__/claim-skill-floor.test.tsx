@@ -48,7 +48,7 @@ const open = (level: string | null, post: Partial<FeedPost> = {}) => {
 
 /** The claim button carries the price, not the word "claim". */
 const claimButton = () => screen.getByRole("button", { name: "Claim for $25" });
-const notice = () => screen.queryByText(/is below that/);
+const notice = () => screen.queryByText(/sit this one out/);
 
 /**
  * A 4.0 game: only 4.0 and above may claim it. The notice explains the disabled
@@ -66,8 +66,8 @@ describe("claim floor — rated below the game", () => {
 
     it("names both ratings, so the message is actionable", () => {
         open("3.0");
-        expect(screen.getByText(/This game is for NTRP 4.0 players/)).toBeInTheDocument();
-        expect(screen.getByText(/Your NTRP 3.0/)).toBeInTheDocument();
+        expect(screen.getByText(/This game is for NTRP 4.0 and up/)).toBeInTheDocument();
+        expect(screen.getByText(/Your 3.0/)).toBeInTheDocument();
     });
 
     it("3.5 on a 4.0 game: half a step below is still blocked", () => {
@@ -104,7 +104,7 @@ describe("claim floor — rated below the game", () => {
         const order = screen.getByRole("dialog").querySelectorAll("p, button");
         const seq = Array.from(order).map((el) => el.textContent ?? "");
         const disclaimer = seq.findIndex((t) => t.includes("sent to Jane for approval"));
-        const message = seq.findIndex((t) => t.includes("is below that"));
+        const message = seq.findIndex((t) => t.includes("sit this one out"));
         const button = seq.findIndex((t) => t === "Claim for $25");
         expect(disclaimer).toBeGreaterThanOrEqual(0);
         expect(message).toBeGreaterThan(disclaimer);
