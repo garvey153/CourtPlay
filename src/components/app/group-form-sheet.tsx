@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SearchSm, XClose } from "@untitledui/icons";
+import { XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Input } from "@/components/base/input/input";
+import { SearchField } from "@/components/base/input/search-field";
 import { FIELD } from "@/components/base/input/field-styles";
 import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
@@ -284,30 +285,13 @@ export function GroupFormSheet({ groupId, onClose, onSaved, admin = false, onReq
                             Group members
                         </label>
 
-                        {/* Hand-rolled rather than the base Input, which has no trailing
-                            slot for the clear button. Filled variant: this sits on
-                            bg-secondary inside the modal, the lighter elevated surface. */}
-                        <div className="flex h-9 items-center gap-2 rounded-lg bg-tertiary px-3 shadow-xs ring-1 ring-neutral-600">
-                            <SearchSm className="size-5 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
-                            <input
-                                id="group-member-search"
-                                className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
-                                placeholder="Search players"
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                autoComplete="off"
-                            />
-                            {query && (
-                                <button
-                                    type="button"
-                                    aria-label="Clear search"
-                                    onClick={() => setQuery("")}
-                                    className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-primary"
-                                >
-                                    <XClose className="size-5" strokeWidth={1} />
-                                </button>
-                            )}
-                        </div>
+                        <SearchField
+                            id="group-member-search"
+                            variant="filled"
+                            value={query}
+                            onChange={setQuery}
+                            placeholder="Search players"
+                        />
 
                         {/* 26px from the field to the first row. The container's gap-2 and
                             the rows' py-2 both eat into that, so the margin here is the

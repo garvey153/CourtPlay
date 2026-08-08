@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { SearchSm, XClose } from "@untitledui/icons";
+
+import { SearchField } from "@/components/base/input/search-field";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { supabase } from "@/lib/supabase";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
@@ -62,27 +63,12 @@ export function AdminGroups() {
                 className="flex flex-1 flex-col gap-4"
                 contentClassName="flex flex-1 flex-col"
                 header={
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
-                            <SearchSm className="size-6 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
-                            <input
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search groups"
-                                className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
-                            />
-                            {search && (
-                                <button
-                                    type="button"
-                                    aria-label="Clear search"
-                                    onClick={() => setSearch("")}
-                                    className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-primary"
-                                >
-                                    <XClose className="size-5" strokeWidth={1} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
+                    <SearchField
+                        variant="outline"
+                        value={search}
+                        onChange={setSearch}
+                        placeholder="Search groups"
+                    />
                 }
             >
                 {loading ? (

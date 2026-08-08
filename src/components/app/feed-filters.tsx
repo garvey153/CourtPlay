@@ -3,8 +3,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { endOfMonth, endOfWeek, getLocalTimeZone, parseDate, startOfMonth, startOfWeek, today } from "@internationalized/date";
 import { useLocale } from "react-aria-components";
 import type { DateValue } from "react-aria-components";
-import { Check, ChevronLeft, ChevronRight, SearchSm, XClose } from "@untitledui/icons";
+import { Check, ChevronLeft, ChevronRight, XClose } from "@untitledui/icons";
 import { RangeCalendar } from "@/components/application/date-picker/range-calendar";
+import { SearchField } from "@/components/base/input/search-field";
 import { cx } from "@/utils/cx";
 import type { FilterState } from "@/types/feed";
 
@@ -327,25 +328,13 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                             {view === "location" && (
                                 <>
                                     {/* Search — pinned above the scrolling list */}
-                                    <div className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
-                                        <SearchSm className="size-6 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
-                                        <input
-                                            value={locQuery}
-                                            onChange={(e) => setLocQuery(e.target.value)}
-                                            placeholder="Search locations"
-                                            className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
-                                        />
-                                        {locQuery && (
-                                            <button
-                                                type="button"
-                                                aria-label="Clear search"
-                                                onClick={() => setLocQuery("")}
-                                                className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-primary"
-                                            >
-                                                <XClose className="size-5" strokeWidth={1} />
-                                            </button>
-                                        )}
-                                    </div>
+                                    <SearchField
+                                        className="shrink-0"
+                                        variant="filled"
+                                        value={locQuery}
+                                        onChange={setLocQuery}
+                                        placeholder="Search locations"
+                                    />
                                     <p className="mb-2 mt-4 shrink-0 text-sm font-medium text-secondary">Nearby courts</p>
                                     {/* Court list — scrolls vertically when it overflows */}
                                     <div className="min-h-0 flex-1 overflow-y-auto">
