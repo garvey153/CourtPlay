@@ -442,8 +442,8 @@ export function ClaimDetailSheet({
                     and the button it disables, so the reason is next to the effect. */}
                 {belowLevel && (
                     <p className="mt-3 text-xs text-error-primary">
-                        Sorry! This game is for NTRP {post.skill_level} and up. Your {profile?.skill_level} will have
-                        to sit this one out.
+                        Sorry! This game is for NTRP {post.skill_level} and up. Your level is {profile?.skill_level}{" "}
+                        so you'll have to sit this one out.
                     </p>
                 )}
 
