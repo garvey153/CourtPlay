@@ -128,8 +128,15 @@ export function Landing() {
                             <br />
                             {headline[1]}
                         </p>
+                        {/* States plainly what the app is for. Google's OAuth brand
+                            verification rejected the previous line ("instantly connects
+                            you with available players in your area") as not explaining
+                            the purpose — it was positioning, and never said the app is
+                            for tennis or what a user actually does with it. Keep this
+                            concrete if it is ever rewritten. */}
                         <p className="text-sm text-secondary md:text-base lg:max-w-md lg:text-lg">
-                            CourtPlay instantly connects you with available players in your area. No more group texts.
+                            CourtPlay helps tennis players in Westport fill an open spot in a game — post a spot
+                            when someone drops out, or claim one when you want to play.
                         </p>
                         {/* Desktop only: Get started sits in the hero. The Download button is
                             mobile-only (installing to a home screen is a phone/tablet action), so it
