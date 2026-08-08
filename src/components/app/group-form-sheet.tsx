@@ -33,8 +33,11 @@ interface GroupFormSheetProps {
      * is one screen.
      */
     admin?: boolean;
-    /** Admin only: called after the group is deleted. */
-    onDeleted?: () => void;
+    /**
+     * Admin only. Pressing Delete group hands off here rather than confirming
+     * in place — the caller closes this screen and opens a confirmation sheet.
+     */
+    onRequestDelete?: () => void;
 }
 
 interface Candidate extends GroupMemberBrief {
@@ -50,7 +53,7 @@ interface Candidate extends GroupMemberBrief {
  * offering to remove them would be a lie. `members` therefore holds only the
  * editable members; the creator is rendered separately.
  */
-export function GroupFormSheet({ groupId, onClose, onSaved, admin = false, onDeleted }: GroupFormSheetProps) {
+export function GroupFormSheet({ groupId, onClose, onSaved, admin = false, onRequestDelete }: GroupFormSheetProps) {
     const editing = !!groupId;
     const { profile } = useProfile();
 
@@ -71,10 +74,6 @@ export function GroupFormSheet({ groupId, onClose, onSaved, admin = false, onDel
     const [searchLoading, setSearchLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    // Two-step delete. Irreversible and it affects other people, so the first
-    // press only arms it — kept in the footer rather than swapping the body, so
-    // the screen stays the Edit group screen.
-    const [confirmingDelete, setConfirmingDelete] = useState(false);
 
     // Creating: the caller is the creator, and their own profile is already in
     // memory, so the row can render before anything is saved.
@@ -208,25 +207,6 @@ export function GroupFormSheet({ groupId, onClose, onSaved, admin = false, onDel
         }
 
         onSaved(savedId);
-    };
-
-    const destroy = async () => {
-        if (!groupId) return;
-        setSaving(true);
-        setError(null);
-        const { data, error: rpcError } = await supabase.rpc("admin_delete_group", { p_group_id: groupId });
-        setSaving(false);
-        if (rpcError || !data?.success) {
-            setError(data?.error ?? describeActionError(rpcError, "delete that group"));
-            return;
-        }
-        // Everyone but the creator is told, matching what removing them one by
-        // one would have done. The creator is the group's owner — losing their
-        // own group is not news delivered by notification.
-        members.forEach((m) =>
-            sendNotification({ notification_type: "group_removed", group_id: groupId, target_user_id: m.id }),
-        );
-        onDeleted?.();
     };
 
     // Editing keeps Save disabled until something actually differs — otherwise
@@ -418,21 +398,11 @@ export function GroupFormSheet({ groupId, onClose, onSaved, admin = false, onDel
                             {saving ? <Spinner size="sm" tone="on-brand" /> : editing ? "Save changes" : "Create group"}
                         </button>
                         {admin && editing && (
-                            <button
-                                type="button"
-                                onClick={() => (confirmingDelete ? destroy() : setConfirmingDelete(true))}
-                                disabled={saving}
-                                className={SECONDARY_BTN}
-                            >
-                                {confirmingDelete ? "Tap again to delete this group" : "Delete group"}
+                            <button type="button" onClick={onRequestDelete} disabled={saving} className={SECONDARY_BTN}>
+                                Delete group
                             </button>
                         )}
-                        <button
-                            type="button"
-                            onClick={confirmingDelete ? () => setConfirmingDelete(false) : onClose}
-                            disabled={saving}
-                            className={SECONDARY_BTN}
-                        >
+                        <button type="button" onClick={onClose} disabled={saving} className={SECONDARY_BTN}>
                             Cancel
                         </button>
                     </div>

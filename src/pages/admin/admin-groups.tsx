@@ -6,6 +6,7 @@ import { LoadingState } from "@/components/application/loading-indicator/spinner
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 import { AdminGroupCard, type AdminGroupRow } from "./admin-group-card";
 import { GroupFormSheet } from "@/components/app/group-form-sheet";
+import { AdminGroupDeleteSheet } from "./admin-group-delete-sheet";
 
 /**
  * Admin Groups tab — every group in the app, with its roster behind a tap.
@@ -21,6 +22,8 @@ export function AdminGroups() {
     const [error, setError] = useState<unknown>(null);
     const [search, setSearch] = useState("");
     const [sheet, setSheet] = useState<AdminGroupRow | null>(null);
+    /** Set when Delete is pressed on the edit screen — that screen closes first. */
+    const [pendingDelete, setPendingDelete] = useState<AdminGroupRow | null>(null);
 
     const fetchData = useCallback(async (opts?: { silent?: boolean }) => {
         if (!opts?.silent) setLoading(true);
@@ -123,8 +126,22 @@ export function AdminGroups() {
                         setSheet(null);
                         fetchData({ silent: true });
                     }}
-                    onDeleted={() => {
+                    // Deleting leaves the edit screen entirely rather than
+                    // confirming inside it — a full-page form is the wrong place
+                    // to ask a yes/no question about the thing it is editing.
+                    onRequestDelete={() => {
+                        setPendingDelete(openGroup);
                         setSheet(null);
+                    }}
+                />
+            )}
+
+            {pendingDelete && (
+                <AdminGroupDeleteSheet
+                    group={pendingDelete}
+                    onClose={() => setPendingDelete(null)}
+                    onDeleted={() => {
+                        setPendingDelete(null);
                         fetchData({ silent: true });
                     }}
                 />
