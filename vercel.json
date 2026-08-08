@@ -5,5 +5,43 @@
       "source": "/((?!.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|avif|css|js|mjs|map|json|webmanifest|txt|xml|woff|woff2|ttf|eot)$).*)",
       "destination": "/index.html"
     }
+  ],
+  "headers": [
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Link",
+          "value": "<https://www.courtplay.app/>; rel=\"canonical\""
+        }
+      ]
+    },
+    {
+      "source": "/signup",
+      "headers": [
+        {
+          "key": "Link",
+          "value": "<https://www.courtplay.app/signup>; rel=\"canonical\""
+        }
+      ]
+    },
+    {
+      "source": "/privacy",
+      "headers": [
+        {
+          "key": "Link",
+          "value": "<https://www.courtplay.app/privacy>; rel=\"canonical\""
+        }
+      ]
+    },
+    {
+      "source": "/terms",
+      "headers": [
+        {
+          "key": "Link",
+          "value": "<https://www.courtplay.app/terms>; rel=\"canonical\""
+        }
+      ]
+    }
   ]
 }
