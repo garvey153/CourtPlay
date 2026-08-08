@@ -42,7 +42,42 @@
     </head>
 
     <body class="size-full bg-primary antialiased">
-        <div id="root"></div>
+        <!--
+            The app is client-rendered, so anything that fetches this page without
+            running JavaScript sees an empty body. Google's OAuth brand review is one
+            of those: it rejected the home page for "does not explain the purpose of
+            your app" and for an app name that "does not match", because there was
+            literally no text to read — and even once React mounts, the only "CourtPlay"
+            on the page is the alt text of an SVG logo, while the <h1> is a rotating
+            tennis pun.
+
+            This fallback lives INSIDE #root, so React's createRoot().render() replaces
+            it the moment the bundle executes. Crawlers and reviewers get a real page;
+            users never see it. It is styled to match the app's dark shell so a slow
+            connection shows something on-brand rather than a flash of white.
+
+            Keep it truthful and keep the name as literal text — it is the copy Google
+            checks the OAuth "App name" against.
+        -->
+        <div id="root">
+            <main style="max-width: 34rem; margin: 0 auto; padding: 4rem 1.25rem; color: #a2b5aa; font-family: Inter, system-ui, sans-serif; line-height: 1.5">
+                <h1 style="color: #fff; font-size: 1.5rem; font-weight: 600; margin: 0 0 0.75rem">CourtPlay</h1>
+                <p style="margin: 0 0 0.75rem">
+                    CourtPlay helps tennis players in Westport, Connecticut fill an open spot in a
+                    game. When someone drops out, you post the spot — the date, court, time and
+                    skill level — and nearby players can claim it. If you need a game, you can
+                    browse open spots and claim one.
+                </p>
+                <p style="margin: 0 0 0.75rem">
+                    Sign in with Google to post a spot or claim one. CourtPlay uses your Google
+                    account for sign-in only.
+                </p>
+                <p style="margin: 0">
+                    <a href="/privacy" style="color: #1ab363">Privacy policy</a> ·
+                    <a href="/terms" style="color: #1ab363">Terms of service</a>
+                </p>
+            </main>
+        </div>
         <script type="module" src="/src/main.tsx"></script>
         <script>
             // CourtPlay ships dark-only. Apply unconditionally to avoid FOUC.
