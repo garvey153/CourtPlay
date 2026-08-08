@@ -56,10 +56,25 @@
    scroll state, and there is no URL bar in standalone, so it is correct from the
    first paint. Scoped to standalone so browser tabs keep 100dvh, where the URL
    bar still needs the dynamic value. Unlayered, so it overrides the h-dvh
-   utility. */
+   utility.
+
+   The same short first paint reaches every full-height page OUTSIDE the shell,
+   which is most of the signed-out app: sign in / sign up, forgot and reset
+   password, onboarding, the post-detail states and the 404. Those centre their
+   content in a `min-h-dvh` column, so a viewport measured ~60px short puts the
+   block ~30px high — and a swipe drops it into place, which is the bug as a
+   user meets it. Standalone opens on /signup, so sign-in is where it shows.
+
+   Overriding the utility rather than tagging each page: every one of them wants
+   the same thing in standalone, and a rule per page is a rule to forget on the
+   next page. Both declarations are unlayered, so they beat the layered Tailwind
+   utilities regardless of specificity. */
 @media all and (display-mode: standalone) {
     [data-app-shell] {
         height: 100vh;
+    }
+    .min-h-dvh {
+        min-height: 100vh;
     }
 }
 
