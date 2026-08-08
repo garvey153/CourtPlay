@@ -71,7 +71,10 @@ export function AdminGroupDeleteSheet({ group, onClose, onDeleted }: AdminGroupD
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
+            // z-[60], above the edit screen's z-50: this sheet opens ON TOP of
+            // it rather than replacing it, and relying on DOM order alone to win
+            // an equal z-index would break the moment the two are reordered.
+            className="fixed inset-0 z-[60] flex items-end justify-center backdrop-blur-[8px] sm:items-center"
             role="dialog"
             aria-modal="true"
             aria-labelledby="admin-group-delete-title"
