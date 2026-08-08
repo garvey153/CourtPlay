@@ -6,6 +6,7 @@ import { AdminPosts } from "./admin-posts";
 import { AdminUsers } from "./admin-users";
 import { AdminClaims } from "./admin-claims";
 import { AdminCourts } from "./admin-courts";
+import { AdminGroups } from "./admin-groups";
 import { AdminReports } from "./admin-reports";
 import { AdminAnalytics } from "./admin-analytics";
 
@@ -15,6 +16,7 @@ const TABS = [
     { key: "users", label: "Users" },
     { key: "claims", label: "Claims" },
     { key: "courts", label: "Courts" },
+    { key: "groups", label: "Groups" },
     { key: "reports", label: "Reports" },
 ] as const;
 
@@ -67,28 +69,35 @@ export function Admin() {
                     version scrolled. So the tabs are inline-block in a whitespace-nowrap
                     container, which is the shape that works.
 
-                    Flex comes back only at 480px and up, where all six tabs already
-                    fit (they need 416px) and the bar therefore never needs to scroll.
+                    Flex comes back only at 560px and up, where all seven tabs already
+                    fit (they need 484px) and the bar therefore never needs to scroll.
                     A flex row that cannot overflow cannot hit the touch bug, so this
                     restores the spread-to-fill look on desktop while leaving every
                     phone width on the inline-block path that actually works. The
-                    breakpoint is deliberately above the 416px fit point rather than at
+                    breakpoint is deliberately above the 484px fit point rather than at
                     it, so a font or label change cannot quietly put a scrolling bar
                     back into flex.
+
+                    Both numbers are MEASURED, not estimated — render the real bar with
+                    Inter loaded and sum the buttons plus the 20px gaps and the px-5
+                    gutters. Measuring the flex shape instead tells you nothing: flex
+                    items shrink, so its scrollWidth never exceeds its clientWidth however
+                    many tabs there are. Six tabs were 416px and adding Groups took it to
+                    484px, so the breakpoint moved 480 -> 560 to keep the same margin.
 
                     px-5 gives the geometry asked for: Analytics starts on the content
                     gutter, Reports bleeds past the right edge, and scrolling to the end
                     lands Reports exactly on the content's right edge. */}
                 <div
                     ref={barRef}
-                    className="overflow-x-auto whitespace-nowrap px-5 scrollbar-hide min-[480px]:flex min-[480px]:justify-between min-[480px]:gap-5"
+                    className="overflow-x-auto whitespace-nowrap px-5 scrollbar-hide min-[560px]:flex min-[560px]:justify-between min-[560px]:gap-5"
                 >
                     {TABS.map((t) => (
                         <button
                             key={t.key}
                             ref={(el) => { tabRefs.current[t.key] = el; }}
                             onClick={() => setTab(t.key)}
-                            className="ml-5 inline-block pt-2 align-top first:ml-0 min-[480px]:ml-0"
+                            className="ml-5 inline-block pt-2 align-top first:ml-0 min-[560px]:ml-0"
                         >
                             <span className={cx("block text-sm", tab === t.key ? "text-primary" : "text-secondary")}>
                                 {t.label}
@@ -105,6 +114,7 @@ export function Admin() {
                 {tab === "users" && <AdminUsers />}
                 {tab === "claims" && <AdminClaims />}
                 {tab === "courts" && <AdminCourts />}
+                {tab === "groups" && <AdminGroups />}
                 {tab === "reports" && <AdminReports />}
             </div>
             </div>
