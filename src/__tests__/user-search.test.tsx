@@ -32,7 +32,7 @@ const searchResults = [
     { id: "cccccccc-0000-0000-0000-000000000003", first_name: "Sarah", last_name: "Johnson", photo_url: null, skill_level: "3.5", new_to_westport: false, is_following: true },
 ];
 
-const SEARCH_PLACEHOLDER = "Search for friends to follow";
+const SEARCH_PLACEHOLDER = "Search for friends to follow...";
 
 function setupMock(results: unknown[] = searchResults) {
     rpc.mockImplementation(((fn: string) => {
