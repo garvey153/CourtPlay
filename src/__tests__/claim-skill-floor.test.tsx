@@ -67,7 +67,7 @@ describe("claim floor — rated below the game", () => {
     it("names both ratings, so the message is actionable", () => {
         open("3.0");
         expect(screen.getByText(/This game is for NTRP 4.0 and up/)).toBeInTheDocument();
-        expect(screen.getByText(/Your 3.0/)).toBeInTheDocument();
+        expect(screen.getByText(/Your level is 3.0/)).toBeInTheDocument();
     });
 
     it("3.5 on a 4.0 game: half a step below is still blocked", () => {
