@@ -1,0 +1,22 @@
+# CourtPlay — https://www.courtplay.app
+#
+# Everything is crawlable except the routes below. Those either need a session
+# (a crawler gets the app shell and a client-side redirect, so indexing them
+# yields nothing) or are ephemeral: a sub post is gone within days, and a
+# private one answers "no longer available" to anyone outside its audience.
+# Indexing either would put dead or unreachable pages in search results.
+#
+# The apex 308-redirects to www, so the sitemap is declared on www — the host
+# the pages actually resolve on.
+
+User-agent: *
+Disallow: /feed
+Disallow: /profile
+Disallow: /admin
+Disallow: /onboarding
+Disallow: /post/
+Disallow: /auth/
+Disallow: /forgot-password
+Disallow: /reset-password
+
+Sitemap: https://www.courtplay.app/sitemap.xml

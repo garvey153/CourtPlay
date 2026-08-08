@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The four pages a signed-out visitor can meaningfully land on. Everything else
+    is either session-gated or ephemeral and is disallowed in robots.txt.
+
+    Hosts are www, not the apex: the apex 308-redirects there, and a sitemap
+    listing redirecting URLs makes Google follow a hop to reach every page.
+
+    No <lastmod>. A hardcoded date would be wrong the moment the copy changes,
+    and a wrong lastmod is worse than none — Google uses it to decide whether a
+    recrawl is worth it.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://www.courtplay.app/</loc>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    <url>
+        <loc>https://www.courtplay.app/signup</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.courtplay.app/privacy</loc>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
+    </url>
+    <url>
+        <loc>https://www.courtplay.app/terms</loc>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
+    </url>
+</urlset>
