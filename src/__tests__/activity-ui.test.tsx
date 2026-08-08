@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { Activity } from "@/pages/activity";
@@ -94,19 +94,26 @@ describe("Activity redesign", () => {
         expect(rpc).toHaveBeenCalledWith("approve_claim", { p_claim_id: "claim-1" });
     });
 
-    it("created tab: a post with an approved claim badges as Claimed, not Approved", async () => {
-        // The poster's spot is gone, so the card must not keep the brand-green
-        // still-open treatment "Approved" carries on the Answered tab.
+    it("created tab: an approved claim badges as Approved, in the Claimed colours", async () => {
+        // Two halves that have to disagree. The poster's spot is GONE, so the
+        // card keeps the neutral Claimed treatment rather than the brand-green
+        // still-open one "Approved" carries on the Answered tab. But the word
+        // has to say what happened, and what happened is approval.
         const approvedPost = { ...createdPost, claims: [{ ...createdPost.claims[0], status: "approved" }] };
         setup([approvedPost], []);
         const user = userEvent.setup();
         render(<MemoryRouter><Activity /></MemoryRouter>);
         await user.click(await screen.findByRole("button", { name: "Created posts" }));
         await screen.findByText(/Round Robin Tennis/);
-        // "Approved" survives as the section heading; the card badge reads Claimed.
         const card = screen.getByText(/Round Robin Tennis/).closest("button")!;
-        expect(card).toHaveTextContent("Claimed");
-        expect(card).not.toHaveTextContent("Approved");
+        expect(card).toHaveTextContent("Approved");
+        expect(card).not.toHaveTextContent("Claimed");
+
+        // Colours come from the "claimed" kind, not from "approved".
+        const badge = within(card).getByText("Approved");
+        expect(badge.className).toContain("bg-neutral-800");
+        expect(badge.className).toContain("text-neutral-400");
+        expect(badge.className).not.toContain("brand");
     });
 
     it("created post with no claims shows Edit / Delete actions in the sheet", async () => {

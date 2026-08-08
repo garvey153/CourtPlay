@@ -361,12 +361,20 @@ export function Activity() {
         const hasApproved = (p: MyPost) => p.post_type !== "regular_game" && p.claims.some((c) => c.status === "approved");
 
         // Group into the same section style as the Claimed tab.
-        const allSections: Array<{ label: string; kind: CardKind; posts: MyPost[] }> = [
+        const allSections: Array<{ label: string; kind: CardKind; badge?: string; posts: MyPost[] }> = [
             { label: "Pending", kind: "pending", posts: visiblePosts.filter((p) => hasPending(p)) },
             // "claimed", not "approved": these are my posts, so an approved claim means
             // the spot is gone. The brand-green "Approved" treatment reads as still-open,
             // which is the claimer's view of the same event, not the poster's.
-            { label: "Approved", kind: "claimed", posts: visiblePosts.filter((p) => !hasPending(p) && hasApproved(p)) },
+            //
+            // The badge still SAYS Approved, though — the Claimed colours describe
+            // what the spot is now, and the word describes what happened to it.
+            {
+                label: "Approved",
+                kind: "claimed",
+                badge: "Approved",
+                posts: visiblePosts.filter((p) => !hasPending(p) && hasApproved(p)),
+            },
             {
                 label: "Active",
                 kind: "open",
@@ -384,12 +392,18 @@ export function Activity() {
         ) : null;
 
         // Match the feed: regular-play posts use the blue RegularPlayCard, subs the green SubCard.
-        const renderCard = (post: MyPost, kind: CardKind) => {
+        const renderCard = (post: MyPost, kind: CardKind, badge?: string) => {
             const feedPost = postToFeedPost(post, me ?? { id: "", first_name: "", last_name: "", photo_url: null });
             return post.post_type === "regular_game" ? (
                 <RegularPlayCard post={feedPost} profileComplete currentUserId={user?.id} onOpenDetail={() => setRegularSheet(post)} />
             ) : (
-                <SubCard post={feedPost} currentUserId={user?.id} kindOverride={kind} onOpenDetail={() => setCreatedSheet(post)} />
+                <SubCard
+                    post={feedPost}
+                    currentUserId={user?.id}
+                    kindOverride={kind}
+                    labelOverride={badge}
+                    onOpenDetail={() => setCreatedSheet(post)}
+                />
             );
         };
 
@@ -417,7 +431,7 @@ export function Activity() {
                         <p className="mb-2 text-xs font-medium text-tertiary">{section.label}</p>
                         <ul className="flex flex-col gap-3">
                             {section.posts.map((post) => (
-                                <li key={post.id}>{renderCard(post, section.kind)}</li>
+                                <li key={post.id}>{renderCard(post, section.kind, section.badge)}</li>
                             ))}
                         </ul>
                     </div>
