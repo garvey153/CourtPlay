@@ -5,6 +5,8 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useShare } from "@/hooks/use-share";
+import { useProfile } from "@/hooks/use-profile";
+import { isBelowRequiredLevel } from "@/utils/skill-eligibility";
 import type { FeedPost } from "@/types/feed";
 import type { ClaimMessage } from "@/types/activity";
 import { ShareModal } from "./share-modal";
@@ -99,6 +101,10 @@ export function ClaimDetailSheet({
     messages,
     currentUser,
 }: ClaimDetailSheetProps) {
+    // The viewer's own NTRP rating, for the eligibility check below. Read from
+    // the shared profile rather than added to `currentUser`, which four call
+    // sites pass and which exists for rendering the optimistic reply.
+    const { profile } = useProfile();
     const [loading, setLoading] = useState(false);
     const [conflict, setConflict] = useState<{ date: string; time: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -276,6 +282,10 @@ export function ClaimDetailSheet({
     );
 
     const claimableHelper = !isOwnPost && !activeClaim && !isFull && !isExpired;
+    // Rated below the game's NTRP level at all. submit_claim enforces the
+    // same rule, so this is the explanation rather than the gate — a disabled
+    // button on its own reads as a bug.
+    const belowLevel = claimableHelper && isBelowRequiredLevel(profile?.skill_level, post.skill_level);
 
     // Report replaces this sheet (single backdrop) rather than stacking over it;
     // closing the report returns here.
@@ -427,6 +437,16 @@ export function ClaimDetailSheet({
                     </p>
                 )}
 
+                {/* Too far below the game's level to claim (design-system error red,
+                    matching the disclaimer's text-xs). Sits between the disclaimer
+                    and the button it disables, so the reason is next to the effect. */}
+                {belowLevel && (
+                    <p className="mt-3 text-xs text-error-primary">
+                        This game is for NTRP {post.skill_level} players. Your NTRP {profile?.skill_level} is below
+                        that, so you can't claim this spot.
+                    </p>
+                )}
+
                 {/* Primary action — 32px below the disclaimer (baseline → button top). */}
                 <div className="mt-8 flex flex-col gap-3">
                     {isOwnPost ? (
@@ -482,7 +502,7 @@ export function ClaimDetailSheet({
                             <button
                                 type="button"
                                 onClick={handleClaim}
-                                disabled={loading || !!conflict}
+                                disabled={loading || !!conflict || belowLevel}
                                 className={PRIMARY_BTN}
                             >
                                 {loading ? <Spinner size="sm" tone="on-brand" /> : costLabel}
