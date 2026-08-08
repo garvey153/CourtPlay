@@ -126,22 +126,23 @@ export function AdminGroups() {
                         setSheet(null);
                         fetchData({ silent: true });
                     }}
-                    // Deleting leaves the edit screen entirely rather than
-                    // confirming inside it — a full-page form is the wrong place
-                    // to ask a yes/no question about the thing it is editing.
-                    onRequestDelete={() => {
-                        setPendingDelete(openGroup);
-                        setSheet(null);
-                    }}
+                    // The confirmation STACKS on top rather than replacing this
+                    // screen: backing out of a delete should put you back where
+                    // you were, mid-edit, not at the list having lost the form.
+                    onRequestDelete={() => setPendingDelete(openGroup)}
                 />
             )}
 
             {pendingDelete && (
                 <AdminGroupDeleteSheet
                     group={pendingDelete}
+                    // Closes only the confirmation, revealing the edit screen.
                     onClose={() => setPendingDelete(null)}
                     onDeleted={() => {
+                        // The group is gone, so the form behind it has nothing
+                        // left to edit — both close.
                         setPendingDelete(null);
+                        setSheet(null);
                         fetchData({ silent: true });
                     }}
                 />

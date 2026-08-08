@@ -93,6 +93,40 @@ describe("AdminGroups — list", () => {
         expect(screen.queryByText("The Racquettes")).not.toBeInTheDocument();
     });
 
+    it("the delete confirmation opens ON TOP of the edit screen, and backing out returns to it", async () => {
+        const user = userEvent.setup();
+        render(<AdminGroups />);
+        await user.click(await screen.findByText("The Racquettes"));
+
+        // Edit screen open.
+        await screen.findByDisplayValue("The Racquettes");
+        await user.click(screen.getByRole("button", { name: "Delete group" }));
+
+        // Both on screen: the confirmation over a form that is still mounted.
+        expect(await screen.findByText("Delete this group?")).toBeInTheDocument();
+        expect(screen.getByDisplayValue("The Racquettes")).toBeInTheDocument();
+
+        await user.click(screen.getByRole("button", { name: "No, keep it" }));
+
+        // Back to the form, not to the list — mid-edit state survives.
+        expect(screen.queryByText("Delete this group?")).not.toBeInTheDocument();
+        expect(screen.getByDisplayValue("The Racquettes")).toBeInTheDocument();
+    });
+
+    it("deleting closes both — the form behind has nothing left to edit", async () => {
+        const user = userEvent.setup();
+        render(<AdminGroups />);
+        await user.click(await screen.findByText("The Racquettes"));
+        await screen.findByDisplayValue("The Racquettes");
+        await user.click(screen.getByRole("button", { name: "Delete group" }));
+
+        await waitFor(() => expect(screen.getByRole("button", { name: "Yes, delete" })).not.toBeDisabled());
+        await user.click(screen.getByRole("button", { name: "Yes, delete" }));
+
+        await waitFor(() => expect(screen.queryByDisplayValue("The Racquettes")).not.toBeInTheDocument());
+        expect(screen.queryByText("Delete this group?")).not.toBeInTheDocument();
+    });
+
     it("reads through admin_get_groups, not a direct table select", async () => {
         render(<AdminGroups />);
         await screen.findByText("The Racquettes");
