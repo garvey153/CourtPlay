@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Checkbox as AriaCheckbox, Switch as AriaSwitch, type Selection } from "react-aria-components";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Check, SearchSm, XClose } from "@untitledui/icons";
+import { ArrowLeft, Check } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
+import { SearchField } from "@/components/base/input/search-field";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
 import { SelectItem } from "@/components/base/select/select-item";
@@ -583,28 +584,17 @@ export function Onboarding() {
 
                                 {/* Typeahead search */}
                                 <div className="relative" ref={searchContainerRef}>
-                                    {/* Search field matches the filter sheet + Profile search (see feed-filters.tsx / profile.tsx). */}
-                                    <div className="flex h-9 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
-                                        <SearchSm className="size-6 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
-                                        <input
-                                            className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
-                                            placeholder="Search by name…"
-                                            value={memberQuery}
-                                            onChange={(e) => setMemberQuery(e.target.value)}
-                                            onFocus={() => memberQuery.trim().length >= 2 && setShowDropdown(true)}
-                                            autoComplete="off"
-                                        />
-                                        {memberQuery && (
-                                            <button
-                                                type="button"
-                                                aria-label="Clear search"
-                                                onClick={() => setMemberQuery("")}
-                                                className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-primary"
-                                            >
-                                                <XClose className="size-5" strokeWidth={1} />
-                                            </button>
-                                        )}
-                                    </div>
+                                    {/* Filled: the onboarding page is bg-secondary. The `relative`
+                                        wrapper and its ref stay OUTSIDE the field — the
+                                        outside-click handler reads that element to dismiss
+                                        the overlay below. */}
+                                    <SearchField
+                                        variant="filled"
+                                        value={memberQuery}
+                                        onChange={setMemberQuery}
+                                        placeholder="Search by name…"
+                                        onFocus={() => memberQuery.trim().length >= 2 && setShowDropdown(true)}
+                                    />
 
                                     {/* Results overlay */}
                                     {showDropdown && (

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
-import { DotsVertical, SearchSm, XClose } from "@untitledui/icons";
+import { DotsVertical } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { ReportUserSheet } from "@/components/app/report-user-sheet";
 import { FeedbackSheet } from "@/components/app/feedback-sheet";
+import { SearchField } from "@/components/base/input/search-field";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
@@ -436,32 +437,15 @@ export function Profile() {
                             Following ({profile.following_count})
                         </p>
 
-                        {/* Search field per design-system 612:1775 — variant 3: 20x20 icon,
-                            no fill, border/primary.
-                            The two variants are chosen by the surface behind the field:
-                            OUTLINE on the darker page background (bg-primary), FILLED on
-                            lighter elevated surfaces like bottom sheets (bg-secondary),
-                            where an outline alone would disappear. */}
-                        <div className="mb-4 flex h-9 items-center gap-2 rounded-lg border border-primary px-3 shadow-xs">
-                            <SearchSm className="size-5 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
-                            <input
-                                className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
-                                placeholder="Search for players to follow..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                autoComplete="off"
-                            />
-                            {searchQuery && (
-                                <button
-                                    type="button"
-                                    aria-label="Clear search"
-                                    onClick={() => setSearchQuery("")}
-                                    className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-primary"
-                                >
-                                    <XClose className="size-5" strokeWidth={1} />
-                                </button>
-                            )}
-                        </div>
+                        {/* Chosen by the surface: OUTLINE on the darker page background
+                            (bg-primary). The rule lives on SearchField itself now. */}
+                        <SearchField
+                            className="mb-4"
+                            variant="outline"
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            placeholder="Search for players to follow..."
+                        />
 
                         {/* Search results, or the current Following list */}
                         {isSearching ? (

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { SearchSm, XClose } from "@untitledui/icons";
+
 import { FilterButton } from "@/components/app/filter-button";
+import { SearchField } from "@/components/base/input/search-field";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { supabase } from "@/lib/supabase";
 import { AdminUserCard, type AdminUserRow } from "./admin-user-card";
@@ -116,25 +117,13 @@ export function AdminUsers() {
                 <>
             {/* Search + filter row (design 348:4818) */}
             <div className="flex items-center gap-3">
-                <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-neutral-700 px-3 shadow-xs">
-                    <SearchSm className="size-6 shrink-0 text-tertiary" strokeWidth={1} aria-hidden="true" />
-                    <input
+                <SearchField
+                        className="flex-1"
+                        variant="outline"
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={setSearch}
                         placeholder="Search users"
-                        className="w-full bg-transparent text-sm text-primary placeholder:text-tertiary focus:outline-none"
                     />
-                    {search && (
-                        <button
-                            type="button"
-                            aria-label="Clear search"
-                            onClick={() => setSearch("")}
-                            className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-primary"
-                        >
-                            <XClose className="size-5" strokeWidth={1} />
-                        </button>
-                    )}
-                </div>
                 <FilterButton
                     onClick={() => setFiltersOpen((v) => !v)}
                     isActive={userFilterCount(filters) > 0}
