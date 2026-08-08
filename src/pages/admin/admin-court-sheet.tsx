@@ -109,8 +109,17 @@ export function AdminCourtSheet({ target, onClose, onSaved }: AdminCourtSheetPro
     };
 
     const heading = target.mode === "create" ? "Add court" : target.mode === "custom" ? "Custom court" : "Edit court";
-    const saveLabel = target.mode === "court" ? "Save" : "Add court";
+    const editing = target.mode === "court";
+    const saveLabel = editing ? "Save changes" : "Add court";
     const actionLabel = target.mode === "custom" ? "Remove" : "Deactivate";
+
+    // Only editing has something to be dirty against. Create starts empty, and
+    // custom arrives prefilled precisely so it can be added as-is — gating either
+    // on an edit would demand a pointless keystroke.
+    //
+    // Compared TRIMMED, unlike group-form-sheet, because handleSave trims before
+    // writing: a trailing space is a change to the field but a no-op to the row.
+    const dirty = !editing || name.trim() !== initialName.trim() || area.trim() !== initialArea.trim();
 
     return (
         <div
@@ -165,7 +174,12 @@ export function AdminCourtSheet({ target, onClose, onSaved }: AdminCourtSheetPro
 
                 {/* 32px between the last field and the buttons (sheet gap-4 = 16px + mt-4 = 16px). */}
                 <div className="mt-4 flex flex-col gap-3">
-                    <button type="button" onClick={handleSave} disabled={busy !== null || !name.trim()} className={PRIMARY_BTN}>
+                    <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={busy !== null || !name.trim() || !dirty}
+                        className={PRIMARY_BTN}
+                    >
                         {busy === "save" ? <Spinner size="sm" tone="on-brand" /> : saveLabel}
                     </button>
                     {target.mode !== "create" && (
