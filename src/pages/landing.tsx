@@ -114,11 +114,20 @@ export function Landing() {
                 {/* Hero — stacked on mobile/tablet, two columns (copy + preview cards) on desktop */}
                 <section className="mt-8 px-5 md:mt-12 md:px-8 lg:grid lg:grid-cols-2 lg:items-center lg:gap-8 lg:py-12">
                     <div className="flex flex-col gap-2.5 lg:gap-4">
-                        <h1 className="text-balance text-display-md font-semibold tracking-tight text-primary md:text-display-lg lg:text-display-xl">
+                        {/* The product name is the h1 and the pun is a subhead, not the
+                            other way round. Google's OAuth brand verification checks the
+                            home page for the app name configured on the consent screen and
+                            for a statement of purpose; with a rotating pun as the only
+                            heading and "CourtPlay" appearing solely as the logo's alt text,
+                            it failed both. Keep the name here as literal text. */}
+                        <h1 className="text-balance text-display-sm font-semibold tracking-tight text-primary md:text-display-md lg:text-display-lg">
+                            CourtPlay
+                        </h1>
+                        <p className="text-balance text-display-md font-semibold tracking-tight text-primary md:text-display-lg lg:text-display-xl">
                             {headline[0]}
                             <br />
                             {headline[1]}
-                        </h1>
+                        </p>
                         <p className="text-sm text-secondary md:text-base lg:max-w-md lg:text-lg">
                             CourtPlay instantly connects you with available players in your area. No more group texts.
                         </p>
