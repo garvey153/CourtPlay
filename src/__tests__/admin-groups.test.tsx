@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { supabase } from "@/lib/supabase";
 import { sendNotification } from "@/lib/notifications";
 import { AdminGroups } from "@/pages/admin/admin-groups";
-import { AdminGroupSheet } from "@/pages/admin/admin-group-sheet";
+import { GroupFormSheet } from "@/components/app/group-form-sheet";
 import type { AdminGroupRow } from "@/pages/admin/admin-group-card";
 
 vi.mock("@/lib/supabase", () => ({
@@ -12,6 +12,10 @@ vi.mock("@/lib/supabase", () => ({
 }));
 
 vi.mock("@/lib/notifications", () => ({ sendNotification: vi.fn() }));
+
+vi.mock("@/hooks/use-profile", () => ({
+    useProfile: () => ({ profile: { id: "admin-1", first_name: "Admin", last_name: "U", photo_url: null, skill_level: "4.0" } }),
+}));
 
 const GROUPS: AdminGroupRow[] = [
     {
@@ -27,7 +31,7 @@ const GROUPS: AdminGroupRow[] = [
 ];
 
 const ROSTER = {
-    id: "g1", name: "The Racquettes", details: null, created_at: "2026-08-01T00:00:00Z",
+    id: "g1", name: "The Racquettes", details: "Westport Social League", created_at: "2026-08-01T00:00:00Z",
     closed_at: null, creator_id: "u1",
     members: [
         { id: "u1", first_name: "Chris", last_name: "Brown", photo_url: null, skill_level: "4.0", is_creator: true },
@@ -44,6 +48,9 @@ function mockRpc(overrides: Record<string, unknown> = {}) {
             admin_add_group_member: { success: true },
             admin_remove_group_member: { success: true },
             admin_delete_group: { success: true },
+            admin_update_group: { success: true },
+            get_group: ROSTER,
+            update_group: { success: true },
             search_users: [],
             ...overrides,
         };
@@ -93,31 +100,101 @@ describe("AdminGroups — list", () => {
     });
 });
 
-describe("AdminGroupSheet", () => {
-    const open = (props: Partial<React.ComponentProps<typeof AdminGroupSheet>> = {}) =>
+/**
+ * The admin editor IS the Edit group screen, in admin mode — same component,
+ * so these tests are about the three things that differ: which RPCs it uses,
+ * that edits are staged until Save, and Delete.
+ */
+describe("GroupFormSheet — admin mode", () => {
+    const open = (props: Partial<React.ComponentProps<typeof GroupFormSheet>> = {}) =>
         render(
-            <AdminGroupSheet group={GROUPS[0]} onClose={vi.fn()} onSaved={vi.fn()} {...props} />,
+            <GroupFormSheet
+                admin
+                groupId="g1"
+                onClose={vi.fn()}
+                onSaved={vi.fn()}
+                onDeleted={vi.fn()}
+                {...props}
+            />,
         );
+
+    it("reads through admin_get_group — get_group refuses a non-member", async () => {
+        open();
+        await screen.findByDisplayValue("The Racquettes");
+        expect(supabase.rpc).toHaveBeenCalledWith("admin_get_group", { p_group_id: "g1" });
+        expect(supabase.rpc).not.toHaveBeenCalledWith("get_group", expect.anything());
+    });
+
+    it("is the Edit group screen: name, details and the member search", async () => {
+        open();
+        expect(await screen.findByDisplayValue("The Racquettes")).toBeInTheDocument();
+        // By visible text: the base Input renders its label as a sibling node
+        // rather than an htmlFor-associated one, so getByLabelText misses it.
+        expect(screen.getByText("Group name")).toBeInTheDocument();
+        expect(screen.getByText("Group details")).toBeInTheDocument();
+        expect(screen.getByPlaceholderText("Search players")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    });
 
     it("labels the creator and offers Remove on everyone else", async () => {
         open();
         expect(await screen.findByText("Owner")).toBeInTheDocument();
-        expect(screen.getByRole("button", { name: "Remove" })).toBeInTheDocument();
-        // One Remove, not two — the creator must not have one.
         expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(1);
     });
 
-    it("removes through the RPC and tells the player", async () => {
+    it("Save is disabled until something actually changes", async () => {
+        const user = userEvent.setup();
+        open();
+        await screen.findByDisplayValue("The Racquettes");
+        expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+
+        await user.click(screen.getByRole("button", { name: "Remove" }));
+        expect(screen.getByRole("button", { name: "Save changes" })).not.toBeDisabled();
+    });
+
+    it("re-adding someone you removed is not an edit", async () => {
+        mockRpc({
+            search_users: [{ id: "u3", first_name: "Mike", last_name: "Chen", photo_url: null, skill_level: "3.5" }],
+        });
+        const user = userEvent.setup();
+        open();
+        await screen.findByDisplayValue("The Racquettes");
+
+        await user.click(screen.getByRole("button", { name: "Remove" }));
+        await user.type(screen.getByPlaceholderText("Search players"), "mike");
+        await user.click(await screen.findByRole("button", { name: /Mike C\./ }));
+
+        // Same membership, different order — Save goes back to disabled.
+        await waitFor(() => expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled());
+    });
+
+    it("staged: removing a player writes nothing until Save", async () => {
         const user = userEvent.setup();
         open();
         await user.click(await screen.findByRole("button", { name: "Remove" }));
 
+        expect(screen.queryByText("Mike C.")).not.toBeInTheDocument();
+        // The whole point of the Save button: nothing has gone to the server.
+        expect(supabase.rpc).not.toHaveBeenCalledWith("admin_update_group", expect.anything());
+        expect(sendNotification).not.toHaveBeenCalled();
+    });
+
+    it("saves the whole roster in one call, and tells only who changed", async () => {
+        const user = userEvent.setup();
+        open();
+        await user.click(await screen.findByRole("button", { name: "Remove" }));
+        await user.click(screen.getByRole("button", { name: "Save changes" }));
+
         await waitFor(() =>
-            expect(supabase.rpc).toHaveBeenCalledWith("admin_remove_group_member", {
+            expect(supabase.rpc).toHaveBeenCalledWith("admin_update_group", {
                 p_group_id: "g1",
-                p_user_id: "u3",
+                p_name: "The Racquettes",
+                p_details: "Westport Social League",
+                p_member_ids: [],
             }),
         );
+        expect(sendNotification).toHaveBeenCalledTimes(1);
         expect(sendNotification).toHaveBeenCalledWith({
             notification_type: "group_removed",
             group_id: "g1",
@@ -125,73 +202,68 @@ describe("AdminGroupSheet", () => {
         });
     });
 
-    it("closes itself when the removal empties the group", async () => {
-        const onClose = vi.fn();
-        mockRpc({ admin_remove_group_member: { success: true, group_emptied: true } });
-        const user = userEvent.setup();
-        open({ onClose });
-        await user.click(await screen.findByRole("button", { name: "Remove" }));
-        // The group is deleted server-side once empty, so there is nothing to
-        // reload into.
-        await waitFor(() => expect(onClose).toHaveBeenCalled());
-    });
-
-    it("surfaces a refusal instead of pretending it worked", async () => {
-        mockRpc({ admin_remove_group_member: { success: false, error: "Not a member of this group" } });
+    it("lets an admin edit the name and details", async () => {
         const user = userEvent.setup();
         open();
-        await user.click(await screen.findByRole("button", { name: "Remove" }));
-        expect(await screen.findByText("Not a member of this group")).toBeInTheDocument();
-        expect(sendNotification).not.toHaveBeenCalled();
-    });
-
-    it("adds a player through the RPC and tells them", async () => {
-        mockRpc({
-            search_users: [{ id: "u9", first_name: "Sara", last_name: "Hill", photo_url: null, skill_level: "4.0" }],
-        });
-        const user = userEvent.setup();
-        open();
-        await screen.findByText("Owner");
-
-        await user.type(screen.getByLabelText("Add a player"), "sara");
-        await user.click(await screen.findByRole("button", { name: /Sara H\./ }));
+        const nameField = await screen.findByDisplayValue("The Racquettes");
+        await user.clear(nameField);
+        await user.type(nameField, "The Racketeers");
+        await user.click(screen.getByRole("button", { name: "Save changes" }));
 
         await waitFor(() =>
-            expect(supabase.rpc).toHaveBeenCalledWith("admin_add_group_member", {
-                p_group_id: "g1",
-                p_user_id: "u9",
-            }),
+            expect(supabase.rpc).toHaveBeenCalledWith(
+                "admin_update_group",
+                expect.objectContaining({ p_name: "The Racketeers" }),
+            ),
         );
-        expect(sendNotification).toHaveBeenCalledWith({
-            notification_type: "group_added",
-            group_id: "g1",
-            target_user_id: "u9",
-        });
     });
 
-    it("puts deletion behind a confirm", async () => {
+    it("needs two presses to delete", async () => {
+        const onDeleted = vi.fn();
         const user = userEvent.setup();
-        open();
+        open({ onDeleted });
+
         await user.click(await screen.findByRole("button", { name: "Delete group" }));
-
-        // First press only reveals the confirm — nothing has been called yet.
         expect(supabase.rpc).not.toHaveBeenCalledWith("admin_delete_group", expect.anything());
-        expect(screen.getByText("Delete this group?")).toBeInTheDocument();
 
-        await user.click(screen.getByRole("button", { name: "Delete group" }));
+        await user.click(screen.getByRole("button", { name: /Tap again to delete/ }));
         await waitFor(() =>
             expect(supabase.rpc).toHaveBeenCalledWith("admin_delete_group", { p_group_id: "g1" }),
         );
+        await waitFor(() => expect(onDeleted).toHaveBeenCalled());
     });
 
-    it("tells the members when the group is deleted, but not the creator", async () => {
+    it("Cancel disarms the delete rather than closing the screen", async () => {
+        const onClose = vi.fn();
         const user = userEvent.setup();
-        open();
-        await user.click(await screen.findByRole("button", { name: "Delete group" }));
-        await user.click(screen.getByRole("button", { name: "Delete group" }));
+        open({ onClose });
 
-        await waitFor(() => expect(sendNotification).toHaveBeenCalled());
-        const targets = vi.mocked(sendNotification).mock.calls.map((c) => c[0].target_user_id);
-        expect(targets).toEqual(["u3"]);
+        await user.click(await screen.findByRole("button", { name: "Delete group" }));
+        await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+        expect(onClose).not.toHaveBeenCalled();
+        expect(screen.getByRole("button", { name: "Delete group" })).toBeInTheDocument();
+    });
+
+    it("offers no Delete outside admin mode", async () => {
+        render(<GroupFormSheet groupId="g1" onClose={vi.fn()} onSaved={vi.fn()} />);
+        await screen.findByDisplayValue("The Racquettes");
+        expect(screen.queryByRole("button", { name: "Delete group" })).not.toBeInTheDocument();
+    });
+
+    it("the creator's Edit group shares the disabled-until-dirty rule", async () => {
+        // Same component, so the change made for the admin screen lands on the
+        // creator's too. Pinned here because that is the only thing keeping the
+        // two screens identical.
+        const user = userEvent.setup();
+        render(<GroupFormSheet groupId="g1" onClose={vi.fn()} onSaved={vi.fn()} />);
+        await screen.findByDisplayValue("The Racquettes");
+        expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+
+        await user.click(screen.getByRole("button", { name: "Remove" }));
+        expect(screen.getByRole("button", { name: "Save changes" })).not.toBeDisabled();
+        // …and it still writes through the creator RPC, not the admin one.
+        await user.click(screen.getByRole("button", { name: "Save changes" }));
+        await waitFor(() => expect(supabase.rpc).toHaveBeenCalledWith("update_group", expect.anything()));
     });
 });

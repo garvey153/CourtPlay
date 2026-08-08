@@ -23,6 +23,18 @@ interface GroupFormSheetProps {
     onClose: () => void;
     /** Fired after a successful save, with the group's id. */
     onSaved: (groupId: string) => void;
+    /**
+     * Admin Groups tab. Same screen, three differences: it reads and writes
+     * through the admin_* RPCs (the creator-scoped ones refuse anyone else),
+     * and it offers Delete.
+     *
+     * Sharing the component rather than copying it is deliberate — "the admin
+     * view is identical to Edit group" is a claim that only stays true if there
+     * is one screen.
+     */
+    admin?: boolean;
+    /** Admin only: called after the group is deleted. */
+    onDeleted?: () => void;
 }
 
 interface Candidate extends GroupMemberBrief {
@@ -38,7 +50,7 @@ interface Candidate extends GroupMemberBrief {
  * offering to remove them would be a lie. `members` therefore holds only the
  * editable members; the creator is rendered separately.
  */
-export function GroupFormSheet({ groupId, onClose, onSaved }: GroupFormSheetProps) {
+export function GroupFormSheet({ groupId, onClose, onSaved, admin = false, onDeleted }: GroupFormSheetProps) {
     const editing = !!groupId;
     const { profile } = useProfile();
 
@@ -47,6 +59,8 @@ export function GroupFormSheet({ groupId, onClose, onSaved }: GroupFormSheetProp
     const [creator, setCreator] = useState<Candidate | null>(null);
     /** Membership as loaded, so save() can diff against it. Empty when creating. */
     const initialMemberIds = useRef<string[]>([]);
+    /** Name and details as loaded, so Save can stay disabled until something changes. */
+    const initialText = useRef<{ name: string; details: string }>({ name: "", details: "" });
 
     const [name, setName] = useState("");
     const [details, setDetails] = useState("");
@@ -57,6 +71,10 @@ export function GroupFormSheet({ groupId, onClose, onSaved }: GroupFormSheetProp
     const [searchLoading, setSearchLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // Two-step delete. Irreversible and it affects other people, so the first
+    // press only arms it — kept in the footer rather than swapping the body, so
+    // the screen stays the Edit group screen.
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
 
     // Creating: the caller is the creator, and their own profile is already in
     // memory, so the row can render before anything is saved.
@@ -75,7 +93,12 @@ export function GroupFormSheet({ groupId, onClose, onSaved }: GroupFormSheetProp
         if (!groupId) return;
         setLoading(true);
         setLoadError(null);
-        const { data, error: rpcError } = await supabase.rpc("get_group", { p_group_id: groupId });
+        // get_group returns null unless is_group_member() passes, so an admin
+        // moderating a group they are not in has to go the other way round.
+        const { data, error: rpcError } = await supabase.rpc(
+            admin ? "admin_get_group" : "get_group",
+            { p_group_id: groupId },
+        );
         setLoading(false);
         if (rpcError || !data) {
             console.error("get_group failed:", rpcError ?? "no access");
@@ -91,7 +114,8 @@ export function GroupFormSheet({ groupId, onClose, onSaved }: GroupFormSheetProp
         // Baseline for the notification diff. A ref, not state: it must survive
         // every edit the user makes and never trigger a re-render.
         initialMemberIds.current = editable.map((m) => m.id);
-    }, [groupId]);
+        initialText.current = { name: g.name, details: g.details ?? "" };
+    }, [groupId, admin]);
 
     useEffect(() => {
         load();
@@ -139,7 +163,14 @@ export function GroupFormSheet({ groupId, onClose, onSaved }: GroupFormSheetProp
         setError(null);
 
         const ids = members.map((m) => m.id);
-        const { data, error: rpcError } = editing
+        const { data, error: rpcError } = admin
+            ? await supabase.rpc("admin_update_group", {
+                  p_group_id: groupId,
+                  p_name: trimmed,
+                  p_details: details.trim() || null,
+                  p_member_ids: ids,
+              })
+            : editing
             ? await supabase.rpc("update_group", {
                   p_group_id: groupId,
                   p_name: trimmed,
@@ -178,6 +209,40 @@ export function GroupFormSheet({ groupId, onClose, onSaved }: GroupFormSheetProp
 
         onSaved(savedId);
     };
+
+    const destroy = async () => {
+        if (!groupId) return;
+        setSaving(true);
+        setError(null);
+        const { data, error: rpcError } = await supabase.rpc("admin_delete_group", { p_group_id: groupId });
+        setSaving(false);
+        if (rpcError || !data?.success) {
+            setError(data?.error ?? describeActionError(rpcError, "delete that group"));
+            return;
+        }
+        // Everyone but the creator is told, matching what removing them one by
+        // one would have done. The creator is the group's owner — losing their
+        // own group is not news delivered by notification.
+        members.forEach((m) =>
+            sendNotification({ notification_type: "group_removed", group_id: groupId, target_user_id: m.id }),
+        );
+        onDeleted?.();
+    };
+
+    // Editing keeps Save disabled until something actually differs — otherwise
+    // the button invites a write that would change nothing and still notify
+    // nobody. Creating is always enabled once there is a name.
+    //
+    // Members compare as SORTED ids: adding someone and removing them again
+    // leaves a list in a different order but the same membership, which is not
+    // an edit.
+    const sameIds = (a: string[], b: string[]) =>
+        a.length === b.length && [...a].sort().join() === [...b].sort().join();
+    const dirty =
+        !editing ||
+        name !== initialText.current.name ||
+        details !== initialText.current.details ||
+        !sameIds(members.map((m) => m.id), initialMemberIds.current);
 
     // Same threshold as Profile's follow search: below two characters the
     // member list stays put rather than flickering on every keystroke.
@@ -349,10 +414,25 @@ export function GroupFormSheet({ groupId, onClose, onSaved }: GroupFormSheetProp
                 <div className="shrink-0 px-5 pt-2 pb-[calc(1.5rem_+_var(--safe-bottom))]">
                     {error && <p className="mb-3 text-sm text-error-primary">{error}</p>}
                     <div className="flex flex-col gap-3">
-                        <button type="button" onClick={save} disabled={saving || !name.trim()} className={PRIMARY_BTN}>
+                        <button type="button" onClick={save} disabled={saving || !name.trim() || !dirty} className={PRIMARY_BTN}>
                             {saving ? <Spinner size="sm" tone="on-brand" /> : editing ? "Save changes" : "Create group"}
                         </button>
-                        <button type="button" onClick={onClose} disabled={saving} className={SECONDARY_BTN}>
+                        {admin && editing && (
+                            <button
+                                type="button"
+                                onClick={() => (confirmingDelete ? destroy() : setConfirmingDelete(true))}
+                                disabled={saving}
+                                className={SECONDARY_BTN}
+                            >
+                                {confirmingDelete ? "Tap again to delete this group" : "Delete group"}
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={confirmingDelete ? () => setConfirmingDelete(false) : onClose}
+                            disabled={saving}
+                            className={SECONDARY_BTN}
+                        >
                             Cancel
                         </button>
                     </div>
