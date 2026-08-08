@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { sendNotification } from "@/lib/notifications";
 import { AdminGroups } from "@/pages/admin/admin-groups";
 import { GroupFormSheet } from "@/components/app/group-form-sheet";
+import { AdminGroupDeleteSheet } from "@/pages/admin/admin-group-delete-sheet";
 import type { AdminGroupRow } from "@/pages/admin/admin-group-card";
 
 vi.mock("@/lib/supabase", () => ({
@@ -113,7 +114,7 @@ describe("GroupFormSheet — admin mode", () => {
                 groupId="g1"
                 onClose={vi.fn()}
                 onSaved={vi.fn()}
-                onDeleted={vi.fn()}
+                onRequestDelete={vi.fn()}
                 {...props}
             />,
         );
@@ -218,31 +219,15 @@ describe("GroupFormSheet — admin mode", () => {
         );
     });
 
-    it("needs two presses to delete", async () => {
-        const onDeleted = vi.fn();
+    it("hands delete off instead of confirming in place", async () => {
+        const onRequestDelete = vi.fn();
         const user = userEvent.setup();
-        open({ onDeleted });
+        open({ onRequestDelete });
 
         await user.click(await screen.findByRole("button", { name: "Delete group" }));
+        expect(onRequestDelete).toHaveBeenCalled();
+        // The form itself never deletes — the confirmation sheet does.
         expect(supabase.rpc).not.toHaveBeenCalledWith("admin_delete_group", expect.anything());
-
-        await user.click(screen.getByRole("button", { name: /Tap again to delete/ }));
-        await waitFor(() =>
-            expect(supabase.rpc).toHaveBeenCalledWith("admin_delete_group", { p_group_id: "g1" }),
-        );
-        await waitFor(() => expect(onDeleted).toHaveBeenCalled());
-    });
-
-    it("Cancel disarms the delete rather than closing the screen", async () => {
-        const onClose = vi.fn();
-        const user = userEvent.setup();
-        open({ onClose });
-
-        await user.click(await screen.findByRole("button", { name: "Delete group" }));
-        await user.click(screen.getByRole("button", { name: "Cancel" }));
-
-        expect(onClose).not.toHaveBeenCalled();
-        expect(screen.getByRole("button", { name: "Delete group" })).toBeInTheDocument();
     });
 
     it("offers no Delete outside admin mode", async () => {
@@ -265,5 +250,59 @@ describe("GroupFormSheet — admin mode", () => {
         // …and it still writes through the creator RPC, not the admin one.
         await user.click(screen.getByRole("button", { name: "Save changes" }));
         await waitFor(() => expect(supabase.rpc).toHaveBeenCalledWith("update_group", expect.anything()));
+    });
+});
+
+describe("AdminGroupDeleteSheet", () => {
+    const open = (props: Partial<React.ComponentProps<typeof AdminGroupDeleteSheet>> = {}) =>
+        render(<AdminGroupDeleteSheet group={GROUPS[0]} onClose={vi.fn()} onDeleted={vi.fn()} {...props} />);
+
+    it("names what is about to go, and says it cannot be undone", async () => {
+        open();
+        expect(screen.getByText("Delete this group?")).toBeInTheDocument();
+        expect(screen.getByText("The Racquettes")).toBeInTheDocument();
+        expect(screen.getByText(/Chris B\. · 3 players/)).toBeInTheDocument();
+        expect(screen.getByText(/can't be undone/)).toBeInTheDocument();
+    });
+
+    it("deletes and tells the members, but not the creator", async () => {
+        const onDeleted = vi.fn();
+        const user = userEvent.setup();
+        open({ onDeleted });
+
+        await waitFor(() => expect(screen.getByRole("button", { name: "Yes, delete" })).not.toBeDisabled());
+        await user.click(screen.getByRole("button", { name: "Yes, delete" }));
+
+        await waitFor(() =>
+            expect(supabase.rpc).toHaveBeenCalledWith("admin_delete_group", { p_group_id: "g1" }),
+        );
+        const targets = vi.mocked(sendNotification).mock.calls.map((c) => c[0].target_user_id);
+        expect(targets).toEqual(["u3"]);
+        await waitFor(() => expect(onDeleted).toHaveBeenCalled());
+    });
+
+    it("re-reads the roster rather than trusting unsaved form state", async () => {
+        open();
+        await waitFor(() => expect(supabase.rpc).toHaveBeenCalledWith("admin_get_group", { p_group_id: "g1" }));
+    });
+
+    it("No, keep it closes without deleting", async () => {
+        const onClose = vi.fn();
+        const user = userEvent.setup();
+        open({ onClose });
+        await user.click(screen.getByRole("button", { name: "No, keep it" }));
+        expect(onClose).toHaveBeenCalled();
+        expect(supabase.rpc).not.toHaveBeenCalledWith("admin_delete_group", expect.anything());
+    });
+
+    it("surfaces a refusal instead of reporting success", async () => {
+        mockRpc({ admin_delete_group: { success: false, error: "Group not found" } });
+        const onDeleted = vi.fn();
+        const user = userEvent.setup();
+        open({ onDeleted });
+        await waitFor(() => expect(screen.getByRole("button", { name: "Yes, delete" })).not.toBeDisabled());
+        await user.click(screen.getByRole("button", { name: "Yes, delete" }));
+        expect(await screen.findByText("Group not found")).toBeInTheDocument();
+        expect(onDeleted).not.toHaveBeenCalled();
     });
 });
