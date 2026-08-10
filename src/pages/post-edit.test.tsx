@@ -344,3 +344,46 @@ describe("PostNew — edit mode save submission", () => {
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/feed"));
     });
 });
+
+/**
+ * The edit-mode loader centres in the sheet rather than sitting at the top of
+ * the form body. It needs BOTH halves: the `grow` variant, and a parent that is
+ * a growing flex column for `flex-1` to resolve against. Either alone leaves it
+ * pinned to the top, which is the bug this replaced.
+ */
+describe("edit-mode loader placement", () => {
+    it("uses the grow variant inside a growing flex column", () => {
+        // A posts fetch that never settles, so the sheet stays in its loading
+        // branch for the assertions.
+        const pending = new Promise(() => {});
+        const stuck: Record<string, unknown> = {
+            single: vi.fn().mockReturnValue(pending),
+            maybeSingle: vi.fn().mockReturnValue(pending),
+            then: () => pending,
+            catch: () => pending,
+        };
+        for (const key of ["select", "insert", "update", "eq", "neq", "in", "order", "limit"]) {
+            stuck[key] = vi.fn().mockReturnValue(stuck);
+        }
+        mockFrom.mockImplementation((table: string) => (table === "courts" ? buildChain(mockCourts) : stuck));
+
+        render(
+            <MemoryRouter initialEntries={[`/post/new?edit=${EDIT_POST_ID}`]}>
+                <PostNew />
+            </MemoryRouter>,
+        );
+
+        // LoadingState is role=status with an sr-only label.
+        const area = screen.getByRole("status");
+        expect(area).toHaveTextContent("Loading your post");
+        expect(area.className).toContain("flex-1");
+        expect(area.className).not.toContain("py-16");
+
+        const body = area.parentElement!;
+        expect(body.className).toContain("flex");
+        expect(body.className).toContain("flex-col");
+        // The form's bottom inset is dropped while loading; keeping it would
+        // shift the spinner ~34-64px above centre.
+        expect(body.className).not.toContain("pb-[calc");
+    });
+});
