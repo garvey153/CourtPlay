@@ -6,6 +6,30 @@ import { InstallAppButton } from "@/components/app/install-app-button";
 import { cx } from "@/utils/cx";
 import { PRIMARY_LG_GAP1 as PRIMARY_BTN } from "@/components/base/buttons/button-styles";
 
+/**
+ * The plain-language explanation of what CourtPlay does, rendered as the "How it
+ * works" section. This is the page's answer to "what is this app for" — for a
+ * first-time visitor, and for Google's OAuth brand review, which rejected the
+ * home page while the only explanation was one hero sentence.
+ *
+ * Say what a person does, not what the product is. Keep the nouns real: date,
+ * court, time, NTRP level.
+ */
+const HOW_IT_WORKS = [
+    {
+        title: "Post an open spot",
+        body: "Someone drops out of your game. Post the date, court, time and skill level in about thirty seconds.",
+    },
+    {
+        title: "Players nearby see it",
+        body: "Everyone in Westport at the right NTRP level gets it in their feed, and by push if they want it.",
+    },
+    {
+        title: "Someone claims it",
+        body: "You approve the claim, swap details, and play. No group texts, no chasing people.",
+    },
+];
+
 // Hero headlines, rendered as two lines. One is picked at random on each page load.
 const HEADLINES: [string, string][] = [
     ["Every match.", "No empty courts."],
@@ -154,6 +178,37 @@ export function Landing() {
                             <PreviewCard key={post.title} post={post} />
                         ))}
                     </div>
+                </section>
+
+                {/* How it works. Added because Google's OAuth brand verification kept
+                    reporting that the home page "does not explain the purpose of your
+                    app" — fairly: the whole page rendered to 128 words, most of them
+                    sample card data, and the only real explanation was a single hero
+                    sentence between a pun and three mockups.
+
+                    Keep it concrete and keep it in the DOM as text. Turning any of
+                    these steps into an image would put the explanation somewhere
+                    neither a reviewer nor a screen reader can read. */}
+                <section className="mt-10 px-5 md:mt-14 md:px-8 lg:mt-16">
+                    <h2 className="text-display-xs font-semibold text-balance text-primary md:text-display-sm lg:text-display-md">
+                        How CourtPlay works
+                    </h2>
+                    <ol className="mt-5 flex flex-col gap-5 md:mt-6 lg:mt-8 lg:grid lg:grid-cols-3 lg:gap-6">
+                        {HOW_IT_WORKS.map((step, i) => (
+                            <li key={step.title} className="flex gap-3.5 lg:flex-col lg:gap-3">
+                                <span
+                                    aria-hidden="true"
+                                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-800 text-sm font-semibold text-brand-500"
+                                >
+                                    {i + 1}
+                                </span>
+                                <div className="flex flex-col gap-1">
+                                    <h3 className="text-sm font-semibold text-primary md:text-base">{step.title}</h3>
+                                    <p className="text-sm text-secondary md:text-base">{step.body}</p>
+                                </div>
+                            </li>
+                        ))}
+                    </ol>
                 </section>
 
                 {/* CTA — full-bleed band at every breakpoint: breaks out of the centered
