@@ -172,3 +172,18 @@ describe("RegularPlaySheet (regular-post connections)", () => {
         expect(screen.queryByLabelText("Message")).not.toBeInTheDocument();
     });
 });
+
+/**
+ * The Connect button wears regular play's blue, the same token as the card's
+ * left accent bar. Pinned as a pair: if either moves off bg-blue-500 they stop
+ * matching, which is the whole point of the change.
+ */
+describe("Connect button colour", () => {
+    it("is the card's blue, not the brand green", () => {
+        render(<RegularPlaySheet post={regularPost} currentUserId="responder-1" onClose={vi.fn()} />);
+        const connect = screen.getByRole("button", { name: "Connect" });
+        expect(connect.className).toContain("bg-blue-500");
+        expect(connect.className).not.toContain("bg-brand-500");
+        expect(connect.className).toContain("enabled:hover:bg-blue-600");
+    });
+});
