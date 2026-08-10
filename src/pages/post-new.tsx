@@ -707,10 +707,19 @@ export function PostNew() {
                         in here rather than a pinned footer, so the bottom inset has to be
                         part of this padding — plain pb-8 (32px) is less than the ~34px
                         home indicator and left Cancel sitting under it in standalone. */}
-                    <div className="flex-1 overflow-y-auto overscroll-y-contain px-5 pb-[calc(2rem_+_var(--safe-bottom))]">
+                    <div
+                        className={cx(
+                            "flex-1 overflow-y-auto overscroll-y-contain px-5 pb-[calc(2rem_+_var(--safe-bottom))]",
+                            // While loading there is no form to clear, so the body becomes a
+                            // growing column with no bottom inset — which is what lets the
+                            // spinner centre in the sheet, the same shape the feed and
+                            // Activity use. Keeping the inset would push it up by ~34-64px.
+                            !loaded && "flex flex-col pb-0",
+                        )}
+                    >
                 {!loaded ? (
                     // Edit mode: hold the sheet until the post loads so the create form never flashes.
-                    <LoadingState variant="block" className="py-20" />
+                    <LoadingState variant="grow" label="Loading your post" />
                 ) : (
                 <>
                 {/* Post type — radio cards (hidden in edit mode) */}
