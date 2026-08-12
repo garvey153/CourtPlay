@@ -54,13 +54,13 @@ vi.mock("@/hooks/use-auth", () => ({
 const renderPage = () => render(<EditProfile />, { wrapper: MemoryRouter });
 
 /**
- * Notification and Feed settings live behind the Preferences tab, so every test
- * that reads them has to open it first. Waits for a Personal info field so the
- * profile load has settled before the tab exists to click.
+ * Notification settings live behind the Notifications tab, so every test that
+ * reads them has to open it first. Selected by ROLE — "Notifications" is also
+ * the pane's own heading, and a bare text query matches both.
  */
-const openPreferences = async () => {
+const openNotifications = async () => {
     renderPage();
-    const tab = await screen.findByRole("button", { name: "Preferences" });
+    const tab = await screen.findByRole("button", { name: "Notifications" });
     await userEvent.click(tab);
 };
 
@@ -81,14 +81,14 @@ beforeEach(() => {
 
 describe("edit profile — notification preferences", () => {
     it("lists all 13 notification types", async () => {
-        await openPreferences();
+        await openNotifications();
         for (const label of ALL_LABELS) {
             expect(await screen.findByText(label)).toBeInTheDocument();
         }
     });
 
     it("each type has email and push toggles, and no SMS column", async () => {
-        await openPreferences();
+        await openNotifications();
         await screen.findByText(ALL_LABELS[0]);
         for (const label of ALL_LABELS) {
             expect(screen.getByLabelText(`${label} email`)).toBeInTheDocument();
@@ -99,7 +99,7 @@ describe("edit profile — notification preferences", () => {
     });
 
     it("default state: every toggle matches the registry's default for its type", async () => {
-        await openPreferences();
+        await openNotifications();
         await screen.findByText(ALL_LABELS[0]);
 
         // Both channels derive from NOTIFICATION_TYPES rather than being spelled
@@ -120,7 +120,7 @@ describe("edit profile — notification preferences", () => {
     });
 
     it("friend new post notification defaults to off", async () => {
-        await openPreferences();
+        await openNotifications();
         await screen.findByText("Friend posts new sub need");
         expect(screen.getByLabelText("Friend posts new sub need email")).not.toBeChecked();
         expect(screen.getByLabelText("Friend posts new sub need push")).not.toBeChecked();
@@ -129,7 +129,7 @@ describe("edit profile — notification preferences", () => {
     it("Save is disabled until something changes", async () => {
         const user = userEvent.setup();
         renderPage();
-        await user.click(await screen.findByRole("button", { name: "Preferences" }));
+        await user.click(await screen.findByRole("button", { name: "Notifications" }));
         await screen.findByText(ALL_LABELS[0]);
 
         const save = screen.getByRole("button", { name: "Save changes" });
@@ -142,7 +142,7 @@ describe("edit profile — notification preferences", () => {
     it("saving upserts every non-admin preference including the toggled change, never SMS", async () => {
         const user = userEvent.setup();
         renderPage();
-        await user.click(await screen.findByRole("button", { name: "Preferences" }));
+        await user.click(await screen.findByRole("button", { name: "Notifications" }));
         await screen.findByText(ALL_LABELS[0]);
 
         const save = screen.getByRole("button", { name: "Save changes" });
@@ -157,7 +157,34 @@ describe("edit profile — notification preferences", () => {
         for (const p of payload) {
             expect(p).not.toHaveProperty("sms_enabled");
         }
-        // The user row is persisted too.
-        expect(usersUpdate).toHaveBeenCalled();
+        // ...and ONLY notification_preferences. Each tab saves its own table, so
+        // saving here must not write the users row — an unsaved edit on the Edit
+        // profile tab stays unsaved rather than riding along.
+        expect(usersUpdate).not.toHaveBeenCalled();
+    });
+
+    it("saving the Edit profile tab writes the user row and no preferences", async () => {
+        const user = userEvent.setup();
+        renderPage();
+        // Stay on the first tab and change something that lives there.
+        await user.click(await screen.findByText("Only show posts from my groups and players I'm following."));
+
+        const save = screen.getByRole("button", { name: "Save changes" });
+        expect(save).toBeEnabled();
+        await user.click(save);
+
+        await waitFor(() => expect(usersUpdate).toHaveBeenCalled());
+        expect(mockUpsert).not.toHaveBeenCalled();
+    });
+
+    it("a notification edit does not enable Save on the Edit profile tab", async () => {
+        const user = userEvent.setup();
+        renderPage();
+        await user.click(await screen.findByRole("button", { name: "Notifications" }));
+        await user.click(screen.getByLabelText("Cost changed push"));
+        expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+
+        await user.click(screen.getByRole("button", { name: "Edit profile" }));
+        expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
     });
 });

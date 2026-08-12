@@ -54,13 +54,14 @@ interface FormState {
     photo_url: string;
 }
 
-/** Serialize the editable state so we can cheaply compare against the loaded snapshot. */
-function serialize(form: FormState, prefs: Map<string, NotifPref>): string {
+/**
+ * Serialized per TAB, not for the screen as a whole: each tab saves on its own,
+ * so each needs its own baseline to compare against. Editing a notification
+ * toggle must not enable Save on the Edit profile tab, which writes a different
+ * table entirely.
+ */
+function serializeProfile(form: FormState): string {
     const courts = form.court_preferences instanceof Set ? [...(form.court_preferences as Set<string>)].sort() : [];
-    const notif = NOTIFICATION_TYPES.map((t) => {
-        const p = prefs.get(t.key);
-        return `${t.key}:${p?.email ? 1 : 0}${p?.push ? 1 : 0}`;
-    }).join(",");
     return JSON.stringify({
         skill: form.skill_level,
         courts,
@@ -69,8 +70,14 @@ function serialize(form: FormState, prefs: Map<string, NotifPref>): string {
         phone: form.phone.trim(),
         venmo: form.venmo_handle.trim(),
         photo: form.photo_url,
-        notif,
     });
+}
+
+function serializeNotifs(prefs: Map<string, NotifPref>): string {
+    return NOTIFICATION_TYPES.map((t) => {
+        const p = prefs.get(t.key);
+        return `${t.key}:${p?.email ? 1 : 0}${p?.push ? 1 : 0}`;
+    }).join(",");
 }
 
 /** Read-only field (First name / Last name / Email) — matches the design's bordered box. */
@@ -123,7 +130,8 @@ export function EditProfile() {
     const [useLocation, setUseLocation] = useState(false);
 
     // Snapshot of the loaded state; the form is dirty once it diverges.
-    const snapshot = useRef<string>("");
+    const snapshotProfile = useRef<string>("");
+    const snapshotNotifs = useRef<string>("");
 
     const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -189,7 +197,8 @@ export function EditProfile() {
 
             setForm(nextForm);
             setPrefs(map);
-            snapshot.current = serialize(nextForm, map);
+            snapshotProfile.current = serializeProfile(nextForm);
+            snapshotNotifs.current = serializeNotifs(map);
             setLoading(false);
         })();
 
@@ -204,17 +213,22 @@ export function EditProfile() {
     // Which pane is showing. Both panes are one form and one dirty check — the
     // tabs split the fields for reading, not into separate saves, so Save
     // changes commits whatever was edited on either.
-    const [tab, setTab] = useState<"profile" | "preferences">("profile");
+    const [tab, setTab] = useState<"profile" | "notifications">("profile");
 
-    const dirty = useMemo(() => !loading && serialize(form, prefs) !== snapshot.current, [loading, form, prefs]);
+    const profileDirty = useMemo(() => !loading && serializeProfile(form) !== snapshotProfile.current, [loading, form]);
+    const notifDirty = useMemo(() => !loading && serializeNotifs(prefs) !== snapshotNotifs.current, [loading, prefs]);
+    // What Save acts on: the tab you are looking at.
+    const dirty = tab === "profile" ? profileDirty : notifDirty;
+    // What leaving would throw away: either tab.
+    const anyDirty = profileDirty || notifDirty;
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     const backToProfile = useCallback(() => navigate("/profile/me"), [navigate]);
 
     const handleCancel = useCallback(() => {
-        if (dirty) setShowDiscard(true);
+        if (anyDirty) setShowDiscard(true);
         else backToProfile();
-    }, [dirty, backToProfile]);
+    }, [anyDirty, backToProfile]);
 
     const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -249,11 +263,41 @@ export function EditProfile() {
         });
     };
 
+    /**
+     * Saves the TAB you are on, and only that tab: Edit profile writes the users
+     * row, Notifications writes notification_preferences. Neither touches the
+     * other's table, so an unsaved edit on the tab you are not looking at is
+     * left exactly as it was rather than being committed by surprise.
+     *
+     * It stays on the screen afterwards instead of returning to Profile, because
+     * with per-tab saves leaving would silently discard whatever the other tab
+     * still holds. The tab's baseline resets, so Save goes back to disabled and
+     * Cancel stops prompting once nothing is outstanding.
+     */
     const handleSave = async () => {
         if (!user || !dirty || saving) return;
         setSaving(true);
         setError(null);
         try {
+            if (tab === "notifications") {
+                const { error: prefErr } = await supabase.from("notification_preferences").upsert(
+                    visibleNotificationTypes.map((t) => {
+                        const p = prefs.get(t.key);
+                        return {
+                            user_id: user.id,
+                            notification_type: t.key,
+                            email_enabled: p?.email ?? t.defaultEmail,
+                            push_enabled: p?.push ?? t.defaultPush,
+                        };
+                    }),
+                    { onConflict: "user_id,notification_type" },
+                );
+                if (prefErr) throw prefErr;
+                snapshotNotifs.current = serializeNotifs(prefs);
+                setSaving(false);
+                return;
+            }
+
             // Re-encrypt sensitive fields before writing.
             let encryptedPhone: string | null = null;
             let encryptedVenmo: string | null = null;
@@ -282,25 +326,12 @@ export function EditProfile() {
                 .eq("id", user.id);
             if (upErr) throw upErr;
 
-            const { error: prefErr } = await supabase.from("notification_preferences").upsert(
-                visibleNotificationTypes.map((t) => {
-                    const p = prefs.get(t.key);
-                    return {
-                        user_id: user.id,
-                        notification_type: t.key,
-                        email_enabled: p?.email ?? t.defaultEmail,
-                        push_enabled: p?.push ?? t.defaultPush,
-                    };
-                }),
-                { onConflict: "user_id,notification_type" },
-            );
-            if (prefErr) throw prefErr;
-
             // Refresh the global profile cache so skill level, courts, photo, etc.
             // update everywhere that reads it (post creation, feed, activity, route
             // guard) — not just on the profile page's own refetch.
             await refreshProfile();
-            backToProfile();
+            snapshotProfile.current = serializeProfile(form);
+            setSaving(false);
         } catch (e) {
             console.error("save profile failed:", e);
             setError(describeActionError(e, "save your changes"));
@@ -328,7 +359,7 @@ export function EditProfile() {
                 <div className="flex w-full max-w-lg flex-col overflow-hidden bg-secondary pt-[env(safe-area-inset-top)] shadow-xl">
                     <div className="relative shrink-0 px-5 pt-[18px] pb-5">
                         <h1 id="edit-profile-title" className="pr-9 text-lg font-semibold text-primary">
-                            Edit profile
+                            Settings
                         </h1>
                         {/* Closing is Cancel, so unsaved edits still prompt. */}
                         <button
@@ -351,7 +382,7 @@ export function EditProfile() {
                     {(
                         [
                             { id: "profile", label: "Edit profile" },
-                            { id: "preferences", label: "Preferences" },
+                            { id: "notifications", label: "Notifications" },
                         ] as const
                     ).map((t) => (
                         <button
@@ -369,7 +400,7 @@ export function EditProfile() {
                     ))}
                 </div>
 
-                <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 pb-6">
+                <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 pb-[calc(2rem_+_var(--safe-bottom))]">
                 {tab === "profile" ? (
                 <>
                     {/* Avatar + change photo. The name moved to the header, so this
@@ -471,9 +502,6 @@ export function EditProfile() {
                         />
                     </section>
 
-                </>
-                ) : (
-                <>
                     {/* Feed */}
                     <section className="flex flex-col gap-4">
                         <h2 className="text-md font-semibold text-primary">Feed</h2>
@@ -483,7 +511,9 @@ export function EditProfile() {
                             onChange={(v) => set("feed_connected_only", v)}
                         />
                     </section>
-
+                </>
+                ) : (
+                <>
                     {/* Notifications */}
                     <section className="flex flex-col gap-4">
                         <div>
@@ -529,21 +559,20 @@ export function EditProfile() {
                     </section>
                 </>
                 )}
-                </div>
 
-                {/* Pinned footer, so the actions stay reachable however long the form
-                    grows. pb carries the home-indicator inset — the buttons are the
-                    last thing on screen, so nothing else reserves that space. */}
-                <div className="shrink-0 px-5 pt-2 pb-[calc(1.5rem_+_var(--safe-bottom))]">
-                    {error && <p className="mb-3 text-sm text-error-primary">{error}</p>}
-                    <div className="flex flex-col gap-3">
-                        <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
-                            {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
-                        </button>
-                        <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_BTN}>
-                            Cancel
-                        </button>
-                    </div>
+                {/* Actions scroll with the form, like Create post — the last thing in
+                    the body rather than a pinned bar, which is why the body's padding
+                    carries the home-indicator inset. Save applies the tab you are on;
+                    see handleSave. */}
+                {error && <p className="-mb-4 text-sm text-error-primary">{error}</p>}
+                <div className="flex flex-col gap-3">
+                    <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
+                        {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
+                    </button>
+                    <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_BTN}>
+                        Cancel
+                    </button>
+                </div>
                 </div>
                 </>
             )}
