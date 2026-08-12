@@ -356,33 +356,7 @@ export function EditProfile() {
                 <LoadingState variant="fill" label="Loading your profile" />
             ) : (
                 <>
-                {/* Pill tabs, the same shape Activity uses. They sit outside the
-                    scrolling body so they stay put as a pane scrolls. */}
-                <div className="flex shrink-0 gap-2 px-5 pb-4">
-                    {(
-                        [
-                            { id: "profile", label: "Edit profile" },
-                            { id: "notifications", label: "Notifications" },
-                        ] as const
-                    ).map((t) => (
-                        <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => setTab(t.id)}
-                            aria-pressed={tab === t.id}
-                            className={cx(
-                                "rounded-full px-3.5 py-1 text-xs font-semibold transition duration-100 ease-linear",
-                                tab === t.id ? "bg-brand-500 text-neutral-950" : "bg-tertiary text-secondary hover:text-primary",
-                            )}
-                        >
-                            {t.label}
-                        </button>
-                    ))}
-                </div>
-
                 <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 pb-6">
-                {tab === "profile" ? (
-                <>
                     {/* Avatar + change photo. The name moved to the header, so this
                         row is the photo control rather than a page title. */}
                     <div className="flex items-center gap-3">
@@ -403,6 +377,34 @@ export function EditProfile() {
                             </label>
                         </div>
                     </div>
+
+                    {/* Pill tabs, the same shape Activity uses. Inside the scrolling
+                        body and below the avatar, so both scroll away together — only
+                        the header and the action bar hold position. */}
+                    <div className="flex gap-2">
+                        {(
+                            [
+                                { id: "profile", label: "Edit profile" },
+                                { id: "notifications", label: "Notifications" },
+                            ] as const
+                        ).map((t) => (
+                            <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => setTab(t.id)}
+                                aria-pressed={tab === t.id}
+                                className={cx(
+                                    "rounded-full px-3.5 py-1 text-xs font-semibold transition duration-100 ease-linear",
+                                    tab === t.id ? "bg-brand-500 text-neutral-950" : "bg-tertiary text-secondary hover:text-primary",
+                                )}
+                            >
+                                {t.label}
+                            </button>
+                        ))}
+                    </div>
+
+                {tab === "profile" ? (
+                <>
 
                     {/* Personal info */}
                     <section className="flex flex-col gap-6">
