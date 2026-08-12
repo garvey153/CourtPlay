@@ -304,25 +304,44 @@ export function EditProfile() {
 
     const courtItems = courts.map((c) => ({ id: c.id, label: c.name, supportingText: c.area ?? undefined }));
 
-    // Cancel / Save action bar — replaces the bottom nav on this screen.
-    const footer = (
-        <div className="flex shrink-0 items-center justify-between gap-3 bg-primary px-5 py-4 pb-[calc(1rem_+_var(--safe-bottom))]">
-            <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_BTN}>
-                Cancel
-            </button>
-            <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
-                {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
-            </button>
-        </div>
-    );
-
     return (
-        <AppLayout footer={footer}>
+        <AppLayout>
+            {/* Full-page modal, the same shell as Create/Edit group
+                (group-form-sheet.tsx): pinned header with a close button, one
+                scrolling body, pinned actions. The inset-top padding sits on this
+                container rather than the header, because the close button is
+                absolutely positioned against the header's border box — padding the
+                header alone would push the title down and leave the button under
+                the status bar. */}
+            <div
+                className="fixed inset-0 z-50 flex justify-center"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="edit-profile-title"
+            >
+                <div className="flex w-full max-w-lg flex-col overflow-hidden bg-secondary pt-[env(safe-area-inset-top)] shadow-xl">
+                    <div className="relative shrink-0 px-5 pt-[18px] pb-5">
+                        <h1 id="edit-profile-title" className="pr-9 text-lg font-semibold text-primary">
+                            Edit profile
+                        </h1>
+                        {/* Closing is Cancel, so unsaved edits still prompt. */}
+                        <button
+                            type="button"
+                            onClick={handleCancel}
+                            aria-label="Close"
+                            className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-lg text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                        >
+                            <XClose className="size-5" />
+                        </button>
+                    </div>
+
             {loading ? (
-                <LoadingState />
+                <LoadingState variant="fill" label="Loading your profile" />
             ) : (
-                <div className="flex flex-col gap-8 px-5 pt-2 pb-6">
-                    {/* Header: avatar + title + change photo */}
+                <>
+                <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 pb-6">
+                    {/* Avatar + change photo. The name moved to the header, so this
+                        row is the photo control rather than a page title. */}
                     <div className="flex items-center gap-3">
                         <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full border border-secondary_alt bg-white p-[3px] shadow-xs">
                             {form.photo_url ? (
@@ -334,7 +353,7 @@ export function EditProfile() {
                             )}
                         </div>
                         <div className="min-w-0">
-                            <h1 className="text-xl font-semibold text-primary">Edit your profile</h1>
+                            <p className="text-md font-semibold text-primary">Profile photo</p>
                             <label className="mt-0.5 inline-block cursor-pointer text-sm font-medium text-brand-500 hover:text-brand-600">
                                 Change photo
                                 <input type="file" accept="image/*" className="sr-only" onChange={handlePhotoChange} />
@@ -474,9 +493,26 @@ export function EditProfile() {
                         </ul>
                     </section>
 
-                    {error && <p className="text-sm text-error-primary">{error}</p>}
                 </div>
+
+                {/* Pinned footer, so the actions stay reachable however long the form
+                    grows. pb carries the home-indicator inset — the buttons are the
+                    last thing on screen, so nothing else reserves that space. */}
+                <div className="shrink-0 px-5 pt-2 pb-[calc(1.5rem_+_var(--safe-bottom))]">
+                    {error && <p className="mb-3 text-sm text-error-primary">{error}</p>}
+                    <div className="flex flex-col gap-3">
+                        <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
+                            {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
+                        </button>
+                        <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_BTN}>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+                </>
             )}
+                </div>
+            </div>
 
             {/* Discard-changes confirmation — styled like the delete-post modal. */}
             {showDiscard && (
