@@ -8,6 +8,7 @@ import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
 import { SelectItem } from "@/components/base/select/select-item";
 import { Toggle } from "@/components/base/toggle/toggle";
+import { motion } from "motion/react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { cx } from "@/utils/cx";
 import { useAuth } from "@/hooks/use-auth";
@@ -54,7 +55,11 @@ interface FormState {
     photo_url: string;
 }
 
-/** Serialize the editable state so we can cheaply compare against the loaded snapshot. */
+/**
+ * Serialize the editable state so we can cheaply compare against the loaded
+ * snapshot. Covers BOTH tabs: Save commits the whole screen, so an edit on
+ * either tab has to enable it.
+ */
 function serialize(form: FormState, prefs: Map<string, NotifPref>): string {
     const courts = form.court_preferences instanceof Set ? [...(form.court_preferences as Set<string>)].sort() : [];
     const notif = NOTIFICATION_TYPES.map((t) => {
@@ -204,7 +209,7 @@ export function EditProfile() {
     // Which pane is showing. Both panes are one form and one dirty check — the
     // tabs split the fields for reading, not into separate saves, so Save
     // changes commits whatever was edited on either.
-    const [tab, setTab] = useState<"profile" | "preferences">("profile");
+    const [tab, setTab] = useState<"profile" | "notifications">("profile");
 
     const dirty = useMemo(() => !loading && serialize(form, prefs) !== snapshot.current, [loading, form, prefs]);
 
@@ -249,11 +254,17 @@ export function EditProfile() {
         });
     };
 
+    /**
+     * Saves the whole screen, both tabs, in one go: the users row and every
+     * notification preference. The tabs divide the form for reading, not into
+     * separate saves, so which tab is showing does not change what is written.
+     */
     const handleSave = async () => {
         if (!user || !dirty || saving) return;
         setSaving(true);
         setError(null);
         try {
+
             // Re-encrypt sensitive fields before writing.
             let encryptedPhone: string | null = null;
             let encryptedVenmo: string | null = null;
@@ -328,7 +339,7 @@ export function EditProfile() {
                 <div className="flex w-full max-w-lg flex-col overflow-hidden bg-secondary pt-[env(safe-area-inset-top)] shadow-xl">
                     <div className="relative shrink-0 px-5 pt-[18px] pb-5">
                         <h1 id="edit-profile-title" className="pr-9 text-lg font-semibold text-primary">
-                            Edit profile
+                            Settings
                         </h1>
                         {/* Closing is Cancel, so unsaved edits still prompt. */}
                         <button
@@ -351,7 +362,7 @@ export function EditProfile() {
                     {(
                         [
                             { id: "profile", label: "Edit profile" },
-                            { id: "preferences", label: "Preferences" },
+                            { id: "notifications", label: "Notifications" },
                         ] as const
                     ).map((t) => (
                         <button
@@ -369,7 +380,7 @@ export function EditProfile() {
                     ))}
                 </div>
 
-                <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 pb-6">
+                <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 pb-[calc(2rem_+_var(--safe-bottom))]">
                 {tab === "profile" ? (
                 <>
                     {/* Avatar + change photo. The name moved to the header, so this
@@ -471,9 +482,6 @@ export function EditProfile() {
                         />
                     </section>
 
-                </>
-                ) : (
-                <>
                     {/* Feed */}
                     <section className="flex flex-col gap-4">
                         <h2 className="text-md font-semibold text-primary">Feed</h2>
@@ -483,7 +491,9 @@ export function EditProfile() {
                             onChange={(v) => set("feed_connected_only", v)}
                         />
                     </section>
-
+                </>
+                ) : (
+                <>
                     {/* Notifications */}
                     <section className="flex flex-col gap-4">
                         <div>
@@ -529,46 +539,70 @@ export function EditProfile() {
                     </section>
                 </>
                 )}
-                </div>
 
-                {/* Pinned footer, so the actions stay reachable however long the form
-                    grows. pb carries the home-indicator inset — the buttons are the
-                    last thing on screen, so nothing else reserves that space. */}
-                <div className="shrink-0 px-5 pt-2 pb-[calc(1.5rem_+_var(--safe-bottom))]">
-                    {error && <p className="mb-3 text-sm text-error-primary">{error}</p>}
-                    <div className="flex flex-col gap-3">
-                        <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
-                            {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
-                        </button>
-                        <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_BTN}>
-                            Cancel
-                        </button>
-                    </div>
+                {/* Actions scroll with the form, like Create post — the last thing in
+                    the body rather than a pinned bar, which is why the body's padding
+                    carries the home-indicator inset.
+
+                    Side by side with Cancel left and Save right, the arrangement this
+                    screen had before, rather than the stacked pair the group form
+                    uses. Outside the tab switch, so one row serves both tabs. */}
+                {error && <p className="-mb-4 text-sm text-error-primary">{error}</p>}
+                <div className="flex items-center justify-between gap-3">
+                    <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_BTN}>
+                        Cancel
+                    </button>
+                    <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
+                        {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
+                    </button>
+                </div>
                 </div>
                 </>
             )}
                 </div>
             </div>
 
-            {/* Discard-changes confirmation — styled like the delete-post modal. */}
+            {/* Discard-changes confirmation — the bottom sheet the delete confirms
+                use (admin-group-delete-sheet.tsx, created-detail-sheet.tsx):
+                heading, one line of consequence, then the destructive choice over
+                the safe one.
+
+                z-[60] sits it ABOVE the settings form's z-50 so the form stays
+                visible behind rather than being replaced. Equal z-indexes would
+                leave that to DOM order, which breaks the moment the two move. */}
             {showDiscard && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                <div
+                    className="fixed inset-0 z-[60] flex items-end justify-center backdrop-blur-[8px] sm:items-center"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="discard-changes-title"
+                >
                     <div className="absolute inset-0 bg-black/60" onClick={() => setShowDiscard(false)} aria-hidden="true" />
-                    <div className="relative flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-secondary p-5 shadow-xl">
+
+                    <motion.div
+                        className="relative flex w-full max-w-md flex-col gap-4 rounded-t-2xl bg-secondary px-5 pt-5 pb-[calc(2rem_+_var(--safe-bottom))] shadow-xl sm:rounded-2xl"
+                        initial={{ y: "100%" }}
+                        animate={{ y: 0 }}
+                        transition={{ type: "spring", damping: 38, stiffness: 420 }}
+                    >
                         <div className="flex items-start justify-between gap-3">
-                            <div className="flex min-w-0 flex-col gap-1">
-                                <h2 className="text-md font-semibold text-primary">Discard changes?</h2>
-                                <p className="text-sm text-secondary">You have unsaved changes. Leaving now will discard them.</p>
-                            </div>
+                            <h2 id="discard-changes-title" className="min-w-0 text-md font-semibold text-primary">
+                                Discard changes?
+                            </h2>
                             <button
                                 type="button"
                                 onClick={() => setShowDiscard(false)}
                                 aria-label="Close"
                                 className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
                             >
-                                <XClose className="size-5" />
+                                <XClose className="size-5" strokeWidth={1} />
                             </button>
                         </div>
+
+                        <p className="text-sm text-secondary">
+                            You have unsaved changes. Leaving now will discard them.
+                        </p>
+
                         <div className="mt-2 flex flex-col gap-3">
                             <button type="button" onClick={backToProfile} className={PRIMARY_BTN}>
                                 Yes, discard
@@ -577,7 +611,7 @@ export function EditProfile() {
                                 No, keep editing
                             </button>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             )}
         </AppLayout>

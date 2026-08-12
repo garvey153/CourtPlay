@@ -54,13 +54,13 @@ vi.mock("@/hooks/use-auth", () => ({
 const renderPage = () => render(<EditProfile />, { wrapper: MemoryRouter });
 
 /**
- * Notification and Feed settings live behind the Preferences tab, so every test
- * that reads them has to open it first. Waits for a Personal info field so the
- * profile load has settled before the tab exists to click.
+ * Notification settings live behind the Notifications tab, so every test that
+ * reads them has to open it first. Selected by ROLE — "Notifications" is also
+ * the pane's own heading, and a bare text query matches both.
  */
-const openPreferences = async () => {
+const openNotifications = async () => {
     renderPage();
-    const tab = await screen.findByRole("button", { name: "Preferences" });
+    const tab = await screen.findByRole("button", { name: "Notifications" });
     await userEvent.click(tab);
 };
 
@@ -81,14 +81,14 @@ beforeEach(() => {
 
 describe("edit profile — notification preferences", () => {
     it("lists all 13 notification types", async () => {
-        await openPreferences();
+        await openNotifications();
         for (const label of ALL_LABELS) {
             expect(await screen.findByText(label)).toBeInTheDocument();
         }
     });
 
     it("each type has email and push toggles, and no SMS column", async () => {
-        await openPreferences();
+        await openNotifications();
         await screen.findByText(ALL_LABELS[0]);
         for (const label of ALL_LABELS) {
             expect(screen.getByLabelText(`${label} email`)).toBeInTheDocument();
@@ -99,7 +99,7 @@ describe("edit profile — notification preferences", () => {
     });
 
     it("default state: every toggle matches the registry's default for its type", async () => {
-        await openPreferences();
+        await openNotifications();
         await screen.findByText(ALL_LABELS[0]);
 
         // Both channels derive from NOTIFICATION_TYPES rather than being spelled
@@ -120,7 +120,7 @@ describe("edit profile — notification preferences", () => {
     });
 
     it("friend new post notification defaults to off", async () => {
-        await openPreferences();
+        await openNotifications();
         await screen.findByText("Friend posts new sub need");
         expect(screen.getByLabelText("Friend posts new sub need email")).not.toBeChecked();
         expect(screen.getByLabelText("Friend posts new sub need push")).not.toBeChecked();
@@ -129,7 +129,7 @@ describe("edit profile — notification preferences", () => {
     it("Save is disabled until something changes", async () => {
         const user = userEvent.setup();
         renderPage();
-        await user.click(await screen.findByRole("button", { name: "Preferences" }));
+        await user.click(await screen.findByRole("button", { name: "Notifications" }));
         await screen.findByText(ALL_LABELS[0]);
 
         const save = screen.getByRole("button", { name: "Save changes" });
@@ -142,7 +142,7 @@ describe("edit profile — notification preferences", () => {
     it("saving upserts every non-admin preference including the toggled change, never SMS", async () => {
         const user = userEvent.setup();
         renderPage();
-        await user.click(await screen.findByRole("button", { name: "Preferences" }));
+        await user.click(await screen.findByRole("button", { name: "Notifications" }));
         await screen.findByText(ALL_LABELS[0]);
 
         const save = screen.getByRole("button", { name: "Save changes" });
@@ -157,7 +157,44 @@ describe("edit profile — notification preferences", () => {
         for (const p of payload) {
             expect(p).not.toHaveProperty("sms_enabled");
         }
-        // The user row is persisted too.
+        // The user row is persisted in the same save. One button commits the whole
+        // screen, so which tab is showing does not change what gets written.
         expect(usersUpdate).toHaveBeenCalled();
+    });
+
+    it("an edit on either tab enables the one Save button", async () => {
+        const user = userEvent.setup();
+        renderPage();
+
+        // A first-tab field.
+        await user.click(await screen.findByText("Only show posts from my groups and players I'm following."));
+        expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+
+        // Still enabled after switching to the other tab — the button is shared.
+        await user.click(screen.getByRole("button", { name: "Notifications" }));
+        expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+    });
+
+    it("actions sit in one row, Cancel left and Save right", async () => {
+        renderPage();
+        const save = await screen.findByRole("button", { name: "Save changes" });
+        const cancel = screen.getByRole("button", { name: "Cancel" });
+
+        // Same row, and Cancel first in DOM order — which is what puts it on the
+        // left under justify-between.
+        expect(save.parentElement).toBe(cancel.parentElement);
+        expect(save.parentElement!.className).toContain("justify-between");
+        expect(save.parentElement!.className).not.toContain("flex-col");
+        expect(cancel.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("saving from the first tab still writes notification preferences", async () => {
+        const user = userEvent.setup();
+        renderPage();
+        await user.click(await screen.findByText("Only show posts from my groups and players I'm following."));
+        await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+        await waitFor(() => expect(usersUpdate).toHaveBeenCalled());
+        expect(mockUpsert).toHaveBeenCalled();
     });
 });
