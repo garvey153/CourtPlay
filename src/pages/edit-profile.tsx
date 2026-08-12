@@ -8,6 +8,7 @@ import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
 import { SelectItem } from "@/components/base/select/select-item";
 import { Toggle } from "@/components/base/toggle/toggle";
+import { motion } from "motion/react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { cx } from "@/utils/cx";
 import { useAuth } from "@/hooks/use-auth";
@@ -55,13 +56,16 @@ interface FormState {
 }
 
 /**
- * Serialized per TAB, not for the screen as a whole: each tab saves on its own,
- * so each needs its own baseline to compare against. Editing a notification
- * toggle must not enable Save on the Edit profile tab, which writes a different
- * table entirely.
+ * Serialize the editable state so we can cheaply compare against the loaded
+ * snapshot. Covers BOTH tabs: Save commits the whole screen, so an edit on
+ * either tab has to enable it.
  */
-function serializeProfile(form: FormState): string {
+function serialize(form: FormState, prefs: Map<string, NotifPref>): string {
     const courts = form.court_preferences instanceof Set ? [...(form.court_preferences as Set<string>)].sort() : [];
+    const notif = NOTIFICATION_TYPES.map((t) => {
+        const p = prefs.get(t.key);
+        return `${t.key}:${p?.email ? 1 : 0}${p?.push ? 1 : 0}`;
+    }).join(",");
     return JSON.stringify({
         skill: form.skill_level,
         courts,
@@ -70,14 +74,8 @@ function serializeProfile(form: FormState): string {
         phone: form.phone.trim(),
         venmo: form.venmo_handle.trim(),
         photo: form.photo_url,
+        notif,
     });
-}
-
-function serializeNotifs(prefs: Map<string, NotifPref>): string {
-    return NOTIFICATION_TYPES.map((t) => {
-        const p = prefs.get(t.key);
-        return `${t.key}:${p?.email ? 1 : 0}${p?.push ? 1 : 0}`;
-    }).join(",");
 }
 
 /** Read-only field (First name / Last name / Email) — matches the design's bordered box. */
@@ -130,8 +128,7 @@ export function EditProfile() {
     const [useLocation, setUseLocation] = useState(false);
 
     // Snapshot of the loaded state; the form is dirty once it diverges.
-    const snapshotProfile = useRef<string>("");
-    const snapshotNotifs = useRef<string>("");
+    const snapshot = useRef<string>("");
 
     const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -197,8 +194,7 @@ export function EditProfile() {
 
             setForm(nextForm);
             setPrefs(map);
-            snapshotProfile.current = serializeProfile(nextForm);
-            snapshotNotifs.current = serializeNotifs(map);
+            snapshot.current = serialize(nextForm, map);
             setLoading(false);
         })();
 
@@ -215,20 +211,15 @@ export function EditProfile() {
     // changes commits whatever was edited on either.
     const [tab, setTab] = useState<"profile" | "notifications">("profile");
 
-    const profileDirty = useMemo(() => !loading && serializeProfile(form) !== snapshotProfile.current, [loading, form]);
-    const notifDirty = useMemo(() => !loading && serializeNotifs(prefs) !== snapshotNotifs.current, [loading, prefs]);
-    // What Save acts on: the tab you are looking at.
-    const dirty = tab === "profile" ? profileDirty : notifDirty;
-    // What leaving would throw away: either tab.
-    const anyDirty = profileDirty || notifDirty;
+    const dirty = useMemo(() => !loading && serialize(form, prefs) !== snapshot.current, [loading, form, prefs]);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     const backToProfile = useCallback(() => navigate("/profile/me"), [navigate]);
 
     const handleCancel = useCallback(() => {
-        if (anyDirty) setShowDiscard(true);
+        if (dirty) setShowDiscard(true);
         else backToProfile();
-    }, [anyDirty, backToProfile]);
+    }, [dirty, backToProfile]);
 
     const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -264,39 +255,15 @@ export function EditProfile() {
     };
 
     /**
-     * Saves the TAB you are on, and only that tab: Edit profile writes the users
-     * row, Notifications writes notification_preferences. Neither touches the
-     * other's table, so an unsaved edit on the tab you are not looking at is
-     * left exactly as it was rather than being committed by surprise.
-     *
-     * It stays on the screen afterwards instead of returning to Profile, because
-     * with per-tab saves leaving would silently discard whatever the other tab
-     * still holds. The tab's baseline resets, so Save goes back to disabled and
-     * Cancel stops prompting once nothing is outstanding.
+     * Saves the whole screen, both tabs, in one go: the users row and every
+     * notification preference. The tabs divide the form for reading, not into
+     * separate saves, so which tab is showing does not change what is written.
      */
     const handleSave = async () => {
         if (!user || !dirty || saving) return;
         setSaving(true);
         setError(null);
         try {
-            if (tab === "notifications") {
-                const { error: prefErr } = await supabase.from("notification_preferences").upsert(
-                    visibleNotificationTypes.map((t) => {
-                        const p = prefs.get(t.key);
-                        return {
-                            user_id: user.id,
-                            notification_type: t.key,
-                            email_enabled: p?.email ?? t.defaultEmail,
-                            push_enabled: p?.push ?? t.defaultPush,
-                        };
-                    }),
-                    { onConflict: "user_id,notification_type" },
-                );
-                if (prefErr) throw prefErr;
-                snapshotNotifs.current = serializeNotifs(prefs);
-                setSaving(false);
-                return;
-            }
 
             // Re-encrypt sensitive fields before writing.
             let encryptedPhone: string | null = null;
@@ -326,12 +293,25 @@ export function EditProfile() {
                 .eq("id", user.id);
             if (upErr) throw upErr;
 
+            const { error: prefErr } = await supabase.from("notification_preferences").upsert(
+                visibleNotificationTypes.map((t) => {
+                    const p = prefs.get(t.key);
+                    return {
+                        user_id: user.id,
+                        notification_type: t.key,
+                        email_enabled: p?.email ?? t.defaultEmail,
+                        push_enabled: p?.push ?? t.defaultPush,
+                    };
+                }),
+                { onConflict: "user_id,notification_type" },
+            );
+            if (prefErr) throw prefErr;
+
             // Refresh the global profile cache so skill level, courts, photo, etc.
             // update everywhere that reads it (post creation, feed, activity, route
             // guard) — not just on the profile page's own refetch.
             await refreshProfile();
-            snapshotProfile.current = serializeProfile(form);
-            setSaving(false);
+            backToProfile();
         } catch (e) {
             console.error("save profile failed:", e);
             setError(describeActionError(e, "save your changes"));
@@ -562,15 +542,18 @@ export function EditProfile() {
 
                 {/* Actions scroll with the form, like Create post — the last thing in
                     the body rather than a pinned bar, which is why the body's padding
-                    carries the home-indicator inset. Save applies the tab you are on;
-                    see handleSave. */}
+                    carries the home-indicator inset.
+
+                    Side by side with Cancel left and Save right, the arrangement this
+                    screen had before, rather than the stacked pair the group form
+                    uses. Outside the tab switch, so one row serves both tabs. */}
                 {error && <p className="-mb-4 text-sm text-error-primary">{error}</p>}
-                <div className="flex flex-col gap-3">
-                    <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
-                        {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
-                    </button>
+                <div className="flex items-center justify-between gap-3">
                     <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_BTN}>
                         Cancel
+                    </button>
+                    <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
+                        {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
                     </button>
                 </div>
                 </div>
@@ -579,25 +562,47 @@ export function EditProfile() {
                 </div>
             </div>
 
-            {/* Discard-changes confirmation — styled like the delete-post modal. */}
+            {/* Discard-changes confirmation — the bottom sheet the delete confirms
+                use (admin-group-delete-sheet.tsx, created-detail-sheet.tsx):
+                heading, one line of consequence, then the destructive choice over
+                the safe one.
+
+                z-[60] sits it ABOVE the settings form's z-50 so the form stays
+                visible behind rather than being replaced. Equal z-indexes would
+                leave that to DOM order, which breaks the moment the two move. */}
             {showDiscard && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                <div
+                    className="fixed inset-0 z-[60] flex items-end justify-center backdrop-blur-[8px] sm:items-center"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="discard-changes-title"
+                >
                     <div className="absolute inset-0 bg-black/60" onClick={() => setShowDiscard(false)} aria-hidden="true" />
-                    <div className="relative flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-secondary p-5 shadow-xl">
+
+                    <motion.div
+                        className="relative flex w-full max-w-md flex-col gap-4 rounded-t-2xl bg-secondary px-5 pt-5 pb-[calc(2rem_+_var(--safe-bottom))] shadow-xl sm:rounded-2xl"
+                        initial={{ y: "100%" }}
+                        animate={{ y: 0 }}
+                        transition={{ type: "spring", damping: 38, stiffness: 420 }}
+                    >
                         <div className="flex items-start justify-between gap-3">
-                            <div className="flex min-w-0 flex-col gap-1">
-                                <h2 className="text-md font-semibold text-primary">Discard changes?</h2>
-                                <p className="text-sm text-secondary">You have unsaved changes. Leaving now will discard them.</p>
-                            </div>
+                            <h2 id="discard-changes-title" className="min-w-0 text-md font-semibold text-primary">
+                                Discard changes?
+                            </h2>
                             <button
                                 type="button"
                                 onClick={() => setShowDiscard(false)}
                                 aria-label="Close"
                                 className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
                             >
-                                <XClose className="size-5" />
+                                <XClose className="size-5" strokeWidth={1} />
                             </button>
                         </div>
+
+                        <p className="text-sm text-secondary">
+                            You have unsaved changes. Leaving now will discard them.
+                        </p>
+
                         <div className="mt-2 flex flex-col gap-3">
                             <button type="button" onClick={backToProfile} className={PRIMARY_BTN}>
                                 Yes, discard
@@ -606,7 +611,7 @@ export function EditProfile() {
                                 No, keep editing
                             </button>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             )}
         </AppLayout>

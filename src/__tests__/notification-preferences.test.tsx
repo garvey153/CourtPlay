@@ -157,34 +157,44 @@ describe("edit profile — notification preferences", () => {
         for (const p of payload) {
             expect(p).not.toHaveProperty("sms_enabled");
         }
-        // ...and ONLY notification_preferences. Each tab saves its own table, so
-        // saving here must not write the users row — an unsaved edit on the Edit
-        // profile tab stays unsaved rather than riding along.
-        expect(usersUpdate).not.toHaveBeenCalled();
+        // The user row is persisted in the same save. One button commits the whole
+        // screen, so which tab is showing does not change what gets written.
+        expect(usersUpdate).toHaveBeenCalled();
     });
 
-    it("saving the Edit profile tab writes the user row and no preferences", async () => {
+    it("an edit on either tab enables the one Save button", async () => {
         const user = userEvent.setup();
         renderPage();
-        // Stay on the first tab and change something that lives there.
+
+        // A first-tab field.
         await user.click(await screen.findByText("Only show posts from my groups and players I'm following."));
-
-        const save = screen.getByRole("button", { name: "Save changes" });
-        expect(save).toBeEnabled();
-        await user.click(save);
-
-        await waitFor(() => expect(usersUpdate).toHaveBeenCalled());
-        expect(mockUpsert).not.toHaveBeenCalled();
-    });
-
-    it("a notification edit does not enable Save on the Edit profile tab", async () => {
-        const user = userEvent.setup();
-        renderPage();
-        await user.click(await screen.findByRole("button", { name: "Notifications" }));
-        await user.click(screen.getByLabelText("Cost changed push"));
         expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
 
-        await user.click(screen.getByRole("button", { name: "Edit profile" }));
-        expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+        // Still enabled after switching to the other tab — the button is shared.
+        await user.click(screen.getByRole("button", { name: "Notifications" }));
+        expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+    });
+
+    it("actions sit in one row, Cancel left and Save right", async () => {
+        renderPage();
+        const save = await screen.findByRole("button", { name: "Save changes" });
+        const cancel = screen.getByRole("button", { name: "Cancel" });
+
+        // Same row, and Cancel first in DOM order — which is what puts it on the
+        // left under justify-between.
+        expect(save.parentElement).toBe(cancel.parentElement);
+        expect(save.parentElement!.className).toContain("justify-between");
+        expect(save.parentElement!.className).not.toContain("flex-col");
+        expect(cancel.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("saving from the first tab still writes notification preferences", async () => {
+        const user = userEvent.setup();
+        renderPage();
+        await user.click(await screen.findByText("Only show posts from my groups and players I'm following."));
+        await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+        await waitFor(() => expect(usersUpdate).toHaveBeenCalled());
+        expect(mockUpsert).toHaveBeenCalled();
     });
 });
