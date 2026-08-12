@@ -9,6 +9,7 @@ import { Select } from "@/components/base/select/select";
 import { SelectItem } from "@/components/base/select/select-item";
 import { Toggle } from "@/components/base/toggle/toggle";
 import { AppLayout } from "@/components/layout/app-layout";
+import { cx } from "@/utils/cx";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/lib/supabase";
@@ -200,6 +201,11 @@ export function EditProfile() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.id]);
 
+    // Which pane is showing. Both panes are one form and one dirty check — the
+    // tabs split the fields for reading, not into separate saves, so Save
+    // changes commits whatever was edited on either.
+    const [tab, setTab] = useState<"profile" | "preferences">("profile");
+
     const dirty = useMemo(() => !loading && serialize(form, prefs) !== snapshot.current, [loading, form, prefs]);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
@@ -339,7 +345,33 @@ export function EditProfile() {
                 <LoadingState variant="fill" label="Loading your profile" />
             ) : (
                 <>
+                {/* Pill tabs, the same shape Activity uses. They sit outside the
+                    scrolling body so they stay put as a pane scrolls. */}
+                <div className="flex shrink-0 gap-2 px-5 pb-4">
+                    {(
+                        [
+                            { id: "profile", label: "Edit profile" },
+                            { id: "preferences", label: "Preferences" },
+                        ] as const
+                    ).map((t) => (
+                        <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setTab(t.id)}
+                            aria-pressed={tab === t.id}
+                            className={cx(
+                                "rounded-full px-3.5 py-1 text-xs font-semibold transition duration-100 ease-linear",
+                                tab === t.id ? "bg-brand-500 text-neutral-950" : "bg-tertiary text-secondary hover:text-primary",
+                            )}
+                        >
+                            {t.label}
+                        </button>
+                    ))}
+                </div>
+
                 <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 pb-6">
+                {tab === "profile" ? (
+                <>
                     {/* Avatar + change photo. The name moved to the header, so this
                         row is the photo control rather than a page title. */}
                     <div className="flex items-center gap-3">
@@ -439,6 +471,9 @@ export function EditProfile() {
                         />
                     </section>
 
+                </>
+                ) : (
+                <>
                     {/* Feed */}
                     <section className="flex flex-col gap-4">
                         <h2 className="text-md font-semibold text-primary">Feed</h2>
@@ -492,7 +527,8 @@ export function EditProfile() {
                             })}
                         </ul>
                     </section>
-
+                </>
+                )}
                 </div>
 
                 {/* Pinned footer, so the actions stay reachable however long the form

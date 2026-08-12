@@ -53,6 +53,17 @@ vi.mock("@/hooks/use-auth", () => ({
 
 const renderPage = () => render(<EditProfile />, { wrapper: MemoryRouter });
 
+/**
+ * Notification and Feed settings live behind the Preferences tab, so every test
+ * that reads them has to open it first. Waits for a Personal info field so the
+ * profile load has settled before the tab exists to click.
+ */
+const openPreferences = async () => {
+    renderPage();
+    const tab = await screen.findByRole("button", { name: "Preferences" });
+    await userEvent.click(tab);
+};
+
 // Derived from the registry rather than duplicated. A hardcoded copy here was a
 // fifth parallel list of notification types, and it went stale the moment the
 // registry gained connection_request/connection_closed. What these tests are for
@@ -70,14 +81,14 @@ beforeEach(() => {
 
 describe("edit profile — notification preferences", () => {
     it("lists all 13 notification types", async () => {
-        renderPage();
+        await openPreferences();
         for (const label of ALL_LABELS) {
             expect(await screen.findByText(label)).toBeInTheDocument();
         }
     });
 
     it("each type has email and push toggles, and no SMS column", async () => {
-        renderPage();
+        await openPreferences();
         await screen.findByText(ALL_LABELS[0]);
         for (const label of ALL_LABELS) {
             expect(screen.getByLabelText(`${label} email`)).toBeInTheDocument();
@@ -88,7 +99,7 @@ describe("edit profile — notification preferences", () => {
     });
 
     it("default state: every toggle matches the registry's default for its type", async () => {
-        renderPage();
+        await openPreferences();
         await screen.findByText(ALL_LABELS[0]);
 
         // Both channels derive from NOTIFICATION_TYPES rather than being spelled
@@ -109,7 +120,7 @@ describe("edit profile — notification preferences", () => {
     });
 
     it("friend new post notification defaults to off", async () => {
-        renderPage();
+        await openPreferences();
         await screen.findByText("Friend posts new sub need");
         expect(screen.getByLabelText("Friend posts new sub need email")).not.toBeChecked();
         expect(screen.getByLabelText("Friend posts new sub need push")).not.toBeChecked();
@@ -118,6 +129,7 @@ describe("edit profile — notification preferences", () => {
     it("Save is disabled until something changes", async () => {
         const user = userEvent.setup();
         renderPage();
+        await user.click(await screen.findByRole("button", { name: "Preferences" }));
         await screen.findByText(ALL_LABELS[0]);
 
         const save = screen.getByRole("button", { name: "Save changes" });
@@ -130,6 +142,7 @@ describe("edit profile — notification preferences", () => {
     it("saving upserts every non-admin preference including the toggled change, never SMS", async () => {
         const user = userEvent.setup();
         renderPage();
+        await user.click(await screen.findByRole("button", { name: "Preferences" }));
         await screen.findByText(ALL_LABELS[0]);
 
         const save = screen.getByRole("button", { name: "Save changes" });
