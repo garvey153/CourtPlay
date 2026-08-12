@@ -188,6 +188,30 @@ describe("edit profile — notification preferences", () => {
         expect(cancel.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
+    it("the avatar and tabs scroll; only the header and action bar are fixed", async () => {
+        renderPage();
+        const tab = await screen.findByRole("button", { name: "Notifications" });
+        const scroller = tab.closest(".overflow-y-auto") as HTMLElement;
+
+        // Tabs live inside the scrolling body...
+        expect(scroller).not.toBeNull();
+        // ...below the avatar's Change photo control, which scrolls with them.
+        const photo = screen.getByText("Change photo");
+        expect(scroller.contains(photo)).toBe(true);
+        expect(photo.compareDocumentPosition(tab) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+        // The header stays outside it.
+        expect(scroller.contains(screen.getByRole("heading", { name: "Settings" }))).toBe(false);
+    });
+
+    it("the tabs show on both panes", async () => {
+        const user = userEvent.setup();
+        renderPage();
+        await user.click(await screen.findByRole("button", { name: "Notifications" }));
+        expect(screen.getByRole("button", { name: "Edit profile" })).toBeInTheDocument();
+        expect(screen.getByText("Change photo")).toBeInTheDocument();
+    });
+
     it("the action bar is pinned, not part of the scrolling form", async () => {
         renderPage();
         const save = await screen.findByRole("button", { name: "Save changes" });
