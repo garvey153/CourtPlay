@@ -380,7 +380,7 @@ export function EditProfile() {
                     ))}
                 </div>
 
-                <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 pb-[calc(2rem_+_var(--safe-bottom))]">
+                <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 pb-6">
                 {tab === "profile" ? (
                 <>
                     {/* Avatar + change photo. The name moved to the header, so this
@@ -539,23 +539,26 @@ export function EditProfile() {
                     </section>
                 </>
                 )}
-
-                {/* Actions scroll with the form, like Create post — the last thing in
-                    the body rather than a pinned bar, which is why the body's padding
-                    carries the home-indicator inset.
-
-                    Side by side with Cancel left and Save right, the arrangement this
-                    screen had before, rather than the stacked pair the group form
-                    uses. Outside the tab switch, so one row serves both tabs. */}
-                {error && <p className="-mb-4 text-sm text-error-primary">{error}</p>}
-                <div className="flex items-center justify-between gap-3">
-                    <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_BTN}>
-                        Cancel
-                    </button>
-                    <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
-                        {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
-                    </button>
                 </div>
+
+                {/* Pinned to the bottom of the screen: a shrink-0 sibling of the
+                    scrolling body, so it stays put however far the form scrolls and
+                    on whichever tab. Its padding carries the home-indicator inset,
+                    since it is the last thing on screen — which is also why the
+                    body above went back to a plain pb-6.
+
+                    Cancel left, Save right, the arrangement this screen had before,
+                    rather than the stacked pair the group form uses. */}
+                <div className="shrink-0 px-5 pt-2 pb-[calc(1.5rem_+_var(--safe-bottom))]">
+                    {error && <p className="mb-3 text-sm text-error-primary">{error}</p>}
+                    <div className="flex items-center justify-between gap-3">
+                        <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_BTN}>
+                            Cancel
+                        </button>
+                        <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
+                            {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
+                        </button>
+                    </div>
                 </div>
                 </>
             )}
