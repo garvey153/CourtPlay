@@ -362,30 +362,10 @@ export function EditProfile() {
             ) : (
                 <>
                 <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pb-6">
-                    {/* Avatar + change photo. The name moved to the header, so this
-                        row is the photo control rather than a page title. */}
-                    <div className="flex items-center gap-3">
-                        <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full border border-secondary_alt bg-white p-[3px] shadow-xs">
-                            {form.photo_url ? (
-                                <img src={form.photo_url} alt="" referrerPolicy="no-referrer" className="size-full rounded-full object-cover" />
-                            ) : (
-                                <div className="flex size-full items-center justify-center rounded-full bg-tertiary text-2xl font-semibold text-secondary">
-                                    {firstName.charAt(0).toUpperCase() || "?"}
-                                </div>
-                            )}
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-md font-semibold text-primary">Profile photo</p>
-                            <label className="mt-0.5 inline-block cursor-pointer text-sm font-medium text-brand-500 hover:text-brand-600">
-                                Change photo
-                                <input type="file" accept="image/*" className="sr-only" onChange={handlePhotoChange} />
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Pill tabs, the same shape Activity uses. Inside the scrolling
-                        body and below the avatar, so both scroll away together — only
-                        the header and the action bar hold position. */}
+                    {/* Pill tabs, the same shape Activity uses. Above the avatar, per
+                        the design (Figma 628:9553), and inside the scrolling body so
+                        both scroll away together — only the header and the action bar
+                        hold position. */}
                     <div className="flex gap-2">
                         {(
                             [
@@ -406,6 +386,27 @@ export function EditProfile() {
                                 {t.label}
                             </button>
                         ))}
+                    </div>
+
+                    {/* Avatar + change photo. The name moved to the header, so this
+                        row is the photo control rather than a page title. */}
+                    <div className="flex items-center gap-3">
+                        <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full border border-secondary_alt bg-white p-[3px] shadow-xs">
+                            {form.photo_url ? (
+                                <img src={form.photo_url} alt="" referrerPolicy="no-referrer" className="size-full rounded-full object-cover" />
+                            ) : (
+                                <div className="flex size-full items-center justify-center rounded-full bg-tertiary text-2xl font-semibold text-secondary">
+                                    {firstName.charAt(0).toUpperCase() || "?"}
+                                </div>
+                            )}
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-md font-semibold text-primary">Profile photo</p>
+                            <label className="mt-0.5 inline-block cursor-pointer text-sm font-medium text-brand-500 hover:text-brand-600">
+                                Change photo
+                                <input type="file" accept="image/*" className="sr-only" onChange={handlePhotoChange} />
+                            </label>
+                        </div>
                     </div>
 
                 {tab === "profile" ? (

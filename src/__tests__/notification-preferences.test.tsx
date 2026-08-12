@@ -188,17 +188,17 @@ describe("edit profile — notification preferences", () => {
         expect(cancel.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
-    it("the avatar and tabs scroll; only the header and action bar are fixed", async () => {
+    it("the tabs and avatar scroll; only the header and action bar are fixed", async () => {
         renderPage();
         const tab = await screen.findByRole("button", { name: "Notifications" });
         const scroller = tab.closest(".overflow-y-auto") as HTMLElement;
 
         // Tabs live inside the scrolling body...
         expect(scroller).not.toBeNull();
-        // ...below the avatar's Change photo control, which scrolls with them.
+        // ...above the avatar's Change photo control, which scrolls with them.
         const photo = screen.getByText("Change photo");
         expect(scroller.contains(photo)).toBe(true);
-        expect(photo.compareDocumentPosition(tab) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(tab.compareDocumentPosition(photo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
         // The header stays outside it.
         expect(scroller.contains(screen.getByRole("heading", { name: "Settings" }))).toBe(false);
