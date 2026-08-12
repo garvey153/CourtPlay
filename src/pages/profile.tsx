@@ -263,7 +263,7 @@ export function Profile() {
     return (
         <AppLayout>
             <div className="px-5 pt-2 pb-6">
-                {/* Header: avatar + name + skill label (+ Edit profile on own) */}
+                {/* Header: avatar + name + skill label (+ Settings on own) */}
                 <div className="flex items-center gap-3">
                     {/* Design-system "Avatar profile photo" (348:2158): 72px with a
                         3px white ring + subtle border around the photo. */}
@@ -294,7 +294,7 @@ export function Profile() {
                                         to="/profile/edit"
                                         className="font-medium text-brand-500 hover:text-brand-600"
                                     >
-                                        Edit profile
+                                        Settings
                                     </Link>
                                 </>
                             )}

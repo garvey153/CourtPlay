@@ -121,18 +121,18 @@ describe("profile page", () => {
         expect(followButton).toBeUndefined();
     });
 
-    it("shows Edit profile link on own profile", async () => {
+    it("shows the Settings link on own profile", async () => {
         setupMock({ ...completeProfile, is_own_profile: true });
         mockUseAuth.mockReturnValue({ user: { id: "aaaaaaaa-0000-0000-0000-000000000001" }, loading: false });
         renderProfile("me");
-        expect(await screen.findByText("Edit profile")).toBeInTheDocument();
+        expect(await screen.findByText("Settings")).toBeInTheDocument();
     });
 
-    it("does NOT show Edit profile on another user's profile", async () => {
+    it("does NOT show Settings on another user's profile", async () => {
         setupMock(completeProfile);
         renderProfile("aaaaaaaa-0000-0000-0000-000000000001");
         await screen.findByText("Jane Doe");
-        expect(screen.queryByText("Edit profile")).not.toBeInTheDocument();
+        expect(screen.queryByText("Settings")).not.toBeInTheDocument();
     });
 
     it("shows following list with name + skill descriptor (own profile)", async () => {
