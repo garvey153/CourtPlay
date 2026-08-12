@@ -162,12 +162,13 @@ describe("edit profile — notification preferences", () => {
         expect(usersUpdate).toHaveBeenCalled();
     });
 
-    it("an edit on either tab enables the one Save button", async () => {
+    it("an edit on any tab enables the one Save button", async () => {
         const user = userEvent.setup();
         renderPage();
 
-        // A first-tab field.
-        await user.click(await screen.findByText("Only show posts from my groups and players I'm following."));
+        // The Feed tab's only field.
+        await user.click(await screen.findByRole("button", { name: "Feed" }));
+        await user.click(screen.getByText("Only show posts from my groups and players I'm following."));
         expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
 
         // Still enabled after switching to the other tab — the button is shared.
@@ -208,8 +209,29 @@ describe("edit profile — notification preferences", () => {
         const user = userEvent.setup();
         renderPage();
         await user.click(await screen.findByRole("button", { name: "Notifications" }));
-        expect(screen.getByRole("button", { name: "Edit profile" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Profile" })).toBeInTheDocument();
         expect(screen.getByText("Change photo")).toBeInTheDocument();
+    });
+
+    it("three tabs, and Feed holds only the feed setting", async () => {
+        const user = userEvent.setup();
+        renderPage();
+        for (const label of ["Profile", "Notifications", "Feed"]) {
+            expect(await screen.findByRole("button", { name: label })).toBeInTheDocument();
+        }
+
+        await user.click(screen.getByRole("button", { name: "Feed" }));
+        expect(screen.getByText("Only show posts from my groups and players I'm following.")).toBeInTheDocument();
+        // Nothing else came with it.
+        expect(screen.queryByText("Personal info")).not.toBeInTheDocument();
+        expect(screen.queryByText("Contact & Payment")).not.toBeInTheDocument();
+        expect(screen.queryByText(ALL_LABELS[0])).not.toBeInTheDocument();
+    });
+
+    it("the feed setting is off the Profile tab now", async () => {
+        renderPage();
+        await screen.findByText("Personal info");
+        expect(screen.queryByText("Only show posts from my groups and players I'm following.")).not.toBeInTheDocument();
     });
 
     it("the action bar carries the design's 16px above and 32px below", async () => {
@@ -248,10 +270,11 @@ describe("edit profile — notification preferences", () => {
         expect(body.className).toContain("overflow-y-auto");
     });
 
-    it("saving from the first tab still writes notification preferences", async () => {
+    it("saving from the Feed tab still writes notification preferences", async () => {
         const user = userEvent.setup();
         renderPage();
-        await user.click(await screen.findByText("Only show posts from my groups and players I'm following."));
+        await user.click(await screen.findByRole("button", { name: "Feed" }));
+        await user.click(screen.getByText("Only show posts from my groups and players I'm following."));
         await user.click(screen.getByRole("button", { name: "Save changes" }));
 
         await waitFor(() => expect(usersUpdate).toHaveBeenCalled());

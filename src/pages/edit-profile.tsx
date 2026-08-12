@@ -214,7 +214,7 @@ export function EditProfile() {
     // Which pane is showing. Both panes are one form and one dirty check — the
     // tabs split the fields for reading, not into separate saves, so Save
     // changes commits whatever was edited on either.
-    const [tab, setTab] = useState<"profile" | "notifications">("profile");
+    const [tab, setTab] = useState<"profile" | "notifications" | "feed">("profile");
 
     const dirty = useMemo(() => !loading && serialize(form, prefs) !== snapshot.current, [loading, form, prefs]);
 
@@ -369,8 +369,9 @@ export function EditProfile() {
                     <div className="flex gap-2">
                         {(
                             [
-                                { id: "profile", label: "Edit profile" },
+                                { id: "profile", label: "Profile" },
                                 { id: "notifications", label: "Notifications" },
+                                { id: "feed", label: "Feed" },
                             ] as const
                         ).map((t) => (
                             <button
@@ -490,6 +491,9 @@ export function EditProfile() {
                         />
                     </section>
 
+                </>
+                ) : tab === "feed" ? (
+                <>
                     {/* Feed */}
                     <section className="flex flex-col gap-4">
                         <h2 className="text-md font-semibold text-primary">Feed</h2>
