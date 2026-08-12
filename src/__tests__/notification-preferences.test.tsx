@@ -188,6 +188,22 @@ describe("edit profile — notification preferences", () => {
         expect(cancel.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
+    it("the action bar is pinned, not part of the scrolling form", async () => {
+        renderPage();
+        const save = await screen.findByRole("button", { name: "Save changes" });
+
+        // A shrink-0 bar that FOLLOWS the scrolling body as its sibling — that
+        // pairing is what keeps it on screen however far the form scrolls.
+        //
+        // Not closest(".overflow-y-auto"): AppLayout's own <main> is scrollable
+        // and wraps everything, so that query always finds something and would
+        // pass whether the bar were pinned or not.
+        const bar = save.parentElement!.parentElement!;
+        expect(bar.className).toContain("shrink-0");
+        const body = bar.previousElementSibling as HTMLElement;
+        expect(body.className).toContain("overflow-y-auto");
+    });
+
     it("saving from the first tab still writes notification preferences", async () => {
         const user = userEvent.setup();
         renderPage();
