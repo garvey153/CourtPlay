@@ -18,7 +18,12 @@ import { NOTIFICATION_TYPES } from "@/lib/notifications";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeActionError } from "@/utils/load-error";
 import { FIELD, FIELD_SELECT } from "@/components/base/input/field-styles";
-import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
+import {
+    PRIMARY_MD as PRIMARY_BTN,
+    SECONDARY_MD as SECONDARY_BTN,
+    PRIMARY_SM as PRIMARY_ACTION,
+    SECONDARY_SM as SECONDARY_ACTION,
+} from "@/components/base/buttons/button-styles";
 
 // Descriptive NTRP labels — match the create-post form's contents exactly.
 const SKILL_LEVELS = [
@@ -337,7 +342,7 @@ export function EditProfile() {
                 aria-labelledby="edit-profile-title"
             >
                 <div className="flex w-full max-w-lg flex-col overflow-hidden bg-secondary pt-[env(safe-area-inset-top)] shadow-xl">
-                    <div className="relative shrink-0 px-5 pt-[18px] pb-5">
+                    <div className="relative shrink-0 px-5 pt-[18px] pb-6">
                         <h1 id="edit-profile-title" className="pr-9 text-lg font-semibold text-primary">
                             Settings
                         </h1>
@@ -356,7 +361,7 @@ export function EditProfile() {
                 <LoadingState variant="fill" label="Loading your profile" />
             ) : (
                 <>
-                <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 pb-6">
+                <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pb-6">
                     {/* Avatar + change photo. The name moved to the header, so this
                         row is the photo control rather than a page title. */}
                     <div className="flex items-center gap-3">
@@ -551,13 +556,13 @@ export function EditProfile() {
 
                     Cancel left, Save right, the arrangement this screen had before,
                     rather than the stacked pair the group form uses. */}
-                <div className="shrink-0 px-5 pt-2 pb-[calc(1.5rem_+_var(--safe-bottom))]">
+                <div className="shrink-0 px-5 pt-4 pb-8">
                     {error && <p className="mb-3 text-sm text-error-primary">{error}</p>}
                     <div className="flex items-center justify-between gap-3">
-                        <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_BTN}>
+                        <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_ACTION}>
                             Cancel
                         </button>
-                        <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_BTN}>
+                        <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_ACTION}>
                             {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
                         </button>
                     </div>
