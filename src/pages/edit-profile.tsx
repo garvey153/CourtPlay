@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Selection } from "react-aria-components";
 import { useNavigate } from "react-router";
 import { XClose } from "@untitledui/icons";
-import { CheckGroup, CheckRow } from "@/components/base/checkbox/check-row";
+import { CheckRow } from "@/components/base/checkbox/check-row";
 import { Input } from "@/components/base/input/input";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
@@ -460,17 +460,20 @@ export function EditProfile() {
                                 </SelectItem>
                             )}
                         </MultiSelect>
-                        {/* The feed filter sheet's row treatment, so every checkbox in
-                            the app reads the same. Grouped, so the pair shares one
-                            rounded block with a 4px seam. */}
-                        <CheckGroup>
-                            <CheckRow label="Use my location" checked={useLocation} onClick={() => toggleUseLocation(!useLocation)} />
-                            <CheckRow
-                                label="I've recently moved to this location"
-                                checked={form.new_to_westport}
-                                onClick={() => set("new_to_westport", !form.new_to_westport)}
-                            />
-                        </CheckGroup>
+                        {/* The filter sheet's checkbox, without its row band: here each
+                            one is a field of the form, not a row in a list. */}
+                        <CheckRow
+                            variant="bare"
+                            label="Use my location"
+                            checked={useLocation}
+                            onClick={() => toggleUseLocation(!useLocation)}
+                        />
+                        <CheckRow
+                            variant="bare"
+                            label="I've recently moved to this location"
+                            checked={form.new_to_westport}
+                            onClick={() => set("new_to_westport", !form.new_to_westport)}
+                        />
                     </section>
 
                     {/* Contact & Payment */}
@@ -503,16 +506,13 @@ export function EditProfile() {
                     {/* Feed */}
                     <section className="flex flex-col gap-4">
                         <h2 className="text-md font-semibold text-primary">Feed</h2>
-                        {/* multiline: this label is a sentence, and the court rows'
-                            truncation would hide half of what the setting does. */}
-                        <CheckGroup>
-                            <CheckRow
-                                multiline
-                                label="Only show posts from my groups and players I'm following."
-                                checked={form.feed_connected_only}
-                                onClick={() => set("feed_connected_only", !form.feed_connected_only)}
-                            />
-                        </CheckGroup>
+                        <CheckRow
+                            variant="bare"
+                            multiline
+                            label="Only show posts from my groups and players I'm following."
+                            checked={form.feed_connected_only}
+                            onClick={() => set("feed_connected_only", !form.feed_connected_only)}
+                        />
                     </section>
                 </>
                 ) : (
