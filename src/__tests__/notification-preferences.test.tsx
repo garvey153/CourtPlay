@@ -196,20 +196,28 @@ describe("edit profile — notification preferences", () => {
 
         // Tabs live inside the scrolling body...
         expect(scroller).not.toBeNull();
-        // ...above the avatar's Change photo control, which scrolls with them.
+        // ...above the Profile pane's Change photo control, which scrolls with them.
         const photo = screen.getByText("Change photo");
         expect(scroller.contains(photo)).toBe(true);
         expect(tab.compareDocumentPosition(photo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
         // The header stays outside it.
-        expect(scroller.contains(screen.getByRole("heading", { name: "Settings" }))).toBe(false);
+        expect(scroller.contains(screen.getByRole("heading", { name: "Manage" }))).toBe(false);
     });
 
-    it("the tabs show on both panes", async () => {
+    it("the tabs show on every pane; the avatar does not", async () => {
         const user = userEvent.setup();
         renderPage();
-        await user.click(await screen.findByRole("button", { name: "Notifications" }));
-        expect(screen.getByRole("button", { name: "Profile" })).toBeInTheDocument();
+        expect(await screen.findByText("Change photo")).toBeInTheDocument();
+
+        // The avatar is a Profile field, not screen chrome.
+        for (const other of ["Notifications", "Feed"]) {
+            await user.click(screen.getByRole("button", { name: other }));
+            expect(screen.getByRole("button", { name: "Profile" })).toBeInTheDocument();
+            expect(screen.queryByText("Change photo")).not.toBeInTheDocument();
+        }
+
+        await user.click(screen.getByRole("button", { name: "Profile" }));
         expect(screen.getByText("Change photo")).toBeInTheDocument();
     });
 

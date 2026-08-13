@@ -344,7 +344,7 @@ export function EditProfile() {
                 <div className="flex w-full max-w-lg flex-col overflow-hidden bg-secondary pt-[env(safe-area-inset-top)] shadow-xl">
                     <div className="relative shrink-0 px-5 pt-[18px] pb-6">
                         <h1 id="edit-profile-title" className="pr-9 text-lg font-semibold text-primary">
-                            Settings
+                            Manage
                         </h1>
                         {/* Closing is Cancel, so unsaved edits still prompt. */}
                         <button
@@ -389,8 +389,11 @@ export function EditProfile() {
                         ))}
                     </div>
 
-                    {/* Avatar + change photo. The name moved to the header, so this
-                        row is the photo control rather than a page title. */}
+                {tab === "profile" ? (
+                <>
+                    {/* Avatar + change photo. Profile tab only — it is a field of
+                        this pane, not chrome for the screen. The name moved to the
+                        header, so this row is the photo control rather than a title. */}
                     <div className="flex items-center gap-3">
                         <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full border border-secondary_alt bg-white p-[3px] shadow-xs">
                             {form.photo_url ? (
@@ -410,8 +413,6 @@ export function EditProfile() {
                         </div>
                     </div>
 
-                {tab === "profile" ? (
-                <>
 
                     {/* Personal info */}
                     <section className="flex flex-col gap-6">
