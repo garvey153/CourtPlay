@@ -235,6 +235,23 @@ describe("edit profile — notification preferences", () => {
         expect(screen.getByRole("checkbox").className).not.toContain("bg-tertiary");
     });
 
+    it("a wrapping label runs full width and keeps the box on its first line", async () => {
+        const user = userEvent.setup();
+        renderPage();
+        await user.click(await screen.findByRole("button", { name: "Feed" }));
+        const row = screen.getByRole("checkbox");
+
+        // items-start, so the box sits beside the first line rather than the
+        // middle of the wrapped block; mt-0.5 centres it on that 20px line.
+        expect(row.className).toContain("items-start");
+        expect(row.className).not.toContain("items-center");
+        expect(row.firstElementChild!.className).toContain("mt-0.5");
+
+        // No text-balance: it evened out the lines and broke well short of the
+        // margin, which is what made the label look prematurely wrapped.
+        expect(row.lastElementChild!.className).not.toContain("text-balance");
+    });
+
     it("three tabs, and Feed holds only the feed setting", async () => {
         const user = userEvent.setup();
         renderPage();
