@@ -221,6 +221,20 @@ describe("edit profile — notification preferences", () => {
         expect(screen.getByText("Change photo")).toBeInTheDocument();
     });
 
+    it("settings checkboxes take the filter's box, not its row band", async () => {
+        const user = userEvent.setup();
+        renderPage();
+        const row = (await screen.findAllByRole("checkbox"))[0];
+        // The box: 16px, rounded, the shared treatment.
+        expect(row.className).toContain("gap-3");
+        // Not the filter's band.
+        expect(row.className).not.toContain("bg-tertiary");
+        expect(row.className).not.toContain("h-9");
+
+        await user.click(screen.getByRole("button", { name: "Feed" }));
+        expect(screen.getByRole("checkbox").className).not.toContain("bg-tertiary");
+    });
+
     it("three tabs, and Feed holds only the feed setting", async () => {
         const user = userEvent.setup();
         renderPage();
