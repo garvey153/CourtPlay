@@ -3,9 +3,10 @@ import { AnimatePresence, motion } from "motion/react";
 import { endOfMonth, endOfWeek, getLocalTimeZone, parseDate, startOfMonth, startOfWeek, today } from "@internationalized/date";
 import { useLocale } from "react-aria-components";
 import type { DateValue } from "react-aria-components";
-import { Check, ChevronLeft, ChevronRight, XClose } from "@untitledui/icons";
+import { ChevronLeft, ChevronRight, XClose } from "@untitledui/icons";
 import { RangeCalendar } from "@/components/application/date-picker/range-calendar";
 import { SearchField } from "@/components/base/input/search-field";
+import { CheckGroup, CheckRow } from "@/components/base/checkbox/check-row";
 import { cx } from "@/utils/cx";
 import type { FilterState } from "@/types/feed";
 
@@ -65,33 +66,6 @@ function summarize(labels: string[], placeholder: string): string {
 }
 
 /** A checkbox row used inside a category detail view. */
-function CheckRow({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) {
-    return (
-        <button
-            type="button"
-            role="checkbox"
-            aria-checked={checked}
-            onClick={onClick}
-            className="flex h-9 w-full items-center gap-2 bg-tertiary px-3 text-left transition duration-100 ease-linear hover:brightness-110"
-        >
-            <span
-                className={cx(
-                    "flex size-4 shrink-0 items-center justify-center rounded",
-                    checked ? "bg-brand-500" : "border border-neutral-200",
-                )}
-            >
-                {checked && <Check className="size-3 text-white" strokeWidth={3} aria-hidden="true" />}
-            </span>
-            <span className="min-w-0 truncate text-sm text-secondary">{label}</span>
-        </button>
-    );
-}
-
-/** Wraps checkbox rows so only the outer corners round and 4px gaps show between. */
-function CheckGroup({ children }: { children: React.ReactNode }) {
-    return <div className="flex flex-col gap-1 overflow-hidden rounded-lg">{children}</div>;
-}
-
 export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: FeedFiltersProps) {
     const [view, setView] = useState<View>("base");
     const [draft, setDraft] = useState<FilterState>(filters);

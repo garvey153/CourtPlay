@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Selection } from "react-aria-components";
 import { useNavigate } from "react-router";
 import { XClose } from "@untitledui/icons";
-import { Checkbox } from "@/components/base/checkbox/checkbox";
+import { CheckGroup, CheckRow } from "@/components/base/checkbox/check-row";
 import { Input } from "@/components/base/input/input";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
@@ -460,12 +460,17 @@ export function EditProfile() {
                                 </SelectItem>
                             )}
                         </MultiSelect>
-                        <Checkbox label="Use my location" isSelected={useLocation} onChange={toggleUseLocation} />
-                        <Checkbox
-                            label="I've recently moved to this location"
-                            isSelected={form.new_to_westport}
-                            onChange={(v) => set("new_to_westport", v)}
-                        />
+                        {/* The feed filter sheet's row treatment, so every checkbox in
+                            the app reads the same. Grouped, so the pair shares one
+                            rounded block with a 4px seam. */}
+                        <CheckGroup>
+                            <CheckRow label="Use my location" checked={useLocation} onClick={() => toggleUseLocation(!useLocation)} />
+                            <CheckRow
+                                label="I've recently moved to this location"
+                                checked={form.new_to_westport}
+                                onClick={() => set("new_to_westport", !form.new_to_westport)}
+                            />
+                        </CheckGroup>
                     </section>
 
                     {/* Contact & Payment */}
@@ -498,11 +503,16 @@ export function EditProfile() {
                     {/* Feed */}
                     <section className="flex flex-col gap-4">
                         <h2 className="text-md font-semibold text-primary">Feed</h2>
-                        <Checkbox
-                            label="Only show posts from my groups and players I'm following."
-                            isSelected={form.feed_connected_only}
-                            onChange={(v) => set("feed_connected_only", v)}
-                        />
+                        {/* multiline: this label is a sentence, and the court rows'
+                            truncation would hide half of what the setting does. */}
+                        <CheckGroup>
+                            <CheckRow
+                                multiline
+                                label="Only show posts from my groups and players I'm following."
+                                checked={form.feed_connected_only}
+                                onClick={() => set("feed_connected_only", !form.feed_connected_only)}
+                            />
+                        </CheckGroup>
                     </section>
                 </>
                 ) : (
