@@ -43,7 +43,10 @@ export function CheckRow({
             aria-checked={checked}
             onClick={onClick}
             className={cx(
-                "flex w-full items-center text-left transition duration-100 ease-linear",
+                "flex w-full text-left transition duration-100 ease-linear",
+                // A wrapped label puts the box beside the FIRST line, not the middle
+                // of the block.
+                multiline ? "items-start" : "items-center",
                 variant === "filled"
                     ? cx("gap-2 bg-tertiary px-3 hover:brightness-110", multiline ? "min-h-9 py-2" : "h-9")
                     // 12px to the label, per the design's checkbox rows.
@@ -53,12 +56,14 @@ export function CheckRow({
             <span
                 className={cx(
                     "flex size-4 shrink-0 items-center justify-center rounded",
+                    // 2px centres the 16px box on a 20px first line.
+                    multiline && "mt-0.5",
                     checked ? "bg-brand-500" : "border border-neutral-200",
                 )}
             >
                 {checked && <Check className="size-3 text-white" strokeWidth={3} aria-hidden="true" />}
             </span>
-            <span className={cx("min-w-0 text-sm text-secondary", multiline ? "text-balance" : "truncate")}>{label}</span>
+            <span className={cx("min-w-0 text-sm text-secondary", !multiline && "truncate")}>{label}</span>
         </button>
     );
 }
