@@ -572,7 +572,11 @@ export function EditProfile() {
 
                     Cancel left, Save right, the arrangement this screen had before,
                     rather than the stacked pair the group form uses. */}
-                <div className="shrink-0 px-5 pt-4 pb-8">
+                {/* 16px above the buttons and 32px below, per the design (Figma
+                    627:9347) — plus the clamped home-indicator inset, so the 32px is
+                    clear space on an iPhone rather than 32px with the indicator
+                    sitting in it. Resolves to 32px anywhere without an inset. */}
+                <div className="shrink-0 px-5 pt-4 pb-[calc(2rem_+_var(--safe-bottom))]">
                     {error && <p className="mb-3 text-sm text-error-primary">{error}</p>}
                     <div className="flex items-center justify-between gap-3">
                         <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_ACTION}>

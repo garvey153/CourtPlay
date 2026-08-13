@@ -247,9 +247,10 @@ describe("edit profile — notification preferences", () => {
         const save = await screen.findByRole("button", { name: "Save changes" });
         const bar = save.parentElement!.parentElement!;
         // Figma 627:9347 — pt-[16px] pb-[32px], and the SM button pair (py-2),
-        // which is what makes the bar 84px rather than 88.
+        // which is what makes the bar 84px rather than 88. The 32px carries the
+        // clamped home-indicator inset on top, so it is clear space on a phone.
         expect(bar.className).toContain("pt-4");
-        expect(bar.className).toContain("pb-8");
+        expect(bar.className).toContain("pb-[calc(2rem_+_var(--safe-bottom))]");
         expect(save.className).toContain("py-2");
         expect(save.className).not.toContain("py-2.5");
     });
