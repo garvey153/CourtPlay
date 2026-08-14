@@ -42,15 +42,25 @@ describe("NotificationStack", () => {
         expect(screen.queryByText("Third")).not.toBeInTheDocument();
     });
 
-    it("ends flush with the back card, so the feed's 12px gap is the whole gap", () => {
-        const { container } = render(<NotificationStack items={items("a", "b", "c")} />);
-        const wrap = container.firstElementChild as HTMLElement;
-        const back = wrap.querySelector('[aria-hidden="true"]') as HTMLElement;
-        // bottom-0 on the furthest card plus pb-4 on the container: the stack
-        // stops where the last card does. Measured in the feed's own shell, the
-        // distance from there to the first post is 12px.
+    /**
+     * The stack must reserve exactly what it uses, or the feed's 12px gap is not
+     * the whole gap. Two notifications drop one card 8px; three drop one 16px —
+     * padding for a card that is not drawn leaves 20px instead of 12.
+     */
+    it("reserves 8px for one card behind, 16px for two", () => {
+        const one = render(<NotificationStack items={items("a", "b")} />);
+        const oneWrap = one.container.firstElementChild as HTMLElement;
+        expect(oneWrap.className).toContain("pb-2");
+        // The single card behind ends where the container does.
+        expect((oneWrap.querySelector('[aria-hidden="true"]') as HTMLElement).className).toContain("bottom-0");
+        one.unmount();
+
+        const two = render(<NotificationStack items={items("a", "b", "c")} />);
+        const twoWrap = two.container.firstElementChild as HTMLElement;
+        expect(twoWrap.className).toContain("pb-4");
+        const [back, mid] = [...twoWrap.querySelectorAll('[aria-hidden="true"]')] as HTMLElement[];
         expect(back.className).toContain("bottom-0");
-        expect(wrap.className).toContain("pb-4");
+        expect(mid.className).toContain("bottom-2");
     });
 
     it("a single waiting notification draws the NEAR edge, not the far one", () => {
@@ -80,7 +90,6 @@ describe("NotificationStack", () => {
         // gap between items separates the stack from the first post, and
         // carrying both put 20px there.
         expect(wrap.className).toContain("pb-4");
-        expect(wrap.className).not.toContain("pb-6");
 
         // DOM order is paint order for these, and it is FURTHEST FIRST: the back
         // card must be painted before the middle one, or it covers the middle
@@ -88,10 +97,8 @@ describe("NotificationStack", () => {
         const [back, mid] = [...wrap.querySelectorAll('[aria-hidden="true"]')] as HTMLElement[];
         expect(back.className).toContain("inset-x-1");
         expect(back.className).toContain("top-4");
-        expect(back.className).toContain("bottom-0");
         expect(mid.className).toContain("inset-x-0.5");
         expect(mid.className).toContain("top-2");
-        expect(mid.className).toContain("bottom-2");
     });
 
     it("puts the shadow exactly where the design does", () => {
