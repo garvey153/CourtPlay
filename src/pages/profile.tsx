@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { skillLabel } from "@/utils/skill-label";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { ClosedBadge } from "@/components/app/closed-badge";
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 import { GroupFormSheet } from "@/components/app/group-form-sheet";
 import { GroupDetailSheet } from "@/components/app/group-detail-sheet";
@@ -395,11 +396,7 @@ export function Profile() {
                                     >
                                         <div className="flex items-start justify-between gap-2">
                                             <p className="truncate text-sm font-semibold text-primary">{g.name}</p>
-                                            {g.is_closed && (
-                                                <span className="shrink-0 rounded-lg bg-red-900 px-2 py-0.5 text-xs font-semibold text-red-400">
-                                                    Closed
-                                                </span>
-                                            )}
+                                            {g.is_closed && <ClosedBadge />}
                                         </div>
                                         <p className="mt-0.5 truncate text-sm text-secondary">
                                             {[g.details, `${g.member_count} player${g.member_count === 1 ? "" : "s"}`]
