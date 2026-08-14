@@ -9,36 +9,35 @@ export interface FeedNotification {
 
 /**
  * The cards behind, from design-system 650:1963: each is inset 2px per side and
- * dropped 8px, so the stack stands 16px taller than the front card.
+ * dropped 8px below the one in front.
  *
- * The container ends exactly at the back card. The design frame leaves 8px under
- * it, but that is the component's own padding — in the feed the 12px gap between
- * items supplies the separation, and carrying both put 20px between the stack
- * and the first post.
- *
- * `bottom` is measured from the container, which is 16px taller than the card:
- * bottom-2 puts the middle card's edge 8px below the front card, bottom-0 puts
- * the back card's flush with the container.
- */
-const STACK_PAD = "pb-4";
-const SHADOW = "shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]";
-
-/**
  * FURTHEST FIRST. These are absolutely positioned with no z-index, so they paint
- * in DOM order and the last one wins. Listed middle-then-back, the back card
- * painted over the middle card's shadow and the middle looked flat — the shadow
- * was there, drawn, and then covered.
+ * in DOM order and the last one wins. Listed nearest-first, the back card
+ * painted over the middle card's shadow and the middle looked flat.
  *
  * `count` is how many notifications are waiting before this card appears, so a
- * single extra one draws the MIDDLE (nearest) rather than the back.
+ * single extra one draws the NEAREST card rather than the far one.
  */
+const SHADOW = "shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]";
 const PEEK = [
     // 650:1964 — the back card, and the only one in the frame without a shadow:
     // nothing sits below it to catch one.
-    { inset: "inset-x-1", top: "top-4", bottom: "bottom-0", shadow: "", count: 2 },
+    { inset: "inset-x-1", top: "top-4", drop: 16, shadow: "", count: 2 },
     // 650:2025 — sits between, and casts onto the card behind it.
-    { inset: "inset-x-0.5", top: "top-2", bottom: "bottom-2", shadow: SHADOW, count: 1 },
+    { inset: "inset-x-0.5", top: "top-2", drop: 8, shadow: SHADOW, count: 1 },
 ] as const;
+
+/**
+ * The stack reserves exactly as much room as it uses, so the feed's 12px gap is
+ * the whole distance to the first post.
+ *
+ * Keyed by the DEEPEST card actually drawn, which is why it is not a constant:
+ * two notifications drop one card 8px, three or more drop one 16px, and padding
+ * for a card that is not there leaves a gap of 20px instead of 12.
+ */
+const PAD: Record<number, string> = { 8: "pb-2", 16: "pb-4" };
+/** A peek's offset from the container's bottom: the padding minus its own drop. */
+const BOTTOM: Record<number, string> = { 0: "bottom-0", 8: "bottom-2" };
 
 /**
  * The feed shows ONE notification, with the rest stacked behind it.
@@ -67,14 +66,15 @@ export function NotificationStack({ items }: { items: FeedNotification[] }) {
     // third adds 8px and no information.
     const waiting = items.length - 1;
     const peeks = stacked ? PEEK.filter((p) => p.count <= waiting) : [];
+    const depth = peeks.length > 1 ? 16 : 8;
 
     return (
-        <div className={stacked ? `relative ${STACK_PAD}` : "flex flex-col gap-3"}>
+        <div className={stacked ? `relative ${PAD[depth]}` : "flex flex-col gap-3"}>
             {peeks.map((p, i) => (
                 <div
                     key={i}
                     aria-hidden="true"
-                    className={`absolute ${p.inset} ${p.top} ${p.bottom} rounded-lg bg-brand-800 ${p.shadow}`}
+                    className={`absolute ${p.inset} ${p.top} ${BOTTOM[depth - p.drop]} rounded-lg bg-brand-800 ${p.shadow}`}
                 />
             ))}
 
