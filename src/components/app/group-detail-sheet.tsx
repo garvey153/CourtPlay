@@ -1,3 +1,4 @@
+import { ClosedBadge } from "@/components/app/closed-badge";
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
@@ -181,11 +182,7 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
                                         .filter(Boolean)
                                         .join(" · ")}
                                 </p>
-                                {closed && (
-                                    <span className="mt-1 inline-block rounded-lg bg-red-900 px-2 py-0.5 text-xs font-semibold text-red-400">
-                                        Closed
-                                    </span>
-                                )}
+                                {closed && <ClosedBadge className="mt-1" />}
                             </>
                         )}
                     </div>
