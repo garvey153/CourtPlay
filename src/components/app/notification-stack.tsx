@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 export interface FeedNotification {
@@ -58,6 +58,7 @@ const PEEK = [
  */
 export function NotificationStack({ items }: { items: FeedNotification[] }) {
     const [expanded, setExpanded] = useState(false);
+    const cardRef = useRef<HTMLDivElement>(null);
 
     if (items.length === 0) return null;
 
@@ -81,11 +82,21 @@ export function NotificationStack({ items }: { items: FeedNotification[] }) {
                 /* Tapping the card opens the stack — but not when the tap was on
                    one of its own controls, which have their own jobs. A wrapper
                    with a click handler rather than a <button>, because the card
-                   already contains buttons and nesting them is invalid. */
+                   already contains buttons and nesting them is invalid.
+                
+                   The containment check is what handles PORTALS. "Show me how"
+                   opens the install guide, which renders into document.body but
+                   is still a React child of this card — so React bubbles its
+                   clicks here. Anything the guide contains (its backdrop, its
+                   text) is outside this wrapper in the DOM, and expanding the
+                   stack underneath an open dialog is never what was meant. */
                 <div
+                    ref={cardRef}
                     className="relative"
                     onClick={(e) => {
-                        if ((e.target as HTMLElement).closest("button, a")) return;
+                        const target = e.target as HTMLElement;
+                        if (!cardRef.current?.contains(target)) return;
+                        if (target.closest("button, a")) return;
                         setExpanded(true);
                     }}
                 >
