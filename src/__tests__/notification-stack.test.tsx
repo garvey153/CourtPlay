@@ -69,6 +69,19 @@ describe("NotificationStack", () => {
         expect(back.className).toContain("bottom-2");
     });
 
+    it("puts the shadow exactly where the design does", () => {
+        const { container } = render(<NotificationStack items={items("a", "b", "c")} />);
+        const wrap = container.firstElementChild as HTMLElement;
+        const [mid, back] = [...wrap.querySelectorAll('[aria-hidden="true"]')] as HTMLElement[];
+        const shadow = "shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]";
+
+        // 650:2007 and 650:2025 carry it; 650:1964 — the back card — does not,
+        // because nothing sits below it to catch one.
+        expect(screen.getByText("a").closest(".cursor-pointer")!.className).toContain(shadow);
+        expect(mid.className).toContain(shadow);
+        expect(back.className).not.toContain(shadow);
+    });
+
     it("stays collapsed after a re-render — expanding is a tap, not a state to keep", () => {
         const { rerender, container } = render(<NotificationStack items={items("a", "b", "c")} />);
         rerender(<NotificationStack items={items("a", "b", "c")} />);
