@@ -41,6 +41,13 @@ describe("NotificationStack", () => {
         expect(screen.queryByText("Third")).not.toBeInTheDocument();
     });
 
+    it("a single waiting notification draws the NEAR edge, not the far one", () => {
+        const { container } = render(<NotificationStack items={items("a", "b")} />);
+        const [only] = [...peeks(container)] as HTMLElement[];
+        expect(only.className).toContain("inset-x-0.5");
+        expect(only.className).toContain("top-2");
+    });
+
     it("two waiting draw two edges; four draw two as well", () => {
         const { container, rerender } = render(<NotificationStack items={items("a", "b")} />);
         expect(peeks(container)).toHaveLength(1);
@@ -60,19 +67,22 @@ describe("NotificationStack", () => {
         // stack is the card plus 24, not plus 16.
         expect(wrap.className).toContain("pb-6");
 
-        const [mid, back] = [...wrap.querySelectorAll('[aria-hidden="true"]')] as HTMLElement[];
-        expect(mid.className).toContain("inset-x-0.5");
-        expect(mid.className).toContain("top-2");
-        expect(mid.className).toContain("bottom-4");
+        // DOM order is paint order for these, and it is FURTHEST FIRST: the back
+        // card must be painted before the middle one, or it covers the middle
+        // card's shadow and the middle looks flat.
+        const [back, mid] = [...wrap.querySelectorAll('[aria-hidden="true"]')] as HTMLElement[];
         expect(back.className).toContain("inset-x-1");
         expect(back.className).toContain("top-4");
         expect(back.className).toContain("bottom-2");
+        expect(mid.className).toContain("inset-x-0.5");
+        expect(mid.className).toContain("top-2");
+        expect(mid.className).toContain("bottom-4");
     });
 
     it("puts the shadow exactly where the design does", () => {
         const { container } = render(<NotificationStack items={items("a", "b", "c")} />);
         const wrap = container.firstElementChild as HTMLElement;
-        const [mid, back] = [...wrap.querySelectorAll('[aria-hidden="true"]')] as HTMLElement[];
+        const [back, mid] = [...wrap.querySelectorAll('[aria-hidden="true"]')] as HTMLElement[];
         const shadow = "shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]";
 
         // 650:2007 and 650:2025 carry it; 650:1964 — the back card — does not,

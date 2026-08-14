@@ -18,12 +18,22 @@ export interface FeedNotification {
  */
 const STACK_PAD = "pb-6";
 const SHADOW = "shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]";
+
+/**
+ * FURTHEST FIRST. These are absolutely positioned with no z-index, so they paint
+ * in DOM order and the last one wins. Listed middle-then-back, the back card
+ * painted over the middle card's shadow and the middle looked flat — the shadow
+ * was there, drawn, and then covered.
+ *
+ * `count` is how many notifications are waiting before this card appears, so a
+ * single extra one draws the MIDDLE (nearest) rather than the back.
+ */
 const PEEK = [
-    // 650:2025 — carries the shadow.
-    { inset: "inset-x-0.5", top: "top-2", bottom: "bottom-4", shadow: SHADOW },
-    // 650:1964 — the only card in the frame WITHOUT one. Nothing sits below it
-    // to catch a shadow, so the design leaves it flat.
-    { inset: "inset-x-1", top: "top-4", bottom: "bottom-2", shadow: "" },
+    // 650:1964 — the back card, and the only one in the frame without a shadow:
+    // nothing sits below it to catch one.
+    { inset: "inset-x-1", top: "top-4", bottom: "bottom-2", shadow: "", count: 2 },
+    // 650:2025 — sits between, and casts onto the card behind it.
+    { inset: "inset-x-0.5", top: "top-2", bottom: "bottom-4", shadow: SHADOW, count: 1 },
 ] as const;
 
 /**
@@ -48,9 +58,10 @@ export function NotificationStack({ items }: { items: FeedNotification[] }) {
     if (items.length === 0) return null;
 
     const stacked = items.length > 1 && !expanded;
-    // One edge per waiting notification, and PEEK itself is the cap at two: a
-    // third adds 8px and no information, and the design draws two.
-    const peeks = stacked ? PEEK.slice(0, items.length - 1) : [];
+    // One edge per waiting notification, capped at the two the design draws: a
+    // third adds 8px and no information.
+    const waiting = items.length - 1;
+    const peeks = stacked ? PEEK.filter((p) => p.count <= waiting) : [];
 
     return (
         <div className={stacked ? `relative ${STACK_PAD}` : "flex flex-col gap-3"}>
