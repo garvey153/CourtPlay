@@ -8,15 +8,19 @@ export interface FeedNotification {
 }
 
 /**
- * The cards behind, from design-system 650:1963. Its frame is 360×152 around a
- * 360×128 card, so the stack is the card plus 24 — each card behind is inset 2px
- * per side and dropped 8px, and 8px of room is left under the last one.
+ * The cards behind, from design-system 650:1963: each is inset 2px per side and
+ * dropped 8px, so the stack stands 16px taller than the front card.
  *
- * `bottom` is measured from the container, which is 24px taller than the card:
- * bottom-4 puts the middle card's edge 8px below the front card, bottom-2 puts
- * the back card's 16px below.
+ * The container ends exactly at the back card. The design frame leaves 8px under
+ * it, but that is the component's own padding — in the feed the 12px gap between
+ * items supplies the separation, and carrying both put 20px between the stack
+ * and the first post.
+ *
+ * `bottom` is measured from the container, which is 16px taller than the card:
+ * bottom-2 puts the middle card's edge 8px below the front card, bottom-0 puts
+ * the back card's flush with the container.
  */
-const STACK_PAD = "pb-6";
+const STACK_PAD = "pb-4";
 const SHADOW = "shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]";
 
 /**
@@ -31,9 +35,9 @@ const SHADOW = "shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]";
 const PEEK = [
     // 650:1964 — the back card, and the only one in the frame without a shadow:
     // nothing sits below it to catch one.
-    { inset: "inset-x-1", top: "top-4", bottom: "bottom-2", shadow: "", count: 2 },
+    { inset: "inset-x-1", top: "top-4", bottom: "bottom-0", shadow: "", count: 2 },
     // 650:2025 — sits between, and casts onto the card behind it.
-    { inset: "inset-x-0.5", top: "top-2", bottom: "bottom-4", shadow: SHADOW, count: 1 },
+    { inset: "inset-x-0.5", top: "top-2", bottom: "bottom-2", shadow: SHADOW, count: 1 },
 ] as const;
 
 /**
