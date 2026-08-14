@@ -655,6 +655,7 @@ export function Feed() {
                     status="approved"
                     onDismiss={() => dismissBanner(`approved:${claim.id}`)}
                     onView={() => {
+                        dismissBanner(`approved:${claim.id}`);
                         setDetailPost(claimToFeedPost(claim));
                         setClaimContact({ venmoHandle: claim.poster_venmo_handle, phone: claim.poster_phone });
                     }}
@@ -681,7 +682,13 @@ export function Feed() {
                         group={g}
                         kind={kind}
                         onDismiss={() => dismissBanner(`group_${kind}:${g.id}`)}
-                        onView={() => navigate("/profile/me")}
+                        onView={() => {
+                            // Viewing is the whole task for a group change, so the
+                            // card is done. Contrast with a claim, where View only
+                            // opens the sheet where the approving happens.
+                            dismissBanner(`group_${kind}:${g.id}`);
+                            navigate("/profile/me");
+                        }}
                     />
                 ),
             }),
@@ -699,7 +706,10 @@ export function Feed() {
                         post={p}
                         kind={kind}
                         onDismiss={() => dismissBanner(`tagged_${kind}:${p.claim_id}`)}
-                        onView={() => navigate(`/post/${p.id}`)}
+                        onView={() => {
+                            dismissBanner(`tagged_${kind}:${p.claim_id}`);
+                            navigate(`/post/${p.id}`);
+                        }}
                     />
                 ),
             }),

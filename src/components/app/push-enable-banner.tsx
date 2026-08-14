@@ -38,7 +38,9 @@ export function usePushPrompt(eligible: boolean) {
         setRequesting(true);
         await requestPermission();
         setRequesting(false);
-        setDismissed(true);
+        // Deliberately NOT dismissed here. Granting hides the banner on its own
+        // (see `visible`); denying leaves it, now reading "blocked", because the
+        // task the banner exists for did not get done.
     }, [requestPermission]);
 
     // Hide once granted, dismissed, where notifications aren't supported, or
