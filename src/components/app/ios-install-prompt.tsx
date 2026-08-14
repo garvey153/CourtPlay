@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { XClose } from "@untitledui/icons";
 import { InstallGuide } from "@/components/app/install-guide";
 import { useAuth } from "@/hooks/use-auth";
@@ -10,10 +10,16 @@ function isInStandaloneMode() {
     return "standalone" in window.navigator && (window.navigator as { standalone?: boolean }).standalone === true;
 }
 
-export function IosInstallPrompt() {
+/**
+ * Whether to offer the install prompt, and how to put it away.
+ *
+ * Split from the card because the feed stacks its notifications and has to know
+ * how many there are before rendering any of them — a component that decides
+ * for itself and returns null can't be counted.
+ */
+export function useInstallPrompt() {
     const { user } = useAuth();
     const [visible, setVisible] = useState(false);
-    const [showGuide, setShowGuide] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -22,12 +28,17 @@ export function IosInstallPrompt() {
         }
     }, [user]);
 
-    if (!visible) return null;
-
-    const dismiss = () => {
+    const dismiss = useCallback(() => {
         localStorage.setItem(STORAGE_KEY, "1");
         setVisible(false);
-    };
+    }, []);
+
+    return { visible, dismiss };
+}
+
+export function IosInstallPrompt({ onDismiss }: { onDismiss: () => void }) {
+    const [showGuide, setShowGuide] = useState(false);
+    const dismiss = onDismiss;
 
     // Matches the post create/delete confirmation banners. Rendered inside the feed
     // list so it scrolls and pulls with the posts (spacing comes from the feed's gap).

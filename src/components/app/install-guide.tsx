@@ -1,9 +1,17 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Download01, Share06, XClose } from "@untitledui/icons";
 import { isIos } from "@/utils/is-ios";
 
 /**
  * Manual "Add to Home Screen" steps.
+ *
+ * Rendered through a PORTAL to document.body. The feed wraps its content in
+ * PullToRefresh, which sets `transform: translateY(...)` — and a transformed
+ * ancestor becomes the containing block for `position: fixed` descendants, even
+ * at translateY(0). Inside it, `fixed inset-0` sized itself to the whole feed
+ * rather than the viewport, so the guide opened somewhere below the fold and
+ * the screen looked blank until you scrolled.
  *
  * iOS has no programmatic install API, and `navigator.share()` does NOT help:
  * it opens the content share sheet (send this URL to another app), which has no
@@ -31,11 +39,18 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
     const steps = ios
         ? [
               <>
-                  Tap the <Share06 className="mx-0.5 inline size-4 align-text-bottom text-brand-500" aria-hidden="true" /> Share
-                  icon in Safari's toolbar.
+                  Tap <span className="font-semibold text-primary">•••</span> in Safari's toolbar, then
+                  <Share06 className="mx-1 inline size-4 align-text-bottom text-brand-500" aria-hidden="true" />
+                  <span className="font-semibold text-primary">Share</span>. On older versions the Share icon is in the
+                  toolbar itself.
               </>,
-              <>Scroll down and tap "Add to Home Screen."</>,
-              <>Tap "Add" — CourtPlay lands on your home screen.</>,
+              <>
+                  Scroll down the share sheet and tap{" "}
+                  <span className="font-semibold text-primary">Add to Home Screen</span>.
+              </>,
+              <>
+                  Tap <span className="font-semibold text-primary">Add</span> — CourtPlay lands on your home screen.
+              </>,
           ]
         : [
               <>Open your browser menu.</>,
@@ -43,14 +58,17 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
               <>Confirm to add CourtPlay to your device.</>,
           ];
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-overlay p-4 sm:items-center"
+            // Same dim and blur as the bottom sheets, so an overlay over the feed
+            // looks the same wherever it comes from.
+            className="fixed inset-0 z-50 flex items-end justify-center p-4 backdrop-blur-[8px] sm:items-center"
             role="dialog"
             aria-modal="true"
             aria-label="Install CourtPlay"
             onClick={onClose}
         >
+            <div className="absolute inset-0 bg-black/60" aria-hidden="true" />
             <div
                 className="relative w-full max-w-sm rounded-2xl bg-secondary p-6 shadow-xl"
                 onClick={(e) => e.stopPropagation()}
@@ -84,6 +102,7 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
                     ))}
                 </ol>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }

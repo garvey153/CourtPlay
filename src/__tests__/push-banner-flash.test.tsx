@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
-import { PushEnableBanner } from "@/components/app/push-enable-banner";
+import { PushEnableBanner, usePushPrompt } from "@/components/app/push-enable-banner";
 import { usePush } from "@/hooks/use-push";
 
 /**
@@ -71,30 +71,50 @@ describe("usePush initial permission state", () => {
     });
 });
 
-describe("PushEnableBanner", () => {
-    it("never renders for a user who already granted permission", () => {
+/**
+ * Visibility moved out of the card and into usePushPrompt, so the feed can
+ * count its notifications before rendering any of them. The gate now has a
+ * server half too: `eligible` is push_prompt_eligible (14 days since signup, an
+ * action taken, no opt-in during onboarding).
+ */
+describe("usePushPrompt", () => {
+    it("never shows for a user who already granted permission", () => {
         setBrowserPermission("granted");
-
-        render(<PushEnableBanner />);
-
-        expect(screen.queryByText("Turn on notifications.")).not.toBeInTheDocument();
+        const { result } = renderHook(() => usePushPrompt(true));
+        expect(result.current.visible).toBe(false);
     });
 
-    it("still renders for a user who has not been asked", async () => {
+    it("shows for an eligible user who has not been asked", () => {
         setBrowserPermission("default");
-
-        render(<PushEnableBanner />);
-
-        expect(await screen.findByText("Turn on notifications.")).toBeInTheDocument();
+        const { result } = renderHook(() => usePushPrompt(true));
+        expect(result.current.visible).toBe(true);
     });
 
-    it("stays hidden once dismissed", () => {
+    it("stays hidden once dismissed on this device", () => {
         setBrowserPermission("default");
         localStorage.setItem("courtsub_push_prompt_dismissed", "true");
+        const { result } = renderHook(() => usePushPrompt(true));
+        expect(result.current.visible).toBe(false);
+    });
 
-        render(<PushEnableBanner />);
+    it("stays hidden while the server says it is not time to ask", () => {
+        setBrowserPermission("default");
+        const { result } = renderHook(() => usePushPrompt(false));
+        expect(result.current.visible).toBe(false);
+    });
 
-        expect(screen.queryByText("Turn on notifications.")).not.toBeInTheDocument();
+    it("reports a denial as blocked rather than hiding", () => {
+        setBrowserPermission("denied");
+        const { result } = renderHook(() => usePushPrompt(true));
+        expect(result.current.visible).toBe(true);
+        expect(result.current.blocked).toBe(true);
+    });
+
+    it("is not visible where notifications are unsupported", () => {
+        // @ts-expect-error — removing the API is the scenario.
+        delete window.Notification;
+        const { result } = renderHook(() => usePushPrompt(true));
+        expect(result.current.visible).toBe(false);
     });
 });
 
@@ -104,25 +124,27 @@ describe("PushEnableBanner", () => {
  * The banner previously showed exactly that — the same copy and the same dead
  * button as for a user who simply hadn't been asked yet.
  */
+const renderCard = (blocked: boolean) =>
+    render(<PushEnableBanner blocked={blocked} requesting={false} onDismiss={vi.fn()} onEnable={vi.fn()} />);
+
 describe("PushEnableBanner when notifications are blocked", () => {
-    beforeEach(() => setBrowserPermission("denied"));
 
     it("explains the block rather than offering to turn them on", async () => {
-        render(<PushEnableBanner />);
+        renderCard(true);
 
         expect(await screen.findByText("Notifications are blocked.")).toBeInTheDocument();
         expect(screen.queryByText("Turn on notifications.")).not.toBeInTheDocument();
     });
 
     it("offers no Enable button, since it could not work", async () => {
-        render(<PushEnableBanner />);
+        renderCard(true);
 
         await screen.findByText("Notifications are blocked.");
         expect(screen.queryByRole("button", { name: "Enable" })).not.toBeInTheDocument();
     });
 
     it("can still be dismissed", async () => {
-        render(<PushEnableBanner />);
+        renderCard(true);
 
         await screen.findByText("Notifications are blocked.");
         // Two affordances share the label: the corner ✕ and the text button.
@@ -131,20 +153,14 @@ describe("PushEnableBanner when notifications are blocked", () => {
     });
 
     it("points at where the setting actually lives", async () => {
-        render(<PushEnableBanner />);
+        renderCard(true);
 
         expect(await screen.findByText(/browser or device settings/)).toBeInTheDocument();
     });
 });
 
-describe("PushEnableBanner where notifications are unsupported", () => {
-    it("renders nothing at all", () => {
-        // Older iOS Safari outside an installed PWA has no Notification API.
-        Object.defineProperty(window, "Notification", { value: undefined, writable: true, configurable: true });
-
-        render(<PushEnableBanner />);
-
-        expect(screen.queryByText("Turn on notifications.")).not.toBeInTheDocument();
-        expect(screen.queryByText("Notifications are blocked.")).not.toBeInTheDocument();
-    });
-});
+/*
+ * "Renders nothing where notifications are unsupported" used to live here. The
+ * card is presentational now and always renders what it is given, so that rule
+ * belongs to the hook — see usePushPrompt above, which asserts it directly.
+ */
