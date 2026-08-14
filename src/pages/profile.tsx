@@ -383,27 +383,32 @@ export function Profile() {
                                         key={g.id}
                                         type="button"
                                         onClick={() => setOpenGroupId(g.id)}
-                                        // A closed group is a tombstone until its remaining members
-                                        // clear it, so it gets the same dimmed treatment an expired
-                                        // post does rather than being hidden or looking live.
                                         // Gaps are set per-pair rather than one uniform gap: the
                                         // name and its detail line read as a single block, while
                                         // the face pile needs air to separate from them.
-                                        className={cx(
-                                            "flex w-full flex-col rounded-lg bg-secondary p-4 text-left transition duration-100 ease-linear hover:bg-secondary_hover",
-                                            g.is_closed && "opacity-60",
-                                        )}
+                                        className="flex w-full flex-col rounded-lg bg-secondary p-4 text-left transition duration-100 ease-linear hover:bg-secondary_hover"
                                     >
-                                        <div className="flex items-start justify-between gap-2">
+                                        {/* A closed group is a tombstone until its remaining members
+                                            clear it, so its content is dimmed the way an expired post
+                                            is. The dimming sits on the CONTENT, not the card: opacity
+                                            composites the whole subtree, so dimming the card took the
+                                            Closed badge with it — and the badge is the one thing that
+                                            should stay legible. */}
+                                        <div
+                                            className={cx(
+                                                "flex w-full items-start justify-between gap-2",
+                                                g.is_closed && "[&>p]:opacity-60",
+                                            )}
+                                        >
                                             <p className="truncate text-sm font-semibold text-primary">{g.name}</p>
                                             {g.is_closed && <ClosedBadge />}
                                         </div>
-                                        <p className="mt-0.5 truncate text-sm text-secondary">
+                                        <p className={cx("mt-0.5 truncate text-sm text-secondary", g.is_closed && "opacity-60")}>
                                             {[g.details, `${g.member_count} player${g.member_count === 1 ? "" : "s"}`]
                                                 .filter(Boolean)
                                                 .join(" \u00b7 ")}
                                         </p>
-                                        <div className="mt-3 flex items-center gap-2">
+                                        <div className={cx("mt-3 flex items-center gap-2", g.is_closed && "opacity-60")}>
                                             <div className="flex shrink-0 -space-x-2">
                                                 {g.members.slice(0, 5).map((m) => (
                                                     <Avatar

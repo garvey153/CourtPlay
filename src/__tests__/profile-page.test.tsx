@@ -157,6 +157,26 @@ describe("profile page", () => {
         expect(screen.queryByPlaceholderText("Search for friends to follow...")).not.toBeInTheDocument();
     });
 
+    it("dims a closed group's content but not its badge", async () => {
+        setupMock({ ...completeProfile, is_own_profile: true }, [group({ is_closed: true, closed_at: "2026-08-01T00:00:00Z" })]);
+        renderProfile("me");
+        const badge = await screen.findByText("Closed");
+
+        // opacity composites the whole subtree, so dimming the card took the
+        // badge with it. Nothing between the badge and the card may carry it.
+        // classList, not the class string: the row carries `[&>p]:opacity-60`,
+        // which dims its <p> children and leaves the badge alone. A substring
+        // check would flag that as if it applied to everything.
+        const card = badge.closest("button")!;
+        expect(card.classList.contains("opacity-60")).toBe(false);
+        for (let el: HTMLElement | null = badge; el && el !== card; el = el.parentElement) {
+            expect(el.classList.contains("opacity-60")).toBe(false);
+        }
+
+        // ...while the content around it still is.
+        expect(screen.getByText("Westport Social League · 3 players").className).toContain("opacity-60");
+    });
+
     it("lists your groups with their details and member line", async () => {
         setupMock({ ...completeProfile, is_own_profile: true }, [group()]);
         renderProfile("me");
