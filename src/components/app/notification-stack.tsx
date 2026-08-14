@@ -17,9 +17,13 @@ export interface FeedNotification {
  * the back card's 16px below.
  */
 const STACK_PAD = "pb-6";
+const SHADOW = "shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]";
 const PEEK = [
-    { inset: "inset-x-0.5", top: "top-2", bottom: "bottom-4" },
-    { inset: "inset-x-1", top: "top-4", bottom: "bottom-2" },
+    // 650:2025 — carries the shadow.
+    { inset: "inset-x-0.5", top: "top-2", bottom: "bottom-4", shadow: SHADOW },
+    // 650:1964 — the only card in the frame WITHOUT one. Nothing sits below it
+    // to catch a shadow, so the design leaves it flat.
+    { inset: "inset-x-1", top: "top-4", bottom: "bottom-2", shadow: "" },
 ] as const;
 
 /**
@@ -54,7 +58,7 @@ export function NotificationStack({ items }: { items: FeedNotification[] }) {
                 <div
                     key={i}
                     aria-hidden="true"
-                    className={`absolute ${p.inset} ${p.top} ${p.bottom} rounded-lg bg-brand-800 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]`}
+                    className={`absolute ${p.inset} ${p.top} ${p.bottom} rounded-lg bg-brand-800 ${p.shadow}`}
                 />
             ))}
 
@@ -73,7 +77,7 @@ export function NotificationStack({ items }: { items: FeedNotification[] }) {
                     {/* The shadow is what separates the card from the edges behind
                         it — same colour, so without it the stack reads as one card
                         with odd corners. rounded-lg matches the banner it wraps. */}
-                    <div className="cursor-pointer rounded-lg shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">{items[0].node}</div>
+                    <div className={`cursor-pointer rounded-lg ${SHADOW}`}>{items[0].node}</div>
                     <p className="sr-only">
                         <button type="button" onClick={() => setExpanded(true)}>
                             Show all {items.length} notifications

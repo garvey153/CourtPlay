@@ -83,6 +83,14 @@ interface ClaimDetailSheetProps {
     onClaimChange?: () => void;
     /** Called after a claim is cancelled (feed shows the "reopened" banner + closes). */
     onCancelled?: (post: FeedPost) => void;
+    /**
+     * Called only when a claim is successfully SUBMITTED on this post.
+     *
+     * Distinct from onClaimChange, which also fires on cancel and on every reply
+     * — a consumer that needs "they claimed it" cannot use that one without
+     * relying on the order two callbacks happen to fire in.
+     */
+    onClaimed?: (post: FeedPost) => void;
     /** Poster contact, shown once the claim is approved (Activity → Claimed → Approved). */
     contact?: { venmoHandle: string | null; phone: string | null };
     /** Existing thread on this claim (claimer view) — shown indented under the poster's note. */
@@ -97,6 +105,7 @@ export function ClaimDetailSheet({
     onClose,
     onClaimChange,
     onCancelled,
+    onClaimed,
     contact,
     messages,
     currentUser,
@@ -194,7 +203,8 @@ export function ClaimDetailSheet({
         setClaimId(data.claim_id as string);
         setClaimStatus("pending");
         onClaimChange?.();
-    }, [post.id, post.author_id, onClaimChange]);
+        onClaimed?.(post);
+    }, [post, post.id, post.author_id, onClaimChange, onClaimed]);
 
     // Send a follow-up reply (arrow button or Enter) via send_claim_message.
     const handleSendReply = useCallback(async () => {

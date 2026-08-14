@@ -723,7 +723,11 @@ export function Feed() {
                     post={cancelledPost}
                     onDismiss={() => setCancelledPost(null)}
                     onUndo={() => {
-                        // Reopen the sheet in the open (claimable) state so the user can claim again.
+                        // Reopen the sheet in the open (claimable) state so the user can
+                        // claim again. The banner deliberately STAYS: undoing opens the
+                        // sheet, it does not re-claim. Closing without claiming used to
+                        // lose the banner and with it the way back. onClaimChange clears
+                        // it once a claim actually lands.
                         const fresh = posts.find((p) => p.id === cancelledPost.id);
                         setDetailPost(
                             fresh ?? {
@@ -733,7 +737,6 @@ export function Feed() {
                                 spots_available: Math.max(1, cancelledPost.spots_available),
                             },
                         );
-                        setCancelledPost(null);
                     }}
                 />
             ),
@@ -841,6 +844,12 @@ export function Feed() {
                         onClaimChange={() => {
                             fetchPosts();
                             fetchMyPosts();
+                        }}
+                        onClaimed={(p) => {
+                            // The re-claim landed, so the "spot reopened" banner has
+                            // done its job. Keyed to THIS post: claiming something else
+                            // while the banner is up leaves it alone.
+                            setCancelledPost((current) => (current?.id === p.id ? null : current));
                         }}
                         onCancelled={(p) => {
                             setDetailPost(null);
