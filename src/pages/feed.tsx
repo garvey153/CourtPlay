@@ -12,11 +12,11 @@ import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
 import { RegularConnectionsSheet } from "@/components/app/regular-connections-sheet";
 import { ClaimReceivedBanner } from "@/components/app/claim-received-banner";
 import { ClaimUpdateBanner } from "@/components/app/claim-update-banner";
-import { PushEnableBanner } from "@/components/app/push-enable-banner";
+import { PushEnableBanner, usePushPrompt } from "@/components/app/push-enable-banner";
 import { GroupBanner } from "@/components/app/group-banner";
 import { NotificationStack, type FeedNotification } from "@/components/app/notification-stack";
 import { TaggedPostBanner } from "@/components/app/tagged-post-banner";
-import { IosInstallPrompt } from "@/components/app/ios-install-prompt";
+import { IosInstallPrompt, useInstallPrompt } from "@/components/app/ios-install-prompt";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
 import { WelcomeCard } from "@/components/app/welcome-card";
 import { FeedbackBanner } from "@/components/app/feedback-banner";
@@ -38,9 +38,9 @@ import { LoadingState } from "@/components/application/loading-indicator/spinner
 const WELCOME_KEY = "cs_welcome_dismissed";
 
 /**
- * First-run welcome card: shown to users who haven't posted yet, until they
- * dismiss it. Deliberately independent of the feed/filter count — an empty or
- * filtered feed is the "No open spots" state, not this card.
+ * First-run welcome card: shown to users who haven't posted yet, for their
+ * FIRST SESSION only. Deliberately independent of the feed/filter count — an
+ * empty or filtered feed is the "No open spots" state, not this card.
  *
  * `myPostsLoaded` is the part that isn't obvious. `feedLoading` only tracks
  * get_feed; the "mine" RPCs run separately and settle later, so between the two
@@ -54,8 +54,45 @@ export function shouldShowWelcome(state: {
     feedLoading: boolean;
     myPostsLoaded: boolean;
     myPostCount: number;
+    firstSession: boolean;
 }): boolean {
-    return !state.dismissed && !state.feedLoading && state.myPostsLoaded && state.myPostCount === 0;
+    return (
+        state.firstSession && !state.dismissed && !state.feedLoading && state.myPostsLoaded && state.myPostCount === 0
+    );
+}
+
+const WELCOME_STARTED = "cs_welcome_started";
+const WELCOME_DONE = "cs_welcome_done";
+const WELCOME_ACTIVE = "cs_welcome_active";
+
+/**
+ * Is this still the session the welcome card belongs to?
+ *
+ * "Auto-dismiss after the first session" needs a definition of session that
+ * survives a reload but not a relaunch, which is exactly sessionStorage — it is
+ * cleared when the tab closes and copied into a new tab only on duplication.
+ * localStorage remembers that a first session happened at all, so the second
+ * session can tell "I am still in it" from "it already went by".
+ *
+ * Called once on mount, deliberately: reading it later in the same session must
+ * not flip the answer.
+ */
+export function readWelcomeSession(): boolean {
+    try {
+        if (localStorage.getItem(WELCOME_DONE)) return false;
+        if (sessionStorage.getItem(WELCOME_ACTIVE)) return true;
+        if (!localStorage.getItem(WELCOME_STARTED)) {
+            localStorage.setItem(WELCOME_STARTED, "1");
+            sessionStorage.setItem(WELCOME_ACTIVE, "1");
+            return true;
+        }
+        // Started in an earlier session, and this is not it. That session is over.
+        localStorage.setItem(WELCOME_DONE, "1");
+        return false;
+    } catch {
+        // Private mode or storage disabled: show it rather than suppress it.
+        return true;
+    }
 }
 const VIEW_DEBOUNCE_MS = 300;
 
@@ -103,6 +140,11 @@ export function Feed() {
     const [welcomeDismissed, setWelcomeDismissed] = useState(
         () => localStorage.getItem(WELCOME_KEY) === "1",
     );
+    // Read once on mount: the answer must not change under the user mid-session.
+    const [welcomeFirstSession] = useState(readWelcomeSession);
+    // The server's half of the push prompt (14 days, an action taken, no
+    // onboarding opt-in). Defaults to false so a slow answer never flashes it.
+    const [pushEligible, setPushEligible] = useState(false);
     // Whether the "mine" RPCs have come back yet. `loading` only covers get_feed,
     // so without this an empty myPosts means "not fetched yet" and "you have no
     // posts" at the same time — and the welcome card read it as the latter,
@@ -518,6 +560,28 @@ export function Feed() {
     // First-run welcome: shown once to users who haven't posted yet (until they
     // dismiss it). Deliberately independent of the feed/filter count — an empty or
     // filtered feed is handled by the "No open spots" state below, not this card.
+    useEffect(() => {
+        if (!user) return;
+        let cancelled = false;
+        supabase.rpc("push_prompt_eligible").then(({ data }) => {
+            if (!cancelled) setPushEligible(data === true);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [user]);
+
+    const install = useInstallPrompt();
+    const push = usePushPrompt(pushEligible);
+
+    const showWelcome = shouldShowWelcome({
+        firstSession: welcomeFirstSession,
+        dismissed: welcomeDismissed,
+        feedLoading: loading,
+        myPostsLoaded,
+        myPostCount: myPosts.length,
+    });
+
     /**
      * Feed notifications, highest priority FIRST — the feed shows the top one and
      * stacks the rest behind it (see NotificationStack).
@@ -532,6 +596,28 @@ export function Feed() {
      * would mean they are never seen.
      */
     const notifications: FeedNotification[] = [];
+    if (showWelcome) {
+        notifications.push({
+            key: "welcome",
+            node: <WelcomeCard onDismiss={handleDismissWelcome} onPost={handleNavigateToPost} />,
+        });
+    }
+    if (install.visible) {
+        notifications.push({ key: "install", node: <IosInstallPrompt onDismiss={install.dismiss} /> });
+    }
+    if (push.visible) {
+        notifications.push({
+            key: "push",
+            node: (
+                <PushEnableBanner
+                    blocked={push.blocked}
+                    requesting={push.requesting}
+                    onDismiss={push.dismiss}
+                    onEnable={push.enable}
+                />
+            ),
+        });
+    }
     if (profile?.is_admin && newFeedbackIds.length > 0) {
         notifications.push({
             key: "feedback",
@@ -656,12 +742,6 @@ export function Feed() {
         });
     }
 
-    const showWelcome = shouldShowWelcome({
-        dismissed: welcomeDismissed,
-        feedLoading: loading,
-        myPostsLoaded,
-        myPostCount: myPosts.length,
-    });
 
     return (
         <AppLayout onOpenFilters={handleToggleFilters} filtersActive={activeCount(filters) > 0}>
@@ -680,19 +760,6 @@ export function Feed() {
             >
             <div className="flex flex-1 flex-col gap-3 px-5 pb-4">
                 <NotificationStack items={notifications} />
-
-                {/* Prompt to enable push if not granted (banner pattern). */}
-                <PushEnableBanner />
-
-                {/* Install prompt — first feed item so it scrolls/pulls like a post. */}
-                <IosInstallPrompt />
-
-                {showWelcome && (
-                    <WelcomeCard
-                        onDismiss={handleDismissWelcome}
-                        onPost={handleNavigateToPost}
-                    />
-                )}
 
                 {loading ? (
                     <LoadingState variant="grow" label="Loading the feed" />

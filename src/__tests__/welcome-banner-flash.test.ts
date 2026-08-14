@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { shouldShowWelcome } from "@/pages/feed";
+import { beforeEach, describe, expect, it } from "vitest";
+import { readWelcomeSession, shouldShowWelcome } from "@/pages/feed";
 
 /**
  * The welcome card appeared for a moment on every navigation to the feed, then
@@ -16,7 +16,7 @@ import { shouldShowWelcome } from "@/pages/feed";
  * known yet" from a known-negative. See push-banner-flash.test.tsx.
  */
 
-const base = { dismissed: false, feedLoading: false, myPostsLoaded: true, myPostCount: 0 };
+const base = { dismissed: false, feedLoading: false, myPostsLoaded: true, myPostCount: 0, firstSession: true };
 
 describe("shouldShowWelcome", () => {
     it("does NOT show while the 'mine' RPCs are still in flight — the flash", () => {
@@ -43,16 +43,76 @@ describe("shouldShowWelcome", () => {
 
     it("does not show when dismissed, whatever else is true", () => {
         expect(shouldShowWelcome({ ...base, dismissed: true })).toBe(false);
-        expect(shouldShowWelcome({ dismissed: true, feedLoading: false, myPostsLoaded: true, myPostCount: 0 })).toBe(false);
+        expect(
+            shouldShowWelcome({ dismissed: true, feedLoading: false, myPostsLoaded: true, myPostCount: 0, firstSession: true }),
+        ).toBe(false);
     });
 
     it("never shows before the mine RPCs settle, for any other combination", () => {
         for (const dismissed of [true, false]) {
             for (const feedLoading of [true, false]) {
                 for (const myPostCount of [0, 3]) {
-                    expect(shouldShowWelcome({ dismissed, feedLoading, myPostsLoaded: false, myPostCount })).toBe(false);
+                    expect(
+                        shouldShowWelcome({ dismissed, feedLoading, myPostsLoaded: false, myPostCount, firstSession: true }),
+                    ).toBe(false);
                 }
             }
         }
+    });
+});
+
+/**
+ * The card is a first-session thing: it greets you, then goes away by itself.
+ *
+ * "Session" is sessionStorage — cleared when the tab closes, survives a reload.
+ * localStorage remembers that a first session happened at all, which is how the
+ * second one tells "still in it" from "it already went by".
+ */
+describe("readWelcomeSession", () => {
+    beforeEach(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+    });
+
+    it("is the first session for a brand-new visitor", () => {
+        expect(readWelcomeSession()).toBe(true);
+    });
+
+    it("stays the first session across a reload", () => {
+        expect(readWelcomeSession()).toBe(true);
+        // A reload keeps sessionStorage and re-runs the read.
+        expect(readWelcomeSession()).toBe(true);
+    });
+
+    it("is over once the tab has been closed and reopened", () => {
+        expect(readWelcomeSession()).toBe(true);
+        sessionStorage.clear(); // what closing the tab does
+        expect(readWelcomeSession()).toBe(false);
+    });
+
+    it("stays over, without re-deciding it every time", () => {
+        readWelcomeSession();
+        sessionStorage.clear();
+        readWelcomeSession();
+        sessionStorage.clear();
+        expect(readWelcomeSession()).toBe(false);
+    });
+
+    it("shows rather than suppresses when storage is unavailable", () => {
+        const getItem = Storage.prototype.getItem;
+        Storage.prototype.getItem = () => {
+            throw new Error("private mode");
+        };
+        try {
+            expect(readWelcomeSession()).toBe(true);
+        } finally {
+            Storage.prototype.getItem = getItem;
+        }
+    });
+});
+
+describe("shouldShowWelcome after the first session", () => {
+    it("does not show, whatever else is true", () => {
+        expect(shouldShowWelcome({ ...base, firstSession: false })).toBe(false);
     });
 });

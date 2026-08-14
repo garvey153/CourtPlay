@@ -8,7 +8,18 @@ const DISMISSED_KEY = "courtsub_push_prompt_dismissed";
  * Feed banner prompting the user to enable push notifications when they haven't
  * granted permission. Uses the shared confirmation-banner styling.
  */
-export function PushEnableBanner() {
+/**
+ * Whether to ask for push, and the two ways out of the ask.
+ *
+ * `eligible` is the server's answer (push_prompt_eligible): 14 days since
+ * signup, at least one action taken, and no push opt-in during onboarding.
+ * Everything decided here is the device's side of it — permission state and
+ * whether this browser has already dismissed the banner.
+ *
+ * Split from the card so the feed can count its notifications before rendering
+ * them; a component that returns null decides for itself and cannot be counted.
+ */
+export function usePushPrompt(eligible: boolean) {
     const { permission, requestPermission } = usePush();
     const [dismissed, setDismissed] = useState(true); // default hidden until we know
     const [requesting, setRequesting] = useState(false);
@@ -30,14 +41,27 @@ export function PushEnableBanner() {
         setDismissed(true);
     }, [requestPermission]);
 
-    // Hide once granted, dismissed, or where notifications aren't supported.
-    if (permission === "granted" || permission === "unsupported" || dismissed) return null;
+    // Hide once granted, dismissed, where notifications aren't supported, or
+    // where the server says it is not yet time to ask.
+    const visible = eligible && permission !== "granted" && permission !== "unsupported" && !dismissed;
 
     // A denial is permanent as far as the page is concerned — requestPermission()
     // resolves without prompting, so an "Enable" button there offers something it
     // silently cannot do. Say what actually has to happen instead, and drop it.
-    const blocked = permission === "denied";
+    return { visible, blocked: permission === "denied", requesting, dismiss, enable };
+}
 
+export function PushEnableBanner({
+    blocked,
+    requesting,
+    onDismiss: dismiss,
+    onEnable: enable,
+}: {
+    blocked: boolean;
+    requesting: boolean;
+    onDismiss: () => void;
+    onEnable: () => void;
+}) {
     return (
         <div className="relative rounded-lg bg-brand-800 p-4">
             <button
