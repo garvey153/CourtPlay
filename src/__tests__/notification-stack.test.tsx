@@ -53,6 +53,29 @@ describe("NotificationStack", () => {
         expect(peeks(container)).toHaveLength(2);
     });
 
+    it("stacks to the design's geometry: 2px/8px steps, 8px of room below", async () => {
+        const { container } = render(<NotificationStack items={items("a", "b", "c")} />);
+        const wrap = container.firstElementChild as HTMLElement;
+        // design-system 650:1963 — a 360x152 frame around a 360x128 card, so the
+        // stack is the card plus 24, not plus 16.
+        expect(wrap.className).toContain("pb-6");
+
+        const [mid, back] = [...wrap.querySelectorAll('[aria-hidden="true"]')] as HTMLElement[];
+        expect(mid.className).toContain("inset-x-0.5");
+        expect(mid.className).toContain("top-2");
+        expect(mid.className).toContain("bottom-4");
+        expect(back.className).toContain("inset-x-1");
+        expect(back.className).toContain("top-4");
+        expect(back.className).toContain("bottom-2");
+    });
+
+    it("stays collapsed after a re-render — expanding is a tap, not a state to keep", () => {
+        const { rerender, container } = render(<NotificationStack items={items("a", "b", "c")} />);
+        rerender(<NotificationStack items={items("a", "b", "c")} />);
+        expect(peeks(container)).toHaveLength(2);
+        expect(screen.queryByText("b")).not.toBeInTheDocument();
+    });
+
     it("tapping the card opens the stack", async () => {
         const user = userEvent.setup();
         const { container } = render(<NotificationStack items={items("First", "Second", "Third")} />);

@@ -7,10 +7,19 @@ export interface FeedNotification {
     node: ReactNode;
 }
 
-/** How far each card behind is inset and dropped (design-system 650:1963). */
+/**
+ * The cards behind, from design-system 650:1963. Its frame is 360×152 around a
+ * 360×128 card, so the stack is the card plus 24 — each card behind is inset 2px
+ * per side and dropped 8px, and 8px of room is left under the last one.
+ *
+ * `bottom` is measured from the container, which is 24px taller than the card:
+ * bottom-4 puts the middle card's edge 8px below the front card, bottom-2 puts
+ * the back card's 16px below.
+ */
+const STACK_PAD = "pb-6";
 const PEEK = [
-    { inset: "inset-x-0.5", top: "top-2", bottom: "bottom-2" },
-    { inset: "inset-x-1", top: "top-4", bottom: "bottom-0" },
+    { inset: "inset-x-0.5", top: "top-2", bottom: "bottom-4" },
+    { inset: "inset-x-1", top: "top-4", bottom: "bottom-2" },
 ] as const;
 
 /**
@@ -40,7 +49,7 @@ export function NotificationStack({ items }: { items: FeedNotification[] }) {
     const peeks = stacked ? PEEK.slice(0, items.length - 1) : [];
 
     return (
-        <div className={stacked ? "relative pb-4" : "flex flex-col gap-3"}>
+        <div className={stacked ? `relative ${STACK_PAD}` : "flex flex-col gap-3"}>
             {peeks.map((p, i) => (
                 <div
                     key={i}
