@@ -41,6 +41,17 @@ describe("NotificationStack", () => {
         expect(screen.queryByText("Third")).not.toBeInTheDocument();
     });
 
+    it("ends flush with the back card, so the feed's 12px gap is the whole gap", () => {
+        const { container } = render(<NotificationStack items={items("a", "b", "c")} />);
+        const wrap = container.firstElementChild as HTMLElement;
+        const back = wrap.querySelector('[aria-hidden="true"]') as HTMLElement;
+        // bottom-0 on the furthest card plus pb-4 on the container: the stack
+        // stops where the last card does. Measured in the feed's own shell, the
+        // distance from there to the first post is 12px.
+        expect(back.className).toContain("bottom-0");
+        expect(wrap.className).toContain("pb-4");
+    });
+
     it("a single waiting notification draws the NEAR edge, not the far one", () => {
         const { container } = render(<NotificationStack items={items("a", "b")} />);
         const [only] = [...peeks(container)] as HTMLElement[];
@@ -63,9 +74,12 @@ describe("NotificationStack", () => {
     it("stacks to the design's geometry: 2px/8px steps, 8px of room below", async () => {
         const { container } = render(<NotificationStack items={items("a", "b", "c")} />);
         const wrap = container.firstElementChild as HTMLElement;
-        // design-system 650:1963 — a 360x152 frame around a 360x128 card, so the
-        // stack is the card plus 24, not plus 16.
-        expect(wrap.className).toContain("pb-6");
+        // The stack stands 16px taller than the card — the two 8px steps. The
+        // design frame's extra 8px is component padding; in the feed the 12px
+        // gap between items separates the stack from the first post, and
+        // carrying both put 20px there.
+        expect(wrap.className).toContain("pb-4");
+        expect(wrap.className).not.toContain("pb-6");
 
         // DOM order is paint order for these, and it is FURTHEST FIRST: the back
         // card must be painted before the middle one, or it covers the middle
@@ -73,10 +87,10 @@ describe("NotificationStack", () => {
         const [back, mid] = [...wrap.querySelectorAll('[aria-hidden="true"]')] as HTMLElement[];
         expect(back.className).toContain("inset-x-1");
         expect(back.className).toContain("top-4");
-        expect(back.className).toContain("bottom-2");
+        expect(back.className).toContain("bottom-0");
         expect(mid.className).toContain("inset-x-0.5");
         expect(mid.className).toContain("top-2");
-        expect(mid.className).toContain("bottom-4");
+        expect(mid.className).toContain("bottom-2");
     });
 
     it("puts the shadow exactly where the design does", () => {
