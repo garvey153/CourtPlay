@@ -14,6 +14,7 @@ import { ClaimReceivedBanner } from "@/components/app/claim-received-banner";
 import { ClaimUpdateBanner } from "@/components/app/claim-update-banner";
 import { PushEnableBanner } from "@/components/app/push-enable-banner";
 import { GroupBanner } from "@/components/app/group-banner";
+import { NotificationStack, type FeedNotification } from "@/components/app/notification-stack";
 import { TaggedPostBanner } from "@/components/app/tagged-post-banner";
 import { IosInstallPrompt } from "@/components/app/ios-install-prompt";
 import { PullToRefresh } from "@/components/app/pull-to-refresh";
@@ -517,6 +518,144 @@ export function Feed() {
     // First-run welcome: shown once to users who haven't posted yet (until they
     // dismiss it). Deliberately independent of the feed/filter count — an empty or
     // filtered feed is handled by the "No open spots" state below, not this card.
+    /**
+     * Feed notifications, highest priority FIRST — the feed shows the top one and
+     * stacks the rest behind it (see NotificationStack).
+     *
+     * The order is the one these banners already rendered in, kept deliberately:
+     * something needing a decision (a claim on your post) outranks something that
+     * merely happened (a group closed), and a confirmation of what you just did
+     * outranks nothing at all.
+     *
+     * Push and install prompts, and the welcome card, are NOT in here. They are
+     * standing invitations rather than events, so burying them under a claim
+     * would mean they are never seen.
+     */
+    const notifications: FeedNotification[] = [];
+    if (profile?.is_admin && newFeedbackIds.length > 0) {
+        notifications.push({
+            key: "feedback",
+            node: (
+                <FeedbackBanner
+                    count={newFeedbackIds.length}
+                    onView={() => {
+                        dismissFeedbackBanner();
+                        navigate("/admin?tab=reports&section=feedback");
+                    }}
+                    onDismiss={dismissFeedbackBanner}
+                />
+            ),
+        });
+    }
+    pendingBanners.forEach(({ post, claim }) =>
+        notifications.push({
+            key: `claimed:${claim.id}`,
+            node: (
+                <ClaimReceivedBanner
+                    post={post}
+                    onDismiss={() => dismissBanner(`claimed:${claim.id}`)}
+                    onView={() => setCreatedSheet(post)}
+                />
+            ),
+        }),
+    );
+
+    approvedBanners.forEach((claim) =>
+        notifications.push({
+            key: `approved:${claim.id}`,
+            node: (
+                <ClaimUpdateBanner
+                    claim={claim}
+                    status="approved"
+                    onDismiss={() => dismissBanner(`approved:${claim.id}`)}
+                    onView={() => {
+                        setDetailPost(claimToFeedPost(claim));
+                        setClaimContact({ venmoHandle: claim.poster_venmo_handle, phone: claim.poster_phone });
+                    }}
+                />
+            ),
+        }),
+    );
+    declinedBanners.forEach((claim) =>
+        notifications.push({
+            key: `declined:${claim.id}`,
+            node: <ClaimUpdateBanner claim={claim} status="rejected" onDismiss={() => dismissBanner(`declined:${claim.id}`)} />,
+        }),
+    );
+    ([
+        ["added", addedGroups],
+        ["removed", removedGroups],
+        ["closed", closedGroups],
+    ] as const).forEach(([kind, groups]) =>
+        groups.forEach((g) =>
+            notifications.push({
+                key: `group_${kind}:${g.id}`,
+                node: (
+                    <GroupBanner
+                        group={g}
+                        kind={kind}
+                        onDismiss={() => dismissBanner(`group_${kind}:${g.id}`)}
+                        onView={() => navigate("/profile/me")}
+                    />
+                ),
+            }),
+        ),
+    );
+    ([
+        ["approved", taggedApproved],
+        ["claimed", taggedClaimed],
+    ] as const).forEach(([kind, posts]) =>
+        posts.forEach((p) =>
+            notifications.push({
+                key: `tagged_${kind}:${p.claim_id}`,
+                node: (
+                    <TaggedPostBanner
+                        post={p}
+                        kind={kind}
+                        onDismiss={() => dismissBanner(`tagged_${kind}:${p.claim_id}`)}
+                        onView={() => navigate(`/post/${p.id}`)}
+                    />
+                ),
+            }),
+        ),
+    );
+    if (cancelledPost) {
+        notifications.push({
+            key: `cancelled:${cancelledPost.id}`,
+            node: (
+                <ClaimCancelledBanner
+                    post={cancelledPost}
+                    onDismiss={() => setCancelledPost(null)}
+                    onUndo={() => {
+                        // Reopen the sheet in the open (claimable) state so the user can claim again.
+                        const fresh = posts.find((p) => p.id === cancelledPost.id);
+                        setDetailPost(
+                            fresh ?? {
+                                ...cancelledPost,
+                                user_claim_status: null,
+                                user_claim_id: null,
+                                spots_available: Math.max(1, cancelledPost.spots_available),
+                            },
+                        );
+                        setCancelledPost(null);
+                    }}
+                />
+            ),
+        });
+    }
+    if (createdPost) {
+        notifications.push({
+            key: `created:${createdPost.id}`,
+            node: (
+                <PostSuccessBanner
+                    postType={createdPost.type}
+                    onDismiss={() => setCreatedPost(null)}
+                    onEdit={() => navigate(`/post/new?edit=${createdPost.id}`, { state: { returnTo: "/feed" } })}
+                />
+            ),
+        });
+    }
+
     const showWelcome = shouldShowWelcome({
         dismissed: welcomeDismissed,
         feedLoading: loading,
@@ -540,94 +679,7 @@ export function Feed() {
                 contentClassName="flex min-h-full flex-1 flex-col"
             >
             <div className="flex flex-1 flex-col gap-3 px-5 pb-4">
-                {/* Admin-only: new-feedback banner sits at the very top. */}
-                {profile?.is_admin && newFeedbackIds.length > 0 && (
-                    <FeedbackBanner
-                        count={newFeedbackIds.length}
-                        onView={() => {
-                            dismissFeedbackBanner();
-                            navigate("/admin?tab=reports&section=feedback");
-                        }}
-                        onDismiss={dismissFeedbackBanner}
-                    />
-                )}
-
-                {/* Claim banners always sit at the top of the feed. */}
-                {pendingBanners.map(({ post, claim }) => (
-                    <ClaimReceivedBanner
-                        key={claim.id}
-                        post={post}
-                        onDismiss={() => dismissBanner(`claimed:${claim.id}`)}
-                        onView={() => setCreatedSheet(post)}
-                    />
-                ))}
-                {approvedBanners.map((claim) => (
-                    <ClaimUpdateBanner
-                        key={claim.id}
-                        claim={claim}
-                        status="approved"
-                        onDismiss={() => dismissBanner(`approved:${claim.id}`)}
-                        onView={() => {
-                            setDetailPost(claimToFeedPost(claim));
-                            setClaimContact({ venmoHandle: claim.poster_venmo_handle, phone: claim.poster_phone });
-                        }}
-                    />
-                ))}
-                {declinedBanners.map((claim) => (
-                    <ClaimUpdateBanner
-                        key={claim.id}
-                        claim={claim}
-                        status="rejected"
-                        onDismiss={() => dismissBanner(`declined:${claim.id}`)}
-                    />
-                ))}
-
-                {addedGroups.map((g) => (
-                    <GroupBanner
-                        key={`group_added:${g.id}`}
-                        group={g}
-                        kind="added"
-                        onDismiss={() => dismissBanner(`group_added:${g.id}`)}
-                        onView={() => navigate("/profile/me")}
-                    />
-                ))}
-                {removedGroups.map((g) => (
-                    <GroupBanner
-                        key={`group_removed:${g.id}`}
-                        group={g}
-                        kind="removed"
-                        onDismiss={() => dismissBanner(`group_removed:${g.id}`)}
-                        onView={() => navigate("/profile/me")}
-                    />
-                ))}
-                {closedGroups.map((g) => (
-                    <GroupBanner
-                        key={`group_closed:${g.id}`}
-                        group={g}
-                        kind="closed"
-                        onDismiss={() => dismissBanner(`group_closed:${g.id}`)}
-                        onView={() => navigate("/profile/me")}
-                    />
-                ))}
-
-                {taggedApproved.map((p) => (
-                    <TaggedPostBanner
-                        key={`tagged_approved:${p.claim_id}`}
-                        post={p}
-                        kind="approved"
-                        onDismiss={() => dismissBanner(`tagged_approved:${p.claim_id}`)}
-                        onView={() => navigate(`/post/${p.id}`)}
-                    />
-                ))}
-                {taggedClaimed.map((p) => (
-                    <TaggedPostBanner
-                        key={`tagged_claimed:${p.claim_id}`}
-                        post={p}
-                        kind="claimed"
-                        onDismiss={() => dismissBanner(`tagged_claimed:${p.claim_id}`)}
-                        onView={() => navigate(`/post/${p.id}`)}
-                    />
-                ))}
+                <NotificationStack items={notifications} />
 
                 {/* Prompt to enable push if not granted (banner pattern). */}
                 <PushEnableBanner />
@@ -635,39 +687,10 @@ export function Feed() {
                 {/* Install prompt — first feed item so it scrolls/pulls like a post. */}
                 <IosInstallPrompt />
 
-                {cancelledPost && (
-                    <ClaimCancelledBanner
-                        post={cancelledPost}
-                        onDismiss={() => setCancelledPost(null)}
-                        onUndo={() => {
-                            // Reopen the sheet in the open (claimable) state so the user can claim again.
-                            const fresh = posts.find((p) => p.id === cancelledPost.id);
-                            setDetailPost(
-                                fresh ?? {
-                                    ...cancelledPost,
-                                    user_claim_status: null,
-                                    user_claim_id: null,
-                                    spots_available: Math.max(1, cancelledPost.spots_available),
-                                },
-                            );
-                            setCancelledPost(null);
-                        }}
-                    />
-                )}
-
                 {showWelcome && (
                     <WelcomeCard
                         onDismiss={handleDismissWelcome}
                         onPost={handleNavigateToPost}
-                    />
-                )}
-
-                {/* Confirmation banner after a post is created */}
-                {createdPost && (
-                    <PostSuccessBanner
-                        postType={createdPost.type}
-                        onDismiss={() => setCreatedPost(null)}
-                        onEdit={() => navigate(`/post/new?edit=${createdPost.id}`, { state: { returnTo: "/feed" } })}
                     />
                 )}
 
