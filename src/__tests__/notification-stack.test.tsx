@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { createPortal } from "react-dom";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NotificationStack, type FeedNotification } from "@/components/app/notification-stack";
@@ -137,6 +138,33 @@ describe("NotificationStack", () => {
 
         await user.click(screen.getByRole("button", { name: "Dismiss First" }));
         expect(onDismiss).toHaveBeenCalled();
+        expect(screen.queryByText("Second")).not.toBeInTheDocument();
+    });
+
+    /**
+     * The install prompt's "Show me how" opens a guide that portals to
+     * document.body. React bubbles a portal's events through the REACT tree, so
+     * every tap inside that dialog arrives at this card's click handler — and
+     * expanding the stack behind an open dialog is never what was meant.
+     */
+    it("ignores taps inside a portalled dialog the card opened", async () => {
+        const user = userEvent.setup();
+        const withGuide = (
+            <div className="relative rounded-lg bg-brand-800 p-4">
+                <p>First</p>
+                {createPortal(
+                    <div data-testid="guide">
+                        <p>Tap the ••• menu</p>
+                    </div>,
+                    document.body,
+                )}
+            </div>
+        );
+
+        render(<NotificationStack items={[{ key: "a", node: withGuide }, ...items("Second")]} />);
+        // Not a button, and outside the card in the DOM — but a React child of it.
+        await user.click(screen.getByText("Tap the ••• menu"));
+
         expect(screen.queryByText("Second")).not.toBeInTheDocument();
     });
 
