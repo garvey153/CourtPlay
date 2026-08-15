@@ -212,9 +212,13 @@ export function Landing() {
                                     sitting low, and by a different amount once the title
                                     steps up to 16px at md. */}
                                 <div className="flex items-center gap-3.5 lg:flex-col lg:items-start lg:gap-3">
+                                    {/* The circle grows with the number at lg: 24px digits
+                                        in a 28px circle leave no room around them. Below lg
+                                        the number sits beside the title and takes its size,
+                                        which is what keeps the two centred. */}
                                     <span
                                         aria-hidden="true"
-                                        className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-800 text-sm font-semibold text-brand-500 md:text-base"
+                                        className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-800 text-sm font-semibold text-brand-500 md:text-base lg:size-10 lg:text-display-xs"
                                     >
                                         {i + 1}
                                     </span>
