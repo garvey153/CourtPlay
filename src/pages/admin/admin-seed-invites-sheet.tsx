@@ -107,13 +107,16 @@ export function AdminSeedInvitesSheet({ onClose, onSeeded }: { onClose: () => vo
                 ) : (
                     <>
                         <p className="text-sm text-secondary">
-                            Paste addresses separated by commas, spaces or new lines. Adding someone twice is harmless.
+                            Paste addresses separated by commas. Adding someone twice is harmless.
                         </p>
+                        {/* The parser still splits on spaces and new lines too, so a
+                            pasted column keeps working — commas are just the one
+                            convention worth telling people about. */}
                         <textarea
                             value={raw}
                             onChange={(e) => setRaw(e.target.value)}
                             rows={6}
-                            placeholder={"sara@example.com\nmike@example.com"}
+                            placeholder={"sara@example.com, mike@example.com"}
                             className="w-full rounded-lg border border-neutral-600 bg-tertiary px-3 py-2 text-sm text-primary placeholder:text-placeholder focus:outline-none"
                         />
                         <p className="text-sm text-tertiary">
