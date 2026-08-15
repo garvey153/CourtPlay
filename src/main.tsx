@@ -23,6 +23,8 @@ import { Profile } from "@/pages/profile";
 import { Privacy } from "@/pages/privacy";
 import { AuthScreen } from "@/pages/auth";
 import { Terms } from "@/pages/terms";
+import { InviteOnly } from "@/pages/invite-only";
+import { ENTRY_ROUTE } from "@/lib/beta";
 import { isStandalone } from "@/utils/is-standalone";
 import { registerServiceWorker } from "@/lib/register-sw";
 
@@ -38,9 +40,10 @@ createRoot(document.getElementById("root")!).render(
                 <RouteProvider>
                 <ProfileProvider>
                     <Routes>
-                        {/* Public. The installed PWA skips the marketing landing and
-                            opens straight to Create account. */}
-                        <Route path="/" element={isStandalone() ? <Navigate to="/signup" replace /> : <Landing />} />
+                        {/* Public. The installed PWA skips the marketing landing and opens
+                            straight to Create account — or to Sign in during the closed
+                            beta, where creating an account is not the way in. */}
+                        <Route path="/" element={isStandalone() ? <Navigate to={ENTRY_ROUTE} replace /> : <Landing />} />
                         <Route path="/signin" element={<AuthScreen />} />
                         <Route path="/signup" element={<AuthScreen />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -49,6 +52,8 @@ createRoot(document.getElementById("root")!).render(
                         <Route path="/post/:id" element={<PostDetail />} />
                         <Route path="/terms" element={<Terms />} />
                         <Route path="/privacy" element={<Privacy />} />
+                        {/* Public on purpose: whoever lands here has just been signed out. */}
+                        <Route path="/invite-only" element={<InviteOnly />} />
 
                         {/* Onboarding — auth required, no profile check */}
                         <Route

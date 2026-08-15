@@ -4,6 +4,7 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { BetaTag } from "@/components/app/beta-tag";
 import { InstallAppButton } from "@/components/app/install-app-button";
 import { cx } from "@/utils/cx";
+import { ENTRY_ROUTE, INVITE_ONLY } from "@/lib/beta";
 import { PRIMARY_LG_GAP1 as PRIMARY_BTN } from "@/components/base/buttons/button-styles";
 
 /**
@@ -130,8 +131,8 @@ export function Landing() {
                         <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto lg:h-7" />
                         <BetaTag />
                     </div>
-                    <Link to="/signup" className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600">
-                        Sign up
+                    <Link to={ENTRY_ROUTE} className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600">
+                        {INVITE_ONLY ? "Sign in" : "Sign up"}
                     </Link>
                 </header>
 
@@ -168,12 +169,20 @@ export function Landing() {
                             CourtPlay helps tennis players fill an open spot in a game. Post a spot when someone
                             drops out, or claim one when you want to play.
                         </p>
+                        {/* The only copy the beta adds. Everything else on this page is
+                            unchanged, so ending the beta is one env var — see
+                            src/lib/beta.ts. */}
+                        {INVITE_ONLY && (
+                            <p className="text-sm font-semibold text-brand-500 md:text-base">
+                                Invite only while we're in beta.
+                            </p>
+                        )}
                         {/* Desktop only: Get started sits in the hero. The Download button is
                             mobile-only (installing to a home screen is a phone/tablet action), so it
                             lives solely in the CTA band below, which hides it on desktop. */}
                         <div className="mt-2 hidden items-center gap-3 lg:flex">
-                            <Link to="/signup" className={PRIMARY_BTN}>
-                                Get started – it's free!
+                            <Link to={ENTRY_ROUTE} className={PRIMARY_BTN}>
+                                {INVITE_ONLY ? "Sign in" : "Get started – it's free!"}
                             </Link>
                         </div>
                     </div>
@@ -238,15 +247,19 @@ export function Landing() {
                 <section className="mt-8 mx-[calc(50%-50vw)] flex w-screen flex-col items-center gap-6 bg-secondary px-5 py-8 text-center md:mt-12 md:py-12 lg:mt-16 lg:py-14">
                     <div className="flex flex-col items-center gap-2.5 px-7">
                         <h2 className="text-display-sm font-semibold text-balance text-primary md:text-display-md lg:text-display-lg">Ready to find your next match?</h2>
-                        <p className="text-sm text-secondary md:text-base lg:text-lg">Join players near you already using CourtPlay.</p>
+                        <p className="text-sm text-secondary md:text-base lg:text-lg">
+                            {INVITE_ONLY
+                                ? "CourtPlay is invite only while we're in beta. Already invited? Sign in."
+                                : "Join players near you already using CourtPlay."}
+                        </p>
                     </div>
                     {/* Get started, with the Download button beside it on mobile/tablet
                         (on desktop the Download button lives in the hero, so it's hidden here).
                         Below 480px they stack full-width (Download second); from 480px up they
                         sit side by side at content width. */}
                     <div className="flex w-full flex-col items-stretch gap-3 min-[480px]:w-auto min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-center">
-                        <Link to="/signup" className={PRIMARY_BTN}>
-                            Get started – it's free!
+                        <Link to={ENTRY_ROUTE} className={PRIMARY_BTN}>
+                            {INVITE_ONLY ? "Sign in" : "Get started – it's free!"}
                         </Link>
                         <InstallAppButton className="lg:hidden" />
                     </div>

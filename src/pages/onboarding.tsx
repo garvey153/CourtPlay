@@ -252,6 +252,22 @@ export function Onboarding() {
         return true;
     };
 
+    // Backstop for anyone who reaches /onboarding with a session that did not come
+    // through auth-callback or the password path — a bookmark, a back button, a
+    // stale tab. Fails open, like the others; the trigger is the real gate.
+    useEffect(() => {
+        if (!user) return;
+        let cancelled = false;
+        supabase.rpc("am_i_invited").then(({ data, error }) => {
+            if (!cancelled && !error && data === false) {
+                navigate("/invite-only", { replace: true, state: { email: user.email } });
+            }
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [user, navigate]);
+
     const handleFinish = async () => {
         if (!user) return;
         setSaving(true);
