@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 import { describeActionError } from "@/utils/load-error";
+import { sendInvite } from "@/lib/invite";
 
 interface SeedResult {
     submitted: number;
@@ -12,14 +13,20 @@ interface SeedResult {
     already_there: number;
     rejected: string[];
     total_invited: number;
+    /** Filled in by this component after the emails go out. */
+    emailed?: number;
+    failed?: string[];
 }
 
 /**
- * Paste a list of emails onto the invite list.
+ * Paste a list of emails onto the invite list, and invite them.
  *
- * Seeding is separate from sending: these rows let people in, and telling them
- * is a second decision. A list pasted from a spreadsheet is the shape this has
- * to accept, so it splits on commas, semicolons, whitespace and newlines alike.
+ * Adding used to only write the rows, leaving the email as a second trip through
+ * a different sheet. That reliably produced a beta nobody had been told about:
+ * the addresses could sign up and none of them knew. Add now does both.
+ *
+ * A list pasted from a spreadsheet is the shape this has to accept, so it splits
+ * on commas, semicolons, whitespace and newlines alike.
  */
 export function AdminSeedInvitesSheet({ onClose, onSeeded }: { onClose: () => void; onSeeded: () => void }) {
     const [raw, setRaw] = useState("");
@@ -43,13 +50,35 @@ export function AdminSeedInvitesSheet({ onClose, onSeeded }: { onClose: () => vo
     const submit = async () => {
         setBusy(true);
         setError(null);
+
+        // The list first. If this fails nothing was promised to anyone, and the
+        // addresses are still only in the box.
         const { data, error: rpcError } = await supabase.rpc("admin_seed_invites", { p_emails: emails });
-        setBusy(false);
         if (rpcError) {
+            setBusy(false);
             setError(describeActionError(rpcError, "add those invites"));
             return;
         }
-        setResult(data as SeedResult);
+        const seeded = data as SeedResult;
+
+        // Then the emails. Anything the server called malformed is skipped rather
+        // than mailed into the void. Addresses already on the list are still sent
+        // to — pasting someone again is how you resend.
+        const rejected = new Set((seeded.rejected ?? []).map((r) => r.toLowerCase()));
+        const sendTo = [...new Set(emails.map((e) => e.trim().toLowerCase()))].filter((e) => !rejected.has(e));
+
+        const failed: string[] = [];
+        let emailed = 0;
+        // Sequential on purpose: a paste of thirty firing at once is a burst at
+        // the mail provider, and the spinner is already showing.
+        for (const address of sendTo) {
+            const outcome = await sendInvite(address);
+            if (outcome.ok) emailed += 1;
+            else failed.push(address);
+        }
+
+        setBusy(false);
+        setResult({ ...seeded, emailed, failed });
         onSeeded();
     };
 
@@ -70,7 +99,7 @@ export function AdminSeedInvitesSheet({ onClose, onSeeded }: { onClose: () => vo
             >
                 <div className="flex items-start justify-between gap-3">
                     <h2 id="seed-invites-title" className="min-w-0 text-md font-semibold text-primary">
-                        {result ? "Added to the list" : "Add players to the beta"}
+                        {result ? "Invites sent" : "Add players to the beta"}
                     </h2>
                     <button
                         type="button"
@@ -97,9 +126,27 @@ export function AdminSeedInvitesSheet({ onClose, onSeeded }: { onClose: () => vo
                                 <p className="mt-1 break-words text-sm text-secondary">{result.rejected.join(", ")}</p>
                             </div>
                         )}
-                        <p className="text-sm text-tertiary">
-                            They can sign up now. Sending them an invite email is a separate step.
-                        </p>
+                        {/* Say what was actually sent. The old copy told you
+                            emailing was a separate step, which was true and still
+                            produced a beta nobody had been told about. */}
+                        {(result.failed?.length ?? 0) > 0 ? (
+                            <div className="rounded-lg bg-tertiary p-3">
+                                <p className="text-sm font-semibold text-primary">
+                                    {result.failed!.length} invite {result.failed!.length === 1 ? "email" : "emails"}{" "}
+                                    didn&apos;t send
+                                </p>
+                                <p className="mt-1 break-words text-sm text-secondary">{result.failed!.join(", ")}</p>
+                                <p className="mt-1 text-sm text-tertiary">
+                                    They&apos;re on the list and can still sign up — tell them directly, or try again.
+                                </p>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-tertiary">
+                                {result.emailed === 1
+                                    ? "Invite email sent. They can create an account from the link."
+                                    : `${result.emailed} invite emails sent. They can create an account from the link.`}
+                            </p>
+                        )}
                         <button type="button" onClick={onClose} className={PRIMARY_BTN}>
                             Done
                         </button>
@@ -107,7 +154,7 @@ export function AdminSeedInvitesSheet({ onClose, onSeeded }: { onClose: () => vo
                 ) : (
                     <>
                         <p className="text-sm text-secondary">
-                            Paste addresses separated by commas. Adding someone twice is harmless.
+                            Paste addresses separated by commas. We'll email each one a link to create an account.
                         </p>
                         {/* The parser still splits on spaces and new lines too, so a
                             pasted column keeps working — commas are just the one
