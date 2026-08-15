@@ -138,20 +138,26 @@ export function Landing() {
                 {/* Hero — stacked on mobile/tablet, two columns (copy + preview cards) on desktop */}
                 <section className="mt-8 px-5 md:mt-12 md:px-8 lg:grid lg:grid-cols-2 lg:items-center lg:gap-8 lg:py-12">
                     <div className="flex flex-col gap-2.5 lg:gap-4">
-                        {/* The product name is the h1 and the pun is a subhead, not the
-                            other way round. Google's OAuth brand verification checks the
-                            home page for the app name configured on the consent screen and
-                            for a statement of purpose; with a rotating pun as the only
-                            heading and "CourtPlay" appearing solely as the logo's alt text,
-                            it failed both. Keep the name here as literal text. */}
+                        {/* The pun is the h1 and the product name sits above it.
+                            
+                            Google's OAuth brand verification once failed this page for an
+                            app name that "does not match", back when the crawled copy had
+                            no "CourtPlay" text at all — the body was empty to anything not
+                            running JavaScript, and the only name on the rendered page was
+                            the logo's alt text. Branding is verified and published now,
+                            and the name is carried by the <title>, the og and JSON-LD
+                            metadata, the no-JS #root fallback's own h1, the "How CourtPlay
+                            works" heading and the line below this one.
+                            
+                            So this heading is free to be the pun again. What must stay is
+                            the name as LITERAL TEXT near the top rather than only in the
+                            logo — the paragraph below this one opens with it, and that is
+                            the part to preserve if this copy is ever rewritten. */}
                         <h1 className="text-balance text-display-md font-semibold tracking-tight text-primary md:text-display-lg lg:text-display-xl">
-                            CourtPlay
-                        </h1>
-                        <p className="text-balance text-display-md font-semibold tracking-tight text-primary md:text-display-lg lg:text-display-xl">
                             {headline[0]}
                             <br />
                             {headline[1]}
-                        </p>
+                        </h1>
                         {/* States plainly what the app is for. Google's OAuth brand
                             verification rejected the previous line ("instantly connects
                             you with available players in your area") as not explaining
