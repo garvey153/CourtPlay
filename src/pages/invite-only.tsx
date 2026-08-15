@@ -12,7 +12,8 @@ import { PRIMARY_H9_FULL as PRIMARY_BTN } from "@/components/base/buttons/button
  * genuinely confusing failure is being invited at one address and signing in
  * with another — a work address versus a personal Google account. Showing which
  * one we looked at turns "it doesn't work" into something the person can fix
- * themselves, and gives them something concrete to quote when they write in.
+ * themselves. There is no contact link — the domain cannot receive mail — so the
+ * two ways out are trying another account or going back to the marketing page.
  *
  * The session is cleared on arrival: leaving someone signed in but unable to do
  * anything is worse than signing them out, and a stale session would send them
@@ -54,16 +55,20 @@ export function InviteOnly() {
                     Invited at a different address? Sign in with that one instead.
                 </p>
 
+                {/* The secondary slot used to hold "Ask for an invite", a mailto to
+                    hello@courtplay.app — which bounces, since courtplay.app has no
+                    MX record (Resend owns its DNS for sending). A way out beats a
+                    contact link that silently fails. */}
                 <div className="mt-6 flex flex-col gap-3">
                     <Link to="/signin" className={PRIMARY_BTN}>
                         Try another account
                     </Link>
-                    <a
-                        href={`mailto:hello@courtplay.app?subject=${encodeURIComponent("CourtPlay beta invite")}`}
+                    <Link
+                        to="/"
                         className="text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary"
                     >
-                        Ask for an invite
-                    </a>
+                        Back to CourtPlay
+                    </Link>
                 </div>
             </div>
         </div>
