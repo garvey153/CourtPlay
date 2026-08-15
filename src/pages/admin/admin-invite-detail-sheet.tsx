@@ -96,8 +96,10 @@ export function AdminInviteDetailSheet({
                 <div className="mt-2 flex flex-col gap-3">
                     {!joined && (
                         <>
+                            {/* "Resend": adding someone now emails them, so anyone
+                                on this list has already been sent one. */}
                             <button type="button" onClick={resend} disabled={busy !== null} className={PRIMARY_BTN}>
-                                {busy === "send" ? <Spinner size="sm" tone="on-brand" /> : "Send invite email"}
+                                {busy === "send" ? <Spinner size="sm" tone="on-brand" /> : "Resend invite email"}
                             </button>
                             <button type="button" onClick={revoke} disabled={busy !== null} className={SECONDARY_BTN}>
                                 {busy === "revoke" ? "Removing…" : "Remove from the list"}

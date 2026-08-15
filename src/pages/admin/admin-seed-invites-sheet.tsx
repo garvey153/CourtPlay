@@ -114,7 +114,7 @@ export function AdminSeedInvitesSheet({ onClose, onSeeded }: { onClose: () => vo
                 {result ? (
                     <>
                         <p className="text-sm text-secondary">
-                            <span className="font-semibold text-primary">{result.inserted}</span> added
+                            {result.inserted} added
                             {result.already_there > 0 && `, ${result.already_there} already on the list`}. The list now
                             holds {result.total_invited}.
                         </p>
