@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { Activity } from "@/pages/activity";
+import { PRIMARY_CTA, SECONDARY_CTA } from "@/components/base/buttons/cta";
 import { supabase } from "@/lib/supabase";
 
 vi.mock("@/lib/supabase", () => ({
@@ -55,6 +56,27 @@ function setup(posts: unknown[], claims: unknown[]) {
 beforeEach(() => rpc.mockReset());
 
 describe("Activity redesign", () => {
+    /**
+     * Both Activity empty states used to pass actionTone="secondary", so their
+     * calls to action were outlined while the identical ones on Feed and Profile
+     * were solid green. Pinning the shared PRIMARY_CTA constant rather than a
+     * class string means a change to the design token moves this test with it.
+     */
+    it("empty states use the same primary CTA as Feed and Profile", async () => {
+        const user = userEvent.setup();
+        setup([], []);
+        render(<MemoryRouter><Activity /></MemoryRouter>);
+
+        const answered = await screen.findByRole("link", { name: "Browse the feed" });
+        expect(answered.className).toContain(PRIMARY_CTA);
+        expect(answered.className).not.toContain(SECONDARY_CTA);
+
+        await user.click(screen.getByRole("button", { name: "Created posts" }));
+        const created = await screen.findByRole("link", { name: "Find a sub" });
+        expect(created.className).toContain(PRIMARY_CTA);
+        expect(created.className).not.toContain(SECONDARY_CTA);
+    });
+
     it("renders pill tabs and claimed-post cards", async () => {
         setup([], [myClaim]);
         render(<MemoryRouter><Activity /></MemoryRouter>);
