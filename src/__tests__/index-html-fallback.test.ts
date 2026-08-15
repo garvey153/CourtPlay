@@ -19,7 +19,7 @@ describe("index.html no-JS fallback", () => {
         const noscript = html.match(/<noscript>([\s\S]*?)<\/noscript>/);
         expect(noscript).not.toBeNull();
         expect(noscript![1]).toContain("CourtPlay helps tennis players in Westport");
-        expect(noscript![1]).toContain("How CourtPlay works");
+        expect(noscript![1]).toContain("How CourtPlay works:");
     });
 
     it("leaves #root empty, so React has nothing to replace", () => {
