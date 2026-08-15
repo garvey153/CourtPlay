@@ -42,7 +42,7 @@ export function AdminInviteCard({ invite, onOpen }: { invite: AdminInviteRow; on
             ? "Founding member"
             : invite.inviter_name
               ? `Invited by ${invite.inviter_name}`
-              : "Seeded by admin";
+              : "Sent by admin";
 
     return (
         <button
