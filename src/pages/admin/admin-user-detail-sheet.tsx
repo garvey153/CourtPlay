@@ -268,13 +268,10 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
                             </button>
                             {/* Only once deactivated. Deactivation is the reversible
                                 step, and requiring it first means nobody is deleted
-                                straight from a working account by a misclick. */}
-                            <button
-                                type="button"
-                                onClick={openDelete}
-                                disabled={loading}
-                                className="flex h-11 w-full items-center justify-center rounded-lg border border-red-900 text-sm font-semibold text-error-primary transition duration-100 ease-linear hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
+                                straight from a working account by a misclick.
+                                Same secondary styling as Make admin — the weight
+                                sits on the confirm screen, not on getting there. */}
+                            <button type="button" onClick={openDelete} disabled={loading} className={SECONDARY_BTN}>
                                 {loading ? <Spinner size="sm" tone="current" /> : "Delete from the system"}
                             </button>
                         </>
