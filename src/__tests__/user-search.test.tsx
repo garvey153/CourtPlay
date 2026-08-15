@@ -86,15 +86,17 @@ describe("user search", () => {
         expect(within(row).getByText("Following")).toBeInTheDocument();
     });
 
-    it("no results shows the empty message", async () => {
+    it("no results offers to invite them, rather than dead-ending", async () => {
         setupMock([]);
         const user = userEvent.setup();
         renderProfile();
         await screen.findByText("Jane Doe");
         await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "Zz");
         await waitFor(() => {
-            expect(screen.getByText("No players found.")).toBeInTheDocument();
+            expect(screen.getByText("Nobody by that name on CourtPlay yet.")).toBeInTheDocument();
         });
+        // The search coming up empty IS the moment someone wants to invite.
+        expect(screen.getByRole("button", { name: "Invite them to CourtPlay" })).toBeInTheDocument();
     });
 
     it("shows the following list when not searching", async () => {
