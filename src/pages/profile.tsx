@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { skillLabel } from "@/utils/skill-label";
 import { LoadingState } from "@/components/application/loading-indicator/spinner";
+import { InvitePlayerSheet } from "@/components/app/invite-player-sheet";
 import { ClosedBadge } from "@/components/app/closed-badge";
 import { EmptyState, ErrorState } from "@/components/application/loading-indicator/area-state";
 import { GroupFormSheet } from "@/components/app/group-form-sheet";
@@ -120,6 +121,7 @@ export function Profile() {
     // banner had (see welcome-banner-flash.test.ts).
     const [groupsLoaded, setGroupsLoaded] = useState(false);
     const [openGroupId, setOpenGroupId] = useState<string | null>(null);
+    const [inviteOpen, setInviteOpen] = useState(false);
     /** `{}` opens the create form; `{groupId}` opens it in edit mode. */
     const [formOpen, setFormOpen] = useState<{ groupId?: string } | null>(null);
 
@@ -454,7 +456,20 @@ export function Profile() {
                             searchLoading ? (
                                 <p className="py-3 text-sm text-tertiary">Searching…</p>
                             ) : searchResults.length === 0 ? (
-                                <p className="py-3 text-sm text-tertiary">No players found.</p>
+                                /* The dead end is the moment someone actually wants to
+                                   invite: they looked for a friend and the friend is not
+                                   here yet. Better than a destination they would have to
+                                   remember exists. */
+                                <div className="flex flex-col items-start gap-2 py-3">
+                                    <p className="text-sm text-tertiary">Nobody by that name on CourtPlay yet.</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setInviteOpen(true)}
+                                        className="text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
+                                    >
+                                        Invite them to CourtPlay
+                                    </button>
+                                </div>
                             ) : (
                                 /* Search results sit where the Following list does, so they
                                    take the same card treatment — otherwise typing changes
@@ -578,6 +593,12 @@ export function Profile() {
                         setOpenGroupId(null);
                         fetchGroups();
                     }}
+                />
+            )}
+            {inviteOpen && (
+                <InvitePlayerSheet
+                    initialEmail={searchQuery.includes("@") ? searchQuery.trim() : ""}
+                    onClose={() => setInviteOpen(false)}
                 />
             )}
         </AppLayout>

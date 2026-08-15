@@ -12,6 +12,7 @@ import { Toggle, ToggleBase } from "@/components/base/toggle/toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { SEEDED_NOTIFICATION_TYPES } from "@/lib/notifications";
+import { sendInvite } from "@/lib/invite";
 import { supabase } from "@/lib/supabase";
 import { cx } from "@/utils/cx";
 import { menuWidth } from "@/utils/menu-width";
@@ -92,6 +93,7 @@ export function Onboarding() {
     const [followedMembers, setFollowedMembers] = useState<MemberResult[]>([]);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteSending, setInviteSending] = useState(false);
+    const [inviteError, setInviteError] = useState<string | null>(null);
     const [inviteConfirmEmail, setInviteConfirmEmail] = useState<string | null>(null);
     const [suggestedFollows, setSuggestedFollows] = useState<MemberResult[]>([]);
     const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -229,9 +231,17 @@ export function Onboarding() {
         if (!user || !isValidEmail(inviteEmail)) return;
         setInviteSending(true);
         try {
-            await supabase.from("invites").insert({ inviter_id: user.id, email: inviteEmail.trim() });
-            // Attempt edge function delivery — silently skipped if not yet deployed
-            await supabase.functions.invoke("send-invite", { body: { email: inviteEmail.trim(), inviter_id: user.id } }).catch(() => {});
+            // The row and the email are both written server-side now. This used
+            // to insert the row here — which failed a foreign key, because the
+            // profile does not exist until the end of onboarding — and then
+            // invoke a function that had never been deployed, reporting success
+            // either way.
+            const result = await sendInvite(inviteEmail);
+            if (!result.ok) {
+                setInviteError(result.message);
+                return;
+            }
+            setInviteError(null);
             setInviteConfirmEmail(inviteEmail.trim());
             setStep5View("search");
             setInviteEmail("");
@@ -569,6 +579,7 @@ export function Onboarding() {
                                     size="sm"
                                     wrapperClassName={FIELD_AUTOFILL}
                                 />
+                                {inviteError && <p className="text-sm text-error-primary">{inviteError}</p>}
                                 <Button
                                     color="primary"
                                     size="md"
