@@ -1,5 +1,6 @@
 import { XClose } from "@untitledui/icons";
 import { Link, useNavigate } from "react-router";
+import { ENTRY_ROUTE, INVITE_ONLY } from "@/lib/beta";
 
 // Green section header, grey sub-label, white body paragraph, and bullet list —
 // matching the design's type hierarchy.
@@ -32,10 +33,10 @@ export function Privacy() {
                 <header className="flex items-center justify-between px-5 py-4">
                     <img src="/courtplay-logo.svg" alt="CourtPlay" className="h-6 w-auto" />
                     <Link
-                        to="/signup"
+                        to={ENTRY_ROUTE}
                         className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear hover:bg-brand-600"
                     >
-                        Sign up
+                        {INVITE_ONLY ? "Sign in" : "Sign up"}
                     </Link>
                 </header>
 

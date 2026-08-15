@@ -8,6 +8,7 @@ import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { TaggedDetailSheet } from "@/components/app/tagged-detail-sheet";
 import { RegularPlayCard } from "@/components/app/regular-play-card";
 import { AppLayout } from "@/components/layout/app-layout";
+import { ENTRY_ROUTE, INVITE_ONLY } from "@/lib/beta";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/lib/supabase";
@@ -145,10 +146,10 @@ export function PostDetail() {
                     </Link>
                 ) : (
                     <Link
-                        to="/signup"
+                        to={ENTRY_ROUTE}
                         className="text-sm font-semibold text-brand-secondary underline underline-offset-2"
                     >
-                        Sign up to find a sub &rarr;
+                        {INVITE_ONLY ? "Sign in to find a sub" : "Sign up to find a sub"} &rarr;
                     </Link>
                 )}
             </div>
@@ -245,21 +246,25 @@ export function PostDetail() {
                 </div>
 
                 {/* CTA */}
-                <Link to={`/signup?redirect=${encodeURIComponent(redirectUrl)}`}>
+                <Link to={`${ENTRY_ROUTE}?redirect=${encodeURIComponent(redirectUrl)}`}>
                     <Button color="primary" size="lg" className="mt-6 w-full">
                         Sign in to claim this spot
                     </Button>
                 </Link>
 
-                <p className="mt-4 text-center text-xs text-tertiary">
-                    Already have an account?{" "}
-                    <Link
-                        to={`/signin?redirect=${encodeURIComponent(redirectUrl)}`}
-                        className="font-semibold text-brand-secondary"
-                    >
-                        Sign in
-                    </Link>
-                </p>
+                {/* Both links point at sign-in during the beta, so the second one
+                    would just repeat the button above it. */}
+                {!INVITE_ONLY && (
+                    <p className="mt-4 text-center text-xs text-tertiary">
+                        Already have an account?{" "}
+                        <Link
+                            to={`/signin?redirect=${encodeURIComponent(redirectUrl)}`}
+                            className="font-semibold text-brand-secondary"
+                        >
+                            Sign in
+                        </Link>
+                    </p>
+                )}
             </div>
         </div>
     );
