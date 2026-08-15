@@ -60,6 +60,14 @@ export function AuthScreen() {
         if (data) {
             navigate(redirect ?? "/feed", { replace: true });
         } else {
+            // Same check as auth-callback.tsx — this is the password path, which
+            // never passes through it. Fails open: only an explicit `false` turns
+            // anyone away, because the trigger on public.users is the real gate.
+            const { data: invited, error: inviteError } = await supabase.rpc("am_i_invited");
+            if (!inviteError && invited === false) {
+                navigate("/invite-only", { replace: true, state: { email } });
+                return;
+            }
             if (redirect) sessionStorage.setItem("cs_auth_redirect", redirect);
             navigate("/onboarding", { replace: true });
         }
