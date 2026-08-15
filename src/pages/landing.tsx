@@ -22,7 +22,7 @@ const HOW_IT_WORKS = [
     },
     {
         title: "Players nearby see it",
-        body: "Everyone in Westport at the right NTRP level gets it in their feed, and by push if they want it.",
+        body: "Everyone nearby at the right NTRP level gets it in their feed, and by push if they want it.",
     },
     {
         title: "Someone claims it",
@@ -165,8 +165,8 @@ export function Landing() {
                             for tennis or what a user actually does with it. Keep this
                             concrete if it is ever rewritten. */}
                         <p className="text-sm text-secondary md:text-base lg:max-w-md lg:text-lg">
-                            CourtPlay helps tennis players in Westport fill an open spot in a game. Post a spot
-                            when someone drops out, or claim one when you want to play.
+                            CourtPlay helps tennis players fill an open spot in a game. Post a spot when someone
+                            drops out, or claim one when you want to play.
                         </p>
                         {/* Desktop only: Get started sits in the hero. The Download button is
                             mobile-only (installing to a home screen is a phone/tablet action), so it
