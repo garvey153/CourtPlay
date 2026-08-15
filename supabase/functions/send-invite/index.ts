@@ -10,7 +10,7 @@ const APP_URL = Deno.env.get("APP_URL") ?? "https://www.courtplay.app";
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 /** Bump on every deploy — see the same constant in send-notification for why. */
-const FN_BUILD = "2026-08-16a";
+const FN_BUILD = "2026-08-15b";
 
 /** Per-inviter daily cap. */
 const DAILY_LIMIT = 20;
@@ -71,14 +71,28 @@ serve(async (req) => {
         return corsJson({ error: "They're already on CourtPlay — search for them instead.", fnBuild: FN_BUILD }, 409);
     }
 
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count } = await supabase
-        .from("invites")
-        .select("id", { count: "exact", head: true })
-        .eq("inviter_id", inviter.id)
-        .gte("sent_at", since);
-    if ((count ?? 0) >= DAILY_LIMIT) {
-        return corsJson({ error: `That's ${DAILY_LIMIT} invites today — try again tomorrow.`, fnBuild: FN_BUILD }, 429);
+    // The cap exists to stop an ordinary account being used to mail arbitrary
+    // addresses from a verified sender. An admin seeding the beta is the intended
+    // bulk path — one paste can exceed twenty — so it does not apply to them.
+    const { data: callerProfile } = await supabase
+        .from("users")
+        .select("is_admin")
+        .eq("id", inviter.id)
+        .maybeSingle();
+
+    if (!callerProfile?.is_admin) {
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { count } = await supabase
+            .from("invites")
+            .select("id", { count: "exact", head: true })
+            .eq("inviter_id", inviter.id)
+            .gte("sent_at", since);
+        if ((count ?? 0) >= DAILY_LIMIT) {
+            return corsJson(
+                { error: `That's ${DAILY_LIMIT} invites today — try again tomorrow.`, fnBuild: FN_BUILD },
+                429,
+            );
+        }
     }
 
     // The inviter's display name, for the copy. Falls back to a generic line
@@ -90,14 +104,26 @@ serve(async (req) => {
         .maybeSingle();
     const inviterName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
 
-    // Idempotent: re-inviting the same address from the same account updates the
-    // timestamp rather than erroring, so "resend" is the same call as "send".
-    const { error: insertError } = await supabase
+    // ONE ROW PER ADDRESS, whoever sends it.
+    //
+    // This used to upsert on (inviter_id, email). An admin-seeded row has
+    // inviter_id null, so sending to it did not conflict — it inserted a SECOND
+    // row for the same address and the invite list showed it twice. Keying on the
+    // address instead means the first attribution wins and every later send is a
+    // resend, which is what "Send invite email" has always claimed to do.
+    const { data: existingInvite } = await supabase
         .from("invites")
-        .upsert(
-            { inviter_id: inviter.id, email: address, source: "member", sent_at: new Date().toISOString() },
-            { onConflict: "inviter_id,email" },
-        );
+        .select("id")
+        .ilike("email", address)
+        .limit(1);
+
+    const row = existingInvite?.[0];
+    const { error: insertError } = row
+        ? await supabase.from("invites").update({ sent_at: new Date().toISOString() }).eq("id", row.id)
+        : await supabase
+              .from("invites")
+              .insert({ inviter_id: inviter.id, email: address, source: "member", sent_at: new Date().toISOString() });
+
     if (insertError) {
         console.error("send-invite: could not record the invite", insertError);
         return corsJson({ error: "Could not record that invite.", fnBuild: FN_BUILD }, 500);
