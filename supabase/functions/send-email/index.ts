@@ -4,6 +4,7 @@ import { bearerToken, isServiceRoleToken } from "../_shared/service-auth.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "CourtPlay <noreply@courtplay.app>";
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 serve(async (req) => {
     const preflight = handlePreflight(req);
@@ -44,8 +45,47 @@ serve(async (req) => {
 
         const data = await res.json();
 
+        // Record what Resend said. "Rejected" and "accepted, then lost to a spam
+        // folder" are indistinguishable from outside and need different fixes, so
+        // the answer has to be written down somewhere readable.
+        await logEmail(to, subject, res.ok, res.status, res.ok ? (data?.id ?? null) : JSON.stringify(data));
+
         return corsJson(data, res.ok ? 200 : 500);
     } catch (e) {
+        await logEmail(to, subject, false, null, String(e));
         return corsJson({ error: String(e) }, 500);
     }
 });
+
+/**
+ * Best effort by design: a logging failure must never turn a delivered email
+ * into a reported one, so everything here is swallowed.
+ */
+async function logEmail(
+    to: string,
+    subject: string,
+    ok: boolean,
+    status: number | null,
+    detail: string | null,
+): Promise<void> {
+    try {
+        await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/email_log`, {
+            method: "POST",
+            headers: {
+                apikey: SERVICE_ROLE_KEY,
+                Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+                "Content-Type": "application/json",
+                Prefer: "return=minimal",
+            },
+            body: JSON.stringify({
+                to_email: String(to).slice(0, 320),
+                subject: subject ? String(subject).slice(0, 300) : null,
+                ok,
+                status,
+                detail: detail ? detail.slice(0, 2000) : null,
+            }),
+        });
+    } catch {
+        // Diagnostics are not worth failing a send over.
+    }
+}
