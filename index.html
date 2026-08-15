@@ -64,50 +64,59 @@
 
     <body class="size-full bg-primary antialiased">
         <!--
-            The app is client-rendered, so anything that fetches this page without
-            running JavaScript sees an empty body. This fallback lives INSIDE #root,
-            so React's createRoot().render() replaces it the moment the bundle runs:
-            users never see it, and a fetcher that executes no JavaScript still gets
-            the app's name and a plain description of what it does.
+            What a browser with no JavaScript gets. The app is client-rendered, so
+            without this the body is empty to anything that does not run scripts.
 
-            Styled to match the dark shell so a slow connection shows something
-            on-brand rather than a flash of white. Keep it accurate, and keep the
-            product name as literal text.
+            In <noscript> deliberately. It used to render inside #root and be
+            replaced when React mounted, which meant every page load — signed in
+            or not, on every route, since they all serve this file — painted a
+            paragraph about CourtPlay for a moment before the app appeared.
+            <noscript> is not rendered at all when scripting is on, so that flash
+            is gone, and the content is still in the HTML for a reader that needs
+            it.
+
+            The head carries the same information for fetchers that read metadata
+            rather than markup: title, description, og and a WebApplication
+            JSON-LD block. Google renders JavaScript and sees the real page.
+
+            Keep it accurate, and keep the product name as literal text.
         -->
-        <div id="root">
-            <main style="max-width: 34rem; margin: 0 auto; padding: 4rem 1.25rem; color: #a2b5aa; font-family: Inter, system-ui, sans-serif; line-height: 1.5">
-                <h1 style="color: #fff; font-size: 1.5rem; font-weight: 600; margin: 0 0 0.75rem">CourtPlay</h1>
-                <p style="margin: 0 0 0.75rem">
-                    CourtPlay helps tennis players in Westport, Connecticut fill an open spot in a
-                    game. When someone drops out, you post the spot with the date, court, time
-                    and skill level, and nearby players can claim it. If you need a game, you can
-                    browse open spots and claim one.
-                </p>
-                <h2 style="color: #fff; font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.5rem">How CourtPlay works</h2>
-                <ol style="margin: 0 0 0.75rem; padding-left: 1.25rem">
-                    <li style="margin-bottom: 0.5rem">
-                        <strong style="color: #fff">Post an open spot.</strong> Someone drops out of your
-                        game. Post the date, court, time and skill level in about thirty seconds.
-                    </li>
-                    <li style="margin-bottom: 0.5rem">
-                        <strong style="color: #fff">Players nearby see it.</strong> Everyone in Westport at
-                        the right NTRP level gets it in their feed, and by push if they want it.
-                    </li>
-                    <li>
-                        <strong style="color: #fff">Someone claims it.</strong> You approve the claim, swap
-                        details, and play. No group texts, no chasing people.
-                    </li>
-                </ol>
-                <p style="margin: 0 0 0.75rem">
-                    Sign in with Google to post a spot or claim one. CourtPlay uses your Google
-                    account for sign-in only.
-                </p>
-                <p style="margin: 0">
-                    <a href="/privacy" style="color: #1ab363">Privacy policy</a> ·
-                    <a href="/terms" style="color: #1ab363">Terms of service</a>
-                </p>
-            </main>
-        </div>
+        <noscript>
+                <main style="max-width: 34rem; margin: 0 auto; padding: 4rem 1.25rem; color: #a2b5aa; font-family: Inter, system-ui, sans-serif; line-height: 1.5">
+                    <h1 style="color: #fff; font-size: 1.5rem; font-weight: 600; margin: 0 0 0.75rem">CourtPlay</h1>
+                    <p style="margin: 0 0 0.75rem">
+                        CourtPlay helps tennis players in Westport, Connecticut fill an open spot in a
+                        game. When someone drops out, you post the spot with the date, court, time
+                        and skill level, and nearby players can claim it. If you need a game, you can
+                        browse open spots and claim one.
+                    </p>
+                    <h2 style="color: #fff; font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.5rem">How CourtPlay works</h2>
+                    <ol style="margin: 0 0 0.75rem; padding-left: 1.25rem">
+                        <li style="margin-bottom: 0.5rem">
+                            <strong style="color: #fff">Post an open spot.</strong> Someone drops out of your
+                            game. Post the date, court, time and skill level in about thirty seconds.
+                        </li>
+                        <li style="margin-bottom: 0.5rem">
+                            <strong style="color: #fff">Players nearby see it.</strong> Everyone in Westport at
+                            the right NTRP level gets it in their feed, and by push if they want it.
+                        </li>
+                        <li>
+                            <strong style="color: #fff">Someone claims it.</strong> You approve the claim, swap
+                            details, and play. No group texts, no chasing people.
+                        </li>
+                    </ol>
+                    <p style="margin: 0 0 0.75rem">
+                        Sign in with Google to post a spot or claim one. CourtPlay uses your Google
+                        account for sign-in only.
+                    </p>
+                    <p style="margin: 0">
+                        <a href="/privacy" style="color: #1ab363">Privacy policy</a> ·
+                        <a href="/terms" style="color: #1ab363">Terms of service</a>
+                    </p>
+                </main>
+        </noscript>
+
+        <div id="root"></div>
         <script type="module" src="/src/main.tsx"></script>
         <script>
             // CourtPlay ships dark-only. Apply unconditionally to avoid FOUC.
