@@ -130,7 +130,10 @@ export function AdminSeedInvitesSheet({ onClose, onSeeded }: { onClose: () => vo
                                 disabled={busy || emails.length === 0}
                                 className={PRIMARY_BTN}
                             >
-                                {busy ? <Spinner size="sm" tone="on-brand" /> : `Add ${emails.length || ""}`.trim()}
+                                {/* Always "Add" — the count lives on its own line
+                                    above, and a label that changes width as you
+                                    type reads as the button doing something. */}
+                                {busy ? <Spinner size="sm" tone="on-brand" /> : "Add"}
                             </button>
                             <button type="button" onClick={onClose} disabled={busy} className={SECONDARY_BTN}>
                                 Cancel
