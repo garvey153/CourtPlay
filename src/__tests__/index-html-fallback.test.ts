@@ -18,7 +18,7 @@ describe("index.html no-JS fallback", () => {
     it("lives in <noscript>, so a scripted browser never paints it", () => {
         const noscript = html.match(/<noscript>([\s\S]*?)<\/noscript>/);
         expect(noscript).not.toBeNull();
-        expect(noscript![1]).toContain("CourtPlay helps tennis players in Westport");
+        expect(noscript![1]).toContain("CourtPlay helps tennis players fill an open spot");
         expect(noscript![1]).toContain("How CourtPlay works:");
     });
 
@@ -28,7 +28,7 @@ describe("index.html no-JS fallback", () => {
 
     it("still names the app and its purpose in the head, for metadata readers", () => {
         expect(html).toMatch(/<title>[^<]*CourtPlay/);
-        expect(html).toMatch(/name="description" content="CourtPlay helps tennis players/);
+        expect(html).toMatch(/name="description" content="CourtPlay helps tennis players fill an open spot/);
         expect(html).toMatch(/property="og:site_name" content="CourtPlay"/);
         expect(html).toContain('"@type": "WebApplication"');
     });
