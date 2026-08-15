@@ -11,6 +11,7 @@ import { Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeAuthError } from "@/utils/load-error";
 import { FIELD } from "@/components/base/input/field-styles";
 import { GOOGLE_FULL as GOOGLE_BTN, PRIMARY_H9_FULL as PRIMARY_BTN } from "@/components/base/buttons/button-styles";
+import { INVITE_ONLY, forgetInviteLink, rememberInviteLink, rememberedInviteEmail } from "@/lib/beta";
 
 type Mode = "signup" | "signin";
 
@@ -31,10 +32,20 @@ export function AuthScreen() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    const [mode, setMode] = useState<Mode>(pathname.includes("signin") ? "signin" : "signup");
-    const isSignup = mode === "signup";
+    // The invite email links to /signup?email=<address>. During the closed beta
+    // that parameter is what separates an invited player from someone who typed
+    // the URL, and it decides whether sign-up is offered at all.
+    const inviteParam = searchParams.get("email");
+    const cameFromInvite = Boolean(inviteParam) || Boolean(rememberedInviteEmail());
+    const signupOffered = !INVITE_ONLY || cameFromInvite;
 
-    const [email, setEmail] = useState("");
+    const [mode, setMode] = useState<Mode>(pathname.includes("signin") ? "signin" : "signup");
+    // Derived rather than stored, so there is no state in which the sign-up form
+    // renders without an invite — including a stale `mode` left over from before
+    // the flag was read.
+    const isSignup = mode === "signup" && signupOffered;
+
+    const [email, setEmail] = useState(inviteParam ?? "");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [remember, setRemember] = useState(false);
@@ -48,6 +59,19 @@ export function AuthScreen() {
         if (redirect) sessionStorage.setItem("cs_auth_redirect", redirect);
     }, [searchParams]);
 
+    // Remember the invite marker before anything can navigate away from it.
+    useEffect(() => {
+        rememberInviteLink(inviteParam);
+    }, [inviteParam]);
+
+    // /signup without an invite is sign-in, and the URL should say so rather than
+    // leaving a create-account address in the bar. Declared AFTER the redirect
+    // effect above so the redirect param is banked before the search string goes.
+    useEffect(() => {
+        if (signupOffered || !pathname.includes("signup")) return;
+        navigate("/signin", { replace: true });
+    }, [signupOffered, pathname, navigate]);
+
     const switchMode = (next: Mode) => {
         setMode(next);
         setError(null);
@@ -58,6 +82,9 @@ export function AuthScreen() {
         const redirect = sessionStorage.getItem("cs_auth_redirect");
         sessionStorage.removeItem("cs_auth_redirect");
         if (data) {
+            // They have a profile, so the invite has done its job — stop treating
+            // this device as one that came from an invite link.
+            forgetInviteLink();
             navigate(redirect ?? "/feed", { replace: true });
         } else {
             // Same check as auth-callback.tsx — this is the password path, which
@@ -186,23 +213,27 @@ export function AuthScreen() {
                 </div>
 
                 {/* Sign up | Sign in toggle — 36px tall (design), tabs flush; the
-                    container clips the active pill's outer corners. */}
-                <div className="flex w-full gap-0.5 overflow-hidden rounded-lg bg-secondary ring-1 ring-secondary ring-inset">
-                    {(["signup", "signin"] as const).map((m) => (
-                        <button
-                            key={m}
-                            type="button"
-                            onClick={() => switchMode(m)}
-                            aria-pressed={mode === m}
-                            className={cx(
-                                "flex h-9 flex-1 items-center justify-center text-sm font-semibold transition duration-100 ease-linear",
-                                mode === m ? "bg-brand-500 text-neutral-950" : "text-tertiary hover:text-secondary",
-                            )}
-                        >
-                            {m === "signup" ? "Sign up" : "Sign in"}
-                        </button>
-                    ))}
-                </div>
+                    container clips the active pill's outer corners. Hidden during
+                    the closed beta unless they came from an invite: offering a tab
+                    that leads to a refusal is worse than not offering it. */}
+                {signupOffered && (
+                    <div className="flex w-full gap-0.5 overflow-hidden rounded-lg bg-secondary ring-1 ring-secondary ring-inset">
+                        {(["signup", "signin"] as const).map((m) => (
+                            <button
+                                key={m}
+                                type="button"
+                                onClick={() => switchMode(m)}
+                                aria-pressed={mode === m}
+                                className={cx(
+                                    "flex h-9 flex-1 items-center justify-center text-sm font-semibold transition duration-100 ease-linear",
+                                    mode === m ? "bg-brand-500 text-neutral-950" : "text-tertiary hover:text-secondary",
+                                )}
+                            >
+                                {m === "signup" ? "Sign up" : "Sign in"}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6">
@@ -271,17 +302,26 @@ export function AuthScreen() {
 
                 {/* Footer — switches state in place. In sign-in, reserve the height of
                     the sign-up's extra Confirm field (64px field − 20px row = 44px) so
-                    both states center to the same headline/toggle position. */}
-                <p className={cx("flex items-baseline justify-center gap-1 text-sm text-tertiary", !isSignup && "mb-11")}>
-                    {isSignup ? "Already have an account?" : "Don't have an account?"}
-                    <button
-                        type="button"
-                        onClick={() => switchMode(isSignup ? "signin" : "signup")}
-                        className="font-semibold text-brand-500 hover:text-brand-600"
+                    both states center to the same headline/toggle position. Dropped
+                    with the toggle during the beta; with no sign-up state to reach,
+                    there is nothing to stay aligned with. */}
+                {signupOffered && (
+                    <p
+                        className={cx(
+                            "flex items-baseline justify-center gap-1 text-sm text-tertiary",
+                            !isSignup && "mb-11",
+                        )}
                     >
-                        {isSignup ? "Sign in" : "Sign up"}
-                    </button>
-                </p>
+                        {isSignup ? "Already have an account?" : "Don't have an account?"}
+                        <button
+                            type="button"
+                            onClick={() => switchMode(isSignup ? "signin" : "signup")}
+                            className="font-semibold text-brand-500 hover:text-brand-600"
+                        >
+                            {isSignup ? "Sign in" : "Sign up"}
+                        </button>
+                    </p>
+                )}
             </div>
         </div>
     );
