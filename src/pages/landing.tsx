@@ -203,17 +203,25 @@ export function Landing() {
                     </h2>
                     <ol className="mt-5 flex flex-col gap-5 md:mt-6 lg:mt-8 lg:grid lg:grid-cols-3 lg:gap-6">
                         {HOW_IT_WORKS.map((step, i) => (
-                            <li key={step.title} className="flex gap-3.5 lg:flex-col lg:gap-3">
-                                <span
-                                    aria-hidden="true"
-                                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-800 text-sm font-semibold text-brand-500"
-                                >
-                                    {i + 1}
-                                </span>
-                                <div className="flex flex-col gap-1">
+                            <li key={step.title} className="flex flex-col gap-1">
+                                {/* The number shares a row with the title so the two are
+                                    centred on each other at any size. Aligning a 28px
+                                    circle against a 20px line by hand leaves the digit
+                                    sitting low, and by a different amount once the title
+                                    steps up to 16px at md. */}
+                                <div className="flex items-center gap-3.5 lg:flex-col lg:items-start lg:gap-3">
+                                    <span
+                                        aria-hidden="true"
+                                        className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-800 text-sm font-semibold text-brand-500 md:text-base"
+                                    >
+                                        {i + 1}
+                                    </span>
                                     <h3 className="text-sm font-semibold text-primary md:text-base">{step.title}</h3>
-                                    <p className="text-sm text-secondary md:text-base">{step.body}</p>
                                 </div>
+                                {/* Indented past the number (28px + the 14px gap) so the
+                                    body lines up under the title. On lg the number sits
+                                    above rather than beside, so the indent goes away. */}
+                                <p className="pl-[42px] text-sm text-secondary md:text-base lg:pl-0">{step.body}</p>
                             </li>
                         ))}
                     </ol>
