@@ -196,8 +196,10 @@ export function Landing() {
                     these steps into an image would put the explanation somewhere
                     neither a reviewer nor a screen reader can read. */}
                 <section className="mt-10 px-5 md:mt-14 md:px-8 lg:mt-16">
-                    <h2 className="text-display-xs font-semibold text-balance text-primary md:text-display-sm lg:text-display-md">
-                        How CourtPlay works
+                    {/* Same scale as the CTA heading below, so the page's two section
+                        headings read as a pair. */}
+                    <h2 className="text-display-sm font-semibold text-balance text-primary md:text-display-md lg:text-display-lg">
+                        How CourtPlay works:
                     </h2>
                     <ol className="mt-5 flex flex-col gap-5 md:mt-6 lg:mt-8 lg:grid lg:grid-cols-3 lg:gap-6">
                         {HOW_IT_WORKS.map((step, i) => (
