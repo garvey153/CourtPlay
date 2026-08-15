@@ -1,4 +1,8 @@
 import { cx } from "@/utils/cx";
+import { KIND_CONFIG } from "@/components/app/sub-card";
+
+/** The shared neutral badge pair — the same one Claimed uses on posts. */
+const PENDING = KIND_CONFIG.pending;
 
 export interface AdminInviteRow {
     id: string;
@@ -22,6 +26,14 @@ function when(value: string | null): string {
 /**
  * One invite. The left bar carries the state, matching the other admin cards:
  * green for someone who joined, neutral for one still outstanding.
+ *
+ * Both states are badged. An outstanding invite used to show no badge at all,
+ * which made "waiting" and "joined" hard to tell apart at a glance — and since
+ * the detail sheet only offers Remove while an invite is outstanding, a row that
+ * read as joined looked like one that could not be revoked.
+ *
+ * Pending borrows KIND_CONFIG.pending's colours (the same neutral pair as
+ * Claimed) so it matches the badge language used on posts.
  */
 export function AdminInviteCard({ invite, onOpen }: { invite: AdminInviteRow; onOpen: () => void }) {
     const joined = !!invite.accepted_at;
@@ -42,11 +54,14 @@ export function AdminInviteCard({ invite, onOpen }: { invite: AdminInviteRow; on
             <div className="min-w-0 flex-1 p-4">
                 <div className="flex items-start justify-between gap-2">
                     <p className="truncate text-sm font-semibold text-primary">{invite.email}</p>
-                    {joined ? (
-                        <span className="shrink-0 rounded-lg bg-brand-800 px-2 py-1 text-xs font-semibold text-brand-500">
-                            Joined
-                        </span>
-                    ) : null}
+                    <span
+                        className={cx(
+                            "shrink-0 rounded-lg px-2 py-1 text-xs font-semibold",
+                            joined ? "bg-brand-800 text-brand-500" : `${PENDING.badgeBg} ${PENDING.badgeFg}`,
+                        )}
+                    >
+                        {joined ? "Joined" : "Pending"}
+                    </span>
                 </div>
                 <p className="mt-0.5 truncate text-sm text-secondary">
                     {[origin, joined ? `joined ${when(invite.accepted_at)}` : `sent ${when(invite.sent_at)}`]
