@@ -99,13 +99,14 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
                                     against the first line (Figma puts it at y=6 in a
                                     40px row). */}
                                 <span className="flex shrink-0 items-center self-stretch" aria-hidden="true">
-                                    <span className="flex size-7 items-center justify-center rounded-full bg-neutral-400">
-                                        {/* A knockout: the glyph is the sheet's own
-                                            background punched out of the disc, which is
-                                            why this references a background token rather
-                                            than a foreground one. strokeWidth 1 on every
-                                            icon — the Untitled UI defaults differ per
-                                            glyph, which is what made some look heavier. */}
+                                    <span className="flex size-7 items-center justify-center rounded-full bg-white">
+                                        {/* A white disc with the glyph knocked out in
+                                            bg/secondary — the sheet's own background,
+                                            which is why this references a background
+                                            token rather than a foreground one.
+                                            strokeWidth 1 on every icon: the Untitled UI
+                                            defaults differ per glyph, which is what made
+                                            some look heavier than others. */}
                                         <Icon
                                             className="size-[18.67px] text-[var(--color-bg-secondary)]"
                                             strokeWidth={1}
