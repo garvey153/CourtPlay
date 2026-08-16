@@ -205,10 +205,18 @@ export function AuthScreen() {
                     <h1 className="text-display-sm font-semibold text-primary">
                         {isSignup ? "Create your account" : "Ready to play?"}
                     </h1>
+                    {/* The locked sign-in state — closed beta, no invite link — says
+                        so. Someone arriving from the landing page otherwise has no
+                        way to know why there is no way to create an account, and the
+                        address matters: the gate keys on the invited email, so
+                        signing in with a different one is the failure that sends
+                        people to /invite-only. Naming it here heads that off. */}
                     <p className="text-sm text-balance text-secondary">
                         {isSignup
                             ? "Create an account to find subs, fill open courts, and never sit one out."
-                            : "Sign in to find a last-minute sub, snag an open spot, and never miss game day."}
+                            : signupOffered
+                              ? "Sign in to find a last-minute sub, snag an open spot, and never miss game day."
+                              : "CourtPlay is invite only while we're in beta. Sign in with the email address your invite was sent to."}
                     </p>
                 </div>
 
