@@ -184,8 +184,13 @@ export function Feed() {
     // must not cause the channel to be re-opened when they change.
     const myPostIds = useRef<Set<string>>(new Set());
     const myClaimPostIds = useRef<Set<string>>(new Set());
+    // Also a ref: openDetail reads the list at tap time, and taking it as a
+    // dependency instead would change that callback's identity on every refresh,
+    // re-rendering every memoised card in the feed.
+    const myPostsRef = useRef<MyPost[]>([]);
     useEffect(() => {
         myPostIds.current = new Set(myPosts.map((p) => p.id));
+        myPostsRef.current = myPosts;
     }, [myPosts]);
     useEffect(() => {
         myClaimPostIds.current = new Set(myClaims.map((c) => c.post_id));
@@ -366,12 +371,44 @@ export function Feed() {
                 setDetailPost(post);
                 return;
             }
-            const { data } = await supabase.rpc("get_my_posts_with_claims");
-            const mine = ((data as MyPost[]) ?? []).find((p) => p.id === post.id);
-            if (mine) {
+            // Your own post. This used to await get_my_posts_with_claims before
+            // opening anything, putting a full network round trip in front of every
+            // tap — and the feed has already loaded exactly that data (see the
+            // fetch alongside the feed itself), so the wait bought nothing.
+            //
+            // Open from what we have, then refresh behind the open sheet so a claim
+            // that landed since the feed loaded still appears.
+            const openMine = (mine: MyPost) => {
                 if (mine.post_type === "regular_game") setRegularSheet(mine);
                 else setCreatedSheet(mine);
-            } else setDetailPost(post);
+            };
+
+            const cached = myPostsRef.current.find((p) => p.id === post.id);
+            if (cached) openMine(cached);
+
+            const { data } = await supabase.rpc("get_my_posts_with_claims");
+            const list = (data as MyPost[]) ?? [];
+            setMyPosts(list);
+            const fresh = list.find((p) => p.id === post.id);
+
+            if (!fresh) {
+                // Not one of yours after all (deleted, or the feed row was stale).
+                if (!cached) setDetailPost(post);
+                return;
+            }
+            if (!cached) {
+                openMine(fresh);
+                return;
+            }
+
+            // Functional updates, so a sheet the user has already closed — or
+            // swapped for another post — is not yanked back open by a response
+            // that arrived late.
+            if (fresh.post_type === "regular_game") {
+                setRegularSheet((cur) => (cur?.id === fresh.id ? fresh : cur));
+            } else {
+                setCreatedSheet((cur) => (cur?.id === fresh.id ? fresh : cur));
+            }
         },
         [user, myClaims],
     );
