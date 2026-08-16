@@ -183,7 +183,7 @@ describe("PostNew — sub need form (rendering)", () => {
         // to name it: exactly one, and it's that one.
         const switches = document.querySelectorAll('input[role="switch"]');
         expect(switches).toHaveLength(1);
-        expect(screen.getByLabelText("Make this post private")).toBeInTheDocument();
+        expect(screen.getByLabelText("Make post private")).toBeInTheDocument();
     });
 });
 
@@ -191,10 +191,10 @@ describe("PostNew — post visibility", () => {
     it("defaults to off, with the public claim rule as the hint", async () => {
         renderPostNew();
         await waitFor(() => expect(screen.getByText("Post visibility")).toBeInTheDocument());
-        // The label names the toggle, not the state, so it reads "Private" in both
+        // The label names the action, not the state, so it reads the same in both
         // positions; the hint is what says which one you are in.
-        expect(screen.getByText("Private")).toBeInTheDocument();
-        expect(screen.getByLabelText("Make this post private")).not.toBeChecked();
+        expect(screen.getByText("Make post private")).toBeInTheDocument();
+        expect(screen.getByLabelText("Make post private")).not.toBeChecked();
         expect(screen.getByText("Anyone at the required level or above can claim.")).toBeInTheDocument();
         // The recipients picker is private-only.
         expect(screen.queryByText("Private post recipients")).not.toBeInTheDocument();
@@ -205,12 +205,13 @@ describe("PostNew — post visibility", () => {
         renderPostNew();
         await waitFor(() => expect(screen.getByText("Post visibility")).toBeInTheDocument());
 
-        await user.click(screen.getByLabelText("Make this post private"));
+        await user.click(screen.getByLabelText("Make post private"));
 
-        expect(screen.getByLabelText("Make this post private")).toBeChecked();
-        expect(screen.getByText("Private")).toBeInTheDocument();
-        // "Public" no longer appears in either position.
+        expect(screen.getByLabelText("Make post private")).toBeChecked();
+        expect(screen.getByText("Make post private")).toBeInTheDocument();
+        // Neither state word appears beside the toggle any more.
         expect(screen.queryByText("Public")).not.toBeInTheDocument();
+        expect(screen.queryByText("Private")).not.toBeInTheDocument();
         expect(screen.getByText("Only selected groups or players can claim.")).toBeInTheDocument();
         expect(screen.getByText("Private post recipients")).toBeInTheDocument();
     });
@@ -223,7 +224,7 @@ describe("PostNew — post visibility", () => {
         await waitFor(() => expect(screen.getByText("Post visibility")).toBeInTheDocument());
         expect(screen.getByText("Tag your group (optional)")).toBeInTheDocument();
 
-        await user.click(screen.getByLabelText("Make this post private"));
+        await user.click(screen.getByLabelText("Make post private"));
         expect(screen.getByText("Tag your group (optional)")).toBeInTheDocument();
     });
 
@@ -236,8 +237,8 @@ describe("PostNew — post visibility", () => {
         await user.click(await screen.findByRole("option", { name: "The Racquettes" }));
         await waitFor(() => expect(screen.getAllByText("The Racquettes").length).toBeGreaterThan(0));
 
-        await user.click(screen.getByLabelText("Make this post private"));
-        await user.click(screen.getByLabelText("Make this post private"));
+        await user.click(screen.getByLabelText("Make post private"));
+        await user.click(screen.getByLabelText("Make post private"));
 
         // Still selected — the trigger shows the group, not the placeholder.
         expect(screen.getByText("Tag your group (optional)")).toBeInTheDocument();
