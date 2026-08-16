@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { Mail01 } from "@untitledui/icons";
 import { supabase } from "@/lib/supabase";
 import { PRIMARY_H9_FULL as PRIMARY_BTN } from "@/components/base/buttons/button-styles";
 
 /**
  * Where someone lands when they signed in successfully but their address is not
- * on the invite list.
+ * on the invite list (Figma 662:4309).
  *
  * It names the address that was checked. The gate is keyed on email, so the one
  * genuinely confusing failure is being invited at one address and signing in
@@ -41,31 +40,32 @@ export function InviteOnly() {
     }, [emailFromState]);
 
     return (
-        <div className="flex min-h-dvh flex-col items-center justify-center bg-primary px-9 py-12">
-            <div className="w-full max-w-sm text-center">
-                <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-brand-secondary">
-                    <Mail01 className="size-6 text-brand-primary" />
+        <div className="flex min-h-dvh flex-col items-center justify-center bg-primary px-8">
+            {/* Left-aligned inside a centred column: the design sets the text ragged
+                right at 402px, and capping the width keeps the 36px headline from
+                running the full width of a desktop window. */}
+            <div className="flex w-full max-w-sm flex-col gap-3">
+                <h1 className="text-display-md font-semibold text-primary">CourtPlay is invite only, for now.</h1>
+
+                <div className="text-sm text-secondary">
+                    <p>
+                        CourtPlay is in a closed beta with a small group of players. We couldn&apos;t find an invite for
+                        {email ? "" : " that account."}
+                    </p>
+                    {email && <p className="text-primary">{email}</p>}
                 </div>
-                <h1 className="text-display-sm font-semibold text-primary">Invite only, for now</h1>
-                <p className="mt-3 text-sm text-secondary">
-                    CourtPlay is in a closed beta with a small group of players. We couldn't find an invite for{" "}
-                    {email ? <span className="font-semibold text-primary">{email}</span> : "that account"}.
-                </p>
-                <p className="mt-3 text-sm text-secondary">
+
+                <p className="text-sm text-secondary">
                     Invited at a different address? Sign in with that one instead.
                 </p>
 
-                {/* The secondary slot used to hold "Ask for an invite", a mailto to
-                    hello@courtplay.app — which bounces, since courtplay.app has no
-                    MX record (Resend owns its DNS for sending). A way out beats a
-                    contact link that silently fails. */}
-                <div className="mt-6 flex flex-col gap-3">
+                <div className="flex w-full flex-col gap-4 pt-4">
                     <Link to="/signin" className={PRIMARY_BTN}>
                         Try another account
                     </Link>
                     <Link
                         to="/"
-                        className="text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary"
+                        className="text-center text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary"
                     >
                         Back to CourtPlay
                     </Link>
