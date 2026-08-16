@@ -925,17 +925,22 @@ export function PostNew() {
                             <div className="flex items-center gap-2">
                                 <Toggle
                                     size="md"
-                                    aria-label="Make this post private"
+                                    aria-label="Make post private"
                                     isSelected={isPrivate}
                                     onChange={setIsPrivate}
                                 />
-                                {/* Names the toggle rather than the current state, so it
-                                    reads the same way round as the control ("make this
-                                    post private"). Colour still carries the state —
-                                    primary when on, tertiary when off — and the line
-                                    below spells out what each state means. */}
+                                {/* Names the action, not the current state, so it reads
+                                    the same way round as the switch it sits beside.
+                                    Colour still carries the state — primary when on,
+                                    tertiary when off — and the line below spells out
+                                    what each position means.
+
+                                    Kept identical to the toggle's aria-label: where a
+                                    control has visible text, the accessible name has to
+                                    contain it (WCAG 2.5.3), or voice control users
+                                    cannot say what they can see. */}
                                 <span className={cx("text-sm", isPrivate ? "text-primary" : "text-tertiary")}>
-                                    Private
+                                    Make post private
                                 </span>
                             </div>
                             <p className="text-xs text-tertiary">
