@@ -570,6 +570,9 @@ export function Profile() {
             {openGroupId && (
                 <GroupDetailSheet
                     groupId={openGroupId}
+                    // Paint from the row the list already loaded rather than
+                    // spinning through another get_group round trip.
+                    initialGroup={groups.find((g) => g.id === openGroupId)}
                     onClose={() => setOpenGroupId(null)}
                     onChanged={fetchGroups}
                     onEdit={(g) => {
