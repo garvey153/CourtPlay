@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
@@ -24,6 +24,22 @@ import { isIos } from "@/utils/is-ios";
  */
 export function InstallGuide({ onClose }: { onClose: () => void }) {
     const ios = isIos();
+
+    /**
+     * Drives the slide-up from state rather than from motion's `initial`.
+     *
+     * The feed renders the iOS prompt inside <AnimatePresence initial={false}>
+     * (notification-stack.tsx), and that suppresses the enter animation of every
+     * nested motion component through React context. Portalling to document.body
+     * escapes the DOM tree but NOT the React tree, so this sheet inherited it and
+     * appeared already in place — while every other bottom sheet, which is not
+     * inside that subtree, slid up normally.
+     *
+     * A state flip cannot be suppressed that way: the first paint is at 100%, the
+     * effect moves it to 0, and motion animates the change.
+     */
+    const [entered, setEntered] = useState(false);
+    useEffect(() => setEntered(true), []);
 
     // Dismiss on Escape and lock body scroll while the guide is open.
     useEffect(() => {
@@ -71,7 +87,7 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
                 // sheet sits outside the layout that would otherwise apply it.
                 className="relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary pt-[18px] pb-[calc(2rem_+_var(--safe-bottom))] shadow-xl sm:rounded-2xl"
                 initial={{ y: "100%" }}
-                animate={{ y: 0 }}
+                animate={{ y: entered ? 0 : "100%" }}
                 transition={{ type: "spring", damping: 38, stiffness: 420 }}
             >
                 <button

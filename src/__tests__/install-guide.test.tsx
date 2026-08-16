@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { AnimatePresence, motion } from "motion/react";
 import { InstallGuide } from "@/components/app/install-guide";
 
 vi.mock("@/utils/is-ios", () => ({ isIos: () => true }));
@@ -52,6 +53,35 @@ describe("InstallGuide", () => {
 
     /** Figma 659:2070 — a bottom sheet, not the centred card it used to be. */
     describe("bottom sheet (659:2070)", () => {
+        /**
+         * The feed renders the iOS prompt inside <AnimatePresence initial={false}>,
+         * which suppresses the enter animation of every nested motion component
+         * through React context. Portalling to document.body escapes the DOM tree
+         * but NOT the React tree, so this sheet inherited the suppression and
+         * appeared already in place — while every other bottom sheet, being outside
+         * that subtree, slid up normally.
+         *
+         * Driving the entrance from state cannot be suppressed that way. This
+         * asserts the sheet still leaves its starting offset in that exact shape.
+         */
+        it("still slides up inside AnimatePresence initial={false}", async () => {
+            render(
+                <AnimatePresence initial={false}>
+                    <motion.div key="card" animate={{ opacity: 1 }}>
+                        <InstallGuide onClose={vi.fn()} />
+                    </motion.div>
+                </AnimatePresence>,
+            );
+            const dialog = screen.getByRole("dialog", { name: "Install CourtPlay" });
+            const sheet = dialog.querySelector(".rounded-t-2xl") as HTMLElement;
+
+            // The state flip lands after mount; the sheet must end up at rest.
+            await waitFor(() => {
+                const t = sheet.style.transform ?? "";
+                expect(t === "" || t.includes("translateY(0") || !t.includes("100%")).toBe(true);
+            });
+        });
+
         /**
          * Measured off Figma 659:4115: a 40px row, a 28px disc centred in it, an
          * 18.67px glyph, 12px gap. The disc is WHITE and the glyph is knocked out
