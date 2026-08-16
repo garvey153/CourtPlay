@@ -1,5 +1,5 @@
 import { ClosedBadge } from "@/components/app/closed-badge";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -10,10 +10,19 @@ import { supabase } from "@/lib/supabase";
 import { sendNotification } from "@/lib/notifications";
 import { describeActionError } from "@/utils/load-error";
 import { skillLabel } from "@/utils/skill-label";
-import type { GroupDetail } from "@/types/groups";
+import type { GroupDetail, GroupSummary } from "@/types/groups";
 
 interface GroupDetailSheetProps {
     groupId: string;
+    /**
+     * The row Profile already has from get_my_groups, used to paint the sheet
+     * immediately instead of showing a spinner over a network round trip.
+     *
+     * It carries everything the sheet displays except each member's skill level,
+     * which fills in when get_group lands. It does NOT carry created_by, which is
+     * why the authoritative copy is tracked separately below.
+     */
+    initialGroup?: GroupSummary;
     onClose: () => void;
     /** Refetch the caller's groups after anything that changes membership. */
     onChanged: () => void;
@@ -52,27 +61,63 @@ interface GroupDetailSheetProps {
  * would strand the rest with a group nobody can administer. Editing is
  * creator-only and disappears once closed — a finished group is not editable.
  */
-export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupDetailSheetProps) {
-    const [group, setGroup] = useState<GroupDetail | null>(null);
-    const [loading, setLoading] = useState(true);
+export function GroupDetailSheet({ groupId, initialGroup, onClose, onChanged, onEdit }: GroupDetailSheetProps) {
+    // What get_group returned — the authoritative copy. Anything that acts on the
+    // group rather than merely showing it must use this, never the seed.
+    const [detail, setDetail] = useState<GroupDetail | null>(null);
+
+    // The seed is display-only. created_by is left empty because get_my_groups
+    // does not return it; using it to decide anything would be a bug, and the
+    // close path below reads `detail` for exactly that reason.
+    const seed: GroupDetail | null = useMemo(
+        () =>
+            initialGroup
+                ? {
+                      id: initialGroup.id,
+                      name: initialGroup.name,
+                      details: initialGroup.details,
+                      created_by: "",
+                      is_creator: initialGroup.is_creator,
+                      is_closed: initialGroup.is_closed,
+                      // get_my_groups returns members without skill_level or
+                      // is_creator. Both are filled in when get_group lands; until
+                      // then the row simply omits them, which is what the markup
+                      // already does for a member with no skill set.
+                      members: initialGroup.members.map((m) => ({
+                          ...m,
+                          skill_level: null,
+                          is_creator: false,
+                      })),
+                  }
+                : null,
+        [initialGroup],
+    );
+
+    const group = detail ?? seed;
+    const [loading, setLoading] = useState(!seed);
     const [loadError, setLoadError] = useState<unknown>(null);
     const [confirming, setConfirming] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const load = useCallback(async () => {
-        setLoading(true);
+        // Only a cold open shows the spinner. With a seed the sheet is already
+        // showing real content, and flipping to a loading state would be a step
+        // backwards.
+        if (!seed) setLoading(true);
         setLoadError(null);
         const { data, error: rpcError } = await supabase.rpc("get_group", { p_group_id: groupId });
         setLoading(false);
         if (rpcError) {
             console.error("get_group failed:", rpcError);
-            setLoadError(rpcError);
+            // With a seed on screen, a failed refresh is not worth replacing real
+            // content with an error — the actions guard on `detail` anyway.
+            if (!seed) setLoadError(rpcError);
             return;
         }
         // null means the caller is no longer a member — read as gone, not empty.
-        setGroup((data as GroupDetail | null) ?? null);
-    }, [groupId]);
+        setDetail((data as GroupDetail | null) ?? null);
+    }, [groupId, seed]);
 
     useEffect(() => {
         load();
@@ -100,10 +145,19 @@ export function GroupDetailSheet({ groupId, onClose, onChanged, onEdit }: GroupD
         // Closing ends the group for everyone still in it. Only the creator can
         // reach this, and only they are authorised to trigger it, so the fan-out
         // is bounded to their own group's members.
-        if (rpc === "close_group" && group) {
-            for (const m of group.members) {
-                if (m.id === group.created_by) continue;
-                sendNotification({ notification_type: "group_removed", group_id: group.id, target_user_id: m.id });
+        // `detail`, not `group`: the seed has no created_by, so notifying from it
+        // would tell the creator their own group had closed. If the refresh has
+        // not landed yet (it fires on mount, so this is close to unreachable),
+        // fetch it rather than guessing or skipping the fan-out.
+        if (rpc === "close_group") {
+            let source = detail;
+            if (!source) {
+                const { data: fresh } = await supabase.rpc("get_group", { p_group_id: groupId });
+                source = (fresh as GroupDetail | null) ?? null;
+            }
+            for (const m of source?.members ?? []) {
+                if (m.id === source!.created_by) continue;
+                sendNotification({ notification_type: "group_removed", group_id: source!.id, target_user_id: m.id });
             }
         }
 
