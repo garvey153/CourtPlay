@@ -188,28 +188,23 @@ describe("PostNew — sub need form (rendering)", () => {
 });
 
 describe("PostNew — post visibility", () => {
-    it("defaults to off, with the public claim rule as the hint", async () => {
+    it("defaults to Public, with the public claim rule as the hint", async () => {
         renderPostNew();
         await waitFor(() => expect(screen.getByText("Post visibility")).toBeInTheDocument());
-        // The label names the toggle, not the state, so it reads "Private" in both
-        // positions; the hint is what says which one you are in.
-        expect(screen.getByText("Private")).toBeInTheDocument();
-        expect(screen.getByLabelText("Make this post private")).not.toBeChecked();
+        expect(screen.getByText("Public")).toBeInTheDocument();
         expect(screen.getByText("Anyone at the required level or above can claim.")).toBeInTheDocument();
         // The recipients picker is private-only.
         expect(screen.queryByText("Private post recipients")).not.toBeInTheDocument();
     });
 
-    it("toggling on swaps the hint and reveals the recipients picker", async () => {
+    it("toggling to Private swaps the word, the hint, and reveals the recipients picker", async () => {
         const user = userEvent.setup();
         renderPostNew();
         await waitFor(() => expect(screen.getByText("Post visibility")).toBeInTheDocument());
 
         await user.click(screen.getByLabelText("Make this post private"));
 
-        expect(screen.getByLabelText("Make this post private")).toBeChecked();
         expect(screen.getByText("Private")).toBeInTheDocument();
-        // "Public" no longer appears in either position.
         expect(screen.queryByText("Public")).not.toBeInTheDocument();
         expect(screen.getByText("Only selected groups or players can claim.")).toBeInTheDocument();
         expect(screen.getByText("Private post recipients")).toBeInTheDocument();
