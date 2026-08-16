@@ -355,19 +355,12 @@ export function RegularPlaySheet({ post, currentUserId, onClose, onChange, onCan
                         </>
                     ) : (
                         <>
-                            {/* Blue, not brand green: it matches this card's left accent
-                                bar (regular-play-card.tsx), which is the colour regular
-                                play is identified by everywhere else. Merged through cx
-                                so tailwind-merge drops PRIMARY_BTN's bg-brand-500 —
-                                appending alone would leave both and let stylesheet order
-                                decide. Dark text stays: on blue-500 it measures 5.7:1
-                                against white's 3.7:1. */}
-                            <button
-                                type="button"
-                                onClick={handleConnect}
-                                disabled={loading}
-                                className={cx(PRIMARY_BTN, "bg-blue-500 enabled:hover:bg-blue-600")}
-                            >
+                            {/* Brand green, like every other primary action. This was
+                                blue to match the card's left accent bar, which still
+                                identifies regular play — but the accent bar is the
+                                identifier, and the primary button is the primary
+                                button wherever it appears. */}
+                            <button type="button" onClick={handleConnect} disabled={loading} className={PRIMARY_BTN}>
                                 {loading ? <Spinner size="sm" tone="on-brand" /> : "Connect"}
                             </button>
                             <button type="button" onClick={() => handleShare(post)} className={SECONDARY_BTN}>
