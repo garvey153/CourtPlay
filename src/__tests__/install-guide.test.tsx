@@ -67,7 +67,10 @@ describe("InstallGuide", () => {
                 expect(disc.className).toContain("size-7"); // 28px
                 expect(disc.className).toContain("bg-white");
                 const glyph = disc.querySelector("svg") as SVGElement;
-                expect(glyph.getAttribute("class")).toContain("size-[18.67px]");
+                // The glyph shares the disc's own 28px coordinate space, which is
+                // what makes stroke-width 1 render as exactly 1px.
+                expect(glyph.getAttribute("viewBox")).toBe("0 0 28 28");
+                expect(glyph.getAttribute("class")).toContain("size-7");
                 // The knockout, via the token rather than a literal #17261c.
                 expect(glyph.getAttribute("class")).toContain("var(--color-bg-secondary)");
             }

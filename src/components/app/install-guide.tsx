@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
-import { ChevronDown, DotsHorizontal, PlusSquare, Share02, XClose } from "@untitledui/icons";
-import type { FC, SVGProps } from "react";
+import { XClose } from "@untitledui/icons";
+import { ChevronGlyph, DotsGlyph, PlusSquareGlyph, ShareGlyph, type StepGlyph } from "./install-guide-icons";
 import { PRIMARY_MD_FULL as PRIMARY_BTN } from "@/components/base/buttons/button-styles";
 import { isIos } from "@/utils/is-ios";
 
@@ -42,17 +42,17 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
     // Each step is the icon you are looking for plus where it is. Showing the
     // actual glyph beats naming it: on iOS every one of these is an unlabelled
     // icon in Safari's chrome.
-    const steps: Array<{ icon: FC<SVGProps<SVGSVGElement>>; text: string }> = ios
+    const steps: Array<{ icon: StepGlyph; text: string }> = ios
         ? [
-              { icon: DotsHorizontal, text: "Tap this icon in Safari's toolbar. It's located at the bottom-right of the screen." },
-              { icon: Share02, text: "Tap Share at the top of the menu. On older versions the Share icon is in the toolbar itself." },
-              { icon: ChevronDown, text: "Tap View More to show more actions. It's located at the bottom-right of the screen." },
-              { icon: PlusSquare, text: "Tap Add to Home Screen and CourtPlay will land on your home screen." },
+              { icon: DotsGlyph, text: "Tap this icon in Safari's toolbar. It's located at the bottom-right of the screen." },
+              { icon: ShareGlyph, text: "Tap Share at the top of the menu. On older versions the Share icon is in the toolbar itself." },
+              { icon: ChevronGlyph, text: "Tap View More to show more actions. It's located at the bottom-right of the screen." },
+              { icon: PlusSquareGlyph, text: "Tap Add to Home Screen and CourtPlay will land on your home screen." },
           ]
         : [
-              { icon: DotsHorizontal, text: "Open your browser's menu." },
-              { icon: PlusSquare, text: "Choose Install app, or Add to Home screen." },
-              { icon: ChevronDown, text: "Confirm, and CourtPlay lands on your device." },
+              { icon: DotsGlyph, text: "Open your browser's menu." },
+              { icon: PlusSquareGlyph, text: "Choose Install app, or Add to Home screen." },
+              { icon: ChevronGlyph, text: "Confirm, and CourtPlay lands on your device." },
           ];
 
     return createPortal(
@@ -84,9 +84,12 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
                 </button>
 
                 <div className="flex flex-col gap-4 px-5">
-                    <div className="flex flex-col gap-0.5 pr-10">
-                        <h2 className="text-md font-semibold text-primary">Install CourtPlay</h2>
-                        <p className="text-xs text-secondary">
+                    <div className="flex flex-col gap-0.5">
+                        {/* pr-12 clears the close button; the supporting line only
+                            needs the design's 40px right margin (20 here + 20 from
+                            the container). */}
+                        <h2 className="pr-12 text-md font-semibold text-primary">Install CourtPlay</h2>
+                        <p className="pr-5 text-xs text-secondary">
                             Add CourtPlay to your home screen for a full-screen, app-like experience.
                         </p>
                     </div>
@@ -107,13 +110,10 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
                                             strokeWidth 1 on every icon: the Untitled UI
                                             defaults differ per glyph, which is what made
                                             some look heavier than others. */}
-                                        <Icon
-                                            className="size-[18.67px] text-[var(--color-bg-secondary)]"
-                                            strokeWidth={1}
-                                        />
+                                        <Icon className="size-7 text-[var(--color-bg-secondary)]" />
                                     </span>
                                 </span>
-                                <span className="pt-1 text-xs text-secondary">{text}</span>
+                                <span className="pt-1 pr-5 text-xs text-secondary">{text}</span>
                             </li>
                         ))}
                     </ol>
