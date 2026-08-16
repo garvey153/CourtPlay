@@ -52,6 +52,47 @@ describe("InstallGuide", () => {
 
     /** Figma 659:2070 — a bottom sheet, not the centred card it used to be. */
     describe("bottom sheet (659:2070)", () => {
+        /**
+         * Measured off Figma 659:4115: a 40px row, a 28px disc centred in it, an
+         * 18.67px glyph, 12px gap. The disc is filled and the glyph is a knockout
+         * in the sheet's own background colour — the reverse of the first attempt,
+         * which drew a hollow ring with a light icon.
+         */
+        it("draws the icons to the design's spec", () => {
+            inTransformedParent();
+            const discs = document.querySelectorAll(".rounded-full");
+            expect(discs.length).toBe(4);
+
+            for (const disc of discs) {
+                expect(disc.className).toContain("size-7"); // 28px
+                expect(disc.className).toContain("bg-neutral-400"); // #75897d
+                const glyph = disc.querySelector("svg") as SVGElement;
+                expect(glyph.getAttribute("class")).toContain("size-[18.67px]");
+                // The knockout, via the token rather than a literal #17261c.
+                expect(glyph.getAttribute("class")).toContain("var(--color-bg-secondary)");
+            }
+        });
+
+        /** Untitled UI's per-glyph defaults differ, which made some look heavier. */
+        it("gives every step icon a 1px stroke", () => {
+            inTransformedParent();
+            const glyphs = document.querySelectorAll(".rounded-full svg");
+            expect(glyphs.length).toBe(4);
+            for (const g of glyphs) {
+                expect(g.getAttribute("stroke-width")).toBe("1");
+            }
+        });
+
+        /** The disc centres against the whole row, not the first line. */
+        it("centres each icon vertically against its text", () => {
+            inTransformedParent();
+            for (const item of screen.getAllByRole("listitem")) {
+                const column = item.firstElementChild as HTMLElement;
+                expect(column.className).toContain("items-center");
+                expect(column.className).toContain("self-stretch");
+            }
+        });
+
         it("anchors to the bottom of the screen", () => {
             inTransformedParent();
             const dialog = screen.getByRole("dialog", { name: "Install CourtPlay" });

@@ -93,12 +93,24 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
 
                     <ol className="flex flex-col gap-4">
                         {steps.map(({ icon: Icon, text }) => (
-                            <li key={text} className="flex items-start gap-3">
-                                <span
-                                    className="flex size-7 shrink-0 items-center justify-center rounded-full ring-1 ring-neutral-600 ring-inset"
-                                    aria-hidden="true"
-                                >
-                                    <Icon className="size-4 text-secondary" />
+                            <li key={text} className="flex gap-3">
+                                {/* self-stretch + items-center: the design centres the
+                                    28px disc against the full height of the row, not
+                                    against the first line (Figma puts it at y=6 in a
+                                    40px row). */}
+                                <span className="flex shrink-0 items-center self-stretch" aria-hidden="true">
+                                    <span className="flex size-7 items-center justify-center rounded-full bg-neutral-400">
+                                        {/* A knockout: the glyph is the sheet's own
+                                            background punched out of the disc, which is
+                                            why this references a background token rather
+                                            than a foreground one. strokeWidth 1 on every
+                                            icon — the Untitled UI defaults differ per
+                                            glyph, which is what made some look heavier. */}
+                                        <Icon
+                                            className="size-[18.67px] text-[var(--color-bg-secondary)]"
+                                            strokeWidth={1}
+                                        />
+                                    </span>
                                 </span>
                                 <span className="pt-1 text-xs text-secondary">{text}</span>
                             </li>
@@ -106,7 +118,11 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
                     </ol>
                 </div>
 
-                <div className="mt-4 px-5">
+                {/* 40px from the last line's baseline to the top of the button.
+                    A CSS gap starts from the text BOX, so this is 40 minus the
+                    baseline-to-box-bottom distance, measured in the browser rather
+                    than derived from font metrics. */}
+                <div className="mt-[37px] px-5">
                     <button type="button" onClick={onClose} className={PRIMARY_BTN}>
                         Done
                     </button>
