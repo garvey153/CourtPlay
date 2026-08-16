@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { ChevronDown, DotsHorizontal, PlusSquare, Share02, XClose } from "@untitledui/icons";
-import type { FC } from "react";
+import type { FC, SVGProps } from "react";
 import { PRIMARY_MD_FULL as PRIMARY_BTN } from "@/components/base/buttons/button-styles";
 import { isIos } from "@/utils/is-ios";
 
@@ -42,7 +42,7 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
     // Each step is the icon you are looking for plus where it is. Showing the
     // actual glyph beats naming it: on iOS every one of these is an unlabelled
     // icon in Safari's chrome.
-    const steps: Array<{ icon: FC<{ className?: string }>; text: string }> = ios
+    const steps: Array<{ icon: FC<SVGProps<SVGSVGElement>>; text: string }> = ios
         ? [
               { icon: DotsHorizontal, text: "Tap this icon in Safari's toolbar. It's located at the bottom-right of the screen." },
               { icon: Share02, text: "Tap Share at the top of the menu. On older versions the Share icon is in the toolbar itself." },
