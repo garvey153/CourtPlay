@@ -929,8 +929,13 @@ export function PostNew() {
                                     isSelected={isPrivate}
                                     onChange={setIsPrivate}
                                 />
+                                {/* Names the toggle rather than the current state, so it
+                                    reads the same way round as the control ("make this
+                                    post private"). Colour still carries the state —
+                                    primary when on, tertiary when off — and the line
+                                    below spells out what each state means. */}
                                 <span className={cx("text-sm", isPrivate ? "text-primary" : "text-tertiary")}>
-                                    {isPrivate ? "Private" : "Public"}
+                                    Private
                                 </span>
                             </div>
                             <p className="text-xs text-tertiary">
