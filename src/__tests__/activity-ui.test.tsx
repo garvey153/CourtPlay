@@ -57,6 +57,65 @@ beforeEach(() => rpc.mockReset());
 
 describe("Activity redesign", () => {
     /**
+     * An expired regular-play post had no way back: editing does not reset
+     * expires_at (post-new.tsx sets it on insert only), so the post stayed off
+     * the feed whatever the author did.
+     */
+    describe("expired regular-play post", () => {
+        const expiredRegular = {
+            id: "rg-1", post_type: "regular_game", status: "expired", format: null,
+            play_type: null, duration: null, skill_level: "4.0", notes: null,
+            game_date: null, game_time: null, location: "Longshore Club", custom_court: null,
+            cost: null, original_cost: null, created_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() - 86400000).toISOString(),
+            preferred_days: ["Mon"], preferred_times: ["Evening"], claims: [],
+        };
+
+        it("badges the card as Expired in the created list", async () => {
+            setup([expiredRegular], []);
+            render(<MemoryRouter><Activity /></MemoryRouter>);
+            await userEvent.click(await screen.findByRole("button", { name: "Created posts" }));
+            expect(await screen.findByText("Expired")).toBeInTheDocument();
+        });
+
+        it("offers Reactivate as the primary action, with Edit demoted", async () => {
+            setup([expiredRegular], []);
+            render(<MemoryRouter><Activity /></MemoryRouter>);
+            await userEvent.click(await screen.findByRole("button", { name: "Created posts" }));
+            await userEvent.click(await screen.findByText("Tennis, Regular Play · NTRP 4.0"));
+
+            const reactivate = await screen.findByRole("button", { name: "Reactivate post" });
+            const edit = screen.getByRole("button", { name: "Edit post" });
+            const remove = screen.getByRole("button", { name: "Remove post" });
+
+            expect(reactivate.className).toContain("bg-brand-500");
+            // Edit now carries exactly the same treatment as Remove.
+            expect(edit.className).toBe(remove.className);
+        });
+
+        it("calls reactivate_post rather than writing status from the client", async () => {
+            setup([expiredRegular], []);
+            render(<MemoryRouter><Activity /></MemoryRouter>);
+            await userEvent.click(await screen.findByRole("button", { name: "Created posts" }));
+            await userEvent.click(await screen.findByText("Tennis, Regular Play · NTRP 4.0"));
+            await userEvent.click(await screen.findByRole("button", { name: "Reactivate post" }));
+
+            // The cron re-expires anything active whose expires_at has passed, so
+            // only the server may do this — it moves the date with the status.
+            expect(rpc).toHaveBeenCalledWith("reactivate_post", { p_post_id: "rg-1" });
+        });
+
+        it("offers no Reactivate while the post is still active", async () => {
+            setup([{ ...expiredRegular, status: "active" }], []);
+            render(<MemoryRouter><Activity /></MemoryRouter>);
+            await userEvent.click(await screen.findByRole("button", { name: "Created posts" }));
+            await userEvent.click(await screen.findByText("Tennis, Regular Play · NTRP 4.0"));
+            expect(screen.queryByRole("button", { name: "Reactivate post" })).not.toBeInTheDocument();
+            expect(screen.queryByText("Expired")).not.toBeInTheDocument();
+        });
+    });
+
+    /**
      * Both Activity empty states used to pass actionTone="secondary", so their
      * calls to action were outlined while the identical ones on Feed and Profile
      * were solid green. Pinning the shared PRIMARY_CTA constant rather than a
