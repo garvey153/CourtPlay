@@ -296,7 +296,6 @@ export function Activity() {
             return (
                 <EmptyState
                     variant="grow"
-                    actionTone="secondary"
                     title="Still on the sidelines"
                     description="Claim a spot and it'll show up here."
                     actionLabel="Browse the feed"
@@ -413,7 +412,6 @@ export function Activity() {
                     {banner && <div className="mb-3">{banner}</div>}
                     <EmptyState
                         variant="grow"
-                        actionTone="secondary"
                         title="It's your serve"
                         description="Post an opening and it'll land right here."
                         actionLabel="Find a sub"
