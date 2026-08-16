@@ -52,7 +52,7 @@ describe("invite-only screen", () => {
             </MemoryRouter>,
         );
         expect(await screen.findByText("nobody@example.com")).toBeInTheDocument();
-        expect(screen.getByRole("heading", { name: "Invite only, for now" })).toBeInTheDocument();
+        expect(screen.getByRole("heading", { name: "CourtPlay is invite only, for now." })).toBeInTheDocument();
     });
 
     it("signs the session out on arrival", async () => {
@@ -132,5 +132,53 @@ describe("auth-callback invite check", () => {
         renderCallback();
         await waitFor(() => expect(navigate).toHaveBeenCalledWith("/feed", { replace: true }));
         expect(rpc).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Figma 662:4309. The screen went from a centred card with a mail icon to a
+     * left-aligned page with a 36px headline, so the things worth pinning are the
+     * ones a future tidy-up would quietly undo.
+     */
+    describe("design (662:4309)", () => {
+        it("uses the Display md headline, not the old centred card", async () => {
+            getUser.mockResolvedValue({ data: { user: { email: "nobody@example.com" } } });
+            const { container } = render(
+                <MemoryRouter>
+                    <InviteOnly />
+                </MemoryRouter>,
+            );
+            const heading = await screen.findByRole("heading");
+            expect(heading.className).toContain("text-display-md");
+            // The mail icon and the centred text both went.
+            expect(container.querySelector("svg")).toBeNull();
+            expect(container.querySelector(".text-center")).not.toBe(heading);
+        });
+
+        it("offers both ways out, with Try another account as the primary", async () => {
+            getUser.mockResolvedValue({ data: { user: { email: "nobody@example.com" } } });
+            render(
+                <MemoryRouter>
+                    <InviteOnly />
+                </MemoryRouter>,
+            );
+            const primary = screen.getByRole("link", { name: "Try another account" });
+            expect(primary).toHaveAttribute("href", "/signin");
+            expect(primary.className).toContain("bg-brand-500");
+
+            const secondary = screen.getByRole("link", { name: "Back to CourtPlay" });
+            expect(secondary).toHaveAttribute("href", "/");
+            expect(secondary.className).not.toContain("bg-brand-500");
+        });
+
+        /** With no session to read, the sentence still has to finish. */
+        it("reads sensibly when the address is unknown", async () => {
+            getUser.mockResolvedValue({ data: { user: null } });
+            render(
+                <MemoryRouter>
+                    <InviteOnly />
+                </MemoryRouter>,
+            );
+            await waitFor(() => expect(document.body.textContent).toContain("that account."));
+        });
     });
 });
