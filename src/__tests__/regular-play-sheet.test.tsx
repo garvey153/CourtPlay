@@ -174,16 +174,21 @@ describe("RegularPlaySheet (regular-post connections)", () => {
 });
 
 /**
- * The Connect button wears regular play's blue, the same token as the card's
- * left accent bar. Pinned as a pair: if either moves off bg-blue-500 they stop
- * matching, which is the whole point of the change.
+ * Connect wears brand green like every other primary action. It used to wear
+ * regular play's blue to match the card's left accent bar; the accent bar still
+ * identifies regular play, but the primary button is the primary button.
+ *
+ * Asserting the absence of blue matters as much as the presence of green:
+ * appending a colour rather than merging would leave BOTH classes on the element
+ * and let stylesheet order pick the winner. That is why the old code went
+ * through cx, and why removing the override has to be checked, not assumed.
  */
 describe("Connect button colour", () => {
-    it("is the card's blue, not the brand green", () => {
+    it("is brand green, not the card's blue", () => {
         render(<RegularPlaySheet post={regularPost} currentUserId="responder-1" onClose={vi.fn()} />);
         const connect = screen.getByRole("button", { name: "Connect" });
-        expect(connect.className).toContain("bg-blue-500");
-        expect(connect.className).not.toContain("bg-brand-500");
-        expect(connect.className).toContain("enabled:hover:bg-blue-600");
+        expect(connect.className).toContain("bg-brand-500");
+        expect(connect.className).not.toContain("bg-blue-500");
+        expect(connect.className).not.toContain("blue");
     });
 });
