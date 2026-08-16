@@ -51,6 +51,29 @@ const renderAuth = async (opts: { inviteOnly: boolean; path: string }) => {
 const signUpControls = () => screen.queryAllByRole("button", { name: "Sign up" });
 
 describe("auth screen — closed beta", () => {
+    describe("copy", () => {
+        it("tells a landing-page visitor why there is no sign up", async () => {
+            await renderAuth({ inviteOnly: true, path: "/signin" });
+            expect(screen.getByText(/invite only while we're in beta/i)).toBeInTheDocument();
+            // The address is the bit that actually goes wrong — the gate keys on
+            // the invited email, so signing in with another one is what sends
+            // people to /invite-only.
+            expect(screen.getByText(/email address your invite was sent to/i)).toBeInTheDocument();
+        });
+
+        it("keeps the ordinary sign-in copy when the beta is off", async () => {
+            await renderAuth({ inviteOnly: false, path: "/signin" });
+            expect(screen.getByText(/never miss game day/i)).toBeInTheDocument();
+            expect(screen.queryByText(/invite only while we're in beta/i)).not.toBeInTheDocument();
+        });
+
+        /** Coming from an invite, sign up is the point — not an explanation of the beta. */
+        it("does not show the beta explainer to someone who arrived from an invite", async () => {
+            await renderAuth({ inviteOnly: true, path: "/signup?email=jane%40example.com" });
+            expect(screen.queryByText(/invite only while we're in beta/i)).not.toBeInTheDocument();
+        });
+    });
+
     beforeEach(() => {
         vi.resetModules();
         localStorage.clear();
