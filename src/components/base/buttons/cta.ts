@@ -18,6 +18,10 @@
 export const PRIMARY_CTA =
     "inline-flex items-center justify-center gap-1 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 
-/** The quieter counterpart, as used by the activity empty states. */
+/**
+ * The quieter counterpart. Nothing uses it since the Activity empty states moved
+ * onto PRIMARY_CTA to match Feed and Profile — kept as the EmptyState component's
+ * `actionTone="secondary"` option rather than deleted.
+ */
 export const SECONDARY_CTA =
     "inline-flex items-center justify-center gap-1 rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
