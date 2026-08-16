@@ -41,10 +41,51 @@ describe("InstallGuide", () => {
 
     it("names the overflow menu, not just the Share icon", () => {
         inTransformedParent();
-        // The icon alone was the whole instruction, and on current iOS it lives
-        // behind ••• rather than in the toolbar.
-        expect(screen.getByText("•••")).toBeInTheDocument();
-        expect(screen.getByText("Share")).toBeInTheDocument();
-        expect(screen.getByText("Add to Home Screen")).toBeInTheDocument();
+        // The Share icon alone used to be the whole instruction, and on current
+        // iOS that action lives behind the ••• menu rather than in the toolbar.
+        // The wording changed with the redesign; the requirement did not.
+        const text = document.body.textContent ?? "";
+        expect(text).toContain("Safari's toolbar");
+        expect(text).toContain("Tap Share at the top of the menu");
+        expect(text).toContain("Add to Home Screen");
+    });
+
+    /** Figma 659:2070 — a bottom sheet, not the centred card it used to be. */
+    describe("bottom sheet (659:2070)", () => {
+        it("anchors to the bottom of the screen", () => {
+            inTransformedParent();
+            const dialog = screen.getByRole("dialog", { name: "Install CourtPlay" });
+            expect(dialog.className).toContain("items-end");
+
+            const sheet = dialog.querySelector(".rounded-t-2xl");
+            expect(sheet).not.toBeNull();
+        });
+
+        it("has a Done button that closes it", async () => {
+            const onClose = vi.fn();
+            render(
+                <div style={{ transform: "translateY(0px)" }}>
+                    <InstallGuide onClose={onClose} />
+                </div>,
+            );
+            const done = screen.getByRole("button", { name: "Done" });
+            expect(done.className).toContain("bg-brand-500");
+            done.click();
+            expect(onClose).toHaveBeenCalled();
+        });
+
+        it("shows all four iOS steps", () => {
+            inTransformedParent();
+            expect(screen.getAllByRole("listitem")).toHaveLength(4);
+        });
+
+        /** The safe-area pad lives on the sheet: a fixed sheet is outside the
+         *  layout that would otherwise apply the home-indicator inset. */
+        it("pads for the home indicator", () => {
+            inTransformedParent();
+            const dialog = screen.getByRole("dialog", { name: "Install CourtPlay" });
+            const sheet = dialog.querySelector(".rounded-t-2xl") as HTMLElement;
+            expect(sheet.className).toContain("--safe-bottom");
+        });
     });
 });

@@ -1,10 +1,13 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Download01, Share06, XClose } from "@untitledui/icons";
+import { motion } from "motion/react";
+import { ChevronDown, DotsHorizontal, PlusSquare, Share02, XClose } from "@untitledui/icons";
+import type { FC } from "react";
+import { PRIMARY_MD_FULL as PRIMARY_BTN } from "@/components/base/buttons/button-styles";
 import { isIos } from "@/utils/is-ios";
 
 /**
- * Manual "Add to Home Screen" steps.
+ * Manual "Add to Home Screen" steps, as a bottom sheet (Figma 659:2070).
  *
  * Rendered through a PORTAL to document.body. The feed wraps its content in
  * PullToRefresh, which sets `transform: translateY(...)` — and a transformed
@@ -36,72 +39,79 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
         };
     }, [onClose]);
 
-    const steps = ios
+    // Each step is the icon you are looking for plus where it is. Showing the
+    // actual glyph beats naming it: on iOS every one of these is an unlabelled
+    // icon in Safari's chrome.
+    const steps: Array<{ icon: FC<{ className?: string }>; text: string }> = ios
         ? [
-              <>
-                  Tap <span className="font-semibold text-primary">•••</span> in Safari's toolbar, then
-                  <Share06 className="mx-1 inline size-4 align-text-bottom text-brand-500" aria-hidden="true" />
-                  <span className="font-semibold text-primary">Share</span>. On older versions the Share icon is in the
-                  toolbar itself.
-              </>,
-              <>
-                  Scroll down the share sheet and tap{" "}
-                  <span className="font-semibold text-primary">Add to Home Screen</span>.
-              </>,
-              <>
-                  Tap <span className="font-semibold text-primary">Add</span> — CourtPlay lands on your home screen.
-              </>,
+              { icon: DotsHorizontal, text: "Tap this icon in Safari's toolbar. It's located at the bottom-right of the screen." },
+              { icon: Share02, text: "Tap Share at the top of the menu. On older versions the Share icon is in the toolbar itself." },
+              { icon: ChevronDown, text: "Tap View More to show more actions. It's located at the bottom-right of the screen." },
+              { icon: PlusSquare, text: "Tap Add to Home Screen and CourtPlay will land on your home screen." },
           ]
         : [
-              <>Open your browser menu.</>,
-              <>Choose "Install app" or "Add to Home screen."</>,
-              <>Confirm to add CourtPlay to your device.</>,
+              { icon: DotsHorizontal, text: "Open your browser's menu." },
+              { icon: PlusSquare, text: "Choose Install app, or Add to Home screen." },
+              { icon: ChevronDown, text: "Confirm, and CourtPlay lands on your device." },
           ];
 
     return createPortal(
         <div
-            // Same dim and blur as the bottom sheets, so an overlay over the feed
-            // looks the same wherever it comes from.
-            className="fixed inset-0 z-50 flex items-end justify-center p-4 backdrop-blur-[8px] sm:items-center"
+            // Same dim and blur as the app's other bottom sheets, so an overlay
+            // over the feed looks the same wherever it comes from.
+            className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
             role="dialog"
             aria-modal="true"
             aria-label="Install CourtPlay"
-            onClick={onClose}
         >
-            <div className="absolute inset-0 bg-black/60" aria-hidden="true" />
-            <div
-                className="relative w-full max-w-sm rounded-2xl bg-secondary p-6 shadow-xl"
-                onClick={(e) => e.stopPropagation()}
+            <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
+
+            <motion.div
+                // pb: the design's 32px, plus the home-indicator inset. A `fixed`
+                // sheet sits outside the layout that would otherwise apply it.
+                className="relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary pt-[18px] pb-[calc(2rem_+_var(--safe-bottom))] shadow-xl sm:rounded-2xl"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ type: "spring", damping: 38, stiffness: 420 }}
             >
                 <button
+                    type="button"
                     onClick={onClose}
                     aria-label="Close"
-                    className="absolute right-4 top-4 rounded p-0.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                    className="absolute top-3 right-3 flex size-9 items-center justify-center rounded-lg p-2 text-tertiary transition duration-100 ease-linear hover:text-secondary"
                 >
                     <XClose className="size-5" strokeWidth={1} aria-hidden="true" />
                 </button>
 
-                <div className="flex flex-col items-center gap-1 text-center">
-                    <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-brand-secondary">
-                        <Download01 className="size-6 text-brand-500" strokeWidth={1} aria-hidden="true" />
+                <div className="flex flex-col gap-4 px-5">
+                    <div className="flex flex-col gap-0.5 pr-10">
+                        <h2 className="text-md font-semibold text-primary">Install CourtPlay</h2>
+                        <p className="text-xs text-secondary">
+                            Add CourtPlay to your home screen for a full-screen, app-like experience.
+                        </p>
                     </div>
-                    <h2 className="text-lg font-semibold text-primary">Install CourtPlay</h2>
-                    <p className="text-sm text-secondary">
-                        Add CourtPlay to your home screen for a full-screen, app-like experience.
-                    </p>
+
+                    <ol className="flex flex-col gap-4">
+                        {steps.map(({ icon: Icon, text }) => (
+                            <li key={text} className="flex items-start gap-3">
+                                <span
+                                    className="flex size-7 shrink-0 items-center justify-center rounded-full ring-1 ring-neutral-600 ring-inset"
+                                    aria-hidden="true"
+                                >
+                                    <Icon className="size-4 text-secondary" />
+                                </span>
+                                <span className="pt-1 text-xs text-secondary">{text}</span>
+                            </li>
+                        ))}
+                    </ol>
                 </div>
 
-                <ol className="mt-5 flex flex-col gap-3">
-                    {steps.map((step, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm text-secondary">
-                            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-brand-800 text-xs font-semibold text-brand-500">
-                                {i + 1}
-                            </span>
-                            <span>{step}</span>
-                        </li>
-                    ))}
-                </ol>
-            </div>
+                <div className="mt-4 px-5">
+                    <button type="button" onClick={onClose} className={PRIMARY_BTN}>
+                        Done
+                    </button>
+                </div>
+            </motion.div>
         </div>,
         document.body,
     );
