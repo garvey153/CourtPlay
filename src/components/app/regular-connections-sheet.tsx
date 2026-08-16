@@ -41,6 +41,14 @@ interface RegularConnectionsSheetProps {
     onReply: (claimId: string, body: string) => void | Promise<void>;
     /** Whether the post is currently being removed. */
     deleting?: boolean;
+    /**
+     * Put an expired post back on the feed for another 30 days. Only offered
+     * once it has expired — editing does not reset expires_at, so before this
+     * an expired regular post had no way back.
+     */
+    onReactivate?: () => void | Promise<void>;
+    /** Whether the reactivate call is in flight. */
+    reactivating?: boolean;
 }
 
 function connectionName(c: ClaimRow): string {
@@ -53,8 +61,18 @@ function connectionName(c: ClaimRow): string {
  * No approval — the seeker chats, then removes the post once they've found a spot.
  * Mirrors the sub "created" sheet design.
  */
-export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelete, onReply, deleting }: RegularConnectionsSheetProps) {
+export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelete, onReply, deleting, onReactivate, reactivating }: RegularConnectionsSheetProps) {
     const connections = post.claims;
+    // Expired posts get a way back. Reactivate becomes the primary action and Edit
+    // drops to the same quiet treatment as Remove, because the thing you almost
+    // always want on an expired post is simply to run it again.
+    const expired = post.status === "expired";
+
+    const reactivateButton = expired && onReactivate && (
+        <button type="button" onClick={onReactivate} disabled={reactivating} className={`${PRIMARY_BTN} w-full`}>
+            {reactivating ? <Spinner size="sm" tone="on-brand" /> : "Reactivate post"}
+        </button>
+    );
     // null = list (or manage, when there are no connections). A single connection
     // opens straight into its thread; 2+ show the list first.
     const [selectedId, setSelectedId] = useState<string | null>(connections.length === 1 ? connections[0].id : null);
@@ -250,7 +268,8 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
                             Report user
                         </button>
                     </p>
-                    <div className="mt-8">
+                    <div className="mt-8 flex flex-col gap-3">
+                        {reactivateButton}
                         <button type="button" onClick={() => setConfirmingDelete(true)} className={`${SECONDARY_BTN} w-full`}>
                             Remove post
                         </button>
@@ -306,7 +325,8 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
                     </ul>
                 </div>
 
-                <div className="flex shrink-0 flex-col px-5 pt-4 pb-8">
+                <div className="flex shrink-0 flex-col gap-3 px-5 pt-4 pb-8">
+                    {reactivateButton}
                     <button type="button" onClick={() => setConfirmingDelete(true)} className={`${SECONDARY_BTN} w-full`}>
                         Remove post
                     </button>
@@ -336,7 +356,8 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
                 {noteBubble}
                 <p className="text-sm text-tertiary">No one has reached out yet. You'll see their messages here.</p>
                 <div className="mt-2 flex flex-col gap-3">
-                    <button type="button" onClick={onEdit} className={PRIMARY_BTN}>
+                    {reactivateButton}
+                    <button type="button" onClick={onEdit} className={expired ? SECONDARY_BTN : PRIMARY_BTN}>
                         Edit post
                     </button>
                     <button type="button" onClick={() => setConfirmingDelete(true)} className={SECONDARY_BTN}>

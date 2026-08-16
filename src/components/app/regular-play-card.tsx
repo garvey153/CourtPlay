@@ -3,6 +3,7 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { FriendBadge } from "./friend-badge";
 import { cx } from "@/utils/cx";
 import type { FeedPost } from "@/types/feed";
+import { KIND_CONFIG, type CardKind } from "./sub-card";
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -16,6 +17,12 @@ function timeAgo(dateStr: string): string {
 
 interface RegularPlayCardProps {
     post: FeedPost;
+    /**
+     * Status badge, top right. Regular-play posts carry no badge on the feed —
+     * everything there is active — but in Activity > Created posts the author
+     * needs to see which of their own posts have lapsed.
+     */
+    badge?: CardKind;
     /** Whether the viewing user has a complete profile (headline/photo + skill level). */
     profileComplete: boolean;
     currentUserId?: string | null;
@@ -24,7 +31,8 @@ interface RegularPlayCardProps {
     onOpenDetail?: (post: FeedPost) => void;
 }
 
-export const RegularPlayCard = memo(function RegularPlayCard({ post, currentUserId, onViewed, onOpenDetail }: RegularPlayCardProps) {
+export const RegularPlayCard = memo(function RegularPlayCard({ post, currentUserId, onViewed, onOpenDetail, badge }: RegularPlayCardProps) {
+    const badgeStyle = badge ? KIND_CONFIG[badge] : null;
     const cardRef = useRef<HTMLButtonElement>(null);
     const didTrack = useRef(false);
 
@@ -76,7 +84,20 @@ export const RegularPlayCard = memo(function RegularPlayCard({ post, currentUser
             <div className="flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4 transition duration-100 ease-linear hover:bg-secondary_hover">
                 {/* Title + supporting info */}
                 <div className="flex min-w-0 flex-col gap-1">
-                    <p className="text-md font-semibold text-primary">{title}</p>
+                    <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 text-md font-semibold text-primary">{title}</p>
+                        {badgeStyle && (
+                            <span
+                                className={cx(
+                                    "shrink-0 rounded-lg px-2 py-1 text-xs font-semibold",
+                                    badgeStyle.badgeBg,
+                                    badgeStyle.badgeFg,
+                                )}
+                            >
+                                {badgeStyle.label}
+                            </span>
+                        )}
+                    </div>
                     {post.location && <p className="text-xs text-secondary">{post.location}</p>}
                     {schedule && <p className="text-xs text-tertiary">{schedule}</p>}
                 </div>

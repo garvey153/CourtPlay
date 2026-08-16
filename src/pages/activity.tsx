@@ -45,6 +45,7 @@ export function Activity() {
     const [claimSheet, setClaimSheet] = useState<{ post: FeedPost; contact?: { venmoHandle: string | null; phone: string | null }; messages?: MyClaim["messages"] } | null>(null);
     const [createdSheet, setCreatedSheet] = useState<MyPost | null>(null); // creator view (subs)
     const [regularSheet, setRegularSheet] = useState<MyPost | null>(null); // seeker's regular-post conversations
+    const [reactivating, setReactivating] = useState(false);
     // Responder's conversation on a regular post they connected to.
     const [regularThread, setRegularThread] = useState<{ post: FeedPost; messages: MyClaim["messages"] } | null>(null);
     const [deletedPost, setDeletedPost] = useState<MyPost | null>(null); // undo banner
@@ -182,6 +183,30 @@ export function Activity() {
             setCreatedSheet(list.find((pp) => pp.id === post.id) ?? post);
         },
         [],
+    );
+
+    /**
+     * Put an expired regular-play post back on the feed.
+     *
+     * Server-side, because status alone is not enough: the
+     * expire-regular-game-posts cron re-expires anything active whose expires_at
+     * has passed, so a client that flipped only the status would watch the post
+     * quietly lapse again on the next tick. reactivate_post moves both together.
+     */
+    const handleReactivate = useCallback(
+        async (post: MyPost) => {
+            setReactivating(true);
+            setActionError(null);
+            const { data, error: rpcError } = await supabase.rpc("reactivate_post", { p_post_id: post.id });
+            setReactivating(false);
+            if (rpcError || !(data as { success?: boolean })?.success) {
+                setActionError((data as { error?: string })?.error ?? "Couldn't reactivate that post. Try again.");
+                return;
+            }
+            setRegularSheet(null);
+            fetchData();
+        },
+        [fetchData],
     );
 
     const handleDeletePost = useCallback(
@@ -394,7 +419,16 @@ export function Activity() {
         const renderCard = (post: MyPost, kind: CardKind, badge?: string) => {
             const feedPost = postToFeedPost(post, me ?? { id: "", first_name: "", last_name: "", photo_url: null });
             return post.post_type === "regular_game" ? (
-                <RegularPlayCard post={feedPost} profileComplete currentUserId={user?.id} onOpenDetail={() => setRegularSheet(post)} />
+                <RegularPlayCard
+                    post={feedPost}
+                    profileComplete
+                    currentUserId={user?.id}
+                    // Only the lapsed state is badged. On the feed these carry no
+                    // badge at all, and badging "active" here would be noise on
+                    // every healthy post.
+                    badge={post.status === "expired" ? "expired" : undefined}
+                    onOpenDetail={() => setRegularSheet(post)}
+                />
             ) : (
                 <SubCard
                     post={feedPost}
@@ -534,6 +568,8 @@ export function Activity() {
                     onClose={() => setRegularSheet(null)}
                     onEdit={() => navigate(`/post/new?edit=${regularSheet.id}`, { state: { returnTo: "/activity?tab=created" } })}
                     onDelete={() => handleDeletePost(regularSheet)}
+                    onReactivate={() => handleReactivate(regularSheet)}
+                    reactivating={reactivating}
                     onReply={(claimId, body) => handleRegularReply(regularSheet, claimId, body)}
                 />
             )}
