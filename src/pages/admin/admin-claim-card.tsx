@@ -100,7 +100,6 @@ export function AdminClaimCard({ claim, onOpen }: AdminClaimCardProps) {
                             config.badgeFg,
                         )}
                     >
-                        {config.dot && <span className={cx("size-1.5 rounded-full", config.dot)} aria-hidden="true" />}
                         {label}
                     </span>
                 </div>

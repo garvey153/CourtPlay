@@ -92,7 +92,6 @@ export function AdminPostCard({ post, onOpen }: AdminPostCardProps) {
                             config.badgeFg,
                         )}
                     >
-                        {config.dot && <span className={cx("size-1.5 rounded-full", config.dot)} aria-hidden="true" />}
                         {label}
                     </span>
                 </div>

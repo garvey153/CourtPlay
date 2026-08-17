@@ -23,21 +23,20 @@ interface KindConfig {
     badgeFg: string;
     /** bg-* twin of badgeFg — the Friend badge is knocked out of this colour. */
     accent: string;
-    dot: string | null; // null = solid badge, no dot
     dim: boolean;
 }
 
 export const KIND_CONFIG: Record<CardKind, KindConfig> = {
-    open: { bar: "bg-brand-500", label: "Open", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", accent: "bg-brand-500", dot: "bg-brand-500", dim: false },
-    approved: { bar: "bg-brand-500", label: "Approved", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", accent: "bg-brand-500", dot: "bg-brand-500", dim: false },
-    claimed: { bar: "bg-neutral-400", label: "Claimed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: "bg-neutral-400", dim: true },
-    pending: { bar: "bg-neutral-400", label: "Pending", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: "bg-neutral-400", dim: false },
-    expired: { bar: "bg-red-500", label: "Expired", badgeBg: "bg-red-900", badgeFg: "text-red-400", accent: "bg-red-400", dot: "bg-red-400", dim: true },
-    filled: { bar: "bg-neutral-400", label: "Filled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: "bg-neutral-400", dim: true },
-    completed: { bar: "bg-neutral-400", label: "Completed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: null, dim: true },
-    cancelled: { bar: "bg-neutral-400", label: "Cancelled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: null, dim: true },
-    rejected: { bar: "bg-red-500", label: "Declined", badgeBg: "bg-red-900", badgeFg: "text-red-400", accent: "bg-red-400", dot: "bg-red-400", dim: true },
-    backed_out: { bar: "bg-neutral-400", label: "Backed out", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dot: null, dim: true },
+    open: { bar: "bg-brand-500", label: "Open", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", accent: "bg-brand-500", dim: false },
+    approved: { bar: "bg-brand-500", label: "Approved", badgeBg: "bg-brand-800", badgeFg: "text-brand-500", accent: "bg-brand-500", dim: false },
+    claimed: { bar: "bg-neutral-400", label: "Claimed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dim: true },
+    pending: { bar: "bg-neutral-400", label: "Pending", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dim: false },
+    expired: { bar: "bg-red-500", label: "Expired", badgeBg: "bg-red-900", badgeFg: "text-red-400", accent: "bg-red-400", dim: true },
+    filled: { bar: "bg-neutral-400", label: "Filled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dim: true },
+    completed: { bar: "bg-neutral-400", label: "Completed", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dim: true },
+    cancelled: { bar: "bg-neutral-400", label: "Cancelled", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dim: true },
+    rejected: { bar: "bg-red-500", label: "Declined", badgeBg: "bg-red-900", badgeFg: "text-red-400", accent: "bg-red-400", dim: true },
+    backed_out: { bar: "bg-neutral-400", label: "Backed out", badgeBg: "bg-neutral-800", badgeFg: "text-neutral-400", accent: "bg-neutral-400", dim: true },
 };
 
 /** Epoch ms of a dated post's end (game date + time). Null for undated posts. */
@@ -213,7 +212,6 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
                             config.badgeFg,
                         )}
                     >
-                        {config.dot && <span className={cx("size-1.5 rounded-full", config.dot)} aria-hidden="true" />}
                         {labelOverride ?? config.label}
                     </span>
                 </div>

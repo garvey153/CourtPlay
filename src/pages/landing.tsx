@@ -80,12 +80,10 @@ function PreviewCard({ post }: { post: SamplePost }) {
                     </div>
                     {claimed ? (
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-neutral-800 px-2 py-1 text-xs font-semibold text-neutral-400">
-                            <span className="size-1.5 rounded-full bg-neutral-400" aria-hidden="true" />
                             Claimed
                         </span>
                     ) : (
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-brand-800 px-2 py-1 text-xs font-semibold text-brand-500">
-                            <span className="size-1.5 rounded-full bg-brand-500" aria-hidden="true" />
                             Open
                         </span>
                     )}

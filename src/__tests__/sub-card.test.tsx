@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { SubCard, gameEndMs } from "@/components/app/sub-card";
+import { SubCard, gameEndMs, KIND_CONFIG } from "@/components/app/sub-card";
 import type { FeedPost } from "@/types/feed";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -187,5 +187,29 @@ describe("SubCard", () => {
         render(<SubCard post={makePost({ status: "expired" })} onOpenDetail={onOpenDetail} />);
         fireEvent.click(screen.getByRole("button"));
         expect(onOpenDetail).not.toHaveBeenCalled();
+    });
+});
+
+/**
+ * Status badges are label-only. They used to carry a coloured dot; the badge's
+ * own background and text already encode the state, so the dot was a second
+ * copy of the same signal.
+ *
+ * Pinned in two ways because the render sites and the config drifted apart
+ * before: no dot element in the markup, and no `dot` key left to re-wire one to.
+ */
+describe("status badges carry no dot", () => {
+    it("renders the label without a dot element", () => {
+        const { container } = render(<SubCard post={makePost()} />);
+        const badge = screen.getByText("Open");
+        expect(badge.querySelector("span")).toBeNull();
+        // The dot was the only 1.5-unit circle on the card.
+        expect(container.querySelector(".size-1\\.5")).toBeNull();
+    });
+
+    it("keeps no dot in the shared config", () => {
+        for (const config of Object.values(KIND_CONFIG)) {
+            expect(config).not.toHaveProperty("dot");
+        }
     });
 });
