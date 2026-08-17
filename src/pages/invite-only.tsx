@@ -59,7 +59,11 @@ export function InviteOnly() {
                     Invited at a different address? Sign in with that one instead.
                 </p>
 
-                <div className="flex w-full flex-col gap-4 pt-4">
+                {/* 40px from the last line's BASELINE to the top of the button. A CSS gap
+                    starts at the text box, so this is 40 less the 12px column gap
+                    above it and the ~3.5px from baseline to box bottom at 14/20 —
+                    measured in the browser, not derived from font tables. */}
+                <div className="flex w-full flex-col gap-4 pt-[24.5px]">
                     <Link to="/signin" className={PRIMARY_BTN}>
                         Try another account
                     </Link>
