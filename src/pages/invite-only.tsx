@@ -40,7 +40,7 @@ export function InviteOnly() {
     }, [emailFromState]);
 
     return (
-        <div className="flex min-h-dvh flex-col items-center justify-center bg-primary px-8">
+        <div className="flex min-h-dvh flex-col items-center justify-center bg-primary px-9">
             {/* Left-aligned inside a centred column: the design sets the text ragged
                 right at 402px, and capping the width keeps the 36px headline from
                 running the full width of a desktop window. */}
