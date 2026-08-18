@@ -219,12 +219,25 @@ export function EditProfile() {
     const dirty = useMemo(() => !loading && serialize(form, prefs) !== snapshot.current, [loading, form, prefs]);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
-    const backToProfile = useCallback(() => navigate("/profile/me"), [navigate]);
+    // Where "Yes, discard" goes. Cancel returns to the profile; the tutorial
+    // link sets its own destination first. Without this, a link out of this
+    // screen would bypass the guard and silently drop unsaved edits.
+    const [pendingNav, setPendingNav] = useState<string | null>(null);
+    const leave = useCallback(() => navigate(pendingNav ?? "/profile/me"), [navigate, pendingNav]);
+    const backToProfile = leave;
 
     const handleCancel = useCallback(() => {
+        setPendingNav(null);
         if (dirty) setShowDiscard(true);
-        else backToProfile();
-    }, [dirty, backToProfile]);
+        else navigate("/profile/me");
+    }, [dirty, navigate]);
+
+    const handleReplayTutorial = useCallback(() => {
+        const to = "/tutorial?replay=1";
+        setPendingNav(to);
+        if (dirty) setShowDiscard(true);
+        else navigate(to);
+    }, [dirty, navigate]);
 
     const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -500,6 +513,19 @@ export function EditProfile() {
                         />
                     </section>
 
+                    {/* A way back to the tutorial, since it otherwise shows once and
+                        is gone. Routed through the discard guard above. */}
+                    <section className="flex flex-col gap-2">
+                        <h2 className="text-md font-semibold text-primary">Help</h2>
+                        <button
+                            type="button"
+                            onClick={handleReplayTutorial}
+                            className="self-start text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
+                        >
+                            Replay the tutorial
+                        </button>
+                    </section>
+
                 </>
                 ) : tab === "feed" ? (
                 <>
@@ -634,7 +660,7 @@ export function EditProfile() {
                         </p>
 
                         <div className="mt-2 flex flex-col gap-3">
-                            <button type="button" onClick={backToProfile} className={PRIMARY_BTN}>
+                            <button type="button" onClick={leave} className={PRIMARY_BTN}>
                                 Yes, discard
                             </button>
                             <button type="button" onClick={() => setShowDiscard(false)} className={SECONDARY_BTN}>

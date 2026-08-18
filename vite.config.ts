@@ -101,6 +101,16 @@ export default defineConfig({
                     "**/icons/icon-*.png",
                     "**/favicon-32.png",
                     "**/favicon.ico",
+                    // Tutorial screenshots — ~300 KB that only the /tutorial route
+                    // ever asks for, and only once per player. Precaching them puts
+                    // that on every install and every worker update, for everyone,
+                    // offline or not. Same reasoning as the icons above.
+                    //
+                    // They are .jpg today, which globPatterns does not list — so this
+                    // is belt and braces. Do not rely on the extension: adding "jpg"
+                    // to globPatterns looks like a tidy-up and would silently pull
+                    // these (and public/avatars) into the precache.
+                    "**/tutorial/*",
                 ],
                 runtimeCaching: [
                     {

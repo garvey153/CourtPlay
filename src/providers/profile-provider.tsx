@@ -18,6 +18,8 @@ export interface UserProfile {
     /** Limit the feed to posts from my groups and the players I follow. */
     feed_connected_only: boolean;
     onesignal_player_id: string | null;
+    /** When they last finished or skipped the tutorial. Null means never. */
+    tutorial_seen_at: string | null;
 }
 
 interface ProfileContextValue {
@@ -27,7 +29,13 @@ interface ProfileContextValue {
     refreshProfile: () => Promise<void>;
 }
 
-const ProfileContext = createContext<ProfileContextValue>({
+/**
+ * Exported so the demo screens behind the tutorial screenshots can inject a
+ * fixture profile directly, in both the browser capture entry and the jsdom
+ * fingerprint test — the two have to render the same tree or the fingerprint
+ * would police something the screenshot never showed.
+ */
+export const ProfileContext = createContext<ProfileContextValue>({
     profile: null,
     loading: true,
     setProfile: () => {},

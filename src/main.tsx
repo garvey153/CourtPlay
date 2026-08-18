@@ -24,6 +24,7 @@ import { Privacy } from "@/pages/privacy";
 import { AuthScreen } from "@/pages/auth";
 import { Terms } from "@/pages/terms";
 import { InviteOnly } from "@/pages/invite-only";
+import { Tutorial } from "@/pages/tutorial";
 import { ENTRY_ROUTE } from "@/lib/beta";
 import { isStandalone } from "@/utils/is-standalone";
 import { registerServiceWorker } from "@/lib/register-sw";
@@ -66,6 +67,17 @@ createRoot(document.getElementById("root")!).render(
                         />
 
                         {/* Protected — auth + profile required */}
+                        {/* Straight after onboarding. Profile-required because you can
+                            only get here once handleFinish has written one. Full screen,
+                            so no AppLayout — the shape onboarding and post-new use. */}
+                        <Route
+                            path="/tutorial"
+                            element={
+                                <ProtectedRoute>
+                                    <Tutorial />
+                                </ProtectedRoute>
+                            }
+                        />
                         <Route
                             path="/feed"
                             element={

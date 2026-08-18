@@ -1,0 +1,124 @@
+import { describe, expect, it, vi, beforeAll } from "vitest";
+import { render, act } from "@testing-library/react";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { DemoProviders } from "@/demo/demo-providers";
+import { DEMO_SCREENS } from "@/demo/screens";
+import { DEMO_NOW } from "@/demo/fixtures";
+import { fingerprintElement } from "@/test/fingerprint";
+
+// No session, exactly as the capture browser sees it — a fresh context has none.
+// The two engines must resolve auth the same way or the fingerprint would
+// police a tree the screenshot never showed.
+vi.mock("@/lib/supabase", () => ({
+    supabase: {
+        auth: {
+            getSession: async () => ({ data: { session: null } }),
+            onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+            signOut: async () => ({}),
+        },
+        rpc: async () => ({ data: null, error: null }),
+        from: () => ({ select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }) }),
+    },
+}));
+
+// jsdom has no IntersectionObserver; SubCard uses one to count views. The
+// browser has the real thing, and neither affects the rendered tree.
+class NoopIntersectionObserver {
+    observe = () => {};
+    disconnect = () => {};
+    unobserve = () => {};
+}
+vi.stubGlobal("IntersectionObserver", NoopIntersectionObserver);
+
+const MANIFEST = resolve(process.cwd(), "src/demo/screens.manifest.json");
+const UPDATING = !!process.env.UPDATE_TUTORIAL_MANIFEST;
+
+interface Manifest {
+    note: string;
+    screens: Record<string, { hash: string; image: string }>;
+}
+
+const readManifest = (): Manifest =>
+    existsSync(MANIFEST)
+        ? (JSON.parse(readFileSync(MANIFEST, "utf8")) as Manifest)
+        : { note: "", screens: {} };
+
+/**
+ * The staleness flag behind the tutorial screenshots.
+ *
+ * public/tutorial/*.png are captured from these same demo screens. When a UI
+ * change moves a screen's structure, the committed image no longer shows what
+ * the app looks like — and nothing else in the suite would notice, because the
+ * images are just files.
+ *
+ * So: render each screen, hash its structure, compare to the committed
+ * manifest. Run with UPDATE_TUTORIAL_MANIFEST=1 to rewrite it — which is what
+ * `npm run capture:tutorial` does after taking new screenshots, so the hashing
+ * happens in exactly one place rather than once here and once in the browser.
+ */
+describe("tutorial screenshots are current", () => {
+    beforeAll(() => {
+        vi.setSystemTime(new Date(DEMO_NOW));
+    });
+
+    const hashes: Record<string, string> = {};
+
+    for (const id of Object.keys(DEMO_SCREENS)) {
+        it(`fingerprints "${id}"`, async () => {
+            const { container } = render(<DemoProviders>{DEMO_SCREENS[id]()}</DemoProviders>);
+            // useAuth resolves getSession() after mount and flips `loading`.
+            // Hashing before that settles would capture the loading tree.
+            await act(async () => {});
+            hashes[id] = fingerprintElement(container);
+
+            if (UPDATING) return;
+
+            const expected = readManifest().screens[id]?.hash;
+            expect(
+                hashes[id],
+                `\n\nTutorial screenshot is stale: "${id}".\n\n` +
+                    `The demo screen's rendered structure changed, so its committed\n` +
+                    `image no longer shows what the app looks like.\n\n` +
+                    `Re-capture and commit:  npm run capture:tutorial\n\n` +
+                    `Review the new images before committing — this test only knows\n` +
+                    `the structure changed, not whether the change is an improvement.\n`,
+            ).toBe(expected);
+        });
+    }
+
+    /** An added or removed screen would otherwise pass silently. */
+    it("has a manifest entry for every screen, and no extras", () => {
+        if (UPDATING) return;
+        expect(Object.keys(readManifest().screens).sort()).toEqual(Object.keys(DEMO_SCREENS).sort());
+    });
+
+    it("has the image file each manifest entry names", () => {
+        if (UPDATING) return;
+        const { screens } = readManifest();
+        for (const [id, entry] of Object.entries(screens)) {
+            expect(existsSync(resolve(process.cwd(), "public", entry.image)), `missing image for "${id}"`).toBe(true);
+        }
+    });
+
+    it("writes the manifest when asked", () => {
+        if (!UPDATING) return;
+        const previous = readManifest().screens;
+        const screens: Manifest["screens"] = {};
+        for (const [i, id] of Object.keys(DEMO_SCREENS).entries()) {
+            const image = `tutorial/0${i + 1}-${id}.jpg`;
+            if (previous[id]?.hash !== hashes[id]) {
+                console.log(`  ${id}: ${previous[id]?.hash ?? "(new)"} → ${hashes[id]}`);
+            }
+            screens[id] = { hash: hashes[id], image };
+        }
+        writeFileSync(
+            MANIFEST,
+            JSON.stringify(
+                { note: "Generated by `npm run capture:tutorial`. Do not edit by hand.", screens },
+                null,
+                4,
+            ) + "\n",
+        );
+    });
+});

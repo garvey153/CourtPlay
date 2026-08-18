@@ -330,9 +330,10 @@ export function Onboarding() {
                 { onConflict: "user_id,notification_type" },
             );
 
-            const redirect = sessionStorage.getItem("cs_auth_redirect");
-            sessionStorage.removeItem("cs_auth_redirect");
-            navigate(redirect ?? "/feed", { replace: true });
+            // The tutorial comes next, and it consumes cs_auth_redirect rather
+            // than us — leaving the key in place is what lets a shared post link
+            // survive the tutorial instead of being dropped here.
+            navigate("/tutorial", { replace: true });
         } catch (e) {
             console.error("handleFinish error:", e);
             setError(describeActionError(e, "set up your profile"));
