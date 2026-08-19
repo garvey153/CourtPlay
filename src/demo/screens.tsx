@@ -4,8 +4,11 @@ import { RegularPlayCard } from "@/components/app/regular-play-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
 import { RegularPlaySheet } from "@/components/app/regular-play-sheet";
+import { PostTypePicker } from "@/components/app/post-type-picker";
+import { GroupCard } from "@/components/app/group-card";
 import {
     DEMO_CLAIMED_POST,
+    DEMO_GROUPS,
     DEMO_MY_POST,
     DEMO_POSTER,
     DEMO_PROFILE,
@@ -94,6 +97,28 @@ export const DEMO_SCREENS: Record<string, () => React.ReactElement> = {
             />
         </>
     ),
+    post: () => (
+        <AppLayout>
+            <div className="flex flex-col">
+                <h1 className="mb-5 text-lg font-semibold text-primary">Create a new post</h1>
+                <PostTypePicker value="sub_need" onChange={noop} />
+            </div>
+        </AppLayout>
+    ),
+
+    groups: () => (
+        <AppLayout>
+            <div className="flex flex-col">
+                <p className="mb-1.5 text-sm font-semibold text-tertiary">Groups (2)</p>
+                <div className="flex flex-col gap-3">
+                    {DEMO_GROUPS.map((g) => (
+                        <GroupCard key={g.id} group={g} onOpen={noop} />
+                    ))}
+                </div>
+            </div>
+        </AppLayout>
+    ),
+
     activity: () => (
         <AppLayout>
             <div className="flex flex-col gap-5">

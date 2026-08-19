@@ -3,8 +3,13 @@
  *
  * The design's tokens land exactly on this theme's: `status/error-bg` #7a271a is
  * red-900, `status/error_badge` #f97066 is red-400. So the colours were already
- * right where this badge was hand-rolled — what was missing is the dot, and the
- * vertical padding was half the design's.
+ * right where this badge was hand-rolled, and the vertical padding was half the
+ * design's.
+ *
+ * The design (95:212) also has a leading dot. It is gone: status badges across
+ * the app dropped theirs, since the badge's own background and text colour
+ * already carry the state. This one was missed at the time because its dot
+ * carries an extra class the sweep did not match on.
  *
  * Shared because it appears in two places (Profile's group list and the group
  * detail sheet) that had drifted from the design in the same way, and would
@@ -18,7 +23,6 @@ export function ClosedBadge({ className }: { className?: string }) {
                 (className ? ` ${className}` : "")
             }
         >
-            <span className="size-1.5 shrink-0 rounded-full bg-red-400" aria-hidden="true" />
             Closed
         </span>
     );
