@@ -1,9 +1,9 @@
 import type { CSSProperties, ComponentPropsWithRef, HTMLAttributes, KeyboardEvent, ReactNode, Ref } from "react";
-import { cloneElement, createContext, isValidElement, useCallback, useContext, useEffect, useState } from "react";
+import { Fragment, cloneElement, createContext, isValidElement, useCallback, useContext, useEffect, useState } from "react";
 import useEmblaCarousel, { type UseEmblaCarouselType } from "embla-carousel-react";
 import { cx } from "@/utils/cx";
 
-type CarouselApi = UseEmblaCarouselType[1];
+export type CarouselApi = UseEmblaCarouselType[1];
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>;
 type CarouselOptions = UseCarouselParameters[0];
 type CarouselPlugin = UseCarouselParameters[1];
@@ -289,7 +289,11 @@ const CarouselIndicatorGroup = ({ children, ...props }: CarouselIndicatorGroupPr
 
     // If the children is a render prop, we need to pass the index to the render prop.
     if (typeof children === "function") {
-        return <nav {...props}>{scrollSnaps.map((index) => children({ index }))}</nav>;
+        // `map`'s first argument is the element, not the index — scrollSnapList()
+        // returns snap POSITIONS (0, 0.166, 0.333…), so passing it as `index`
+        // meant no indicator ever matched selectedIndex and none of them ever lit
+        // up. The second argument is the index.
+        return <nav {...props}>{scrollSnaps.map((_, index) => <Fragment key={index}>{children({ index })}</Fragment>)}</nav>;
     }
 
     return <nav {...props}>{children}</nav>;

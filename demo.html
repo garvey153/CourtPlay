@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <!-- Same viewport contract as index.html: the screenshots are full-screen
+             device shots and depend on viewport-fit for the safe-area variables. -->
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+        <title>CourtPlay demo screens</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..700&display=swap" rel="stylesheet" />
+        <script>
+            // CourtPlay ships dark-only; index.html applies this unconditionally.
+            document.documentElement.classList.add("dark-mode");
+        </script>
+    </head>
+    <body>
+        <!-- Dev-only. Not built: vite.config.ts sets no rollupOptions.input, so
+             `vite build` emits index.html alone. Used by npm run capture:tutorial. -->
+        <div id="root"></div>
+        <script type="module" src="/src/demo/demo-entry.tsx"></script>
+    </body>
+</html>
