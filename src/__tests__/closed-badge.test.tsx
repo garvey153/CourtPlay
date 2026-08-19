@@ -6,16 +6,18 @@ import { ClosedBadge } from "@/components/app/closed-badge";
  * design-system 95:212. The colours were already right where this badge was
  * hand-rolled — the design's `status/error-bg` #7a271a is this theme's red-900
  * and `status/error_badge` #f97066 is red-400 — so what these pin is the part
- * that was missing: the dot, and 4px of vertical padding rather than 2.
+ * that was missing: 4px of vertical padding rather than 2.
+ *
+ * The dot the design draws is deliberately NOT here. Status badges across the
+ * app dropped theirs — the badge's own background and text colour already carry
+ * the state — and this one was simply missed at the time, because its dot
+ * carried an extra class the sweep grepped past.
  */
 describe("ClosedBadge", () => {
-    it("has the dot the design draws", () => {
+    it("carries no dot, like every other status badge", () => {
         const { container } = render(<ClosedBadge />);
-        const dot = container.querySelector('[aria-hidden="true"]');
-        expect(dot).not.toBeNull();
-        expect(dot!.className).toContain("size-1.5"); // 6px
-        expect(dot!.className).toContain("rounded-full");
-        expect(dot!.className).toContain("bg-red-400");
+        expect(container.querySelector('[aria-hidden="true"]')).toBeNull();
+        expect(container.querySelector(".rounded-full")).toBeNull();
     });
 
     it("uses the design's fill, text and padding", () => {

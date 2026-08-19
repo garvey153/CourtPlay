@@ -8,6 +8,8 @@ import { TimeFieldSelect } from "@/components/app/time-field-select";
 import { Input } from "@/components/base/input/input";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
+import { FieldLabel } from "@/components/base/input/field-label";
+import { PostTypePicker } from "@/components/app/post-type-picker";
 import { SelectItem } from "@/components/base/select/select-item";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { Toggle } from "@/components/base/toggle/toggle";
@@ -63,31 +65,10 @@ const TIMES_OF_DAY = [
     { id: "Evening", label: "Evening" },
 ];
 
-const POST_TYPES = [
-    {
-        id: "sub_need" as const,
-        title: "Find a sub",
-        desc: "Post a specific date, time, and court to fill an open spot and recoup the cost.",
-    },
-    {
-        id: "regular_game" as const,
-        title: "Find a regular game",
-        desc: "Post your availability and preferences to connect with ongoing groups.",
-    },
-];
 
 interface Court { id: string; name: string; area: string | null }
 
 /** Section label with an optional required asterisk. */
-function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
-    return (
-        <label className="text-sm font-medium text-secondary">
-            {children}
-            {required && <span> *</span>}
-        </label>
-    );
-}
-
 // Fields that make up a post, used to detect unsaved changes in edit mode.
 interface FormFields {
     postType: string;
@@ -723,40 +704,7 @@ export function PostNew() {
                 ) : (
                 <>
                 {/* Post type — radio cards (hidden in edit mode) */}
-                {!isEditing && (
-                    <div className="mb-7 flex flex-col gap-3">
-                        <FieldLabel required>Select a post type</FieldLabel>
-                        {POST_TYPES.map((t) => {
-                            const selected = postType === t.id;
-                            return (
-                                <button
-                                    key={t.id}
-                                    type="button"
-                                    onClick={() => setPostType(t.id)}
-                                    className={cx(
-                                        // Always border-2 (color-only change) so the card's inner width — and
-                                        // therefore the description wrapping — stays constant when toggling.
-                                        "flex items-start gap-2 rounded-lg border-2 bg-tertiary p-4 text-left transition duration-100 ease-linear",
-                                        selected ? "border-brand" : "border-neutral-600 hover:border-neutral-500",
-                                    )}
-                                >
-                                    <span
-                                        className={cx(
-                                            "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full",
-                                            selected ? "bg-brand-solid" : "border border-neutral-600",
-                                        )}
-                                    >
-                                        {selected && <span className="size-1.5 rounded-full bg-white" />}
-                                    </span>
-                                    <span className="flex min-w-0 flex-col">
-                                        <span className="text-sm font-medium text-primary">{t.title}</span>
-                                        <span className="text-sm text-secondary">{t.desc}</span>
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
+                {!isEditing && <PostTypePicker value={postType} onChange={setPostType} />}
 
                 {rateLimitHit && (
                     <p className="mb-4 rounded-lg bg-warning-primary px-3 py-2 text-sm text-warning-primary">

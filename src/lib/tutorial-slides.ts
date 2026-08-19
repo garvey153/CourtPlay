@@ -49,8 +49,22 @@ export const TUTORIAL_SLIDES: TutorialSlide[] = [
         body: "Looking for something ongoing rather than a one-off? Tap Connect to start a conversation with the poster. No approval needed.",
     },
     {
+        id: "post",
+        image: "/tutorial/05-post.jpg",
+        alt: "The new post form, choosing between Find a sub and Find a regular game.",
+        headline: "Post in a few taps",
+        body: "Find a sub for a specific date, time and court. Find a regular game to share your availability. Either can be private, so only chosen groups or players can claim.",
+    },
+    {
+        id: "groups",
+        image: "/tutorial/06-groups.jpg",
+        alt: "A profile showing two groups with their members.",
+        headline: "Your groups",
+        body: "Make a group for the people you play with, and share spots with just them. Posts from your groups and the players you follow rise to the top of your feed.",
+    },
+    {
         id: "activity",
-        image: "/tutorial/05-activity.jpg",
+        image: "/tutorial/07-activity.jpg",
         alt: "The Activity screen showing pending and approved claims.",
         headline: "Track it in Activity",
         body: "Answered posts holds the spots you claimed. Created posts holds what you posted. Replay this tutorial any time from Manage.",

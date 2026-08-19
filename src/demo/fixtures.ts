@@ -21,6 +21,7 @@
 import type { FeedPost } from "@/types/feed";
 import type { MyPost } from "@/types/activity";
 import type { UserProfile } from "@/providers/profile-provider";
+import type { GroupSummary } from "@/types/groups";
 
 /** The instant every demo screen believes it is. Parsed by the capture script. */
 export const DEMO_NOW = "2026-05-14T13:00:00.000Z";
@@ -198,6 +199,44 @@ export const DEMO_MY_POST: MyPost = {
         },
     ],
 };
+
+/** Two groups for the profile screen — one healthy, one closed. */
+export const DEMO_GROUPS: GroupSummary[] = [
+    {
+        id: "demo-group-1",
+        name: "Sunday Doubles",
+        details: "Longshore Club",
+        is_creator: true,
+        is_closed: false,
+        closed_at: null,
+        joined_at: ago(60 * 24 * 30),
+        my_removed_at: null,
+        removed_by_me: false,
+        member_count: 4,
+        members: [
+            { id: "demo-chris", first_name: "Chris", last_name: "B", photo_url: "/avatars/chris.jpg" },
+            { id: "demo-maria", first_name: "Maria", last_name: "L", photo_url: "/avatars/maria.jpg" },
+            { id: "demo-dan", first_name: "Dan", last_name: "K", photo_url: "/avatars/dan.jpg" },
+            { id: DEMO_VIEWER_ID, first_name: "Alex", last_name: "R", photo_url: null },
+        ],
+    },
+    {
+        id: "demo-group-2",
+        name: "Winter League",
+        details: "Westport Tennis Club",
+        is_creator: false,
+        is_closed: true,
+        closed_at: ago(60 * 24 * 3),
+        joined_at: ago(60 * 24 * 90),
+        my_removed_at: null,
+        removed_by_me: false,
+        member_count: 2,
+        members: [
+            { id: "demo-maria", first_name: "Maria", last_name: "L", photo_url: "/avatars/maria.jpg" },
+            { id: DEMO_VIEWER_ID, first_name: "Alex", last_name: "R", photo_url: null },
+        ],
+    },
+];
 
 /** The poster of DEMO_MY_POST, as the created sheet wants them. */
 export const DEMO_POSTER = {
