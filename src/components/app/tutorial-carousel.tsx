@@ -8,6 +8,10 @@ import type { TutorialSlide } from "@/lib/tutorial-slides";
  * The post-onboarding tutorial: swipe through screenshots of the real app
  * (Figma 662:9864 and the five frames after it).
  *
+ * Black, not bg-primary — the screenshots are the content here, and a true
+ * black page lets them sit on it without a seam. The fade below has to land on
+ * the same colour or it leaves a visible band, so the two move together.
+ *
  * Embla, not a native overflow-x scroller. That distinction is load-bearing on
  * iOS: a flex row inside a native scroller cannot be panned with a finger (see
  * src/pages/admin/index.tsx, settled on-device across five variants). Embla
@@ -51,7 +55,7 @@ export function TutorialCarousel({
     const last = index === slides.length - 1;
 
     return (
-        <div className="flex h-dvh flex-col gap-8 overflow-hidden bg-primary pt-safe">
+        <div className="flex h-dvh flex-col gap-8 overflow-hidden bg-black pt-safe">
             <Carousel.Root setApi={setApi} className="flex min-h-0 flex-1 flex-col gap-8" opts={{ loop: false }}>
                 {/* Carousel.Content puts this className on its inner track; its outer
                     viewport is h-full, so it needs a parent with a definite height. */}
@@ -80,8 +84,8 @@ export function TutorialCarousel({
                                         className={cx(
                                             "pointer-events-none absolute inset-x-0 h-16",
                                             slide.focus === "bottom"
-                                                ? "top-0 bg-gradient-to-t from-transparent to-[var(--color-bg-primary)]"
-                                                : "bottom-0 bg-gradient-to-b from-transparent to-[var(--color-bg-primary)]",
+                                                ? "top-0 bg-gradient-to-t from-transparent to-black"
+                                                : "bottom-0 bg-gradient-to-b from-transparent to-black",
                                         )}
                                     />
                                 </div>
