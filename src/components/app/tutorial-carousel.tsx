@@ -2,24 +2,22 @@ import { useEffect, useState } from "react";
 import { Carousel } from "@/components/application/carousel/carousel-base";
 import type { CarouselApi } from "@/components/application/carousel/carousel-base";
 import { cx } from "@/utils/cx";
-import { PRIMARY_H9_FULL as PRIMARY_BTN } from "@/components/base/buttons/button-styles";
 import type { TutorialSlide } from "@/lib/tutorial-slides";
 
 /**
- * The post-onboarding tutorial: swipe through screenshots of the real app.
+ * The post-onboarding tutorial: swipe through screenshots of the real app
+ * (Figma 662:9864 and the five frames after it).
  *
  * Embla, not a native overflow-x scroller. That distinction is load-bearing on
- * iOS: a flex row inside a native scroller cannot be panned with a finger
- * (settled on-device across five variants — see src/pages/admin/index.tsx).
- * Embla attaches its own pointer listeners and drives a transform, with
- * overflow-hidden, so that failure mode has no purchase here. If it turns out
- * to misbehave on a real iPhone anyway, only the Carousel.* layer needs
- * replacing — with `overflow-x-auto whitespace-nowrap snap-x` and inline-block
- * slides, which is the shape proven to work in this codebase.
+ * iOS: a flex row inside a native scroller cannot be panned with a finger (see
+ * src/pages/admin/index.tsx, settled on-device across five variants). Embla
+ * attaches its own pointer listeners and drives a transform inside an
+ * overflow-hidden box, so the failure mode has no purchase. Verified swiping on
+ * a real iPhone.
  *
- * Skip and Done live OUTSIDE Carousel.Root deliberately: inside the drag
- * region, a tap that moves a few pixels reads as a drag and the button never
- * fires.
+ * The screenshot is deliberately cropped rather than letterboxed, and fades out
+ * at whichever edge meets the copy — the design shows a phone screen running off
+ * the top of the page, not a picture of a phone.
  */
 export function TutorialCarousel({
     slides,
@@ -53,45 +51,47 @@ export function TutorialCarousel({
     const last = index === slides.length - 1;
 
     return (
-        <div className="flex h-dvh flex-col overflow-hidden bg-primary">
-            <div className="flex justify-end px-5 pt-[calc(0.75rem_+_env(safe-area-inset-top))]">
-                <button
-                    type="button"
-                    onClick={onSkip}
-                    className="rounded-lg px-2 py-1 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary"
-                >
-                    Skip
-                </button>
-            </div>
-
-            <Carousel.Root setApi={setApi} className="flex min-h-0 flex-1 flex-col" opts={{ loop: false }}>
-                {/* Only Carousel.Content is draggable — Root is just context, so
-                    the dots and Done below sit inside it without a tap being
-                    swallowed by a few pixels of drag. */}
-                {/* Carousel.Content puts this className on its inner track; its
-                    outer viewport is h-full, so it needs a parent with a definite
-                    height or the slides grow past the screen and push the copy
-                    out from under the dots. */}
+        <div className="flex h-dvh flex-col gap-8 overflow-hidden bg-primary pt-safe">
+            <Carousel.Root setApi={setApi} className="flex min-h-0 flex-1 flex-col gap-8" opts={{ loop: false }}>
+                {/* Carousel.Content puts this className on its inner track; its outer
+                    viewport is h-full, so it needs a parent with a definite height. */}
                 <div className="min-h-0 flex-1">
                     <Carousel.Content className="h-full">
-                    {slides.map((slide) => (
-                        <Carousel.Item key={slide.id} className="flex h-full min-h-0 flex-col">
-                            <div className="flex min-h-0 flex-1 items-center justify-center px-9 pt-2">
-                                <img
-                                    src={slide.image}
-                                    alt={slide.alt}
-                                    width={390}
-                                    height={844}
-                                    loading={slide.id === slides[0].id ? "eager" : "lazy"}
-                                    className="max-h-full w-auto rounded-xl object-contain"
-                                />
-                            </div>
-                            <div className="flex shrink-0 flex-col gap-2 px-9 pt-6">
-                                <h1 className="text-display-xs font-semibold text-primary">{slide.headline}</h1>
-                                <p className="text-sm text-secondary">{slide.body}</p>
-                            </div>
-                        </Carousel.Item>
-                    ))}
+                        {slides.map((slide) => (
+                            <Carousel.Item key={slide.id} className="flex h-full min-h-0 flex-col gap-8">
+                                <div className="relative min-h-0 flex-1 overflow-hidden">
+                                    <img
+                                        src={slide.image}
+                                        alt={slide.alt}
+                                        width={330}
+                                        height={717}
+                                        loading={slide.id === slides[0].id ? "eager" : "lazy"}
+                                        className={cx(
+                                            "absolute left-9 w-[330px] max-w-[calc(100%_-_4.5rem)] rounded-lg",
+                                            // A sheet's buttons sit at the bottom of the phone, so
+                                            // that end is pulled into view and the top fades out.
+                                            slide.focus === "bottom" ? "bottom-0" : "top-9",
+                                        )}
+                                    />
+                                    {/* Fades the screenshot into the page at the edge that
+                                        meets the copy, so it reads as one surface. */}
+                                    <div
+                                        aria-hidden="true"
+                                        className={cx(
+                                            "pointer-events-none absolute inset-x-0 h-16",
+                                            slide.focus === "bottom"
+                                                ? "top-0 bg-gradient-to-t from-transparent to-[var(--color-bg-primary)]"
+                                                : "bottom-0 bg-gradient-to-b from-transparent to-[var(--color-bg-primary)]",
+                                        )}
+                                    />
+                                </div>
+
+                                <div className="flex shrink-0 flex-col gap-3 px-9">
+                                    <h1 className="text-display-sm font-semibold text-primary">{slide.headline}</h1>
+                                    <p className="text-sm text-secondary">{slide.body}</p>
+                                </div>
+                            </Carousel.Item>
+                        ))}
                     </Carousel.Content>
                 </div>
 
@@ -100,28 +100,37 @@ export function TutorialCarousel({
                     Slide {index + 1} of {slides.length}
                 </p>
 
-                <div className="flex flex-col gap-5 px-9 pt-6 pb-[calc(2rem_+_var(--safe-bottom))]">
-                <Carousel.IndicatorGroup className="flex items-center justify-center" aria-label="Choose a slide">
-                    {slides.map((slide, i) => (
-                        <Carousel.Indicator key={slide.id} index={i} className="p-2">
-                            <span
-                                className={cx(
-                                    "block size-2 rounded-full transition-colors duration-100 ease-linear",
-                                    i === index ? "bg-brand-solid" : "bg-tertiary",
-                                )}
-                            />
-                        </Carousel.Indicator>
-                    ))}
-                </Carousel.IndicatorGroup>
+                <div className="flex shrink-0 items-center justify-between px-9 pb-[calc(2rem_+_var(--safe-bottom))]">
+                    <Carousel.IndicatorGroup className="flex items-center gap-3">
+                        {slides.map((slide, i) => (
+                            <Carousel.Indicator key={slide.id} index={i}>
+                                <span
+                                    className={cx(
+                                        "block size-2 rounded-full transition-colors duration-100 ease-linear",
+                                        i === index ? "bg-brand-solid" : "bg-quaternary",
+                                    )}
+                                />
+                            </Carousel.Indicator>
+                        ))}
+                    </Carousel.IndicatorGroup>
 
-                {last ? (
-                    <button type="button" onClick={onDone} className={PRIMARY_BTN}>
-                        Done
+                    <button
+                        type="button"
+                        onClick={last ? onDone : onSkip}
+                        className="flex items-center gap-2 text-xs text-brand-secondary transition duration-100 ease-linear hover:text-brand-secondary_hover"
+                    >
+                        {last ? "Go to CourtPlay" : "Skip tutorial"}
+                        {last && (
+                            <svg width="5" height="10" viewBox="0 0 5 10" fill="none" aria-hidden="true">
+                                <path
+                                    d="M0.5 1L4 5L0.5 9"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
+                        )}
                     </button>
-                    ) : (
-                        // Reserve the row so the dots don't jump when Done appears.
-                        <div className="h-9" aria-hidden="true" />
-                    )}
                 </div>
             </Carousel.Root>
         </div>

@@ -68,21 +68,22 @@ describe("tutorial", () => {
             );
         });
 
-        it("offers Skip", async () => {
+        it("offers a way to skip", async () => {
             const onSkip = vi.fn();
             render(<TutorialCarousel slides={TUTORIAL_SLIDES} onSkip={onSkip} onDone={vi.fn()} />);
-            await userEvent.click(screen.getByRole("button", { name: "Skip" }));
+            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
             expect(onSkip).toHaveBeenCalled();
         });
 
-        it("shows Done only on the last slide", async () => {
+        it("turns the skip into the finish on the last slide", async () => {
             const onDone = vi.fn();
             render(<TutorialCarousel slides={TUTORIAL_SLIDES} onSkip={vi.fn()} onDone={onDone} />);
-            expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument();
+            expect(screen.queryByRole("button", { name: /Go to CourtPlay/ })).not.toBeInTheDocument();
 
-            // One slide means the first slide IS the last one.
+            // One slide means the first slide IS the last one — the design puts
+            // the finish in the same slot the skip occupies.
             render(<TutorialCarousel slides={[TUTORIAL_SLIDES[0]]} onSkip={vi.fn()} onDone={onDone} />);
-            await userEvent.click(screen.getByRole("button", { name: "Done" }));
+            await userEvent.click(screen.getByRole("button", { name: /Go to CourtPlay/ }));
             expect(onDone).toHaveBeenCalled();
         });
 
@@ -98,7 +99,7 @@ describe("tutorial", () => {
         it("honours a deep link, and clears it", async () => {
             sessionStorage.setItem("cs_auth_redirect", "/post/2b8f1c9e-0000-4000-8000-000000000000");
             renderPage();
-            await userEvent.click(screen.getByRole("button", { name: "Skip" }));
+            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
             await waitFor(() => expect(screen.getByTestId("path").textContent).toMatch(/^\/post\//));
             expect(sessionStorage.getItem("cs_auth_redirect")).toBeNull();
         });
@@ -106,19 +107,19 @@ describe("tutorial", () => {
         it("falls back to the feed when the stored value is not a post link", async () => {
             sessionStorage.setItem("cs_auth_redirect", "https://evil.example.com");
             renderPage();
-            await userEvent.click(screen.getByRole("button", { name: "Skip" }));
+            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
             await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/feed"));
         });
 
         it("goes to the feed when there is no deep link", async () => {
             renderPage();
-            await userEvent.click(screen.getByRole("button", { name: "Skip" }));
+            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
             await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/feed"));
         });
 
         it("records that it was seen", async () => {
             renderPage();
-            await userEvent.click(screen.getByRole("button", { name: "Skip" }));
+            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
             await waitFor(() => expect(update).toHaveBeenCalled());
             expect(update.mock.calls[0][0]).toHaveProperty("tutorial_seen_at");
         });
@@ -134,7 +135,7 @@ describe("tutorial", () => {
             });
             renderPage();
             await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/feed"));
-            expect(screen.queryByRole("button", { name: "Skip" })).not.toBeInTheDocument();
+            expect(screen.queryByRole("button", { name: "Skip tutorial" })).not.toBeInTheDocument();
         });
 
         it("still plays when replayed on purpose", () => {
@@ -144,13 +145,13 @@ describe("tutorial", () => {
                 loading: false,
             });
             renderPage("/tutorial?replay=1");
-            expect(screen.getByRole("button", { name: "Skip" })).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Skip tutorial" })).toBeInTheDocument();
         });
 
         it("returns to Manage after a replay, not the feed", async () => {
             profileMock.mockReturnValue({ profile: profile(), setProfile, loading: false });
             renderPage("/tutorial?replay=1");
-            await userEvent.click(screen.getByRole("button", { name: "Skip" }));
+            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
             await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/profile/edit"));
         });
     });

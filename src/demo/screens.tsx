@@ -3,7 +3,6 @@ import { SubCard } from "@/components/app/sub-card";
 import { RegularPlayCard } from "@/components/app/regular-play-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
-import { RegularPlaySheet } from "@/components/app/regular-play-sheet";
 import { PostTypePicker } from "@/components/app/post-type-picker";
 import { GroupCard } from "@/components/app/group-card";
 import {
@@ -11,7 +10,6 @@ import {
     DEMO_GROUPS,
     DEMO_MY_POST,
     DEMO_POSTER,
-    DEMO_PROFILE,
     DEMO_REGULAR_POST,
     DEMO_SUB_POST,
     DEMO_VIEWER_ID,
@@ -82,39 +80,11 @@ export const DEMO_SCREENS: Record<string, () => React.ReactElement> = {
         </>
     ),
 
-    connect: () => (
-        <>
-            <FeedBehind />
-            <RegularPlaySheet
-            post={DEMO_REGULAR_POST}
-            currentUserId={DEMO_VIEWER_ID}
-            onClose={noop}
-            currentUser={{
-                first_name: DEMO_PROFILE.first_name,
-                last_name: DEMO_PROFILE.last_name,
-                photo_url: DEMO_PROFILE.photo_url,
-                }}
-            />
-        </>
-    ),
     post: () => (
         <AppLayout>
             <div className="flex flex-col">
                 <h1 className="mb-5 text-lg font-semibold text-primary">Create a new post</h1>
                 <PostTypePicker value="sub_need" onChange={noop} />
-            </div>
-        </AppLayout>
-    ),
-
-    groups: () => (
-        <AppLayout>
-            <div className="flex flex-col">
-                <p className="mb-1.5 text-sm font-semibold text-tertiary">Groups (2)</p>
-                <div className="flex flex-col gap-3">
-                    {DEMO_GROUPS.map((g) => (
-                        <GroupCard key={g.id} group={g} onOpen={noop} />
-                    ))}
-                </div>
             </div>
         </AppLayout>
     ),
@@ -134,6 +104,19 @@ export const DEMO_SCREENS: Record<string, () => React.ReactElement> = {
                         kindOverride="claimed"
                         labelOverride="Approved"
                     />
+                </div>
+            </div>
+        </AppLayout>
+    ),
+
+    groups: () => (
+        <AppLayout>
+            <div className="flex flex-col">
+                <p className="mb-1.5 text-sm font-semibold text-tertiary">Groups (2)</p>
+                <div className="flex flex-col gap-3">
+                    {DEMO_GROUPS.map((g) => (
+                        <GroupCard key={g.id} group={g} onOpen={noop} />
+                    ))}
                 </div>
             </div>
         </AppLayout>

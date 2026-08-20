@@ -13,21 +13,17 @@
             "hash": "408dddf378c9421a",
             "image": "tutorial/03-approve.jpg"
         },
-        "connect": {
-            "hash": "8a45e7e3a3071d07",
-            "image": "tutorial/04-connect.jpg"
-        },
         "post": {
             "hash": "2fc9c7b0a82b8300",
-            "image": "tutorial/05-post.jpg"
+            "image": "tutorial/04-post.jpg"
+        },
+        "activity": {
+            "hash": "34bcf9ddf44dbe20",
+            "image": "tutorial/05-activity.jpg"
         },
         "groups": {
             "hash": "edf00752d84dc45e",
             "image": "tutorial/06-groups.jpg"
-        },
-        "activity": {
-            "hash": "34bcf9ddf44dbe20",
-            "image": "tutorial/07-activity.jpg"
         }
     }
 }
