@@ -10,7 +10,7 @@
             "image": "tutorial/02-claim.jpg"
         },
         "approve": {
-            "hash": "d9c669008f53bf30",
+            "hash": "61c6d18cf7d43725",
             "image": "tutorial/03-approve.jpg"
         },
         "post": {
@@ -22,7 +22,7 @@
             "image": "tutorial/05-activity.jpg"
         },
         "groups": {
-            "hash": "c7a67d1950f4c9fb",
+            "hash": "a8e9bc33424bffca",
             "image": "tutorial/06-groups.jpg"
         }
     }

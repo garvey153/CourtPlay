@@ -44,7 +44,7 @@ export const DEMO_PROFILE: UserProfile = {
     first_name: "Alex",
     last_name: "Rivera",
     headline: null,
-    photo_url: null,
+    photo_url: "/avatars/alex.jpg",
     skill_level: "4.0",
     court_preferences: ["Longshore Club"],
     pro_preference: null,
@@ -219,7 +219,7 @@ export const DEMO_GROUPS: GroupSummary[] = [
             { id: "demo-chris", first_name: "Chris", last_name: "B", photo_url: "/avatars/chris.jpg" },
             { id: "demo-maria", first_name: "Maria", last_name: "L", photo_url: "/avatars/maria.jpg" },
             { id: "demo-dan", first_name: "Dan", last_name: "K", photo_url: "/avatars/dan.jpg" },
-            { id: DEMO_VIEWER_ID, first_name: "Alex", last_name: "R", photo_url: null },
+            { id: DEMO_VIEWER_ID, first_name: "Alex", last_name: "R", photo_url: "/avatars/alex.jpg" },
         ],
     },
     {
@@ -235,7 +235,7 @@ export const DEMO_GROUPS: GroupSummary[] = [
         member_count: 2,
         members: [
             { id: "demo-maria", first_name: "Maria", last_name: "L", photo_url: "/avatars/maria.jpg" },
-            { id: DEMO_VIEWER_ID, first_name: "Alex", last_name: "R", photo_url: null },
+            { id: DEMO_VIEWER_ID, first_name: "Alex", last_name: "R", photo_url: "/avatars/alex.jpg" },
         ],
     },
 ];
@@ -273,7 +273,7 @@ export const DEMO_PROFILE_PAGE = {
     first_name: "Alex",
     last_name: "Rivera",
     headline: null,
-    photo_url: null,
+    photo_url: "/avatars/alex.jpg",
     skill_level: "4.0",
     court_preferences: ["Longshore Club"],
     new_to_westport: false,
