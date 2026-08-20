@@ -1,14 +1,13 @@
 /**
- * The post-onboarding tutorial.
+ * The post-onboarding tutorial (Figma 662:9864 and the five frames after it).
  *
  * Each slide's image is captured from a demo screen in src/demo/screens.tsx by
  * `npm run capture:tutorial`, using fake accounts — no real player's name or
- * photo may appear here. A vitest fingerprint test fails when a screen's
- * structure changes, so a UI change tells you the images need re-taking.
+ * photo may appear here. A vitest fingerprint test renders those same screens
+ * and fails when their structure changes, so a UI change tells you the images
+ * need re-taking.
  *
- * Copy uses the app's own vocabulary: a "spot" is what you claim, "Connect" is
- * what you do on a regular-game post, and the two post types are "Find a sub"
- * and "Find a regular game".
+ * Copy is the design's, verbatim.
  */
 export interface TutorialSlide {
     /** Matches the demo screen id, so image and screen cannot drift apart. */
@@ -17,56 +16,64 @@ export interface TutorialSlide {
     alt: string;
     headline: string;
     body: string;
+    /**
+     * Which end of the screenshot matters, which decides how it is cropped and
+     * which edge fades out.
+     *
+     * The design pulls sheet screens up by ~100px so the buttons at the bottom
+     * of the phone are what you see, and fades the top instead of the bottom.
+     * Full screens sit at the top and fade at the bottom.
+     */
+    focus: "top" | "bottom";
 }
 
 export const TUTORIAL_SLIDES: TutorialSlide[] = [
     {
         id: "feed",
         image: "/tutorial/01-feed.jpg",
-        alt: "The CourtPlay feed showing an open doubles spot and a regular game post.",
-        headline: "Your tennis feed",
-        body: "Open spots and regular games, soonest first. Posts from your groups and the players you follow rise to the top. Tap Post to add your own.",
+        alt: "The CourtPlay feed, showing open spots and a regular game post.",
+        headline: "Your tennis feed.",
+        body: "Open spots and people looking for regular play are listed, soonest first. Posts from friends you follow or your groups rise to the top.",
+        focus: "top",
     },
     {
         id: "claim",
         image: "/tutorial/02-claim.jpg",
         alt: "A post's detail sheet with a Claim for $25 button.",
-        headline: "Claim a spot",
-        body: "Tap a post to see the court, time and cost, then claim the spot. You can claim any game at your level or above.",
+        headline: "Claim a spot.",
+        body: "Tap a post to see the time and cost, then claim the spot. You can claim any game at your level or above.",
+        focus: "bottom",
     },
     {
         id: "approve",
         image: "/tutorial/03-approve.jpg",
         alt: "A claim on your own post, with Approve claim and Decline buttons.",
-        headline: "You decide who plays",
-        body: "Claims on your posts come to you. Approve or decline — your phone and Venmo stay hidden until you approve.",
-    },
-    {
-        id: "connect",
-        image: "/tutorial/04-connect.jpg",
-        alt: "A regular game post with a Connect button.",
-        headline: "Find a regular game",
-        body: "Looking for something ongoing rather than a one-off? Tap Connect to start a conversation with the poster. No approval needed.",
+        headline: "You decide who plays.",
+        body: "Claims on your posts come to you. Approve or Decline, your contact info and Venmo stay hidden until you approve.",
+        focus: "bottom",
     },
     {
         id: "post",
-        image: "/tutorial/05-post.jpg",
+        image: "/tutorial/04-post.jpg",
         alt: "The new post form, choosing between Find a sub and Find a regular game.",
-        headline: "Post in a few taps",
-        body: "Find a sub for a specific date, time and court. Find a regular game to share your availability. Either can be private, so only chosen groups or players can claim.",
+        headline: "Post in a few taps.",
+        body: "Find a sub or share your availability to join a regular clinic or game play. Either can be private, so only chosen groups or players can claim.",
+        focus: "top",
+    },
+    {
+        id: "activity",
+        image: "/tutorial/05-activity.jpg",
+        alt: "The Activity screen, showing claimed and created posts.",
+        headline: "Keep track in Activity.",
+        body: "Answered posts holds the spots you claimed. Created posts hold what you posted. Message in app so the details are never lost.",
+        focus: "top",
     },
     {
         id: "groups",
         image: "/tutorial/06-groups.jpg",
-        alt: "A profile showing two groups with their members.",
-        headline: "Your groups",
-        body: "Make a group for the people you play with, and share spots with just them. Posts from your groups and the players you follow rise to the top of your feed.",
-    },
-    {
-        id: "activity",
-        image: "/tutorial/07-activity.jpg",
-        alt: "The Activity screen showing pending and approved claims.",
-        headline: "Track it in Activity",
-        body: "Answered posts holds the spots you claimed. Created posts holds what you posted. Replay this tutorial any time from Manage.",
+        alt: "A profile showing your groups and their members.",
+        headline: "Your groups.",
+        body: "Make a group for the people you play with. Share spots with only them or tag a group when posting an opening to keep them in the loop.",
+        focus: "top",
     },
 ];
