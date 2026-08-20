@@ -123,8 +123,22 @@ export default defineConfig({
         }),
     ],
     resolve: {
-        alias: {
-            "@": path.resolve(__dirname, "./src"),
-        },
+        // ORDER MATTERS. Vite walks these in order, so the specific mapping has
+        // to come before "@" — otherwise "@/lib/supabase" matches "@" first and
+        // is rewritten to the real client before this is ever considered.
+        alias: [
+            // Tutorial screenshots only. `npm run capture:tutorial` runs the dev
+            // server with DEMO=1 so demo.html can render the REAL pages against
+            // fixtures instead of hitting Supabase — the designs show whole
+            // screens, and a composition of a page's parts is always thinner
+            // than the page.
+            //
+            // Never reachable from a build: `vite build` is not run with DEMO
+            // set, and demo.html is not a build input either way.
+            ...(process.env.DEMO === "1"
+                ? [{ find: /^@\/lib\/supabase$/, replacement: path.resolve(__dirname, "./src/demo/supabase-mock.ts") }]
+                : []),
+            { find: "@", replacement: path.resolve(__dirname, "./src") },
+        ],
     },
 });

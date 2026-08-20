@@ -238,6 +238,57 @@ export const DEMO_GROUPS: GroupSummary[] = [
     },
 ];
 
+/** What get_profile returns for the demo player's own profile. */
+export const DEMO_PROFILE_PAGE = {
+    id: DEMO_VIEWER_ID,
+    first_name: "Alex",
+    last_name: "Rivera",
+    headline: null,
+    photo_url: null,
+    skill_level: "4.0",
+    court_preferences: ["Longshore Club"],
+    new_to_westport: false,
+    follower_count: 24,
+    following_count: 2,
+    is_following: false,
+    is_own_profile: true,
+    active_posts: [],
+    following_list: [
+        { id: "demo-chris", first_name: "Chris", last_name: "B", photo_url: "/avatars/chris.jpg", skill_level: "3.5" },
+        { id: "demo-maria", first_name: "Maria", last_name: "L", photo_url: "/avatars/maria.jpg", skill_level: "4.0" },
+    ],
+};
+
+/** The answered-posts tab: a spot this player claimed. */
+export const DEMO_MY_CLAIMS = [
+    {
+        id: "demo-my-claim",
+        status: "approved",
+        created_at: ago(120),
+        rejection_reason: null,
+        post_id: DEMO_SUB_POST.id,
+        post_type: "sub_need",
+        play_type: "doubles",
+        duration: 2,
+        skill_level: "3.5",
+        notes: DEMO_SUB_POST.notes,
+        game_date: DEMO_SUB_POST.game_date,
+        game_time: DEMO_SUB_POST.game_time,
+        location: DEMO_SUB_POST.location,
+        custom_court: null,
+        cost: 25,
+        original_cost: null,
+        status_post: "active",
+        poster_id: "demo-chris",
+        poster_first_name: "Chris",
+        poster_last_name: "B",
+        poster_photo_url: "/avatars/chris.jpg",
+        poster_venmo_handle: null,
+        poster_phone: null,
+        messages: [],
+    },
+];
+
 /** The poster of DEMO_MY_POST, as the created sheet wants them. */
 export const DEMO_POSTER = {
     first_name: DEMO_PROFILE.first_name,

@@ -37,7 +37,12 @@ if (!nowMatch) throw new Error("Could not read DEMO_NOW from src/demo/fixtures.t
 
 mkdirSync(OUT, { recursive: true });
 
-const vite = spawn("npx", ["vite", "--port", String(PORT), "--strictPort"], { stdio: ["ignore", "pipe", "pipe"] });
+// DEMO=1 swaps @/lib/supabase for the fixture client (see vite.config.ts), so
+// the demo screens can render the real pages without a network.
+const vite = spawn("npx", ["vite", "--port", String(PORT), "--strictPort"], {
+    stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, DEMO: "1" },
+});
 let browser;
 
 const waitForVite = () =>
