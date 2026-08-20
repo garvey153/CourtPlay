@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { Activity } from "@/pages/activity";
 import { PRIMARY_CTA, SECONDARY_CTA } from "@/components/base/buttons/cta";
+import { KIND_CONFIG } from "@/components/app/sub-card";
 import { supabase } from "@/lib/supabase";
 
 vi.mock("@/lib/supabase", () => ({
@@ -70,6 +71,25 @@ describe("Activity redesign", () => {
             expires_at: new Date(Date.now() - 86400000).toISOString(),
             preferred_days: ["Mon"], preferred_times: ["Evening"], claims: [],
         };
+
+        /**
+         * The bar and the badge have to agree. An expired post inherited its
+         * section's kind — "open" under Active — so the bar showed the post
+         * TYPE's colour while the badge said Expired.
+         */
+        it("gives the card a red bar, not the post type's colour", async () => {
+            setup([expiredRegular], []);
+            const { container } = render(<MemoryRouter><Activity /></MemoryRouter>);
+            await userEvent.click(await screen.findByRole("button", { name: "Created posts" }));
+            await screen.findByText("Expired");
+
+            const bars = [...container.querySelectorAll("span.w-1")];
+            expect(bars.length).toBeGreaterThan(0);
+            for (const bar of bars) {
+                expect(bar.className).toContain(KIND_CONFIG.expired.bar);
+                expect(bar.className).not.toContain("bg-blue-500");
+            }
+        });
 
         it("badges the card as Expired in the created list", async () => {
             setup([expiredRegular], []);

@@ -418,6 +418,12 @@ export function Activity() {
         // Match the feed: regular-play posts use the blue RegularPlayCard, subs the green SubCard.
         const renderCard = (post: MyPost, kind: CardKind, badge?: string) => {
             const feedPost = postToFeedPost(post, me ?? { id: "", first_name: "", last_name: "", photo_url: null });
+            // An expired post is expired whichever section it lands in. Without
+            // this it inherits the section's kind — "open" under Active — and
+            // renders with the post type's own colour, so the bar said the post
+            // was live while the badge said it had lapsed.
+            const expired = post.status === "expired";
+            const effectiveKind: CardKind = expired ? "expired" : kind;
             return post.post_type === "regular_game" ? (
                 <RegularPlayCard
                     post={feedPost}
@@ -426,15 +432,17 @@ export function Activity() {
                     // Only the lapsed state is badged. On the feed these carry no
                     // badge at all, and badging "active" here would be noise on
                     // every healthy post.
-                    badge={post.status === "expired" ? "expired" : undefined}
+                    badge={expired ? "expired" : undefined}
                     onOpenDetail={() => setRegularSheet(post)}
                 />
             ) : (
                 <SubCard
                     post={feedPost}
                     currentUserId={user?.id}
-                    kindOverride={kind}
-                    labelOverride={badge}
+                    kindOverride={effectiveKind}
+                    // The kind now carries the Expired label; a section badge
+                    // like "Approved" must not override it.
+                    labelOverride={expired ? undefined : badge}
                     onOpenDetail={() => setCreatedSheet(post)}
                 />
             );
