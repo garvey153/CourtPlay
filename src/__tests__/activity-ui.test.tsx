@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { Activity } from "@/pages/activity";
@@ -81,7 +81,8 @@ describe("Activity redesign", () => {
             setup([expiredRegular], []);
             const { container } = render(<MemoryRouter><Activity /></MemoryRouter>);
             await userEvent.click(await screen.findByRole("button", { name: "Created posts" }));
-            await screen.findByText("Expired");
+            // "Expired" appears twice now: the section heading and the badge.
+            await waitFor(() => expect(screen.getAllByText("Expired").length).toBeGreaterThan(1));
 
             const bars = [...container.querySelectorAll("span.w-1")];
             expect(bars.length).toBeGreaterThan(0);
@@ -91,11 +92,30 @@ describe("Activity redesign", () => {
             }
         });
 
-        it("badges the card as Expired in the created list", async () => {
+        it("badges the card as Expired, under an Expired section", async () => {
             setup([expiredRegular], []);
             render(<MemoryRouter><Activity /></MemoryRouter>);
             await userEvent.click(await screen.findByRole("button", { name: "Created posts" }));
-            expect(await screen.findByText("Expired")).toBeInTheDocument();
+
+            // The section heading and the card's own badge.
+            await waitFor(() => expect(screen.getAllByText("Expired")).toHaveLength(2));
+            // And it is no longer filed under Active, which said it was live.
+            expect(screen.queryByText("Active")).not.toBeInTheDocument();
+        });
+
+        /**
+         * A past-dated sub post used to land in NO section — Active excludes
+         * past games and nothing else claimed it — so it vanished from the tab
+         * rather than showing as expired.
+         */
+        it("keeps a past-dated sub post visible, as expired", async () => {
+            const yesterday = new Date(Date.now() - 26 * 3600 * 1000).toISOString().slice(0, 10);
+            setup([{ ...createdPost, game_date: yesterday, claims: [] }], []);
+            render(<MemoryRouter><Activity /></MemoryRouter>);
+            await userEvent.click(await screen.findByRole("button", { name: "Created posts" }));
+
+            await waitFor(() => expect(screen.getAllByText("Expired").length).toBeGreaterThan(0));
+            expect(screen.queryByText("It's your serve")).not.toBeInTheDocument();
         });
 
         it("offers Reactivate as the primary action, with Edit demoted", async () => {
