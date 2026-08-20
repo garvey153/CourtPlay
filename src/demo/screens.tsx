@@ -30,18 +30,24 @@ const noop = () => {};
 /**
  * The feed behind a sheet: in the app every sheet opens over it.
  *
- * Sub cards only, and inset. An accent bar sitting in the feed's 20px gutter is
- * within reach of the sheet's 8px backdrop blur, so it smears out to the screen
- * edge as a coloured band — blue for a regular-play card, green for a sub. The
- * extra padding moves the bars out of that range. The cards are unreadable at
- * this blur anyway; their job here is texture.
+ * Sub cards only, inset, and neutral.
+ *
+ * An accent bar is a 4px vertical line repeated down the stack, so the blur
+ * turns it into one continuous coloured streak up the left side — blue behind a
+ * regular-play card, green behind a sub. Measuring the design's own asset shows
+ * the same streak, so this is a deliberate departure from it rather than a
+ * defect being corrected.
+ *
+ * "claimed" is the neutral kind: grey bar, grey badge. The cards are unreadable
+ * at this blur anyway; their job back here is texture, and texture should not
+ * have a colour of its own.
  */
 const FeedBehind = () => (
     <AppLayout onOpenFilters={noop}>
         <div className="flex flex-col gap-3 px-5">
-            <SubCard post={DEMO_SUB_POST} currentUserId={DEMO_VIEWER_ID} />
-            <SubCard post={DEMO_BACKDROP_POST} currentUserId={DEMO_VIEWER_ID} />
-            <SubCard post={DEMO_CLAIMED_POST} currentUserId={DEMO_VIEWER_ID} />
+            <SubCard post={DEMO_SUB_POST} currentUserId={DEMO_VIEWER_ID} kindOverride="claimed" />
+            <SubCard post={DEMO_BACKDROP_POST} currentUserId={DEMO_VIEWER_ID} kindOverride="claimed" />
+            <SubCard post={DEMO_CLAIMED_POST} currentUserId={DEMO_VIEWER_ID} kindOverride="claimed" />
         </div>
     </AppLayout>
 );

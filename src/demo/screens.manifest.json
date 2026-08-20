@@ -6,11 +6,11 @@
             "image": "tutorial/01-feed.jpg"
         },
         "claim": {
-            "hash": "631712ee7b685fd6",
+            "hash": "5fd8f3127477e69f",
             "image": "tutorial/02-claim.jpg"
         },
         "approve": {
-            "hash": "17b4500b14dffec3",
+            "hash": "80174e456369d29c",
             "image": "tutorial/03-approve.jpg"
         },
         "post": {
