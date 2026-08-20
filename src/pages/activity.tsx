@@ -383,6 +383,7 @@ export function Activity() {
         // they stay under Active (with their conversation-list sheet) until removed.
         const hasPending = (p: MyPost) => p.post_type !== "regular_game" && p.claims.some((c) => c.status === "pending");
         const hasApproved = (p: MyPost) => p.post_type !== "regular_game" && p.claims.some((c) => c.status === "approved");
+        const isFinished = (p: MyPost) => p.status === "expired" || isPast(p.game_date, p.game_time);
 
         // Group into the same section style as the Claimed tab.
         const allSections: Array<{ label: string; kind: CardKind; badge?: string; posts: MyPost[] }> = [
@@ -399,10 +400,22 @@ export function Activity() {
                 badge: "Approved",
                 posts: visiblePosts.filter((p) => !hasPending(p) && hasApproved(p)),
             },
+            // A post is finished when its game has passed OR the server marked it
+            // expired — a regular-play post has no date and only ever gets the
+            // latter. Both were previously homeless: Active excludes past-dated
+            // posts, and nothing else claimed them, so an expired sub post simply
+            // vanished from this tab rather than showing as expired.
             {
                 label: "Active",
                 kind: "open",
-                posts: visiblePosts.filter((p) => !hasPending(p) && !hasApproved(p) && !isPast(p.game_date, p.game_time)),
+                posts: visiblePosts.filter(
+                    (p) => !hasPending(p) && !hasApproved(p) && !isFinished(p),
+                ),
+            },
+            {
+                label: "Expired",
+                kind: "expired",
+                posts: visiblePosts.filter((p) => !hasPending(p) && !hasApproved(p) && isFinished(p)),
             },
         ];
         const sections = allSections.filter((s) => s.posts.length > 0);
