@@ -52,10 +52,24 @@ export function TutorialCarousel({
         if (next) new Image().src = next.image;
     }, [index, slides]);
 
+    // Side swiping only. Without this the page rubber-bands vertically under a
+    // drag, which is the giveaway that it is a web page rather than an app.
+    useEffect(() => {
+        const html = document.documentElement;
+        const prevOverflow = document.body.style.overflow;
+        const prevOverscroll = html.style.overscrollBehavior;
+        document.body.style.overflow = "hidden";
+        html.style.overscrollBehavior = "none";
+        return () => {
+            document.body.style.overflow = prevOverflow;
+            html.style.overscrollBehavior = prevOverscroll;
+        };
+    }, []);
+
     const last = index === slides.length - 1;
 
     return (
-        <div className="flex h-dvh flex-col gap-8 overflow-hidden bg-black pt-safe">
+        <div className="flex h-dvh flex-col gap-8 overflow-hidden overscroll-none bg-black pt-safe">
             <Carousel.Root setApi={setApi} className="flex min-h-0 flex-1 flex-col gap-8" opts={{ loop: false }}>
                 {/* Carousel.Content puts this className on its inner track; its outer
                     viewport is h-full, so it needs a parent with a definite height. */}
@@ -121,7 +135,7 @@ export function TutorialCarousel({
                     <button
                         type="button"
                         onClick={last ? onDone : onSkip}
-                        className="flex items-center gap-2 text-xs text-brand-secondary transition duration-100 ease-linear hover:text-brand-secondary_hover"
+                        className="flex items-center gap-2 text-xs text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
                     >
                         {last ? "Go to CourtPlay" : "Skip tutorial"}
                         {last && (

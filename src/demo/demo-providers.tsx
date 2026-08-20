@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 import { ProfileContext } from "@/providers/profile-provider";
 import { DEMO_PROFILE } from "./fixtures";
+import { SCREEN_ROUTES } from "./screens";
 
 /**
  * The context every demo screen renders inside.
@@ -13,9 +14,9 @@ import { DEMO_PROFILE } from "./fixtures";
  * The profile is injected directly rather than fetched, so nothing here touches
  * the network and the screens are identical on every run.
  */
-export function DemoProviders({ children }: { children: ReactNode }) {
+export function DemoProviders({ children, screen }: { children: ReactNode; screen?: string }) {
     return (
-        <MemoryRouter>
+        <MemoryRouter initialEntries={[(screen && SCREEN_ROUTES[screen]) || "/"]}>
             <ProfileContext.Provider
                 value={{
                     profile: DEMO_PROFILE,
