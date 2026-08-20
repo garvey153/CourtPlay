@@ -187,9 +187,10 @@ export const DEMO_MY_POST: MyPost = {
     play_type: "doubles",
     duration: 2,
     skill_level: "4.0",
-    notes: "Need a fourth for our regular Sunday game.",
-    game_date: "2026-05-18",
-    game_time: "10:00",
+    notes: "Need a fourth for our regular Saturday game.",
+    // Sat 9:00am, matching the design. 2026-05-16 is a Saturday.
+    game_date: "2026-05-16",
+    game_time: "09:00",
     location: "Longshore Club",
     custom_court: null,
     preferred_days: null,
@@ -219,7 +220,7 @@ export const DEMO_MY_POST: MyPost = {
                 {
                     id: "demo-message",
                     sender_id: "demo-maria",
-                    body: "I can make 10am — happy to take the spot!",
+                    body: "I can make 9am — happy to take the spot!",
                     created_at: ago(14),
                     first_name: "Maria",
                     last_name: "L",
