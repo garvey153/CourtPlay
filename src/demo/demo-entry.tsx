@@ -28,6 +28,13 @@ class FrozenDate extends RealDate {
 }
 globalThis.Date = FrozenDate as DateConstructor;
 
+// Silence the first-run banners. The feed's notification stack would otherwise
+// put the welcome card, the install prompt and a claim notice over the posts —
+// none of which the tutorial is about, and all of which vary with storage state
+// rather than with the UI.
+for (const key of ["cs_welcome_done", "cs_ios_prompt_dismissed"]) localStorage.setItem(key, "1");
+localStorage.setItem("courtsub_push_prompt_dismissed", "true");
+
 const id = new URLSearchParams(location.search).get("screen") ?? "";
 const screen = DEMO_SCREENS[id];
 

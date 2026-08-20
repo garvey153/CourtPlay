@@ -1,42 +1,34 @@
+import { Feed } from "@/pages/feed";
+import { Activity } from "@/pages/activity";
+import { Profile } from "@/pages/profile";
+import { PostNew } from "@/pages/post-new";
 import { AppLayout } from "@/components/layout/app-layout";
 import { SubCard } from "@/components/app/sub-card";
 import { RegularPlayCard } from "@/components/app/regular-play-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
-import { PostTypePicker } from "@/components/app/post-type-picker";
-import { GroupCard } from "@/components/app/group-card";
-import {
-    DEMO_CLAIMED_POST,
-    DEMO_GROUPS,
-    DEMO_MY_POST,
-    DEMO_POSTER,
-    DEMO_REGULAR_POST,
-    DEMO_SUB_POST,
-    DEMO_VIEWER_ID,
-} from "./fixtures";
+import { DEMO_MY_POST, DEMO_POSTER, DEMO_SUB_POST, DEMO_REGULAR_POST, DEMO_VIEWER_ID } from "./fixtures";
 
 /**
  * The screens behind the tutorial screenshots.
  *
- * These are thin compositions of the app's REAL components against fixture
- * props — not the page containers. Feed and Activity fetch on mount, subscribe
- * to realtime and read session heuristics from localStorage; rendering those
- * would make the output depend on fetch timing rather than on the UI, in two
- * different engines. Every sheet shown here renders purely from props (they
- * import supabase but only call it inside handlers), which is what makes this
- * viable at all.
+ * These render the REAL pages wherever the design shows a whole screen. An
+ * earlier version composed each screen from its parts, and the result was
+ * always structurally thinner than the page it imitated — the post form lost
+ * every field below the type picker, Activity lost its tabs, the profile lost
+ * its header. That is what "missing elements" meant.
  *
- * KEEP EACH ONE THIN. The fingerprint test tracks these screens, not the pages,
- * so the further they drift from how the real page composes things the less the
- * staleness check is worth. A dozen lines each is the budget.
+ * Rendering the pages is possible because DEMO=1 aliases @/lib/supabase to a
+ * fixture client (src/demo/supabase-mock.ts), so nothing reaches the network.
+ * The jsdom fingerprint test mocks the same path to the same module, so both
+ * engines render the same tree.
+ *
+ * The two SHEETS stay compositions, because a sheet genuinely is a component
+ * rendered over a page — that is how the app itself does it.
  */
 const noop = () => {};
 
-/**
- * The feed, as the backdrop behind a sheet. In the app every sheet opens over
- * it — screenshotting one against an empty page would show a state that never
- * actually occurs.
- */
+/** The feed behind a sheet: in the app every sheet opens over it. */
 const FeedBehind = () => (
     <AppLayout onOpenFilters={noop}>
         <div className="flex flex-col gap-3">
@@ -46,17 +38,8 @@ const FeedBehind = () => (
     </AppLayout>
 );
 
-/** Registry key → what the capture script and the fingerprint test both render. */
 export const DEMO_SCREENS: Record<string, () => React.ReactElement> = {
-    feed: () => (
-        <AppLayout onOpenFilters={noop}>
-            <div className="flex flex-col gap-3">
-                <SubCard post={DEMO_SUB_POST} currentUserId={DEMO_VIEWER_ID} />
-                <RegularPlayCard post={DEMO_REGULAR_POST} profileComplete currentUserId={DEMO_VIEWER_ID} />
-                <SubCard post={DEMO_CLAIMED_POST} currentUserId={DEMO_VIEWER_ID} />
-            </div>
-        </AppLayout>
-    ),
+    feed: () => <Feed />,
 
     claim: () => (
         <>
@@ -69,59 +52,22 @@ export const DEMO_SCREENS: Record<string, () => React.ReactElement> = {
         <>
             <FeedBehind />
             <CreatedDetailSheet
-            post={DEMO_MY_POST}
-            poster={DEMO_POSTER}
-            onClose={noop}
-            onApprove={noop}
-            onDecline={noop}
-            onEdit={noop}
-            onDelete={noop}
-        />
+                post={DEMO_MY_POST}
+                poster={DEMO_POSTER}
+                onClose={noop}
+                onApprove={noop}
+                onDecline={noop}
+                onEdit={noop}
+                onDelete={noop}
+            />
         </>
     ),
 
-    post: () => (
-        <AppLayout>
-            <div className="flex flex-col">
-                <h1 className="mb-5 text-lg font-semibold text-primary">Create a new post</h1>
-                <PostTypePicker value="sub_need" onChange={noop} />
-            </div>
-        </AppLayout>
-    ),
+    post: () => <PostNew />,
 
-    activity: () => (
-        <AppLayout>
-            <div className="flex flex-col gap-5">
-                <div>
-                    <p className="mb-2 text-xs font-medium text-tertiary">Pending</p>
-                    <SubCard post={DEMO_SUB_POST} currentUserId={DEMO_VIEWER_ID} kindOverride="pending" />
-                </div>
-                <div>
-                    <p className="mb-2 text-xs font-medium text-tertiary">Approved</p>
-                    <SubCard
-                        post={DEMO_CLAIMED_POST}
-                        currentUserId={DEMO_VIEWER_ID}
-                        kindOverride="claimed"
-                        labelOverride="Approved"
-                    />
-                </div>
-            </div>
-        </AppLayout>
-    ),
+    activity: () => <Activity />,
 
-    groups: () => (
-        <AppLayout>
-            <div className="flex flex-col">
-                <p className="mb-1.5 text-sm font-semibold text-tertiary">Groups (2)</p>
-                <div className="flex flex-col gap-3">
-                    {DEMO_GROUPS.map((g) => (
-                        <GroupCard key={g.id} group={g} onOpen={noop} />
-                    ))}
-                </div>
-            </div>
-        </AppLayout>
-    ),
-
+    groups: () => <Profile />,
 };
 
 export type DemoScreenId = keyof typeof DEMO_SCREENS;

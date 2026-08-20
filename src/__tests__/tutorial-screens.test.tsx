@@ -10,17 +10,10 @@ import { fingerprintElement } from "@/test/fingerprint";
 // No session, exactly as the capture browser sees it — a fresh context has none.
 // The two engines must resolve auth the same way or the fingerprint would
 // police a tree the screenshot never showed.
-vi.mock("@/lib/supabase", () => ({
-    supabase: {
-        auth: {
-            getSession: async () => ({ data: { session: null } }),
-            onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-            signOut: async () => ({}),
-        },
-        rpc: async () => ({ data: null, error: null }),
-        from: () => ({ select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }) }),
-    },
-}));
+// The same fixture client the browser gets through the DEMO=1 Vite alias. Both
+// engines must render the same tree, or the fingerprint would police something
+// the screenshot never showed.
+vi.mock("@/lib/supabase", async () => await import("@/demo/supabase-mock"));
 
 // jsdom has no IntersectionObserver; SubCard uses one to count views. The
 // browser has the real thing, and neither affects the rendered tree.
