@@ -114,11 +114,41 @@ export const DEMO_CLAIMED_POST: FeedPost = {
     cost: 15,
     spots_total: 1,
     spots_available: 0,
-    notes: null,
+    notes: "Casual hitting session, all welcome.",
     created_at: ago(180),
     first_name: "Dan",
     last_name: "K",
     photo_url: "/avatars/dan.jpg",
+    is_friend: false,
+    is_connected: false,
+};
+
+/**
+ * A third sub post, used only to fill the backdrop behind a sheet.
+ *
+ * Without it the blurred feed runs out of cards partway up and the backdrop
+ * fades into empty black above the sheet, which reads as an unwanted gradient
+ * rather than as a page continuing behind glass.
+ */
+export const DEMO_BACKDROP_POST: FeedPost = {
+    ...basePost,
+    id: "demo-post-backdrop",
+    author_id: "demo-maria",
+    post_type: "sub_need",
+    play_type: "doubles",
+    duration: 2,
+    game_date: "2026-05-23",
+    game_time: "08:00",
+    skill_level: "4.0",
+    location: "Staples High School",
+    cost: 20,
+    spots_total: 1,
+    spots_available: 1,
+    notes: "Early start, we play rain or shine. Two of us are away this week.",
+    created_at: ago(300),
+    first_name: "Maria",
+    last_name: "L",
+    photo_url: "/avatars/maria.jpg",
     is_friend: false,
     is_connected: false,
 };

@@ -6,7 +6,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { SubCard } from "@/components/app/sub-card";
 import { ClaimDetailSheet } from "@/components/app/claim-detail-sheet";
 import { CreatedDetailSheet } from "@/components/app/created-detail-sheet";
-import { DEMO_MY_POST, DEMO_POSTER, DEMO_CLAIMED_POST, DEMO_SUB_POST, DEMO_VIEWER_ID } from "./fixtures";
+import { DEMO_BACKDROP_POST, DEMO_MY_POST, DEMO_POSTER, DEMO_CLAIMED_POST, DEMO_SUB_POST, DEMO_VIEWER_ID } from "./fixtures";
 
 /**
  * The screens behind the tutorial screenshots.
@@ -38,6 +38,7 @@ const FeedBehind = () => (
     <AppLayout onOpenFilters={noop}>
         <div className="flex flex-col gap-3">
             <SubCard post={DEMO_SUB_POST} currentUserId={DEMO_VIEWER_ID} />
+            <SubCard post={DEMO_BACKDROP_POST} currentUserId={DEMO_VIEWER_ID} />
             <SubCard post={DEMO_CLAIMED_POST} currentUserId={DEMO_VIEWER_ID} />
         </div>
     </AppLayout>
