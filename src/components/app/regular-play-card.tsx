@@ -71,11 +71,18 @@ export const RegularPlayCard = memo(function RegularPlayCard({ post, currentUser
             onClick={() => onOpenDetail?.(post)}
             className="flex w-full overflow-hidden rounded text-left"
         >
-            {/* Left accent bar — blue for regular play, gradient when featured (pro/club) */}
+            {/* Left accent bar — blue for regular play, gradient when featured
+                (pro/club). A badged state wins over both: an expired post reads
+                red, and the bar carrying the post TYPE while the badge says
+                Expired was the whole of the confusion. */}
             <span
                 className={cx(
                     "w-1 shrink-0 self-stretch",
-                    isFeatured ? "bg-gradient-to-b from-brand-500 to-blue-400" : "bg-blue-500",
+                    badgeStyle
+                        ? badgeStyle.bar
+                        : isFeatured
+                          ? "bg-gradient-to-b from-brand-500 to-blue-400"
+                          : "bg-blue-500",
                 )}
                 aria-hidden="true"
             />
