@@ -59,7 +59,7 @@ describe("tutorial screenshots are current", () => {
 
     for (const id of Object.keys(DEMO_SCREENS)) {
         it(`fingerprints "${id}"`, async () => {
-            const { container } = render(<DemoProviders>{DEMO_SCREENS[id]()}</DemoProviders>);
+            const { container } = render(<DemoProviders screen={id}>{DEMO_SCREENS[id]()}</DemoProviders>);
             // useAuth resolves getSession() after mount and flips `loading`.
             // Hashing before that settles would capture the loading tree.
             await act(async () => {});

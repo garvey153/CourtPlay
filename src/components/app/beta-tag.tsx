@@ -16,6 +16,8 @@ interface BetaTagProps {
 export function BetaTag({ className }: BetaTagProps) {
     return (
         <span
+            // Hook for the tutorial screenshots, which hide the pill.
+            data-beta-tag=""
             className={cx(
                 "inline-flex h-4 shrink-0 -translate-y-px items-center rounded bg-white px-1.5 text-xs font-semibold text-neutral-950",
                 className,

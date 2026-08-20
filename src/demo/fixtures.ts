@@ -83,7 +83,7 @@ export const DEMO_SUB_POST: FeedPost = {
     post_type: "sub_need",
     play_type: "doubles",
     duration: 2,
-    game_date: "2026-05-17",
+    game_date: "2026-05-16",
     game_time: "09:00",
     skill_level: "3.5",
     location: "Longshore Club",
@@ -206,10 +206,12 @@ export const DEMO_GROUPS: GroupSummary[] = [
         id: "demo-group-1",
         name: "Sunday Doubles",
         details: "Longshore Club",
-        is_creator: true,
+        // Not the creator, and joined recently: both are required for the feed's
+        // "You're in a group" banner, which step 1 is meant to show.
+        is_creator: false,
         is_closed: false,
         closed_at: null,
-        joined_at: ago(60 * 24 * 30),
+        joined_at: ago(45),
         my_removed_at: null,
         removed_by_me: false,
         member_count: 4,
@@ -224,9 +226,9 @@ export const DEMO_GROUPS: GroupSummary[] = [
         id: "demo-group-2",
         name: "Winter League",
         details: "Westport Tennis Club",
-        is_creator: false,
-        is_closed: true,
-        closed_at: ago(60 * 24 * 3),
+        is_creator: true,
+        is_closed: false,
+        closed_at: null,
         joined_at: ago(60 * 24 * 90),
         my_removed_at: null,
         removed_by_me: false,
@@ -235,6 +237,33 @@ export const DEMO_GROUPS: GroupSummary[] = [
             { id: "demo-maria", first_name: "Maria", last_name: "L", photo_url: "/avatars/maria.jpg" },
             { id: DEMO_VIEWER_ID, first_name: "Alex", last_name: "R", photo_url: null },
         ],
+    },
+];
+
+/**
+ * Two of the demo player's own posts, both open — the Created posts tab as the
+ * design shows it. No claims: a claim would file a post under Pending rather
+ * than Active, and the badge would read Claimed rather than Open.
+ */
+export const DEMO_CREATED_POSTS: MyPost[] = [
+    {
+        ...DEMO_MY_POST,
+        id: "demo-created-1",
+        claims: [],
+    },
+    {
+        ...DEMO_MY_POST,
+        id: "demo-created-2",
+        play_type: "point_play",
+        skill_level: "3.5",
+        game_date: "2026-05-23",
+        game_time: "18:00",
+        location: "Compo Beach Courts",
+        duration: 1,
+        cost: 15,
+        notes: "Regular Saturday four, one out this week.",
+        created_at: ago(300),
+        claims: [],
     },
 ];
 

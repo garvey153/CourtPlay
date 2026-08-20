@@ -35,6 +35,17 @@ globalThis.Date = FrozenDate as DateConstructor;
 for (const key of ["cs_welcome_done", "cs_ios_prompt_dismissed"]) localStorage.setItem(key, "1");
 localStorage.setItem("courtsub_push_prompt_dismissed", "true");
 
+// Screenshot-only styling. The captures sit on a black tutorial page, so the
+// app's own bg-primary showed as a lighter strip above and below the content —
+// where a real device would have the status bar and the browser's toolbar. And
+// the Beta pill is a moment in time, not a feature worth teaching.
+const demoStyle = document.createElement("style");
+demoStyle.textContent = `
+    :root { --color-bg-primary: #000000; }
+    [data-beta-tag] { display: none; }
+`;
+document.head.appendChild(demoStyle);
+
 const id = new URLSearchParams(location.search).get("screen") ?? "";
 const screen = DEMO_SCREENS[id];
 
@@ -52,7 +63,7 @@ if (!screen) {
 } else {
     root.render(
         <ThemeProvider defaultTheme="dark">
-            <DemoProviders>{screen()}</DemoProviders>
+            <DemoProviders screen={id}>{screen()}</DemoProviders>
         </ThemeProvider>,
     );
 }
