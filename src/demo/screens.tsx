@@ -30,13 +30,15 @@ const noop = () => {};
 /**
  * The feed behind a sheet: in the app every sheet opens over it.
  *
- * Sub cards only. A regular-play card's blue accent bar smears into a blue
- * gradient down the left edge once the backdrop blur hits it, which reads as a
- * rendering fault rather than as a card.
+ * Sub cards only, and inset. An accent bar sitting in the feed's 20px gutter is
+ * within reach of the sheet's 8px backdrop blur, so it smears out to the screen
+ * edge as a coloured band — blue for a regular-play card, green for a sub. The
+ * extra padding moves the bars out of that range. The cards are unreadable at
+ * this blur anyway; their job here is texture.
  */
 const FeedBehind = () => (
     <AppLayout onOpenFilters={noop}>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 px-5">
             <SubCard post={DEMO_SUB_POST} currentUserId={DEMO_VIEWER_ID} />
             <SubCard post={DEMO_BACKDROP_POST} currentUserId={DEMO_VIEWER_ID} />
             <SubCard post={DEMO_CLAIMED_POST} currentUserId={DEMO_VIEWER_ID} />
