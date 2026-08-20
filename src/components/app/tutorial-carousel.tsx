@@ -52,17 +52,30 @@ export function TutorialCarousel({
         if (next) new Image().src = next.image;
     }, [index, slides]);
 
-    // Side swiping only. Without this the page rubber-bands vertically under a
-    // drag, which is the giveaway that it is a web page rather than an app.
+    // Side swiping only, on a black document.
+    //
+    // index.html puts bg-primary on <body>, so anything this panel does not
+    // cover — the safe areas, an overscroll bounce — showed as a lighter band
+    // above and below. Painting the document black for the duration is the fix;
+    // blacking out the bg-primary TOKEN would have changed the app itself.
+    //
+    // The overflow lock stops the page rubber-banding vertically under a drag,
+    // which is the giveaway that this is a web page rather than an app.
     useEffect(() => {
         const html = document.documentElement;
-        const prevOverflow = document.body.style.overflow;
-        const prevOverscroll = html.style.overscrollBehavior;
-        document.body.style.overflow = "hidden";
+        const { style } = document.body;
+        const prev = {
+            overflow: style.overflow,
+            background: style.backgroundColor,
+            overscroll: html.style.overscrollBehavior,
+        };
+        style.overflow = "hidden";
+        style.backgroundColor = "#000";
         html.style.overscrollBehavior = "none";
         return () => {
-            document.body.style.overflow = prevOverflow;
-            html.style.overscrollBehavior = prevOverscroll;
+            style.overflow = prev.overflow;
+            style.backgroundColor = prev.background;
+            html.style.overscrollBehavior = prev.overscroll;
         };
     }, []);
 
