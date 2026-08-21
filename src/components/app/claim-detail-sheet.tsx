@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowCircleRight, XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
+import { formatWhen } from "./sub-card";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useShare } from "@/hooks/use-share";
@@ -17,22 +18,6 @@ import { describeActionError } from "@/utils/load-error";
 import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 
 const MESSAGE_MAX = 150;
-
-function formatWhen(gameDate: string | null, gameTime: string | null): string {
-    const parts: string[] = [];
-    if (gameDate) {
-        const d = new Date(gameDate + "T12:00:00");
-        parts.push(d.toLocaleDateString("en-US", { weekday: "short" }));
-    }
-    if (gameTime) {
-        const [h, m] = gameTime.split(":");
-        const hour = parseInt(h, 10);
-        const ampm = hour >= 12 ? "pm" : "am";
-        const h12 = hour % 12 || 12;
-        parts.push(`${h12}:${m}${ampm}`);
-    }
-    return parts.join(" ");
-}
 
 function formatDateLong(dateStr: string): string {
     const d = new Date(dateStr + "T12:00:00");

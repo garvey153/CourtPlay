@@ -502,11 +502,11 @@ export function Profile() {
                             >
                                 Submit Feedback
                             </button>
-                            <span aria-hidden="true">·</span>
+                            <span aria-hidden="true" data-build-id>·</span>
                             {/* Kept deliberately: this is how you tell which bundle a
                                 given device is actually running. No longer a button —
                                 it used to reveal the PushDebug panel, now removed. */}
-                            <span>Version {__BUILD_ID__}</span>
+                            <span data-build-id>Version {__BUILD_ID__}</span>
                         </p>
                     </div>
                 )}

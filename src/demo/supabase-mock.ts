@@ -39,16 +39,28 @@ import {
  * Which screen is being photographed. The feed must not carry the pending-claim
  * banner that Activity needs, or the notification stack covers the posts the
  * slide is about — so the same RPC answers differently per screen.
+ *
+ * DemoProviders sets this, because it is the one thing both engines run. Reading
+ * `location.search` here instead was a silent trap: the browser puts the id in
+ * the URL, the fingerprint test puts it on a MemoryRouter, so in jsdom this was
+ * always null and Activity fingerprinted its empty state while the screenshot
+ * beside it showed two cards.
  */
-const screen = typeof location !== "undefined" ? new URLSearchParams(location.search).get("screen") : null;
-const onActivity = screen === "activity";
+let activeScreen: string | null = null;
 
-const RPC_DATA: Record<string, unknown> = {
+export function setDemoScreen(id: string | null) {
+    activeScreen = id;
+}
+
+const onActivity = () => activeScreen === "activity";
+
+/** A value, or a thunk for the entries that depend on which screen is active. */
+const RPC_DATA: Record<string, unknown | (() => unknown)> = {
     get_feed: [DEMO_SUB_POST, DEMO_REGULAR_POST, DEMO_CLAIMED_POST],
     get_my_groups: DEMO_GROUPS,
     get_profile: DEMO_PROFILE_PAGE,
-    get_my_posts_with_claims: onActivity ? DEMO_CREATED_POSTS : [],
-    get_my_claims_with_posts: onActivity ? DEMO_MY_CLAIMS : [],
+    get_my_posts_with_claims: () => (onActivity() ? DEMO_CREATED_POSTS : []),
+    get_my_claims_with_posts: () => (onActivity() ? DEMO_MY_CLAIMS : []),
     get_post_audience: [],
     get_my_tagged_posts: [],
     search_users: [],
@@ -86,7 +98,10 @@ export const supabase = {
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
         signOut: async () => ({}),
     },
-    rpc: async (name: string) => ({ data: RPC_DATA[name] ?? null, error: null }),
+    rpc: async (name: string) => {
+        const entry = RPC_DATA[name];
+        return { data: (typeof entry === "function" ? (entry as () => unknown)() : entry) ?? null, error: null };
+    },
     from: (table: string) => query(TABLE_DATA[table] ?? []),
     channel: () => ({ on: () => ({ subscribe: () => ({}) }) }),
     removeChannel: () => {},
