@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { ArrowCircleRight, XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import type { ClaimRow, MyPost } from "@/types/activity";
+import { formatWhen } from "./sub-card";
 import { ThreadMessage } from "./thread-message";
 import { ReportUserSheet } from "./report-user-sheet";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
@@ -16,17 +17,6 @@ function timeAgo(dateStr: string): string {
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
-}
-
-function formatWhen(gameDate: string | null, gameTime: string | null): string {
-    const parts: string[] = [];
-    if (gameDate) parts.push(new Date(gameDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "short" }));
-    if (gameTime) {
-        const [h, m] = gameTime.split(":");
-        const hour = parseInt(h, 10);
-        parts.push(`${hour % 12 || 12}:${m}${hour >= 12 ? "pm" : "am"}`);
-    }
-    return parts.join(" ");
 }
 
 function formatPlayType(playType: string | null, format: string | null): string {
