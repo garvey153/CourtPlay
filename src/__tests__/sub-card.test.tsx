@@ -234,18 +234,35 @@ describe("formatWhen", () => {
         }
     });
 
-    it("uses month and day beyond that, with a comma before the time", () => {
+    it("uses a numeric month and day beyond that, with a comma before the time", () => {
         const out = formatWhen(iso(7), "09:00");
-        expect(out).toMatch(/^[A-Z][a-z]{2} \d{1,2}, 9:00am$/);
+        expect(out).toMatch(/^\d{1,2}\/\d{1,2}, 9:00am$/);
+    });
+
+    /**
+     * Pinned to an exact string, on a frozen clock. The regex above is happy
+     * with any two numbers, so it cannot see the off-by-one that getMonth()
+     * invites — 0 for January.
+     */
+    it("numbers the month from one, not zero", () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date("2026-05-14T12:00:00"));
+            expect(formatWhen("2026-05-23", "09:00")).toBe("5/23, 9:00am");
+            expect(formatWhen("2027-01-03", "18:30")).toBe("1/3, 6:30pm");
+            expect(formatWhen("2026-12-25", null)).toBe("12/25,");
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     /** "Tue" on an expired post reads as the Tuesday coming, not the one gone. */
     it("uses month and day for a date already past", () => {
-        expect(formatWhen(iso(-2), "18:00")).toMatch(/^[A-Z][a-z]{2} \d{1,2}, 6:00pm$/);
+        expect(formatWhen(iso(-2), "18:00")).toMatch(/^\d{1,2}\/\d{1,2}, 6:00pm$/);
     });
 
     it("still handles a missing date or time", () => {
         expect(formatWhen(null, "09:00")).toBe("9:00am");
-        expect(formatWhen(iso(30), null)).toMatch(/^[A-Z][a-z]{2} \d{1,2},$/);
+        expect(formatWhen(iso(30), null)).toMatch(/^\d{1,2}\/\d{1,2},$/);
     });
 });

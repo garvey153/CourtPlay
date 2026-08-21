@@ -6,11 +6,11 @@
             "image": "tutorial/01-feed.jpg"
         },
         "claim": {
-            "hash": "10479f55e3dff23f",
+            "hash": "c752e3ffd35a3ec1",
             "image": "tutorial/02-claim.jpg"
         },
         "approve": {
-            "hash": "5bbd33569d36ff22",
+            "hash": "7ace98f92edd2538",
             "image": "tutorial/03-approve.jpg"
         },
         "post": {
@@ -18,7 +18,7 @@
             "image": "tutorial/04-post.jpg"
         },
         "activity": {
-            "hash": "2af02aa3c5319218",
+            "hash": "64b1814bd7a8a14b",
             "image": "tutorial/05-activity.jpg"
         },
         "groups": {
