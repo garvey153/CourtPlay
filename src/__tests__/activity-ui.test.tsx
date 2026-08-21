@@ -103,6 +103,30 @@ describe("Activity redesign", () => {
             expect(screen.queryByText("Active")).not.toBeInTheDocument();
         });
 
+        it("dims an expired regular-play card's text, like a sub card", async () => {
+            setup([expiredRegular], []);
+            render(<MemoryRouter><Activity /></MemoryRouter>);
+            await userEvent.click(await screen.findByRole("button", { name: "Created posts" }));
+
+            const title = await screen.findByText("Tennis, Regular Play · NTRP 4.0");
+            expect(title.className).toContain("text-tertiary");
+            expect(title.className).not.toContain("text-primary");
+        });
+
+        /** Editing a game that has been and gone is not a thing anyone wants. */
+        it("offers Remove, not Edit, on an expired sub post", async () => {
+            const yesterday = new Date(Date.now() - 26 * 3600 * 1000).toISOString().slice(0, 10);
+            setup([{ ...createdPost, game_date: yesterday, claims: [] }], []);
+            render(<MemoryRouter><Activity /></MemoryRouter>);
+            await userEvent.click(await screen.findByRole("button", { name: "Created posts" }));
+            const card = (await screen.findByText(/Longshore Club/)).closest("button")!;
+            await userEvent.click(card);
+
+            expect(await screen.findByRole("button", { name: "Remove post" })).toBeInTheDocument();
+            expect(screen.queryByRole("button", { name: "Edit post" })).not.toBeInTheDocument();
+            expect(screen.queryByRole("button", { name: "Delete post" })).not.toBeInTheDocument();
+        });
+
         /**
          * A past-dated sub post used to land in NO section — Active excludes
          * past games and nothing else claimed it — so it vanished from the tab

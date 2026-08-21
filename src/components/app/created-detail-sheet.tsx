@@ -63,6 +63,11 @@ interface CreatedDetailSheetProps {
     onDelete: () => void;
     /** Claim id currently being approved/declined. */
     actionLoading?: string | null;
+    /**
+     * The game has been and gone. Editing it is meaningless, so the sheet
+     * offers only Remove — matching what a lapsed regular-play post offers.
+     */
+    expired?: boolean;
     /** Whether the post is currently being deleted. */
     deleting?: boolean;
     /** Send a reply in the claim thread; resolves once the thread is refreshed. */
@@ -76,7 +81,8 @@ const MESSAGE_MAX = 150;
  * claim it shows "Your post has been claimed!" with the claimant and Approve /
  * Decline. Matches design 274-4741.
  */
-export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline, onCancelApproval, onEdit, onDelete, actionLoading, deleting, onReply }: CreatedDetailSheetProps) {
+export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline, onCancelApproval, onEdit, onDelete, actionLoading, deleting, onReply, expired }: CreatedDetailSheetProps) {
+    const finished = expired ?? post.status === "expired";
     // Delete confirmation is shown inline in this same sheet (no close/reopen).
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [reply, setReply] = useState("");
@@ -221,7 +227,9 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                         {/* Delete confirmation — same sheet (design 274-5651) */}
                         <div className="flex items-start justify-between gap-3">
                             <div className="flex min-w-0 flex-col gap-1">
-                                <h2 className="text-md font-semibold text-primary">Delete this post?</h2>
+                                <h2 className="text-md font-semibold text-primary">
+                                    {finished ? "Remove this post?" : "Delete this post?"}
+                                </h2>
                                 <p className="text-sm text-secondary">This will permanently remove it from the app.</p>
                             </div>
                             <button
@@ -261,7 +269,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
 
                         <div className="mt-2 flex flex-col gap-3">
                             <button type="button" onClick={onDelete} disabled={deleting} className={PRIMARY_BTN}>
-                                {deleting ? <Spinner size="sm" tone="on-brand" /> : "Yes, delete"}
+                                {deleting ? <Spinner size="sm" tone="on-brand" /> : finished ? "Yes, remove" : "Yes, delete"}
                             </button>
                             <button type="button" onClick={onClose} disabled={deleting} className={SECONDARY_BTN}>
                                 No, keep it
@@ -378,11 +386,17 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                         {posterPrice}
                         {noteBubble}
                         <div className="mt-4 flex flex-col gap-3">
-                            <button type="button" onClick={onEdit} className={PRIMARY_BTN}>
-                                Edit post
-                            </button>
-                            <button type="button" onClick={() => setConfirmingDelete(true)} className={SECONDARY_BTN}>
-                                Delete post
+                            {!finished && (
+                                <button type="button" onClick={onEdit} className={PRIMARY_BTN}>
+                                    Edit post
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setConfirmingDelete(true)}
+                                className={`${SECONDARY_BTN} w-full`}
+                            >
+                                {finished ? "Remove post" : "Delete post"}
                             </button>
                         </div>
                     </div>

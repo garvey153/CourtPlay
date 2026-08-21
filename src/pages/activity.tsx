@@ -453,6 +453,8 @@ export function Activity() {
                     post={feedPost}
                     currentUserId={user?.id}
                     kindOverride={effectiveKind}
+                    // Your own lapsed post still opens, so it can be removed.
+                    openWhenExpired
                     // The kind now carries the Expired label; a section badge
                     // like "Approved" must not override it.
                     labelOverride={expired ? undefined : badge}
@@ -575,6 +577,7 @@ export function Activity() {
                         handleDecline(claim, post);
                     }}
                     onCancelApproval={(claim) => handleCancelApproval(claim, createdSheet)}
+                    expired={createdSheet.status === "expired" || isPast(createdSheet.game_date, createdSheet.game_time)}
                     onEdit={() => navigate(`/post/new?edit=${createdSheet.id}`, { state: { returnTo: "/activity?tab=created" } })}
                     onDelete={() => handleDeletePost(createdSheet)}
                     onReply={(body) => handleSendClaimMessage(createdSheet, body)}

@@ -33,6 +33,9 @@ interface RegularPlayCardProps {
 
 export const RegularPlayCard = memo(function RegularPlayCard({ post, currentUserId, onViewed, onOpenDetail, badge }: RegularPlayCardProps) {
     const badgeStyle = badge ? KIND_CONFIG[badge] : null;
+    // Expired and claimed states read as spent, the same way they do on a sub
+    // card: the content drops to tertiary while the badge stays legible.
+    const dim = !!badgeStyle?.dim;
     const cardRef = useRef<HTMLButtonElement>(null);
     const didTrack = useRef(false);
 
@@ -92,7 +95,7 @@ export const RegularPlayCard = memo(function RegularPlayCard({ post, currentUser
                 {/* Title + supporting info */}
                 <div className="flex min-w-0 flex-col gap-1">
                     <div className="flex items-start justify-between gap-2">
-                        <p className="min-w-0 text-md font-semibold text-primary">{title}</p>
+                        <p className={cx("min-w-0 text-md font-semibold", dim ? "text-tertiary" : "text-primary")}>{title}</p>
                         {badgeStyle && (
                             <span
                                 className={cx(
@@ -105,7 +108,7 @@ export const RegularPlayCard = memo(function RegularPlayCard({ post, currentUser
                             </span>
                         )}
                     </div>
-                    {post.location && <p className="text-xs text-secondary">{post.location}</p>}
+                    {post.location && <p className={cx("text-xs", dim ? "text-tertiary" : "text-secondary")}>{post.location}</p>}
                     {schedule && <p className="text-xs text-tertiary">{schedule}</p>}
                 </div>
 
@@ -135,7 +138,7 @@ export const RegularPlayCard = memo(function RegularPlayCard({ post, currentUser
                 {/* Notes speech-bubble (only when the poster added a note) */}
                 {post.notes && (
                     <div className="w-full rounded-lg rounded-tl-none border border-neutral-600 px-3 py-2.5">
-                        <p className="text-sm text-secondary">“{post.notes}”</p>
+                        <p className={cx("text-sm", dim ? "text-tertiary" : "text-secondary")}>“{post.notes}”</p>
                     </div>
                 )}
             </div>

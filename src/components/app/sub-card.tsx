@@ -108,6 +108,10 @@ interface SubCardProps {
     onViewed?: (postId: string) => void;
     /** Tapping the card opens the claim-detail bottom sheet. */
     onOpenDetail?: (post: FeedPost) => void;
+    /**
+     * Let an expired card be tapped. Off by default — see `inert` below.
+     */
+    openWhenExpired?: boolean;
     /** Force the card state (Activity uses this from the claim/post display state). */
     kindOverride?: CardKind;
     /**
@@ -122,7 +126,7 @@ interface SubCardProps {
     labelOverride?: string;
 }
 
-export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, onOpenDetail, kindOverride, labelOverride }: SubCardProps) {
+export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, onOpenDetail, kindOverride, labelOverride, openWhenExpired }: SubCardProps) {
     const cardRef = useRef<HTMLButtonElement>(null);
     const didTrack = useRef(false);
 
@@ -158,6 +162,11 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
 
     // Expired posts are dead — tapping them opens nothing.
     const isExpired = kind === "expired";
+    // An expired card is inert by default: on the feed it is someone else's
+    // lapsed post and there is nothing to do with it. Activity opts in, because
+    // there the post is YOURS — and not being able to open it meant not being
+    // able to remove it.
+    const inert = isExpired && !openWhenExpired;
 
     const playType = formatPlayType(post.play_type);
     const title = [playType, "Tennis"].filter(Boolean).join(" ");
@@ -180,9 +189,9 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
         <button
             ref={cardRef}
             type="button"
-            onClick={isExpired ? undefined : () => onOpenDetail?.(post)}
-            aria-disabled={isExpired || undefined}
-            className={cx("flex w-full overflow-hidden rounded text-left", isExpired && "cursor-default")}
+            onClick={inert ? undefined : () => onOpenDetail?.(post)}
+            aria-disabled={inert || undefined}
+            className={cx("flex w-full overflow-hidden rounded text-left", inert && "cursor-default")}
         >
             {/* Left status accent bar */}
             <span className={cx("w-1 shrink-0 self-stretch", isTagged ? "bg-brand-800" : config.bar)} aria-hidden="true" />
@@ -191,7 +200,7 @@ export const SubCard = memo(function SubCard({ post, currentUserId, onViewed, on
             <div
                 className={cx(
                     "flex min-w-0 flex-1 flex-col gap-3 bg-secondary p-4 transition duration-100 ease-linear",
-                    !isExpired && "hover:bg-secondary_hover",
+                    !inert && "hover:bg-secondary_hover",
                 )}
             >
                 {/* Top row: title/subtitle + status badge */}
