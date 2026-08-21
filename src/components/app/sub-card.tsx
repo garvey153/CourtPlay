@@ -72,12 +72,33 @@ export function timeAgo(dateStr: string): string {
     return `${Math.floor(hrs / 24)}d ago`;
 }
 
-/** "Sat 9:00am" — weekday + start time, matching the GameCard title. */
+/** How far ahead a weekday still identifies a day without ambiguity. */
+const WEEKDAY_HORIZON_DAYS = 6;
+
+/**
+ * "Sat 9:00am" for a game inside the next week, "Aug 20, 9:00am" beyond it.
+ *
+ * A weekday is the friendlier form but it only means something while there is
+ * just one of them coming: past six days out, "Sat" could be any of several
+ * Saturdays, so the date takes over. Note the comma — it separates two numbers
+ * that would otherwise run together as "Aug 20 9:00am".
+ *
+ * A date in the past also takes the month-and-day form. An expired post saying
+ * "Tue" reads as the Tuesday coming rather than the one gone.
+ */
 export function formatWhen(gameDate: string | null, gameTime: string | null): string {
     const parts: string[] = [];
     if (gameDate) {
         const d = new Date(gameDate + "T12:00:00");
-        parts.push(d.toLocaleDateString("en-US", { weekday: "short" }));
+        // Both at noon, so a DST boundary between them cannot shift the count.
+        const today = new Date();
+        today.setHours(12, 0, 0, 0);
+        const days = Math.round((d.getTime() - today.getTime()) / 86_400_000);
+        parts.push(
+            days >= 0 && days <= WEEKDAY_HORIZON_DAYS
+                ? d.toLocaleDateString("en-US", { weekday: "short" })
+                : `${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })},`,
+        );
     }
     if (gameTime) {
         const [h, m] = gameTime.split(":");

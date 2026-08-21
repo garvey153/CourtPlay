@@ -38,13 +38,18 @@ localStorage.setItem("courtsub_push_prompt_dismissed", "true");
 // Screenshot-only styling. The Beta pill is a moment in time, not a feature
 // worth teaching, so it is hidden here rather than in the app.
 //
+// The build id goes with it, for a second reason: it is the commit SHA, so
+// leaving it in made the Profile screenshot come out different after EVERY
+// commit. That is churn the fingerprint cannot even see — jsdom has no
+// __BUILD_ID__ — so the image silently went stale-and-recaptured forever.
+//
 // The app's own bg-primary STAYS. An earlier version blacked it out to hide
 // bands at the top and bottom of the tutorial page, which was the wrong end of
 // the problem: those bands are the tutorial's own body showing through, and
 // blacking out bg-primary took the app's background out of the screenshots too.
 const demoStyle = document.createElement("style");
 demoStyle.textContent = `
-    [data-beta-tag] { display: none; }
+    [data-beta-tag], [data-build-id] { display: none; }
 `;
 document.head.appendChild(demoStyle);
 

@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router";
 import { ProfileContext } from "@/providers/profile-provider";
 import { DEMO_PROFILE } from "./fixtures";
 import { SCREEN_ROUTES } from "./screens";
+import { setDemoScreen } from "./supabase-mock";
 
 /**
  * The context every demo screen renders inside.
@@ -15,6 +16,10 @@ import { SCREEN_ROUTES } from "./screens";
  * the network and the screens are identical on every run.
  */
 export function DemoProviders({ children, screen }: { children: ReactNode; screen?: string }) {
+    // Before the children render, so the first fetch already sees it. An effect
+    // would land after the page had asked and been answered wrongly.
+    setDemoScreen(screen ?? null);
+
     return (
         <MemoryRouter initialEntries={[(screen && SCREEN_ROUTES[screen]) || "/"]}>
             <ProfileContext.Provider

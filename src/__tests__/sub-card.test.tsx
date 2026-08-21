@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { SubCard, gameEndMs, KIND_CONFIG } from "@/components/app/sub-card";
+import { SubCard, gameEndMs, formatWhen, KIND_CONFIG } from "@/components/app/sub-card";
 import type { FeedPost } from "@/types/feed";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -211,5 +211,41 @@ describe("status badges carry no dot", () => {
         for (const config of Object.values(KIND_CONFIG)) {
             expect(config).not.toHaveProperty("dot");
         }
+    });
+});
+
+/**
+ * A weekday only identifies a day while there is one of them coming. Past six
+ * days out, "Sat" could be any of several Saturdays, so the date takes over.
+ */
+describe("formatWhen", () => {
+    const iso = (daysFromToday: number) => {
+        const d = new Date();
+        d.setHours(12, 0, 0, 0);
+        d.setDate(d.getDate() + daysFromToday);
+        return d.toISOString().slice(0, 10);
+    };
+
+    it("uses the weekday inside the next six days", () => {
+        for (const days of [0, 1, 3, 6]) {
+            const out = formatWhen(iso(days), "09:00");
+            expect(out).toMatch(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) 9:00am$/);
+            expect(out).not.toContain(",");
+        }
+    });
+
+    it("uses month and day beyond that, with a comma before the time", () => {
+        const out = formatWhen(iso(7), "09:00");
+        expect(out).toMatch(/^[A-Z][a-z]{2} \d{1,2}, 9:00am$/);
+    });
+
+    /** "Tue" on an expired post reads as the Tuesday coming, not the one gone. */
+    it("uses month and day for a date already past", () => {
+        expect(formatWhen(iso(-2), "18:00")).toMatch(/^[A-Z][a-z]{2} \d{1,2}, 6:00pm$/);
+    });
+
+    it("still handles a missing date or time", () => {
+        expect(formatWhen(null, "09:00")).toBe("9:00am");
+        expect(formatWhen(iso(30), null)).toMatch(/^[A-Z][a-z]{2} \d{1,2},$/);
     });
 });
