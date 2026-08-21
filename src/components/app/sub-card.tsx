@@ -76,12 +76,15 @@ export function timeAgo(dateStr: string): string {
 const WEEKDAY_HORIZON_DAYS = 6;
 
 /**
- * "Sat 9:00am" for a game inside the next week, "Aug 20, 9:00am" beyond it.
+ * "Sat 9:00am" for a game inside the next week, "5/23, 9:00am" beyond it.
  *
  * A weekday is the friendlier form but it only means something while there is
  * just one of them coming: past six days out, "Sat" could be any of several
- * Saturdays, so the date takes over. Note the comma — it separates two numbers
- * that would otherwise run together as "Aug 20 9:00am".
+ * Saturdays, so the date takes over. Note the comma — without it the two
+ * numbers run together as "5/23 9:00am".
+ *
+ * Numeric month rather than "May", because the title sits on the same line and
+ * the shorter label keeps more posts on one line.
  *
  * A date in the past also takes the month-and-day form. An expired post saying
  * "Tue" reads as the Tuesday coming rather than the one gone.
@@ -97,7 +100,7 @@ export function formatWhen(gameDate: string | null, gameTime: string | null): st
         parts.push(
             days >= 0 && days <= WEEKDAY_HORIZON_DAYS
                 ? d.toLocaleDateString("en-US", { weekday: "short" })
-                : `${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })},`,
+                : `${d.getMonth() + 1}/${d.getDate()},`,
         );
     }
     if (gameTime) {
