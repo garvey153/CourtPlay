@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
@@ -76,6 +76,30 @@ export function Tutorial() {
         if (profile) setProfile({ ...profile, tutorial_seen_at: seenAt });
         void supabase.from("users").update({ tutorial_seen_at: seenAt }).eq("id", user.id);
     };
+
+    /**
+     * Nothing here scrolls, on either screen. Without this the welcome screen
+     * rubber-bands under a drag and springs back, which reads as a broken page
+     * rather than an app — reported on a device, where the copy could be pulled
+     * down and let go.
+     *
+     * Owned by the page rather than by each screen because both are mounted at
+     * once mid-transition. Two locks would each capture the other's value as
+     * "before", and whichever unmounted first would restore the locked state
+     * instead of the original. The carousel keeps its own for when it is used
+     * standalone; nested inside this one it restores to locked, and then this
+     * one restores to the real original.
+     */
+    useEffect(() => {
+        const html = document.documentElement;
+        const prev = { overflow: document.body.style.overflow, overscroll: html.style.overscrollBehavior };
+        document.body.style.overflow = "hidden";
+        html.style.overscrollBehavior = "none";
+        return () => {
+            document.body.style.overflow = prev.overflow;
+            html.style.overscrollBehavior = prev.overscroll;
+        };
+    }, []);
 
     const takeTour = () => {
         setStage("sliding");
