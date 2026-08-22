@@ -19,19 +19,6 @@ import { PRIMARY_MD as PRIMARY_BTN, SECONDARY_MD as SECONDARY_BTN } from "@/comp
 
 const MESSAGE_MAX = 150;
 
-function formatDateLong(dateStr: string): string {
-    const d = new Date(dateStr + "T12:00:00");
-    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-}
-
-function formatTime12(timeStr: string): string {
-    const [h, m] = timeStr.split(":");
-    const hour = parseInt(h, 10);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const h12 = hour % 12 || 12;
-    return `${h12}:${m} ${ampm}`;
-}
-
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
@@ -315,6 +302,13 @@ export function ClaimDetailSheet({
 
                 {/* Header — claim-status text once claimed, otherwise just the title. */}
                 {activeClaim && <p className="pr-8 text-sm text-brand-500">{claimStatusMessage}</p>}
+                {/* An overlapping claim, called out above the title (Figma 671:4389)
+                    rather than in a warning block down beside the button. The
+                    conflicting game is at the same time as the one named right
+                    below, so the message does not repeat the date back. */}
+                {conflict && (
+                    <p className="pr-8 text-xs text-error-primary">You have another pending claim at this time.</p>
+                )}
                 {titleHeader}
 
                 {/* Poster + price — design adds a 4px lead-in (20px above). */}
@@ -357,14 +351,6 @@ export function ClaimDetailSheet({
                     </div>
                 )}
 
-                {/* Conflict / error */}
-                {conflict && (
-                    <div className="rounded-lg bg-warning-primary p-3 text-sm text-primary">
-                        You already have a pending claim on{" "}
-                        <span className="font-semibold">{formatDateLong(conflict.date)}</span> at{" "}
-                        <span className="font-semibold">{formatTime12(conflict.time)}</span>. Back out of that claim first.
-                    </div>
-                )}
                 {error && <p className="text-sm text-error-primary">{error}</p>}
 
                 {/* Action area — 20px above the first item (message → disclaimer / reply). */}
