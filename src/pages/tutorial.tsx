@@ -69,7 +69,6 @@ export function Tutorial() {
     if (stage !== "tour") {
         return (
             <TutorialWelcome
-                firstName={profile?.first_name}
                 leaving={stage === "leaving"}
                 onTakeTour={() => {
                     setStage("leaving");

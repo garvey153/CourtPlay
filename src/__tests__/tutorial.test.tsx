@@ -138,18 +138,17 @@ describe("tutorial", () => {
      * only part of the copy that is not a constant.
      */
     describe("welcome screen", () => {
-        it("greets the player by name", () => {
-            renderPage();
-            expect(screen.getByRole("heading", { name: /Nice work, Kate\./ })).toBeInTheDocument();
-        });
-
-        /** A profile with no first name must not render "Nice work, undefined." */
-        it("still reads as a sentence with no name on the profile", () => {
-            profileMock.mockReturnValue({ profile: profile({ first_name: null }), setProfile, loading: false });
+        /**
+         * Two fixed lines. The headline used to interpolate the player's first
+         * name, which made it one line or two depending on the name — the copy
+         * was changed so the block is always the same height, and the layout
+         * below it is centred against that.
+         */
+        it("headlines with the design's two lines, and no name", () => {
             renderPage();
             const heading = screen.getByRole("heading", { level: 1 });
-            expect(heading.textContent).toContain("Nice work.");
-            expect(heading.textContent).not.toMatch(/undefined|null/);
+            expect(heading.textContent).toBe("Nice work.Hello, CourtPlay.");
+            expect(heading.textContent).not.toMatch(/Kate|undefined|null/);
         });
 
         it("comes before the tour, not instead of it", () => {
