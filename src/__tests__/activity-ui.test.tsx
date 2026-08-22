@@ -180,24 +180,26 @@ describe("Activity redesign", () => {
     });
 
     /**
-     * Both Activity empty states used to pass actionTone="secondary", so their
-     * calls to action were outlined while the identical ones on Feed and Profile
-     * were solid green. Pinning the shared PRIMARY_CTA constant rather than a
-     * class string means a change to the design token moves this test with it.
+     * Both Activity empty states take the secondary CTA (Figma 32:542), same as
+     * every other page's. This once pinned the opposite: the two were outlined
+     * while Feed and Profile were solid, that was levelled UP to primary, and
+     * the design has since taken all of them DOWN to secondary. What the test is
+     * really for is that Activity matches the rest — so it pins the shared
+     * constant rather than a class string, and moves when the token does.
      */
-    it("empty states use the same primary CTA as Feed and Profile", async () => {
+    it("empty states use the same secondary CTA as Feed and Profile", async () => {
         const user = userEvent.setup();
         setup([], []);
         render(<MemoryRouter><Activity /></MemoryRouter>);
 
         const answered = await screen.findByRole("link", { name: "Browse the feed" });
-        expect(answered.className).toContain(PRIMARY_CTA);
-        expect(answered.className).not.toContain(SECONDARY_CTA);
+        expect(answered.className).toContain(SECONDARY_CTA);
+        expect(answered.className).not.toContain(PRIMARY_CTA);
 
         await user.click(screen.getByRole("button", { name: "Created posts" }));
         const created = await screen.findByRole("link", { name: "Find a sub" });
-        expect(created.className).toContain(PRIMARY_CTA);
-        expect(created.className).not.toContain(SECONDARY_CTA);
+        expect(created.className).toContain(SECONDARY_CTA);
+        expect(created.className).not.toContain(PRIMARY_CTA);
     });
 
     it("renders pill tabs and claimed-post cards", async () => {

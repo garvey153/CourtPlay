@@ -19,9 +19,14 @@ export const PRIMARY_CTA =
     "inline-flex items-center justify-center gap-1 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 
 /**
- * The quieter counterpart. Nothing uses it since the Activity empty states moved
- * onto PRIMARY_CTA to match Feed and Profile — kept as the EmptyState component's
- * `actionTone="secondary"` option rather than deleted.
+ * The quieter counterpart — Figma node 32:542 (Button / Secondary / S).
+ *
+ *   bg      bg/tertiary   #26382C  → bg-tertiary
+ *   text    text/secondary #A2B5AA → text-secondary
+ *
+ * Everything else matches PRIMARY_CTA above. This is what every EmptyState call
+ * to action uses; see the note on EmptyState for why the empty case gets the
+ * quiet button and the error case does not.
  */
 export const SECONDARY_CTA =
     "inline-flex items-center justify-center gap-1 rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary disabled:cursor-not-allowed disabled:opacity-50";
