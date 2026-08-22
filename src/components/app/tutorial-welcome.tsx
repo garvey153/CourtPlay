@@ -79,29 +79,18 @@ export function TutorialWelcome({
             />
 
             {showBand && (
-                <div
-                    className={`${column} items-center px-9`}
-                    style={{ ...columnStyle, paddingBottom: bottomPad }}
-                    aria-hidden={!showCopy}
-                >
-                    {/* All three posts, whole. The stack is sized by HEIGHT here
-                        — as tall as the room left over, with the width following
-                        from the aspect ratio — rather than pinned to the
-                        screenshot's 330px and cropped at the bottom. It grows to
-                        that width on the way into the carousel.
-
-                        The reserved strip is the fade below: it belongs over
-                        empty ground, not over the third post. */}
-                    <div className="flex w-full flex-1 justify-center overflow-hidden pb-16">
-                        <CardsBand
-                            className="h-full"
-                            style={{ aspectRatio: bandAspect(BANDS.cards) }}
-                            alt="Three open spots in the CourtPlay feed."
-                        />
-                    </div>
-                    {/* Mirrors the copy layer's height so the window ends where
-                        the copy begins, without either layer measuring the other. */}
-                    <Copy hidden onTakeTour={onTakeTour} onSkip={onSkip} />
+                <div className={`${column} items-center px-9`} style={columnStyle} aria-hidden={!showCopy}>
+                    {/* Full size, full height, 330px wide exactly as slide 1
+                        shows it — so the move into the carousel is a slide and
+                        nothing else. It runs on down behind the copy; all three
+                        posts are there from the start, and the copy is simply
+                        standing on the lower ones. Fading the copy is what
+                        reveals them, which is why this is not clipped to fit. */}
+                    <CardsBand
+                        className="w-full max-w-[330px] shrink-0"
+                        style={{ aspectRatio: bandAspect(BANDS.cards) }}
+                        alt="Three open spots in the CourtPlay feed."
+                    />
                 </div>
             )}
 
