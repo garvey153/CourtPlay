@@ -51,13 +51,18 @@ export function TutorialWelcome({
     const fadeOut = { duration: INTRO_TIMING.fade / 1000, ease: "linear" as const };
     const reveal = { duration: INTRO_TIMING.reveal / 1000, ease: "linear" as const };
 
-    // One column, shared by the ground layer and the copy layer.
-    const column = "pointer-events-none fixed inset-0 z-0 flex flex-col items-center px-9";
-    const columnStyle = {
-        paddingTop: `calc(${WELCOME_EDGE}px + env(safe-area-inset-top))`,
-        paddingBottom: `calc(${WELCOME_EDGE - WELCOME_SKIP_BASELINE_DROP}px + env(safe-area-inset-bottom))`,
-        gap: WELCOME_GAP,
-    };
+    // One column, shared by the ground layer and the copy layer. Both must give
+    // the card window the same height, so the copy layer keeps an invisible
+    // spacer where the window is and carries its bottom padding on the panel.
+    // No horizontal padding here: the two layers pad differently. The band layer
+    // insets its window; the copy layer's ground has to reach the screen edges,
+    // so it pads inside itself. Putting px-9 here and px-0 on the copy layer
+    // does NOT work — same property, and which wins is stylesheet order, not
+    // class order, so the copy came out double-inset with the ground short of
+    // the edges.
+    const column = "pointer-events-none fixed inset-0 z-0 flex flex-col";
+    const bottomPad = WELCOME_EDGE - WELCOME_SKIP_BASELINE_DROP;
+    const columnStyle = { paddingTop: WELCOME_EDGE, gap: WELCOME_GAP };
 
     return (
         <>
@@ -68,7 +73,11 @@ export function TutorialWelcome({
             />
 
             {showBand && (
-                <div className={column} style={columnStyle} aria-hidden={!showCopy}>
+                <div
+                    className={`${column} items-center px-9`}
+                    style={{ ...columnStyle, paddingBottom: bottomPad }}
+                    aria-hidden={!showCopy}
+                >
                     <div className="relative w-full max-w-[330px] flex-1 overflow-hidden">
                         <CardsBand
                             className="absolute inset-x-0 top-0"
@@ -88,8 +97,20 @@ export function TutorialWelcome({
                 animate={{ opacity: showCopy ? 1 : 0 }}
                 transition={fadeOut}
             >
-                <div className="w-full max-w-[330px] flex-1" />
-                <Copy onTakeTour={onTakeTour} onSkip={onSkip} interactive={showCopy} />
+                <div className="flex-1" />
+                {/* The copy stands on its own ground, full bleed. Without it the
+                    posts slide BETWEEN the green fill and the copy — the fill is
+                    below the carousel, the copy above it — and the headline ends
+                    up printed straight over the cards mid-slide. */}
+                <div className="relative bg-[#08180e] px-9" style={{ paddingBottom: bottomPad }}>
+                    <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-x-0 bottom-full h-12 bg-gradient-to-b from-transparent to-[#08180e]"
+                    />
+                    <div className="mx-auto w-full max-w-[330px]">
+                        <Copy onTakeTour={onTakeTour} onSkip={onSkip} interactive={showCopy} />
+                    </div>
+                </div>
             </motion.div>
         </>
     );

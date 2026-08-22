@@ -164,6 +164,25 @@ describe("tutorial", () => {
         });
 
         /**
+         * The 90px edges are from the SCREEN edge, not the safe area.
+         *
+         * This is a regression test for a bug no browser measurement could have
+         * caught: the padding used to add env(safe-area-inset-bottom) on top of
+         * the 90, which headless Chrome reports as 0. The rendered gap measured
+         * a clean 90 while a phone with a home indicator got 124. Assert on the
+         * declaration rather than the outcome, since the outcome is what lied.
+         */
+        it("spaces the edges from the screen, not the safe area", () => {
+            const { container } = renderPage();
+            const styled = [...container.querySelectorAll<HTMLElement>("[style]")];
+            expect(styled.some((el) => el.style.paddingTop === "90px")).toBe(true);
+            expect(styled.some((el) => el.style.paddingBottom === "85px")).toBe(true);
+            for (const el of styled) {
+                expect(el.getAttribute("style")).not.toMatch(/env\(safe-area/);
+            }
+        });
+
+        /**
          * The order the transition plays in: the posts slide to the carousel
          * FIRST, while this copy is still up, and only then does the copy go.
          * That is why the card stack and the copy are separate layers — so the

@@ -83,6 +83,12 @@ export const bandAspect = (band: Band) => `${STEP1.srcWidth} / ${band.srcHeight}
  * the drop from baseline to box bottom, which is descent plus half-leading and
  * cannot be reasoned out of the line-height alone. Measured in the browser at
  * 14/20 Inter Semibold, the way the invite-only screen's spacing was.
+ *
+ * 90 FROM THE SCREEN EDGE, not from the safe area. An earlier version added
+ * env(safe-area-inset-bottom) on top, which put the copy 124px up on a phone
+ * with a home indicator — and headless Chrome reports those insets as 0, so the
+ * measurement came back a clean 90 and could not see it. If you are checking
+ * this number in a browser, you are checking the case where the bug is absent.
  */
 export const WELCOME_EDGE = 90;
 export const WELCOME_SKIP_BASELINE_DROP = 5;
