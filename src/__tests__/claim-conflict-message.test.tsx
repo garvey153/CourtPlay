@@ -41,7 +41,7 @@ const CONFLICT = {
     error: null,
 };
 
-const MESSAGE = "You have another pending claim at this time.";
+const MESSAGE = "You have another claim at this time.";
 
 const open = () =>
     render(
