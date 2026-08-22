@@ -4,7 +4,7 @@ import { Carousel } from "@/components/application/carousel/carousel-base";
 import type { CarouselApi } from "@/components/application/carousel/carousel-base";
 import { cx } from "@/utils/cx";
 import type { TutorialSlide } from "@/lib/tutorial-slides";
-import { BANDS, INTRO_START, INTRO_TIMING, INTRO_TOTAL, STEP1_ASPECT, bandWindow } from "@/lib/tutorial-intro";
+import { BANDS, CAROUSEL_REVEAL_DELAY, INTRO_TIMING, STEP1_ASPECT, bandWindow } from "@/lib/tutorial-intro";
 import { BandImage, CardsBand } from "./tutorial-bands";
 
 /**
@@ -20,7 +20,7 @@ import { BandImage, CardsBand } from "./tutorial-bands";
 function AssemblingSlide({ alt }: { alt: string }) {
     const arrive = {
         duration: INTRO_TIMING.reveal / 1000,
-        delay: INTRO_START.reveal / 1000,
+        delay: CAROUSEL_REVEAL_DELAY / 1000,
         ease: "linear" as const,
     };
 
@@ -99,7 +99,8 @@ export function TutorialCarousel({
 
     useEffect(() => {
         if (!intro) return;
-        const timer = setTimeout(() => setAssembling(false), INTRO_TOTAL + 50);
+        // From this component's own mount, which is the start of the slide.
+        const timer = setTimeout(() => setAssembling(false), CAROUSEL_REVEAL_DELAY + INTRO_TIMING.reveal + 50);
         return () => clearTimeout(timer);
     }, [intro]);
 
@@ -152,7 +153,7 @@ export function TutorialCarousel({
     // Copy, dots and Skip come in together once the screen has finished
     // assembling. Without the intro they are simply there, so no delay applies.
     const revealTransition = intro
-        ? { duration: INTRO_TIMING.reveal / 1000, delay: INTRO_START.reveal / 1000, ease: "linear" as const }
+        ? { duration: INTRO_TIMING.reveal / 1000, delay: CAROUSEL_REVEAL_DELAY / 1000, ease: "linear" as const }
         : { duration: 0 };
 
     return (

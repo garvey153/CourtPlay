@@ -7,7 +7,7 @@ import { validateRedirect } from "@/utils/validate-redirect";
 import { TutorialCarousel } from "@/components/app/tutorial-carousel";
 import { TutorialWelcome } from "@/components/app/tutorial-welcome";
 import { TUTORIAL_SLIDES } from "@/lib/tutorial-slides";
-import { INTRO_TIMING, INTRO_TOTAL } from "@/lib/tutorial-intro";
+import { INTRO_START, INTRO_TOTAL } from "@/lib/tutorial-intro";
 
 /**
  * The tutorial, shown once straight after onboarding.
@@ -43,12 +43,12 @@ export function Tutorial() {
      * to the other while the welcome copy is still up.
      *
      *   welcome   nothing moving
-     *   sliding   carousel mounts; the stack slides to it; copy still up
-     *   fading    the copy goes
+     *   fading    the copy and buttons go, quickly, on a still screen
+     *   sliding   carousel mounts; the stack leaves for it and slides
      *   revealing green ground out, app chrome and slide-1 copy in
      *   tour      the welcome screen is gone
      */
-    const [stage, setStage] = useState<"welcome" | "sliding" | "fading" | "revealing" | "tour">(
+    const [stage, setStage] = useState<"welcome" | "fading" | "sliding" | "revealing" | "tour">(
         replay ? "tour" : "welcome",
     );
 
@@ -102,15 +102,17 @@ export function Tutorial() {
     }, []);
 
     const takeTour = () => {
-        setStage("sliding");
-        setTimeout(() => setStage("fading"), INTRO_TIMING.slide);
-        setTimeout(() => setStage("revealing"), INTRO_TIMING.slide + INTRO_TIMING.fade);
+        setStage("fading");
+        setTimeout(() => setStage("sliding"), INTRO_START.slide);
+        setTimeout(() => setStage("revealing"), INTRO_START.reveal);
         setTimeout(() => setStage("tour"), INTRO_TOTAL);
     };
 
     return (
         <>
-            {stage !== "welcome" && (
+            {/* Mounts when the slide starts, not when the tap lands: the copy
+                fades out first, on a screen that is otherwise still. */}
+            {stage !== "welcome" && stage !== "fading" && (
                 <TutorialCarousel
                     slides={TUTORIAL_SLIDES}
                     onSkip={finish}
@@ -120,8 +122,8 @@ export function Tutorial() {
             )}
             {stage !== "tour" && (
                 <TutorialWelcome
-                    showBand={stage === "welcome"}
-                    showCopy={stage === "welcome" || stage === "sliding"}
+                    showBand={stage === "welcome" || stage === "fading"}
+                    showCopy={stage === "welcome"}
                     showGround={stage !== "revealing"}
                     onTakeTour={takeTour}
                     onSkip={finish}
