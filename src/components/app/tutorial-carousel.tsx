@@ -204,6 +204,23 @@ export function TutorialCarousel({
                                                 : "bottom-0 bg-gradient-to-b from-transparent to-black",
                                         )}
                                     />
+                                    {/* The same fade again, but to the welcome
+                                        screen's green, laid over the black one
+                                        and lifted at the same moment the ground
+                                        turns black. The two colours have to move
+                                        together: a fade to black over a green
+                                        ground has nothing to blend into, and the
+                                        third post ends up cut off by a hard edge
+                                        instead of running out. */}
+                                    {assembling && slide.id === slides[0].id && (
+                                        <motion.div
+                                            aria-hidden="true"
+                                            className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-[#08180e]"
+                                            initial={{ opacity: 1 }}
+                                            animate={{ opacity: 0 }}
+                                            transition={revealTransition}
+                                        />
+                                    )}
                                 </div>
 
                                 <motion.div

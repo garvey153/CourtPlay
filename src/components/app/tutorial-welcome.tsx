@@ -68,14 +68,14 @@ export function TutorialWelcome({
 
     return (
         <>
-            {/* Goes black across the slide, not after it. Slide 1 fades its
-                screenshot out at the bottom with a gradient to black; over green
-                that gradient has nothing to blend into, and the third post ends
-                up cut off by a hard green edge. */}
+            {/* Goes black with slide 1's copy, once the posts have finished
+                moving — not during the slide. The carousel lays a matching green
+                fade over its own black one for the duration, so the posts still
+                run out into whatever colour the ground currently is. */}
             <motion.div
                 className="fixed inset-0 z-0 bg-[#08180e]"
                 animate={{ opacity: showGround ? 1 : 0 }}
-                transition={showGround ? { duration: 0 } : { duration: INTRO_TIMING.slide / 1000, ease: "linear" }}
+                transition={showGround ? { duration: 0 } : { duration: INTRO_TIMING.reveal / 1000, ease: "linear" }}
             />
 
             {showBand && (
