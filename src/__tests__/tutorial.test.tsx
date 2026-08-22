@@ -163,6 +163,20 @@ describe("tutorial", () => {
             expect(await screen.findByRole("heading", { name: TUTORIAL_SLIDES[0].headline })).toBeInTheDocument();
         });
 
+        /**
+         * The order the transition plays in: the posts slide to the carousel
+         * FIRST, while this copy is still up, and only then does the copy go.
+         * That is why the card stack and the copy are separate layers — so the
+         * stack can leave for the carousel with the copy still on screen. A
+         * refactor that reunited them would still pass every other test here.
+         */
+        it("keeps the welcome copy up while the posts slide away", async () => {
+            renderPage();
+            await userEvent.click(screen.getByRole("button", { name: "Take the tour" }));
+            expect(screen.getByRole("heading", { name: /Nice work/ })).toBeInTheDocument();
+            expect(screen.getByRole("heading", { name: TUTORIAL_SLIDES[0].headline })).toBeInTheDocument();
+        });
+
         it("Skip for now goes straight where the tutorial would have", async () => {
             renderPage();
             await skipFromWelcome();

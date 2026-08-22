@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { BANDS, STEP1, type Band } from "@/lib/tutorial-intro";
+import { BANDS, INTRO_TIMING, STEP1, type Band } from "@/lib/tutorial-intro";
 import { cx } from "@/utils/cx";
 
 /** The step-1 screenshot, named once — the welcome screen and slide 1 share it. */
@@ -51,6 +51,10 @@ export function CardsBand({
         <motion.div
             layoutId="tutorial-feed-cards"
             layout="position"
+            // Spelled out rather than left to Motion's default spring: this is
+            // the first beat of a timed sequence, and the beats after it are
+            // scheduled off INTRO_TIMING.
+            transition={{ duration: INTRO_TIMING.slide / 1000, ease: "easeInOut" }}
             className={cx("overflow-hidden", className)}
             style={style}
         >

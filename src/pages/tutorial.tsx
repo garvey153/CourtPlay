@@ -7,7 +7,7 @@ import { validateRedirect } from "@/utils/validate-redirect";
 import { TutorialCarousel } from "@/components/app/tutorial-carousel";
 import { TutorialWelcome } from "@/components/app/tutorial-welcome";
 import { TUTORIAL_SLIDES } from "@/lib/tutorial-slides";
-import { INTRO_TIMING } from "@/lib/tutorial-intro";
+import { INTRO_TIMING, INTRO_TOTAL } from "@/lib/tutorial-intro";
 
 /**
  * The tutorial, shown once straight after onboarding.
@@ -36,10 +36,21 @@ export function Tutorial() {
 
     const replay = searchParams.has("replay");
 
-    // "welcome" → the copy leaves and the ground turns black → "tour", where the
-    // carousel picks the card stack up mid-air. Held here rather than inside
-    // either screen because it is the handover itself.
-    const [stage, setStage] = useState<"welcome" | "leaving" | "tour">(replay ? "tour" : "welcome");
+    /**
+     * The handover, beat by beat. Held here rather than inside either screen
+     * because it IS the handover — the carousel mounts a beat before the welcome
+     * screen finishes leaving, which is what lets the card stack slide from one
+     * to the other while the welcome copy is still up.
+     *
+     *   welcome   nothing moving
+     *   sliding   carousel mounts; the stack slides to it; copy still up
+     *   fading    the copy goes
+     *   revealing green ground out, app chrome and slide-1 copy in
+     *   tour      the welcome screen is gone
+     */
+    const [stage, setStage] = useState<"welcome" | "sliding" | "fading" | "revealing" | "tour">(
+        replay ? "tour" : "welcome",
+    );
 
     // Resolved once: the destination must not change under them mid-swipe.
     const next = useRef(
@@ -66,20 +77,32 @@ export function Tutorial() {
         void supabase.from("users").update({ tutorial_seen_at: seenAt }).eq("id", user.id);
     };
 
-    if (stage !== "tour") {
-        return (
-            <TutorialWelcome
-                leaving={stage === "leaving"}
-                onTakeTour={() => {
-                    setStage("leaving");
-                    // The copy has to be gone before the stack starts moving, or
-                    // the two motions read as one muddled one.
-                    setTimeout(() => setStage("tour"), INTRO_TIMING.fade);
-                }}
-                onSkip={finish}
-            />
-        );
-    }
+    const takeTour = () => {
+        setStage("sliding");
+        setTimeout(() => setStage("fading"), INTRO_TIMING.slide);
+        setTimeout(() => setStage("revealing"), INTRO_TIMING.slide + INTRO_TIMING.fade);
+        setTimeout(() => setStage("tour"), INTRO_TOTAL);
+    };
 
-    return <TutorialCarousel slides={TUTORIAL_SLIDES} onSkip={finish} onDone={finish} intro={!replay} />;
+    return (
+        <>
+            {stage !== "welcome" && (
+                <TutorialCarousel
+                    slides={TUTORIAL_SLIDES}
+                    onSkip={finish}
+                    onDone={finish}
+                    intro={stage !== "tour"}
+                />
+            )}
+            {stage !== "tour" && (
+                <TutorialWelcome
+                    showBand={stage === "welcome"}
+                    showCopy={stage === "welcome" || stage === "sliding"}
+                    showGround={stage !== "revealing"}
+                    onTakeTour={takeTour}
+                    onSkip={finish}
+                />
+            )}
+        </>
+    );
 }

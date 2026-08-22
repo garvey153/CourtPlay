@@ -73,38 +73,49 @@ export const STEP1_ASPECT = `${STEP1.srcWidth} / ${STEP1.srcHeight}`;
 export const bandAspect = (band: Band) => `${STEP1.srcWidth} / ${band.srcHeight}`;
 
 /**
- * The window of posts on the welcome screen, in px (Figma 675:4527 → Frame 24).
+ * Welcome screen spacing, in px (Figma 675:4527 plus the follow-up notes).
  *
- * The design's column is this, a 10px gap, then the copy, centred in the frame.
- * Everything else about the vertical rhythm falls out of that: the 54.5px above
- * the posts and below Skip for now are the leftover margins of centring 703px
- * of content in an 812px frame, not offsets to be placed.
+ * 90 from the top of the screen to the top of the first card, and the BASELINE
+ * of Skip for now 90 from the bottom. The card window takes everything left
+ * over, so a taller phone shows more posts rather than more empty ground.
+ *
+ * Baseline, not the bottom of the text box — so the padding below is 90 less
+ * the drop from baseline to box bottom, which is descent plus half-leading and
+ * cannot be reasoned out of the line-height alone. Measured in the browser at
+ * 14/20 Inter Semibold, the way the invite-only screen's spacing was.
  */
-export const WELCOME_CARDS_WINDOW = 374;
+export const WELCOME_EDGE = 90;
+export const WELCOME_SKIP_BASELINE_DROP = 5;
 
+/** The design's gap between the card window and the copy. */
+export const WELCOME_GAP = 10;
 
 /**
- * The transition, in milliseconds. "Quickly" throughout — this sits between
- * tapping a button and reading the first slide, so it has to feel like the
- * screen assembling itself rather than a cutscene.
+ * The transition, in milliseconds, in the order it plays.
+ *
+ * Posts first, while the welcome copy is still up: they slide down to where
+ * step 1 holds them, passing over the copy. Then the copy goes. Then everything
+ * that makes it the tutorial — the black ground, the app chrome around the
+ * posts, and slide 1's own copy, dots and Skip tutorial — arrives together.
+ *
+ * The order is why the copy cannot live in the same layer as the card stack:
+ * the stack has to leave that layer and join the carousel while the copy is
+ * still on screen. See TutorialWelcome.
  */
 export const INTRO_TIMING = {
-    /** Welcome copy and buttons fade out while the green ground turns black. */
+    /** The card stack slides down to where step 1 holds it. */
+    slide: 300,
+    /** Welcome copy and buttons fade out. */
     fade: 180,
-    /** The card stack slides to where step 1 holds it, and opens up. */
-    slide: 260,
-    /** Header and tab bar arrive from off the top and bottom edges. */
-    bands: 260,
-    /** Slide-1 copy, dots and Skip tutorial arrive last. */
-    reveal: 220,
+    /** Black ground, app chrome, slide-1 copy, dots and Skip tutorial. */
+    reveal: 260,
 } as const;
 
 /** Cumulative start times, so the phases are declared once and read the same. */
 export const INTRO_START = {
-    fade: 0,
-    slide: INTRO_TIMING.fade,
-    bands: INTRO_TIMING.fade + INTRO_TIMING.slide,
-    reveal: INTRO_TIMING.fade + INTRO_TIMING.slide + INTRO_TIMING.bands,
+    slide: 0,
+    fade: INTRO_TIMING.slide,
+    reveal: INTRO_TIMING.slide + INTRO_TIMING.fade,
 } as const;
 
 export const INTRO_TOTAL = INTRO_START.reveal + INTRO_TIMING.reveal;
