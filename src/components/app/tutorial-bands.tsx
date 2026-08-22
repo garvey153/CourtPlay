@@ -61,13 +61,13 @@ export function CardsBand({
     return (
         <motion.div
             layoutId="tutorial-feed-cards"
-            // Full layout, not "position". The welcome screen sizes the stack to
-            // fit all three posts in the room it has; the carousel shows it at
-            // the screenshot's own width, so the size genuinely changes. The
-            // usual objection — Motion tweens size as a transform and distorts
-            // the content — does not apply here: both ends carry the same aspect
-            // ratio, so the tween is a uniform scale.
-            layout
+            // Position only. The stack is 330px wide in both places and must
+            // never resize — it slides, and that is all. Letting Motion animate
+            // size was tried and is wrong twice over: it scales the screenshot
+            // for the length of the tween, and it only arose from sizing the
+            // welcome stack to fit, which is not how the welcome screen shows
+            // three posts. The copy covers them; moving it uncovers them.
+            layout="position"
             // Spelled out rather than left to Motion's default spring: this is
             // the first beat of a timed sequence, and the beats after it are
             // scheduled off INTRO_TIMING.
