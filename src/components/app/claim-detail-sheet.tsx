@@ -307,6 +307,11 @@ export function ClaimDetailSheet({
                     conflicting game is at the same time as the one named right
                     below, so the message does not repeat the date back.
 
+                    "another claim", not the frame's "another pending claim":
+                    submit_claim refuses on an approved claim too, so naming
+                    only the pending case would leave the other one looking
+                    like a bug.
+
                     text-sm, not the design's 12px: the subtitle it sits above is
                     14px in the build where the frame draws it at 12, and an error
                     smaller than the line under it reads as fine print. Matching
@@ -318,7 +323,7 @@ export function ClaimDetailSheet({
                     this is text-error-primary and NOT text-utility-red-400,
                     which the dark theme remaps to red-600, i.e. darker. */}
                 {conflict && (
-                    <p className="pr-8 text-sm text-error-primary">You have another pending claim at this time.</p>
+                    <p className="pr-8 text-sm text-error-primary">You have another claim at this time.</p>
                 )}
                 {titleHeader}
 
