@@ -49,7 +49,6 @@ export function TutorialWelcome({
     showGround?: boolean;
 }) {
     const fadeOut = { duration: INTRO_TIMING.fade / 1000, ease: "linear" as const };
-    const reveal = { duration: INTRO_TIMING.reveal / 1000, ease: "linear" as const };
 
     // One column, shared by the ground layer and the copy layer. Both must give
     // the card window the same height, so the copy layer keeps an invisible
@@ -62,14 +61,21 @@ export function TutorialWelcome({
     // the edges.
     const column = "pointer-events-none fixed inset-0 z-0 flex flex-col";
     const bottomPad = WELCOME_EDGE - WELCOME_SKIP_BASELINE_DROP;
-    const columnStyle = { paddingTop: WELCOME_EDGE, gap: WELCOME_GAP };
+    const columnStyle = {
+        paddingTop: `calc(${WELCOME_EDGE}px + env(safe-area-inset-top))`,
+        gap: WELCOME_GAP,
+    };
 
     return (
         <>
+            {/* Goes black across the slide, not after it. Slide 1 fades its
+                screenshot out at the bottom with a gradient to black; over green
+                that gradient has nothing to blend into, and the third post ends
+                up cut off by a hard green edge. */}
             <motion.div
                 className="fixed inset-0 z-0 bg-[#08180e]"
                 animate={{ opacity: showGround ? 1 : 0 }}
-                transition={showGround ? { duration: 0 } : reveal}
+                transition={showGround ? { duration: 0 } : { duration: INTRO_TIMING.slide / 1000, ease: "linear" }}
             />
 
             {showBand && (

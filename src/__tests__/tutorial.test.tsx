@@ -173,19 +173,30 @@ describe("tutorial", () => {
          * a clean 90 while a phone with a home indicator got 124. Assert on the
          * declaration rather than the outcome, since the outcome is what lied.
          */
-        it("spaces the edges from the screen, not the safe area", () => {
+        /**
+         * The bottom takes no safe-area inset; the top does.
+         *
+         * Written as an asymmetry on purpose. Adding the inset at the bottom is
+         * the bug that shipped — it pushed the copy up by the height of the home
+         * indicator, and headless Chrome reports those insets as 0, so the
+         * rendered gap measured exact and could not see it. The top needs the
+         * inset for the opposite reason: without it the first card sits under
+         * the status bar and the two ends stop matching.
+         */
+        it("insets the top for the status bar and the bottom for nothing", () => {
             const { container } = renderPage();
             const styled = [...container.querySelectorAll<HTMLElement>("[style]")];
-            expect(styled.some((el) => el.style.paddingTop === `${WELCOME_EDGE}px`)).toBe(true);
+
             expect(
                 styled.some((el) => el.style.paddingBottom === `${WELCOME_EDGE - WELCOME_SKIP_BASELINE_DROP}px`),
             ).toBe(true);
-            // The part that actually catches the bug. The px above track the
-            // constants and move when the design does; a safe-area inset added
-            // on top of them would not show up in any of it.
             for (const el of styled) {
-                expect(el.getAttribute("style")).not.toMatch(/env\(safe-area/);
+                expect(el.style.paddingBottom).not.toMatch(/env\(safe-area/);
             }
+
+            expect(
+                styled.some((el) => /calc\(36px \+ env\(safe-area-inset-top\)\)/.test(el.style.paddingTop)),
+            ).toBe(true);
         });
 
         /**

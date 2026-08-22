@@ -44,8 +44,9 @@ export function Tutorial() {
      *
      *   welcome   nothing moving
      *   fading    the copy and buttons go, quickly, on a still screen
-     *   sliding   carousel mounts; the stack leaves for it and slides
-     *   revealing green ground out, app chrome and slide-1 copy in
+     *   sliding   carousel mounts; the stack leaves for it and slides, and the
+     *             green ground goes black underneath it
+     *   revealing app chrome and slide-1 copy in
      *   tour      the welcome screen is gone
      */
     const [stage, setStage] = useState<"welcome" | "fading" | "sliding" | "revealing" | "tour">(
@@ -124,7 +125,7 @@ export function Tutorial() {
                 <TutorialWelcome
                     showBand={stage === "welcome" || stage === "fading"}
                     showCopy={stage === "welcome"}
-                    showGround={stage !== "revealing"}
+                    showGround={stage === "welcome" || stage === "fading"}
                     onTakeTour={takeTour}
                     onSkip={finish}
                 />

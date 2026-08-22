@@ -75,22 +75,29 @@ export const bandAspect = (band: Band) => `${STEP1.srcWidth} / ${band.srcHeight}
 /**
  * Welcome screen spacing, in px (Figma 675:4527 plus the follow-up notes).
  *
- * 45 from the top of the screen to the top of the first card, and the BASELINE
- * of Skip for now 45 from the bottom. The card window takes everything left
- * over, so a taller phone shows more posts rather than more empty ground.
+ * 36 of visible space at each end: above the first card and below the Skip for
+ * now baseline. The card window takes everything left over, so a taller phone
+ * shows more posts rather than more empty ground.
  *
- * Baseline, not the bottom of the text box — so the padding below is 45 less
+ * The top is measured from the SAFE AREA and the bottom from the screen edge,
+ * which looks inconsistent written down and is what makes the two ends match on
+ * a phone. 36 from the top of the screen is 36 underneath the status bar, so the
+ * card arrived tight against it while the bottom had daylight; 36 from the
+ * bottom of the screen clears the home indicator, which is an overlay rather
+ * than a bite out of the layout.
+ *
+ * Baseline, not the bottom of the text box — so the padding below is 36 less
  * the drop from baseline to box bottom, which is descent plus half-leading and
  * cannot be reasoned out of the line-height alone. Measured in the browser at
  * 14/20 Inter Semibold.
  *
- * FROM THE SCREEN EDGE, not from the safe area. An earlier version added
- * env(safe-area-inset-*) on top, which pushed the copy up by the height of the
- * home indicator — and headless Chrome reports those insets as 0, so the
- * measurement came back exact and could not see it. If you are checking these
- * numbers in a browser, you are checking the case where the bug is absent.
+ * THE BOTTOM TAKES NO INSET. An earlier version added env(safe-area-inset-*) at
+ * both ends, which pushed the copy up by the height of the home indicator on top
+ * of its 90 — and headless Chrome reports those insets as 0, so the measurement
+ * came back exact and could not see it. If you are checking the bottom number in
+ * a browser, you are checking the case where the bug is absent.
  */
-export const WELCOME_EDGE = 45;
+export const WELCOME_EDGE = 36;
 export const WELCOME_SKIP_BASELINE_DROP = 5;
 
 /** The design's gap between the card window and the copy. */
@@ -100,16 +107,21 @@ export const WELCOME_GAP = 10;
  * The transition, in milliseconds, in the order it plays.
  *
  * The copy goes first and quickly, so the posts move on a clear screen. Then
- * they slide down to where step 1 holds them. Then everything that makes it the
- * tutorial — the black ground, the app around the posts, and slide 1's own
- * copy, dots and Skip tutorial — arrives together.
+ * they slide down to where step 1 holds them, and the green ground turns black
+ * as they go. Then the app around the posts and slide 1's own copy, dots and
+ * Skip tutorial arrive together.
+ *
+ * The ground has to be black BY THE TIME the posts land, not after. Slide 1
+ * fades its screenshot out at the bottom with a gradient to black; over a green
+ * ground that gradient has nothing to blend into, and the result is a hard
+ * green edge cutting across the third post.
  */
 export const INTRO_TIMING = {
     /** Welcome copy and buttons fade out. */
     fade: 160,
     /** The card stack slides down to where step 1 holds it. */
     slide: 300,
-    /** Black ground, app chrome, slide-1 copy, dots and Skip tutorial. */
+    /** App chrome, slide-1 copy, dots and Skip tutorial. */
     reveal: 260,
 } as const;
 
