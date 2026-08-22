@@ -1,8 +1,58 @@
 import { useEffect, useState } from "react";
+import { motion } from "motion/react";
 import { Carousel } from "@/components/application/carousel/carousel-base";
 import type { CarouselApi } from "@/components/application/carousel/carousel-base";
 import { cx } from "@/utils/cx";
 import type { TutorialSlide } from "@/lib/tutorial-slides";
+import { BANDS, INTRO_START, INTRO_TIMING, INTRO_TOTAL, STEP1_ASPECT, bandWindow } from "@/lib/tutorial-intro";
+import { BandImage, CardsBand } from "./tutorial-bands";
+
+/**
+ * Slide 1 mid-assembly: the same screenshot the finished slide shows, in three
+ * bands so the parts can arrive separately.
+ *
+ * The card stack carries the shared layoutId, so Motion tweens it here from
+ * wherever the welcome screen had it — this component never learns the welcome
+ * screen's geometry, and the welcome screen never learns the carousel's. Header
+ * and tab bar have no counterpart over there, so they simply come in off their
+ * own edges; 100vh is well past any phone, and the slide area clips anyway.
+ */
+function AssemblingSlide({ alt }: { alt: string }) {
+    const arrive = {
+        duration: INTRO_TIMING.bands / 1000,
+        delay: INTRO_START.bands / 1000,
+        ease: "easeOut" as const,
+    };
+
+    return (
+        <div
+            className="absolute top-9 left-9 w-[330px] max-w-[calc(100%_-_4.5rem)] overflow-hidden rounded-lg"
+            style={{ aspectRatio: STEP1_ASPECT }}
+        >
+            <motion.div
+                className="absolute inset-x-0 overflow-hidden"
+                style={bandWindow(BANDS.top)}
+                initial={{ y: "-100vh" }}
+                animate={{ y: 0 }}
+                transition={arrive}
+            >
+                <BandImage band={BANDS.top} />
+            </motion.div>
+
+            <CardsBand className="absolute inset-x-0" style={bandWindow(BANDS.cards)} alt={alt} />
+
+            <motion.div
+                className="absolute inset-x-0 overflow-hidden"
+                style={bandWindow(BANDS.bottom)}
+                initial={{ y: "100vh" }}
+                animate={{ y: 0 }}
+                transition={arrive}
+            >
+                <BandImage band={BANDS.bottom} />
+            </motion.div>
+        </div>
+    );
+}
 
 /**
  * The post-onboarding tutorial: swipe through screenshots of the real app
@@ -27,13 +77,31 @@ export function TutorialCarousel({
     slides,
     onSkip,
     onDone,
+    /**
+     * Assemble slide 1 out of the welcome screen instead of just appearing.
+     * The card stack is already on screen — it was the welcome screen's — so it
+     * slides to where this layout holds it, the header and tab bar arrive from
+     * off the top and bottom edges, and the copy follows.
+     */
+    intro = false,
 }: {
     slides: TutorialSlide[];
     onSkip: () => void;
     onDone: () => void;
+    intro?: boolean;
 }) {
     const [api, setApi] = useState<CarouselApi>();
     const [index, setIndex] = useState(0);
+    // Once the bands have come to rest they are pixel-identical to the whole
+    // screenshot, so hand back to the plain <img>: three stacked windows are a
+    // transition, not a thing to leave sitting there rounding subpixels.
+    const [assembling, setAssembling] = useState(intro);
+
+    useEffect(() => {
+        if (!intro) return;
+        const timer = setTimeout(() => setAssembling(false), INTRO_TOTAL + 50);
+        return () => clearTimeout(timer);
+    }, [intro]);
 
     useEffect(() => {
         if (!api) return;
@@ -81,6 +149,12 @@ export function TutorialCarousel({
 
     const last = index === slides.length - 1;
 
+    // Copy, dots and Skip come in together once the screen has finished
+    // assembling. Without the intro they are simply there, so no delay applies.
+    const revealTransition = intro
+        ? { duration: INTRO_TIMING.reveal / 1000, delay: INTRO_START.reveal / 1000, ease: "linear" as const }
+        : { duration: 0 };
+
     return (
         <div className="flex h-dvh flex-col gap-8 overflow-hidden overscroll-none bg-black pt-safe">
             <Carousel.Root setApi={setApi} className="flex min-h-0 flex-1 flex-col gap-8" opts={{ loop: false }}>
@@ -91,19 +165,23 @@ export function TutorialCarousel({
                         {slides.map((slide) => (
                             <Carousel.Item key={slide.id} className="flex h-full min-h-0 flex-col gap-8">
                                 <div className="relative min-h-0 flex-1 overflow-hidden">
-                                    <img
-                                        src={slide.image}
-                                        alt={slide.alt}
-                                        width={330}
-                                        height={717}
-                                        loading={slide.id === slides[0].id ? "eager" : "lazy"}
-                                        className={cx(
-                                            "absolute left-9 w-[330px] max-w-[calc(100%_-_4.5rem)] rounded-lg",
-                                            // A sheet's buttons sit at the bottom of the phone, so
-                                            // that end is pulled into view and the top fades out.
-                                            slide.focus === "bottom" ? "bottom-0" : "top-9",
-                                        )}
-                                    />
+                                    {assembling && slide.id === slides[0].id ? (
+                                        <AssemblingSlide alt={slide.alt} />
+                                    ) : (
+                                        <img
+                                            src={slide.image}
+                                            alt={slide.alt}
+                                            width={330}
+                                            height={717}
+                                            loading={slide.id === slides[0].id ? "eager" : "lazy"}
+                                            className={cx(
+                                                "absolute left-9 w-[330px] max-w-[calc(100%_-_4.5rem)] rounded-lg",
+                                                // A sheet's buttons sit at the bottom of the phone, so
+                                                // that end is pulled into view and the top fades out.
+                                                slide.focus === "bottom" ? "bottom-0" : "top-9",
+                                            )}
+                                        />
+                                    )}
                                     {/* Fades the screenshot into the page at the edge that
                                         meets the copy, so it reads as one surface. */}
                                     <div
@@ -117,10 +195,15 @@ export function TutorialCarousel({
                                     />
                                 </div>
 
-                                <div className="flex shrink-0 flex-col gap-3 px-9">
+                                <motion.div
+                                    className="flex shrink-0 flex-col gap-3 px-9"
+                                    initial={intro ? { opacity: 0 } : false}
+                                    animate={{ opacity: 1 }}
+                                    transition={revealTransition}
+                                >
                                     <h1 className="text-display-sm font-semibold text-primary">{slide.headline}</h1>
                                     <p className="text-sm text-secondary">{slide.body}</p>
-                                </div>
+                                </motion.div>
                             </Carousel.Item>
                         ))}
                     </Carousel.Content>
@@ -131,7 +214,12 @@ export function TutorialCarousel({
                     Slide {index + 1} of {slides.length}
                 </p>
 
-                <div className="flex shrink-0 items-center justify-between px-9 pb-[calc(2rem_+_var(--safe-bottom))]">
+                <motion.div
+                    className="flex shrink-0 items-center justify-between px-9 pb-[calc(2rem_+_var(--safe-bottom))]"
+                    initial={intro ? { opacity: 0 } : false}
+                    animate={{ opacity: 1 }}
+                    transition={revealTransition}
+                >
                     <Carousel.IndicatorGroup className="flex items-center gap-3">
                         {slides.map((slide, i) => (
                             <Carousel.Indicator key={slide.id} index={i}>
@@ -162,7 +250,7 @@ export function TutorialCarousel({
                             </svg>
                         )}
                     </button>
-                </div>
+                </motion.div>
             </Carousel.Root>
         </div>
     );

@@ -42,7 +42,14 @@ const renderPage = (path = "/tutorial") =>
     );
 
 const profile = (over: Partial<UserProfile> = {}) =>
-    ({ id: "u1", tutorial_seen_at: null, ...over }) as UserProfile;
+    ({ id: "u1", first_name: "Kate", tutorial_seen_at: null, ...over }) as UserProfile;
+
+/**
+ * Leave the welcome screen the quick way. The destination tests below are about
+ * where finishing lands you, and both exits finish — going the long way through
+ * the tour would only be testing the transition twice.
+ */
+const skipFromWelcome = () => userEvent.click(screen.getByRole("button", { name: "Skip for now" }));
 
 /**
  * The tutorial sits between onboarding and wherever the player was actually
@@ -99,7 +106,7 @@ describe("tutorial", () => {
         it("honours a deep link, and clears it", async () => {
             sessionStorage.setItem("cs_auth_redirect", "/post/2b8f1c9e-0000-4000-8000-000000000000");
             renderPage();
-            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
+            await skipFromWelcome();
             await waitFor(() => expect(screen.getByTestId("path").textContent).toMatch(/^\/post\//));
             expect(sessionStorage.getItem("cs_auth_redirect")).toBeNull();
         });
@@ -107,21 +114,67 @@ describe("tutorial", () => {
         it("falls back to the feed when the stored value is not a post link", async () => {
             sessionStorage.setItem("cs_auth_redirect", "https://evil.example.com");
             renderPage();
-            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
+            await skipFromWelcome();
             await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/feed"));
         });
 
         it("goes to the feed when there is no deep link", async () => {
             renderPage();
-            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
+            await skipFromWelcome();
             await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/feed"));
         });
 
         it("records that it was seen", async () => {
             renderPage();
-            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
+            await skipFromWelcome();
             await waitFor(() => expect(update).toHaveBeenCalled());
             expect(update.mock.calls[0][0]).toHaveProperty("tutorial_seen_at");
+        });
+    });
+
+    /**
+     * Figma 675:4527. It stands between onboarding and the tour, so the two ways
+     * out of it are the two things worth pinning — plus the name, which is the
+     * only part of the copy that is not a constant.
+     */
+    describe("welcome screen", () => {
+        it("greets the player by name", () => {
+            renderPage();
+            expect(screen.getByRole("heading", { name: /Nice work, Kate\./ })).toBeInTheDocument();
+        });
+
+        /** A profile with no first name must not render "Nice work, undefined." */
+        it("still reads as a sentence with no name on the profile", () => {
+            profileMock.mockReturnValue({ profile: profile({ first_name: null }), setProfile, loading: false });
+            renderPage();
+            const heading = screen.getByRole("heading", { level: 1 });
+            expect(heading.textContent).toContain("Nice work.");
+            expect(heading.textContent).not.toMatch(/undefined|null/);
+        });
+
+        it("comes before the tour, not instead of it", () => {
+            renderPage();
+            expect(screen.queryByRole("button", { name: "Skip tutorial" })).not.toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Take the tour" })).toBeInTheDocument();
+        });
+
+        it("Take the tour reaches slide 1", async () => {
+            renderPage();
+            await userEvent.click(screen.getByRole("button", { name: "Take the tour" }));
+            expect(await screen.findByRole("heading", { name: TUTORIAL_SLIDES[0].headline })).toBeInTheDocument();
+        });
+
+        it("Skip for now goes straight where the tutorial would have", async () => {
+            renderPage();
+            await skipFromWelcome();
+            await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/feed"));
+        });
+
+        /** "Setup done." is true exactly once; a replay is not that moment. */
+        it("is skipped when replaying on purpose", () => {
+            renderPage("/tutorial?replay=1");
+            expect(screen.queryByRole("button", { name: "Take the tour" })).not.toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Skip tutorial" })).toBeInTheDocument();
         });
     });
 

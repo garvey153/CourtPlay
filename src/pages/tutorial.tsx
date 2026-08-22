@@ -1,11 +1,13 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/providers/profile-provider";
 import { validateRedirect } from "@/utils/validate-redirect";
 import { TutorialCarousel } from "@/components/app/tutorial-carousel";
+import { TutorialWelcome } from "@/components/app/tutorial-welcome";
 import { TUTORIAL_SLIDES } from "@/lib/tutorial-slides";
+import { INTRO_TIMING } from "@/lib/tutorial-intro";
 
 /**
  * The tutorial, shown once straight after onboarding.
@@ -19,6 +21,12 @@ import { TUTORIAL_SLIDES } from "@/lib/tutorial-slides";
  * time. It is re-validated here too: validation currently happens only where
  * the key is written, and a check next to the navigate() is the one a future
  * writer cannot bypass.
+ *
+ * THE WELCOME SCREEN comes first (Figma 675:4527) and hands over to the tour in
+ * one continuous move rather than a cut — see TutorialWelcome and the carousel's
+ * `intro`. Replaying from Manage skips it: "Nice work, Kate. Setup done." is
+ * true exactly once, and someone who went looking for the tutorial has already
+ * decided to watch it.
  */
 export function Tutorial() {
     const [searchParams] = useSearchParams();
@@ -27,6 +35,11 @@ export function Tutorial() {
     const { profile, setProfile } = useProfile();
 
     const replay = searchParams.has("replay");
+
+    // "welcome" → the copy leaves and the ground turns black → "tour", where the
+    // carousel picks the card stack up mid-air. Held here rather than inside
+    // either screen because it is the handover itself.
+    const [stage, setStage] = useState<"welcome" | "leaving" | "tour">(replay ? "tour" : "welcome");
 
     // Resolved once: the destination must not change under them mid-swipe.
     const next = useRef(
@@ -53,5 +66,21 @@ export function Tutorial() {
         void supabase.from("users").update({ tutorial_seen_at: seenAt }).eq("id", user.id);
     };
 
-    return <TutorialCarousel slides={TUTORIAL_SLIDES} onSkip={finish} onDone={finish} />;
+    if (stage !== "tour") {
+        return (
+            <TutorialWelcome
+                firstName={profile?.first_name}
+                leaving={stage === "leaving"}
+                onTakeTour={() => {
+                    setStage("leaving");
+                    // The copy has to be gone before the stack starts moving, or
+                    // the two motions read as one muddled one.
+                    setTimeout(() => setStage("tour"), INTRO_TIMING.fade);
+                }}
+                onSkip={finish}
+            />
+        );
+    }
+
+    return <TutorialCarousel slides={TUTORIAL_SLIDES} onSkip={finish} onDone={finish} intro={!replay} />;
 }
