@@ -9,19 +9,19 @@ import { BandImage, CardsBand } from "./tutorial-bands";
 
 /**
  * Slide 1 mid-assembly: the same screenshot the finished slide shows, in three
- * bands so the parts can arrive separately.
+ * bands so the posts can arrive before the app around them.
  *
  * The card stack carries the shared layoutId, so Motion tweens it here from
  * wherever the welcome screen had it — this component never learns the welcome
- * screen's geometry, and the welcome screen never learns the carousel's. Header
- * and tab bar have no counterpart over there, so they simply come in off their
- * own edges; 100vh is well past any phone, and the slide area clips anyway.
+ * screen's geometry, and the welcome screen never learns the carousel's. The
+ * header and tab bar have no counterpart over there, so they simply fade up in
+ * place, with the rest of the tutorial, once the stack has landed.
  */
 function AssemblingSlide({ alt }: { alt: string }) {
     const arrive = {
-        duration: INTRO_TIMING.bands / 1000,
-        delay: INTRO_START.bands / 1000,
-        ease: "easeOut" as const,
+        duration: INTRO_TIMING.reveal / 1000,
+        delay: INTRO_START.reveal / 1000,
+        ease: "linear" as const,
     };
 
     return (
@@ -32,8 +32,8 @@ function AssemblingSlide({ alt }: { alt: string }) {
             <motion.div
                 className="absolute inset-x-0 overflow-hidden"
                 style={bandWindow(BANDS.top)}
-                initial={{ y: "-100vh" }}
-                animate={{ y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={arrive}
             >
                 <BandImage band={BANDS.top} />
@@ -44,8 +44,8 @@ function AssemblingSlide({ alt }: { alt: string }) {
             <motion.div
                 className="absolute inset-x-0 overflow-hidden"
                 style={bandWindow(BANDS.bottom)}
-                initial={{ y: "100vh" }}
-                animate={{ y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={arrive}
             >
                 <BandImage band={BANDS.bottom} />
@@ -156,7 +156,17 @@ export function TutorialCarousel({
         : { duration: 0 };
 
     return (
-        <div className="flex h-dvh flex-col gap-8 overflow-hidden overscroll-none bg-black pt-safe">
+        <div
+            className={cx(
+                "flex h-dvh flex-col gap-8 overflow-hidden overscroll-none pt-safe",
+                // While the intro runs, the welcome screen's green ground is
+                // still underneath and fading; painting black here would cover
+                // it and turn that fade into a cut. The z-index is not decoration
+                // either — the welcome screen renders after this one, so without
+                // it the ground would stack on top and hide the whole carousel.
+                intro ? "relative z-10 bg-transparent" : "bg-black",
+            )}
+        >
             <Carousel.Root setApi={setApi} className="flex min-h-0 flex-1 flex-col gap-8" opts={{ loop: false }}>
                 {/* Carousel.Content puts this className on its inner track; its outer
                     viewport is h-full, so it needs a parent with a definite height. */}
