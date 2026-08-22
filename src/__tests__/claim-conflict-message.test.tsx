@@ -93,6 +93,21 @@ describe("claim conflict message", () => {
     });
 
     /**
+     * Sized to the line it sits above, not to the Figma frame's 12px — the
+     * subtitle is 14px in the build, and an error smaller than the text under
+     * it reads as fine print. Pinned as a pair so neither can drift alone.
+     */
+    it("is the same size as the location line", async () => {
+        const { container } = open();
+        fireEvent.click(claimButton());
+        const message = await screen.findByText(MESSAGE);
+        const subtitle = container.querySelector("#claim-sheet-title")!.nextElementSibling!;
+        expect(subtitle.textContent).toMatch(/Longshore Club/);
+        expect(message.className).toContain("text-sm");
+        expect(subtitle.className).toContain("text-sm");
+    });
+
+    /**
      * A generic failure is not a conflict: it must not borrow the conflict's
      * wording, or an unrelated outage would tell people to go cancel a claim
      * they do not have.

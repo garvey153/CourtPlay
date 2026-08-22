@@ -305,9 +305,14 @@ export function ClaimDetailSheet({
                 {/* An overlapping claim, called out above the title (Figma 671:4389)
                     rather than in a warning block down beside the button. The
                     conflicting game is at the same time as the one named right
-                    below, so the message does not repeat the date back. */}
+                    below, so the message does not repeat the date back.
+
+                    text-sm, not the design's 12px: the subtitle it sits above is
+                    14px in the build where the frame draws it at 12, and an error
+                    smaller than the line under it reads as fine print. Matching
+                    the neighbour beats matching the absolute size. */}
                 {conflict && (
-                    <p className="pr-8 text-xs text-error-primary">You have another pending claim at this time.</p>
+                    <p className="pr-8 text-sm text-error-primary">You have another pending claim at this time.</p>
                 )}
                 {titleHeader}
 
