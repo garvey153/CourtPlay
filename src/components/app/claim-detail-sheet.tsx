@@ -312,12 +312,13 @@ export function ClaimDetailSheet({
                     smaller than the line under it reads as fine print. Matching
                     the neighbour beats matching the absolute size.
 
-                    utility-red-500 is the design's #f04438 exactly. Not
-                    text-error-primary, which the dark theme lightens to red-400
-                    for contrast — the design was drawn against this background
-                    and chose the deeper red. */}
+                    text-error-primary, which the dark theme resolves to red-400
+                    (#f97066) — a step lighter than the frame's #f04438, chosen
+                    for contrast on a dark background. Note that the class for
+                    this is text-error-primary and NOT text-utility-red-400,
+                    which the dark theme remaps to red-600, i.e. darker. */}
                 {conflict && (
-                    <p className="pr-8 text-sm text-utility-red-500">You have another pending claim at this time.</p>
+                    <p className="pr-8 text-sm text-error-primary">You have another pending claim at this time.</p>
                 )}
                 {titleHeader}
 

@@ -86,15 +86,16 @@ describe("claim conflict message", () => {
     });
 
     /**
-     * The design's #f04438 exactly (utility-red-500), not text-error-primary —
-     * the dark theme lightens that one to red-400, and the frame was drawn
-     * against this background.
+     * red-400 (#f97066), which is what text-error-primary resolves to in the
+     * dark theme. Deliberately NOT text-utility-red-400 — the dark theme remaps
+     * that one to red-600, so the obvious-looking class gives a darker red.
      */
-    it("renders the message in the design's red", async () => {
+    it("renders the message in the error colour", async () => {
         open();
         fireEvent.click(claimButton());
         const message = await screen.findByText(MESSAGE);
-        expect(message.className).toContain("text-utility-red-500");
+        expect(message.className).toContain("text-error-primary");
+        expect(message.className).not.toContain("utility-red");
     });
 
     /**
