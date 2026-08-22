@@ -33,7 +33,16 @@ export const STEP1 = {
     srcHeight: 844,
     /** The first feed card's top edge. Everything above it is header + banner. */
     cardsTop: 188,
-    /** Where the tab bar starts, cutting off the third card. */
+    /**
+     * Where the tab bar starts, which is as far down the third card as this
+     * screenshot goes.
+     *
+     * Extending to the card's own bottom edge (814) was tried and reverted: the
+     * bar is painted OVER that card, so the extra 38px are bar, not card. The
+     * welcome screen showed three tab-bar icons floating under the posts. The
+     * third card's last line is not recoverable from this image — it would take
+     * a step-1 capture where the card clears the bar.
+     */
     cardsBottom: 776,
 } as const;
 

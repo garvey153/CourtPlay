@@ -84,9 +84,17 @@ export function TutorialWelcome({
                     style={{ ...columnStyle, paddingBottom: bottomPad }}
                     aria-hidden={!showCopy}
                 >
-                    <div className="relative w-full max-w-[330px] flex-1 overflow-hidden">
+                    {/* All three posts, whole. The stack is sized by HEIGHT here
+                        — as tall as the room left over, with the width following
+                        from the aspect ratio — rather than pinned to the
+                        screenshot's 330px and cropped at the bottom. It grows to
+                        that width on the way into the carousel.
+
+                        The reserved strip is the fade below: it belongs over
+                        empty ground, not over the third post. */}
+                    <div className="flex w-full flex-1 justify-center overflow-hidden pb-16">
                         <CardsBand
-                            className="absolute inset-x-0 top-0"
+                            className="h-full"
                             style={{ aspectRatio: bandAspect(BANDS.cards) }}
                             alt="Three open spots in the CourtPlay feed."
                         />
