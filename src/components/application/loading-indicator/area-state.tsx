@@ -10,8 +10,14 @@ import { cx } from "@/utils/cx";
  * nothing to show. They share {@link areaVariants} with LoadingState so all
  * three land in the same place — swapping between them never moves the content.
  *
- * Actions use the design-system primary CTA (Figma 32:506) so every call to
- * action in the app looks the same.
+ * An empty state's call to action is the SECONDARY button (Figma 32:542): there
+ * is nothing here, so the invitation to go make something is an offer rather
+ * than the obvious next step. ErrorState's retry stays primary — a failed load
+ * has exactly one thing worth doing.
+ *
+ * Set as the default rather than passed at each of the eleven call sites, none
+ * of which had an opinion. A page that genuinely needs the loud one can still
+ * say actionTone="primary".
  */
 
 const shell = (variant: AreaVariant, className?: string) =>
@@ -76,7 +82,7 @@ interface EmptyStateProps {
     onAction?: () => void;
     /** Renders the call to action as a link instead of a button. */
     href?: string;
-    /** @default 'primary' */
+    /** @default 'secondary' */
     actionTone?: "primary" | "secondary";
     className?: string;
 }
@@ -89,7 +95,7 @@ export const EmptyState = ({
     actionLabel,
     onAction,
     href,
-    actionTone = "primary",
+    actionTone = "secondary",
     className,
 }: EmptyStateProps) => (
     <div className={shell(variant, className)}>
