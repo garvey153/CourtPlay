@@ -103,9 +103,13 @@ export function TutorialWelcome({
                     below the carousel, the copy above it — and the headline ends
                     up printed straight over the cards mid-slide. */}
                 <div className="relative bg-[#08180e] px-9" style={{ paddingBottom: bottomPad }}>
+                    {/* The same fade the tutorial slides use — h-16, transparent
+                        into the page — so the posts run out the same way here as
+                        they do behind every step. To the green ground rather than
+                        to black, because that is the page it lands on. */}
                     <div
                         aria-hidden="true"
-                        className="pointer-events-none absolute inset-x-0 bottom-full h-12 bg-gradient-to-b from-transparent to-[#08180e]"
+                        className="pointer-events-none absolute inset-x-0 bottom-full h-16 bg-gradient-to-b from-transparent to-[#08180e]"
                     />
                     <div className="mx-auto w-full max-w-[330px]">
                         <Copy onTakeTour={onTakeTour} onSkip={onSkip} interactive={showCopy} />

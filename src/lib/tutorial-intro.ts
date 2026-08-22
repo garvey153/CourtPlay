@@ -75,22 +75,22 @@ export const bandAspect = (band: Band) => `${STEP1.srcWidth} / ${band.srcHeight}
 /**
  * Welcome screen spacing, in px (Figma 675:4527 plus the follow-up notes).
  *
- * 90 from the top of the screen to the top of the first card, and the BASELINE
- * of Skip for now 90 from the bottom. The card window takes everything left
+ * 45 from the top of the screen to the top of the first card, and the BASELINE
+ * of Skip for now 45 from the bottom. The card window takes everything left
  * over, so a taller phone shows more posts rather than more empty ground.
  *
- * Baseline, not the bottom of the text box — so the padding below is 90 less
+ * Baseline, not the bottom of the text box — so the padding below is 45 less
  * the drop from baseline to box bottom, which is descent plus half-leading and
  * cannot be reasoned out of the line-height alone. Measured in the browser at
- * 14/20 Inter Semibold, the way the invite-only screen's spacing was.
+ * 14/20 Inter Semibold.
  *
- * 90 FROM THE SCREEN EDGE, not from the safe area. An earlier version added
- * env(safe-area-inset-bottom) on top, which put the copy 124px up on a phone
- * with a home indicator — and headless Chrome reports those insets as 0, so the
- * measurement came back a clean 90 and could not see it. If you are checking
- * this number in a browser, you are checking the case where the bug is absent.
+ * FROM THE SCREEN EDGE, not from the safe area. An earlier version added
+ * env(safe-area-inset-*) on top, which pushed the copy up by the height of the
+ * home indicator — and headless Chrome reports those insets as 0, so the
+ * measurement came back exact and could not see it. If you are checking these
+ * numbers in a browser, you are checking the case where the bug is absent.
  */
-export const WELCOME_EDGE = 90;
+export const WELCOME_EDGE = 45;
 export const WELCOME_SKIP_BASELINE_DROP = 5;
 
 /** The design's gap between the card window and the copy. */
@@ -99,29 +99,34 @@ export const WELCOME_GAP = 10;
 /**
  * The transition, in milliseconds, in the order it plays.
  *
- * Posts first, while the welcome copy is still up: they slide down to where
- * step 1 holds them, passing over the copy. Then the copy goes. Then everything
- * that makes it the tutorial — the black ground, the app chrome around the
- * posts, and slide 1's own copy, dots and Skip tutorial — arrives together.
- *
- * The order is why the copy cannot live in the same layer as the card stack:
- * the stack has to leave that layer and join the carousel while the copy is
- * still on screen. See TutorialWelcome.
+ * The copy goes first and quickly, so the posts move on a clear screen. Then
+ * they slide down to where step 1 holds them. Then everything that makes it the
+ * tutorial — the black ground, the app around the posts, and slide 1's own
+ * copy, dots and Skip tutorial — arrives together.
  */
 export const INTRO_TIMING = {
+    /** Welcome copy and buttons fade out. */
+    fade: 160,
     /** The card stack slides down to where step 1 holds it. */
     slide: 300,
-    /** Welcome copy and buttons fade out. */
-    fade: 180,
     /** Black ground, app chrome, slide-1 copy, dots and Skip tutorial. */
     reveal: 260,
 } as const;
 
-/** Cumulative start times, so the phases are declared once and read the same. */
+/** Cumulative start times from the tap, so the phases are declared once. */
 export const INTRO_START = {
-    slide: 0,
-    fade: INTRO_TIMING.slide,
-    reveal: INTRO_TIMING.slide + INTRO_TIMING.fade,
+    fade: 0,
+    slide: INTRO_TIMING.fade,
+    reveal: INTRO_TIMING.fade + INTRO_TIMING.slide,
 } as const;
 
 export const INTRO_TOTAL = INTRO_START.reveal + INTRO_TIMING.reveal;
+
+/**
+ * The carousel's own delay before it reveals itself.
+ *
+ * Measured from when IT mounts, which is the start of the slide — not from the
+ * tap. The copy has already gone by then, so INTRO_START.reveal would wait out
+ * that fade a second time.
+ */
+export const CAROUSEL_REVEAL_DELAY = INTRO_TIMING.slide;

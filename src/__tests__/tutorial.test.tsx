@@ -6,6 +6,7 @@ import { TutorialCarousel } from "@/components/app/tutorial-carousel";
 import { Tutorial } from "@/pages/tutorial";
 import { TUTORIAL_SLIDES } from "@/lib/tutorial-slides";
 import type { UserProfile } from "@/providers/profile-provider";
+import { WELCOME_EDGE, WELCOME_SKIP_BASELINE_DROP } from "@/lib/tutorial-intro";
 
 const { update, eq, useAuthMock, profileMock, setProfile } = vi.hoisted(() => ({
     update: vi.fn(),
@@ -175,25 +176,32 @@ describe("tutorial", () => {
         it("spaces the edges from the screen, not the safe area", () => {
             const { container } = renderPage();
             const styled = [...container.querySelectorAll<HTMLElement>("[style]")];
-            expect(styled.some((el) => el.style.paddingTop === "90px")).toBe(true);
-            expect(styled.some((el) => el.style.paddingBottom === "85px")).toBe(true);
+            expect(styled.some((el) => el.style.paddingTop === `${WELCOME_EDGE}px`)).toBe(true);
+            expect(
+                styled.some((el) => el.style.paddingBottom === `${WELCOME_EDGE - WELCOME_SKIP_BASELINE_DROP}px`),
+            ).toBe(true);
+            // The part that actually catches the bug. The px above track the
+            // constants and move when the design does; a safe-area inset added
+            // on top of them would not show up in any of it.
             for (const el of styled) {
                 expect(el.getAttribute("style")).not.toMatch(/env\(safe-area/);
             }
         });
 
         /**
-         * The order the transition plays in: the posts slide to the carousel
-         * FIRST, while this copy is still up, and only then does the copy go.
-         * That is why the card stack and the copy are separate layers — so the
-         * stack can leave for the carousel with the copy still on screen. A
-         * refactor that reunited them would still pass every other test here.
+         * The order the transition plays in: the copy goes FIRST, and only once
+         * it has does the carousel mount and the posts start sliding. Pinned on
+         * the carousel's absence rather than on a timer, since that is the thing
+         * the ordering actually decides — reversing the two beats mounts it
+         * immediately and fails here while every other test still passes.
          */
-        it("keeps the welcome copy up while the posts slide away", async () => {
+        it("clears the welcome copy before the posts start sliding", async () => {
             renderPage();
             await userEvent.click(screen.getByRole("button", { name: "Take the tour" }));
-            expect(screen.getByRole("heading", { name: /Nice work/ })).toBeInTheDocument();
-            expect(screen.getByRole("heading", { name: TUTORIAL_SLIDES[0].headline })).toBeInTheDocument();
+            expect(
+                screen.queryByRole("heading", { name: TUTORIAL_SLIDES[0].headline }),
+            ).not.toBeInTheDocument();
+            expect(await screen.findByRole("heading", { name: TUTORIAL_SLIDES[0].headline })).toBeInTheDocument();
         });
 
         it("Skip for now goes straight where the tutorial would have", async () => {
