@@ -35,6 +35,19 @@ const fixtures = readFileSync(resolve("src/demo/fixtures.ts"), "utf8");
 const nowMatch = fixtures.match(/DEMO_NOW = "([^"]+)"/);
 if (!nowMatch) throw new Error("Could not read DEMO_NOW from src/demo/fixtures.ts");
 
+// The welcome screen slices this same feed screenshot into bands at these two
+// offsets. They were measured off this very render, so this is the one place
+// that can tell they have gone stale — jsdom has no layout, so no unit test
+// can. A feed card gaining a line would otherwise leave the band boundary
+// cutting through a card, visible only during the transition.
+const intro = readFileSync(resolve("src/lib/tutorial-intro.ts"), "utf8");
+const readOffset = (name) => {
+    const m = intro.match(new RegExp(`${name}: (\\d+)`));
+    if (!m) throw new Error(`Could not read ${name} from src/lib/tutorial-intro.ts`);
+    return Number(m[1]);
+};
+const EXPECTED = { cardsTop: readOffset("cardsTop"), cardsBottom: readOffset("cardsBottom") };
+
 mkdirSync(OUT, { recursive: true });
 
 // DEMO=1 swaps @/lib/supabase for the fixture client (see vite.config.ts), so
@@ -82,6 +95,23 @@ try {
         // Spring sheet transitions are ~400ms.
         await page.waitForTimeout(600);
         if (errors.length) throw new Error(`Demo screen "${id}" errored: ${errors.join("; ")}`);
+
+        if (id === "feed") {
+            const actual = await page.evaluate(() => {
+                const card = document.querySelector("article, [data-card], li");
+                const nav = document.querySelector("nav");
+                return { cardsTop: card?.getBoundingClientRect().top, cardsBottom: nav?.getBoundingClientRect().top };
+            });
+            for (const [key, want] of Object.entries(EXPECTED)) {
+                if (actual[key] !== want) {
+                    throw new Error(
+                        `The feed moved: tutorial-intro.ts says ${key} is ${want}, this render puts it at ${actual[key]}.\n` +
+                            `The welcome screen cuts the step-1 screenshot into bands at those offsets, so a stale one\n` +
+                            `slices through a card. Update STEP1 in src/lib/tutorial-intro.ts and re-run.`,
+                    );
+                }
+            }
+        }
 
         // JPEG, not PNG: these are full-screen shots containing avatar photos
         // over a dark UI, where PNG lands around 150 KB each. A new player
