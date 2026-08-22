@@ -310,9 +310,14 @@ export function ClaimDetailSheet({
                     text-sm, not the design's 12px: the subtitle it sits above is
                     14px in the build where the frame draws it at 12, and an error
                     smaller than the line under it reads as fine print. Matching
-                    the neighbour beats matching the absolute size. */}
+                    the neighbour beats matching the absolute size.
+
+                    utility-red-500 is the design's #f04438 exactly. Not
+                    text-error-primary, which the dark theme lightens to red-400
+                    for contrast — the design was drawn against this background
+                    and chose the deeper red. */}
                 {conflict && (
-                    <p className="pr-8 text-sm text-error-primary">You have another pending claim at this time.</p>
+                    <p className="pr-8 text-sm text-utility-red-500">You have another pending claim at this time.</p>
                 )}
                 {titleHeader}
 
