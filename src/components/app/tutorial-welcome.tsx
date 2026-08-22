@@ -1,88 +1,111 @@
 import { motion } from "motion/react";
 import { PRIMARY_CTA } from "@/components/base/buttons/cta";
-import { BANDS, INTRO_TIMING, WELCOME_CARDS_TOP_RATIO, bandAspect } from "@/lib/tutorial-intro";
+import { BANDS, INTRO_TIMING, WELCOME_CARDS_WINDOW, bandAspect } from "@/lib/tutorial-intro";
 import { CardsBand } from "./tutorial-bands";
 
 /**
  * The screen between finishing onboarding and the tutorial (Figma 675:4527).
  *
  * The posts above the copy are the same ones tutorial step 1 opens on, because
- * they ARE step 1 — the middle band of its screenshot, positioned by the
- * design's proportions. Showing the tutorial's own image is what lets the two
- * screens agree forever, and it is what the transition then slides into place.
+ * they ARE step 1 — the middle band of its screenshot. Showing the tutorial's
+ * own image is what lets the two screens agree forever, and it is what the
+ * transition then slides into place.
  *
- * Positions are ratios of the frame the design was drawn at (402x812) rather
- * than fixed offsets: the stack hangs from the top, the copy sits on the bottom,
- * and a short phone eats into the gap between them instead of pushing the
- * buttons off the screen. The fade over the stack's lower half is doing real
- * work there — it is what lets the cards run under the copy without colliding.
+ * LAYOUT IS THE DESIGN'S AUTO-LAYOUT, not offsets copied off it. The frame is a
+ * centred column: a 374px window of posts, a 10px gap, then the copy. The 54.5px
+ * above the posts and below Skip for now are what centring leaves over in an
+ * 812-tall frame — a consequence, not a measurement, which is why placing them
+ * by ratio (the first attempt) came out wrong on a phone that is not 812 tall.
+ *
+ * The window shrinks on a short screen rather than pushing the buttons off the
+ * bottom; the posts are the part that can afford to lose a few pixels.
  */
+/**
+ * A floor under the centring, not a substitute for it.
+ *
+ * On the frame the design was drawn at this changes nothing — centring still
+ * leaves 54.5px above the posts and below Skip for now, because the padding
+ * comes out of the same slack. On a short phone, where there is no slack left,
+ * it is what keeps Skip for now off the home indicator rather than hard against
+ * the bottom edge.
+ */
+const FLOOR = {
+    paddingTop: "calc(2.25rem + env(safe-area-inset-top))",
+    paddingBottom: "calc(2.25rem + env(safe-area-inset-bottom))",
+};
+
 export function TutorialWelcome({
-    firstName,
     onTakeTour,
     onSkip,
     /** True once Take the tour is tapped: the copy leaves and the ground turns black. */
     leaving = false,
 }: {
-    firstName?: string | null;
     onTakeTour: () => void;
     onSkip: () => void;
     leaving?: boolean;
 }) {
+    const fade = { duration: INTRO_TIMING.fade / 1000, ease: "linear" as const };
+
     return (
         <motion.div
-            className="fixed inset-0 overflow-hidden"
+            className="fixed inset-0 flex flex-col items-center justify-center gap-[10px] overflow-hidden px-9"
+            style={FLOOR}
             initial={{ backgroundColor: "#08180e" }}
             animate={{ backgroundColor: leaving ? "#000000" : "#08180e" }}
-            transition={{ duration: INTRO_TIMING.fade / 1000, ease: "linear" }}
+            transition={fade}
         >
-            {/* The card stack. Full band height always — the fade below, not a
-                shorter window, is what keeps it clear of the copy. Sizing it the
-                same here and in the carousel is what lets the shared-element
-                transition animate position alone. */}
-            <div className="absolute left-9 w-[330px] max-w-[calc(100%_-_4.5rem)]" style={{ top: `${WELCOME_CARDS_TOP_RATIO * 100}dvh` }}>
-                <CardsBand className="relative w-full" style={{ aspectRatio: bandAspect(BANDS.cards) }} alt="Three open spots in the CourtPlay feed." />
+            {/* The window on to the card stack. A hard 374px, as the design draws
+                it — the fade only softens where it cuts, since our posts are the
+                real ones and taller than the mockup's placeholders. */}
+            <div
+                className="relative w-full max-w-[330px] shrink overflow-hidden"
+                style={{ height: WELCOME_CARDS_WINDOW, minHeight: 0 }}
+            >
+                <CardsBand
+                    className="absolute inset-x-0 top-0"
+                    style={{ aspectRatio: bandAspect(BANDS.cards) }}
+                    alt="Three open spots in the CourtPlay feed."
+                />
+                {/* Inside the window, so the posts have ended by its bottom edge
+                    and the 10px gap below reads as the design's gap rather than
+                    as cards running under the headline. */}
+                <motion.div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-[#08180e]"
+                    animate={{ opacity: leaving ? 0 : 1 }}
+                    transition={fade}
+                />
             </div>
 
-            {/* The copy and the ground it stands on, as one bottom-anchored
-                block. The gradient rides directly above the text rather than at
-                a fixed height, which is what actually guarantees the stack has
-                faded out by the time it reaches a word — the first attempt put
-                the fade at a ratio of the viewport and the third card read
-                straight through the headline. */}
             <motion.div
-                className="absolute inset-x-0 bottom-0"
+                className="flex w-full max-w-[330px] shrink-0 flex-col gap-3"
                 animate={{ opacity: leaving ? 0 : 1 }}
-                transition={{ duration: INTRO_TIMING.fade / 1000, ease: "linear" }}
+                transition={fade}
             >
-                <div aria-hidden="true" className="h-24 bg-gradient-to-b from-transparent to-[#08180e]" />
+                <h1 className="text-display-md font-semibold tracking-[-0.72px] text-primary">
+                    Nice work.
+                    <br />
+                    Hello, CourtPlay.
+                </h1>
 
-                <div className="flex flex-col gap-3 bg-[#08180e] px-9" style={{ paddingBottom: `${WELCOME_CARDS_TOP_RATIO * 100}dvh` }}>
-                    <h1 className="text-display-md font-semibold tracking-[-0.72px] text-primary">
-                        {firstName ? `Nice work, ${firstName}.` : "Nice work."}
-                        <br />
-                        Setup done.
-                    </h1>
+                <p className="text-sm text-secondary">
+                    CourtPlay fills the gaps in your games. Post when you&apos;re short a player, claim when you want
+                    to play. No group chat archaeology required.
+                </p>
+                <p className="text-sm text-secondary">Take 30 seconds and we&apos;ll show you how it works.</p>
 
-                    <p className="text-sm text-secondary">
-                        CourtPlay fills the gaps in your games. Post when you&apos;re short a player, claim when you want to play. No group chat archaeology
-                        required.
-                    </p>
-                    <p className="text-sm text-secondary">Take 30 seconds and we&apos;ll show you how it works.</p>
-
-                    {/* 23px above the button in the design, on top of the 12px column gap. */}
-                    <div className="flex flex-col gap-4 pt-[23px]">
-                        <button type="button" onClick={onTakeTour} className={`${PRIMARY_CTA} w-full`}>
-                            Take the tour
-                        </button>
-                        <button
-                            type="button"
-                            onClick={onSkip}
-                            className="w-full text-center text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary"
-                        >
-                            Skip for now
-                        </button>
-                    </div>
+                {/* 23px above the button, on top of the 12px column gap. */}
+                <div className="flex flex-col gap-4 pt-[23px]">
+                    <button type="button" onClick={onTakeTour} className={`${PRIMARY_CTA} w-full`}>
+                        Take the tour
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onSkip}
+                        className="w-full text-center text-sm font-semibold text-secondary transition duration-100 ease-linear hover:text-primary"
+                    >
+                        Skip for now
+                    </button>
                 </div>
             </motion.div>
         </motion.div>

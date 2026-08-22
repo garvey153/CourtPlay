@@ -73,12 +73,14 @@ export const STEP1_ASPECT = `${STEP1.srcWidth} / ${STEP1.srcHeight}`;
 export const bandAspect = (band: Band) => `${STEP1.srcWidth} / ${band.srcHeight}`;
 
 /**
- * How far down the welcome screen the card stack sits, and how much of it shows
- * — the design's 374px window at 54px from the top (Figma 675:4527, whose frame
- * is 812 tall). Kept as a fraction of the viewport so the proportion holds on
- * a taller or shorter phone rather than the stack drifting toward the text.
+ * The window of posts on the welcome screen, in px (Figma 675:4527 → Frame 24).
+ *
+ * The design's column is this, a 10px gap, then the copy, centred in the frame.
+ * Everything else about the vertical rhythm falls out of that: the 54.5px above
+ * the posts and below Skip for now are the leftover margins of centring 703px
+ * of content in an 812px frame, not offsets to be placed.
  */
-export const WELCOME_CARDS_TOP_RATIO = 54.5 / 812;
+export const WELCOME_CARDS_WINDOW = 374;
 
 
 /**
