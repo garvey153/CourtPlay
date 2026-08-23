@@ -115,7 +115,8 @@ export const WELCOME_GAP = 10;
 /**
  * The transition, in milliseconds, in the order it plays.
  *
- * The copy goes first, then a beat on the bare posts, then they slide. Then
+ * The copy goes first, slowly enough that the three bare posts underneath are
+ * read rather than glimpsed, and the stack slides as it finishes. Then
  * they slide down to where step 1 holds them, and the green ground turns black
  * as they go. Then the app around the posts and slide 1's own copy, dots and
  * Skip tutorial arrive together.
@@ -131,26 +132,24 @@ export const INTRO_TIMING = {
      * beat that reveals the third post, so it wants to be watched rather than
      * got through.
      */
-    fade: 320,
-    /**
-     * A beat with the copy gone and nothing yet moving.
-     *
-     * This is the only moment the three posts are on screen by themselves, and
-     * running the slide straight off the back of the fade meant it was never
-     * actually seen — the eye was still following the copy out.
-     */
-    pause: 180,
+    fade: 640,
     /** The card stack slides down to where step 1 holds it. */
     slide: 300,
-    /** Ground to black, app chrome, slide-1 copy, dots and Skip tutorial. */
-    reveal: 480,
+    /**
+     * Ground to black, app chrome, slide-1 copy, dots and Skip tutorial.
+     *
+     * By far the longest of the three, and deliberately so: it is carrying the
+     * whole page from one screen to the other, and the posts underneath do not
+     * move while it runs.
+     */
+    reveal: 1920,
 } as const;
 
 /** Cumulative start times from the tap, so the phases are declared once. */
 export const INTRO_START = {
     fade: 0,
-    slide: INTRO_TIMING.fade + INTRO_TIMING.pause,
-    reveal: INTRO_TIMING.fade + INTRO_TIMING.pause + INTRO_TIMING.slide,
+    slide: INTRO_TIMING.fade,
+    reveal: INTRO_TIMING.fade + INTRO_TIMING.slide,
 } as const;
 
 /**
