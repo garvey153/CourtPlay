@@ -315,7 +315,7 @@ export function TutorialCarousel({
                         onClick={last ? onDone : onSkip}
                         className="flex items-center gap-2 text-xs text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
                     >
-                        {last ? "Go to CourtPlay" : "Skip tutorial"}
+                        {last ? "Go to CourtPlay" : "Skip tour"}
                         {last && (
                             <svg width="5" height="10" viewBox="0 0 5 10" fill="none" aria-hidden="true">
                                 <path

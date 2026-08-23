@@ -79,7 +79,7 @@ describe("tutorial", () => {
         it("offers a way to skip", async () => {
             const onSkip = vi.fn();
             render(<TutorialCarousel slides={TUTORIAL_SLIDES} onSkip={onSkip} onDone={vi.fn()} />);
-            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
+            await userEvent.click(screen.getByRole("button", { name: "Skip tour" }));
             expect(onSkip).toHaveBeenCalled();
         });
 
@@ -154,7 +154,7 @@ describe("tutorial", () => {
 
         it("comes before the tour, not instead of it", () => {
             renderPage();
-            expect(screen.queryByRole("button", { name: "Skip tutorial" })).not.toBeInTheDocument();
+            expect(screen.queryByRole("button", { name: "Skip tour" })).not.toBeInTheDocument();
             expect(screen.getByRole("button", { name: "Take the tour" })).toBeInTheDocument();
         });
 
@@ -225,7 +225,7 @@ describe("tutorial", () => {
         it("is skipped when replaying on purpose", () => {
             renderPage("/tutorial?replay=1");
             expect(screen.queryByRole("button", { name: "Take the tour" })).not.toBeInTheDocument();
-            expect(screen.getByRole("button", { name: "Skip tutorial" })).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Skip tour" })).toBeInTheDocument();
         });
     });
 
@@ -239,7 +239,7 @@ describe("tutorial", () => {
             });
             renderPage();
             await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/feed"));
-            expect(screen.queryByRole("button", { name: "Skip tutorial" })).not.toBeInTheDocument();
+            expect(screen.queryByRole("button", { name: "Skip tour" })).not.toBeInTheDocument();
         });
 
         it("still plays when replayed on purpose", () => {
@@ -249,13 +249,13 @@ describe("tutorial", () => {
                 loading: false,
             });
             renderPage("/tutorial?replay=1");
-            expect(screen.getByRole("button", { name: "Skip tutorial" })).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Skip tour" })).toBeInTheDocument();
         });
 
         it("returns to Manage after a replay, not the feed", async () => {
             profileMock.mockReturnValue({ profile: profile(), setProfile, loading: false });
             renderPage("/tutorial?replay=1");
-            await userEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
+            await userEvent.click(screen.getByRole("button", { name: "Skip tour" }));
             await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/profile/edit"));
         });
     });
