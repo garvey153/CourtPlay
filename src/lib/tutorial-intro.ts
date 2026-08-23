@@ -34,16 +34,16 @@ export const STEP1 = {
     /** The first feed card's top edge. Everything above it is header + banner. */
     cardsTop: 188,
     /**
-     * Where the tab bar starts, which is as far down the third card as this
-     * screenshot goes.
+     * The third card's own bottom edge.
      *
-     * Extending to the card's own bottom edge (814) was tried and reverted: the
-     * bar is painted OVER that card, so the extra 38px are bar, not card. The
-     * welcome screen showed three tab-bar icons floating under the posts. The
-     * third card's last line is not recoverable from this image — it would take
-     * a step-1 capture where the card clears the bar.
+     * The app draws its tab bar over that card, from 776 — so this used to stop
+     * there and the card came out cropped anywhere the band was shown on its
+     * own. The feed screenshot is now captured with the bar hidden (see
+     * demo-entry), which costs the tutorial nothing because slide 1 crops well
+     * above where the bar would be, and gives the welcome screen a complete
+     * third post.
      */
-    cardsBottom: 776,
+    cardsBottom: 814,
 } as const;
 
 export type BandName = "top" | "cards" | "bottom";

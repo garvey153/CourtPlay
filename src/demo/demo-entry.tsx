@@ -47,13 +47,22 @@ localStorage.setItem("courtsub_push_prompt_dismissed", "true");
 // bands at the top and bottom of the tutorial page, which was the wrong end of
 // the problem: those bands are the tutorial's own body showing through, and
 // blacking out bg-primary took the app's background out of the screenshots too.
+const id = new URLSearchParams(location.search).get("screen") ?? "";
+
 const demoStyle = document.createElement("style");
 demoStyle.textContent = `
     [data-beta-tag], [data-build-id] { display: none; }
+
+    /* The feed screenshot only: its tab bar is drawn OVER the third post, and
+       the welcome screen shows that post on its own before the tutorial starts.
+       Hiding the bar here is what lets the post be whole there. Nothing is lost
+       in the tutorial — slide 1 crops the screenshot well above the bar, so it
+       was never visible. Every other screen keeps its bar, which is why this is
+       scoped rather than global: Activity and Profile both show one. */
+    ${id === "feed" ? "nav { display: none; }" : ""}
 `;
 document.head.appendChild(demoStyle);
 
-const id = new URLSearchParams(location.search).get("screen") ?? "";
 const screen = DEMO_SCREENS[id];
 
 const root = createRoot(document.getElementById("root")!);
