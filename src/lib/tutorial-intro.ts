@@ -199,10 +199,10 @@ export const CAROUSEL_REVEAL_DELAY = INTRO_TIMING.slide;
 /**
  * How long the third post takes to go, once the stack starts moving.
  *
- * Half the slide, not all of it: it should be over well before the landing
- * rather than still resolving into it.
+ * Well under a third of the slide: the post should be gone almost as soon as
+ * the stack starts moving, not resolving into the landing.
  */
-export const TAIL_FADE = 350;
+export const TAIL_FADE = 200;
 
 /** The carousel's whole intro, from its own mount. */
 export const CAROUSEL_INTRO_TOTAL = INTRO_TIMING.slide + INTRO_TIMING.reveal;
