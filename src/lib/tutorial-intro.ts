@@ -174,14 +174,6 @@ export const INTRO_EASE = {
      * then holds near zero while the stack settles.
      */
     slide: [0.16, 1, 0.3, 1] as [number, number, number, number],
-    /**
-     * The third post's fade: linear, no curve at all.
-     *
-     * Both eased versions hung — the ease-in by design, and the slide's
-     * ease-out by leaving it near full for the settle. Straight is what makes
-     * it start the instant the stack does and simply be gone.
-     */
-    tail: "linear" as const,
     in: "easeOut" as const,
 };
 
@@ -196,21 +188,3 @@ export const INTRO_TOTAL = INTRO_START.reveal + INTRO_TIMING.reveal;
  */
 export const CAROUSEL_REVEAL_DELAY = INTRO_TIMING.slide;
 
-/**
- * How long the third post takes to go, once the stack starts moving.
- *
- * Well under a third of the slide: the post should be gone almost as soon as
- * the stack starts moving, not resolving into the landing.
- */
-export const TAIL_FADE = 200;
-
-/** The carousel's whole intro, from its own mount. */
-export const CAROUSEL_INTRO_TOTAL = INTRO_TIMING.slide + INTRO_TIMING.reveal;
-
-/**
- * Where the third post begins within the cards band, as a fraction of it.
- *
- * Taken from the middle of the gap above the card rather than its top edge, so
- * covering it leaves no sliver of card behind.
- */
-export const THIRD_POST_TOP = (612 - STEP1.cardsTop) / (STEP1.cardsBottom - STEP1.cardsTop);
