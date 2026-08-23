@@ -46,7 +46,7 @@ function AssemblingSlide({ alt }: { alt: string }) {
                 <BandImage band={BANDS.top} />
             </motion.div>
 
-            <CardsBand className="absolute inset-x-0" style={bandWindow(BANDS.cards)} alt={alt} fadeTail />
+            <CardsBand className="absolute inset-x-0" style={bandWindow(BANDS.cards)} alt={alt} />
 
             <motion.div
                 className="absolute inset-x-0 overflow-hidden"

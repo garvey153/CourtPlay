@@ -1,14 +1,5 @@
 import { motion } from "motion/react";
-import {
-    BANDS,
-    CAROUSEL_INTRO_TOTAL,
-    INTRO_EASE,
-    INTRO_TIMING,
-    STEP1,
-    TAIL_FADE,
-    THIRD_POST_TOP,
-    type Band,
-} from "@/lib/tutorial-intro";
+import { BANDS, INTRO_EASE, INTRO_TIMING, STEP1, type Band } from "@/lib/tutorial-intro";
 import { cx } from "@/utils/cx";
 
 /** The step-1 screenshot, named once — the welcome screen and slide 1 share it. */
@@ -62,13 +53,10 @@ export function CardsBand({
     className,
     style,
     alt,
-    fadeTail = false,
 }: {
     className?: string;
     style?: React.CSSProperties;
     alt?: string;
-    /** Take the third post out over the slide, and bring it back with step 1. */
-    fadeTail?: boolean;
 }) {
     return (
         <motion.div
@@ -94,38 +82,6 @@ export function CardsBand({
             style={style}
         >
             <BandImage band={BANDS.cards} alt={alt} />
-            {fadeTail && <TailFade />}
         </motion.div>
-    );
-}
-
-/**
- * The third post dissolving into the ground as the stack slides, and coming
- * back as part of step 1.
- *
- * A cover in the ground's own colour rather than anything applied to the post
- * itself — the posts are one photograph, so there is no third post to give an
- * opacity to. Its top edge sits in the gap above the card, so nothing of the
- * card survives underneath it.
- *
- * One element, three beats, as keyframes: straight out over the first half of
- * the slide, held while the stack settles, then back on the reveal's curve —
- * step 1 does show this post, and leaving the cover up would put a hole in the
- * screenshot.
- */
-function TailFade() {
-    return (
-        <motion.div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 bg-[#08180e]"
-            style={{ top: `${THIRD_POST_TOP * 100}%` }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 1, 1, 0] }}
-            transition={{
-                duration: CAROUSEL_INTRO_TOTAL / 1000,
-                times: [0, TAIL_FADE / CAROUSEL_INTRO_TOTAL, INTRO_TIMING.slide / CAROUSEL_INTRO_TOTAL, 1],
-                ease: [INTRO_EASE.tail, INTRO_EASE.tail, INTRO_EASE.in],
-            }}
-        />
     );
 }
