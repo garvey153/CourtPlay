@@ -205,7 +205,19 @@ export function TutorialCarousel({
                 <div className="min-h-0 flex-1">
                     <Carousel.Content className="h-full" overflowHidden={framed}>
                         {slides.map((slide) => (
-                            <Carousel.Item key={slide.id} className="flex h-full min-h-0 flex-col gap-8">
+                            <Carousel.Item
+                                key={slide.id}
+                                className={cx(
+                                    "flex h-full min-h-0 flex-col",
+                                    // No gap where the screenshot fades into the
+                                    // copy: the fade already IS the space, and a
+                                    // gap under it reads as a second one. The
+                                    // bottom-focus slides fade at their TOP
+                                    // instead, so nothing softens the edge above
+                                    // the headline and they keep the 32px.
+                                    slide.focus === "bottom" ? "gap-8" : "gap-0",
+                                )}
+                            >
                                 <div className={cx("relative min-h-0 flex-1", framed && "overflow-hidden")}>
                                     {assembling && slide.id === slides[0].id ? (
                                         <AssemblingSlide alt={slide.alt} />
