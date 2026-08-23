@@ -134,7 +134,7 @@ export const INTRO_TIMING = {
      */
     fade: 320,
     /** The card stack slides down to where step 1 holds it. */
-    slide: 300,
+    slide: 700,
     /**
      * Ground to black, app chrome, slide-1 copy, dots and Skip tutorial.
      *
@@ -161,10 +161,19 @@ export const INTRO_START = {
  * are what makes them read as one movement instead of three cues.
  */
 export const INTRO_EASE = {
-    out: "easeIn",
-    slide: "easeInOut",
-    in: "easeOut",
-} as const;
+    out: "easeIn" as const,
+    /**
+     * A quintic ease-in-out, not the stock easeInOut.
+     *
+     * The stock curve is roughly [0.42, 0, 0.58, 1], which over a long slide
+     * reads as a constant glide. This one barely moves for the first fifth,
+     * covers most of the distance in the middle, and settles for the last
+     * fifth — the pronounced version of the same shape, which is what a slow
+     * move needs to look deliberate rather than sluggish.
+     */
+    slide: [0.83, 0, 0.17, 1] as [number, number, number, number],
+    in: "easeOut" as const,
+};
 
 export const INTRO_TOTAL = INTRO_START.reveal + INTRO_TIMING.reveal;
 
