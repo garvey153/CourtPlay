@@ -60,7 +60,7 @@ export function TutorialWelcome({
     // does NOT work — same property, and which wins is stylesheet order, not
     // class order, so the copy came out double-inset with the ground short of
     // the edges.
-    const column = "pointer-events-none fixed inset-0 z-0 flex flex-col";
+    const column = "pointer-events-none fixed inset-0 z-0 flex h-dvh flex-col";
     const bottomPad = WELCOME_EDGE - WELCOME_SKIP_BASELINE_DROP;
     const columnStyle = {
         paddingTop: `calc(${WELCOME_EDGE}px + env(safe-area-inset-top))`,
@@ -74,7 +74,7 @@ export function TutorialWelcome({
                 fade over its own black one for the duration, so the posts still
                 run out into whatever colour the ground currently is. */}
             <motion.div
-                className="fixed inset-0 z-0 bg-[#08180e]"
+                className="fixed inset-0 z-0 h-dvh bg-[#08180e]"
                 animate={{ opacity: showGround ? 1 : 0 }}
                 transition={showGround ? { duration: 0 } : { duration: INTRO_TIMING.reveal / 1000, ease: INTRO_EASE.in }}
             />

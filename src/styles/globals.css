@@ -76,6 +76,14 @@
     .min-h-dvh {
         min-height: 100vh;
     }
+    /* Same short first paint, same fix, for the full-height pages that set an
+       exact height rather than a minimum: the tutorial and the welcome screen
+       ahead of it. Both put their copy and controls at the bottom of the
+       column, so a viewport measured short leaves them floating well above the
+       physical bottom — reported on device from the Home Screen. */
+    .h-dvh {
+        height: 100vh;
+    }
 }
 
 /* Landscape guard. The app is laid out portrait-only — single column, bottom
