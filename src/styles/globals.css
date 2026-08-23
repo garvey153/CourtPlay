@@ -76,11 +76,14 @@
     .min-h-dvh {
         min-height: 100vh;
     }
-    /* Same short first paint, same fix, for the full-height pages that set an
-       exact height rather than a minimum: the tutorial and the welcome screen
-       ahead of it. Both put their copy and controls at the bottom of the
-       column, so a viewport measured short leaves them floating well above the
-       physical bottom — reported on device from the Home Screen. */
+    /* Same short first paint, same fix, for a full-height page that sets an
+       exact height rather than a minimum: the tutorial.
+
+       NOT the welcome screen ahead of it. Its layers are `fixed inset-0`, which
+       already spans the viewport; giving them an explicit height as well pushed
+       Skip for now off the bottom of the screen in standalone — reported on
+       device immediately after trying it. A fixed layer does not need this
+       rule, and taking it on is how it broke. */
     .h-dvh {
         height: 100vh;
     }
