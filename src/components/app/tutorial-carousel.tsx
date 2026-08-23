@@ -104,6 +104,20 @@ export function TutorialCarousel({
     // transition, not a thing to leave sitting there rounding subpixels.
     const [assembling, setAssembling] = useState(intro);
 
+    // Step 1's framing — the crop that runs the screenshot off toward the copy
+    // — only applies once the reveal starts. Before that the posts must stay
+    // whole: they are the welcome screen's, they were uncropped there, and the
+    // slide is a long slow move with a curve that barely shifts them for its
+    // first fifth. Clipping at the handover instead put the crop on screen
+    // before anything appeared to move.
+    const [framed, setFramed] = useState(!intro);
+
+    useEffect(() => {
+        if (!intro) return;
+        const t = setTimeout(() => setFramed(true), CAROUSEL_REVEAL_DELAY);
+        return () => clearTimeout(t);
+    }, [intro]);
+
     useEffect(() => {
         if (!intro) return;
         // From this component's own mount, which is the start of the slide.
@@ -179,10 +193,10 @@ export function TutorialCarousel({
                 {/* Carousel.Content puts this className on its inner track; its outer
                     viewport is h-full, so it needs a parent with a definite height. */}
                 <div className="min-h-0 flex-1">
-                    <Carousel.Content className="h-full">
+                    <Carousel.Content className="h-full" overflowHidden={framed}>
                         {slides.map((slide) => (
                             <Carousel.Item key={slide.id} className="flex h-full min-h-0 flex-col gap-8">
-                                <div className="relative min-h-0 flex-1 overflow-hidden">
+                                <div className={cx("relative min-h-0 flex-1", framed && "overflow-hidden")}>
                                     {assembling && slide.id === slides[0].id ? (
                                         <AssemblingSlide alt={slide.alt} />
                                     ) : (
@@ -201,8 +215,15 @@ export function TutorialCarousel({
                                         />
                                     )}
                                     {/* Fades the screenshot into the page at the edge that
-                                        meets the copy, so it reads as one surface. */}
-                                    <div
+                                        meets the copy, so it reads as one surface.
+
+                                        It arrives with the rest of step 1 rather
+                                        than being there from the start. During the
+                                        intro the slide area does not clip, so this
+                                        sat ACROSS the posts instead of at their
+                                        edge — the third one faded out halfway down
+                                        and then reappeared below. */}
+                                    <motion.div
                                         aria-hidden="true"
                                         className={cx(
                                             "pointer-events-none absolute inset-x-0 h-16",
@@ -210,24 +231,10 @@ export function TutorialCarousel({
                                                 ? "top-0 bg-gradient-to-t from-transparent to-black"
                                                 : "bottom-0 bg-gradient-to-b from-transparent to-black",
                                         )}
+                                        initial={intro ? { opacity: 0 } : false}
+                                        animate={{ opacity: 1 }}
+                                        transition={revealTransition}
                                     />
-                                    {/* The same fade again, but to the welcome
-                                        screen's green, laid over the black one
-                                        and lifted at the same moment the ground
-                                        turns black. The two colours have to move
-                                        together: a fade to black over a green
-                                        ground has nothing to blend into, and the
-                                        third post ends up cut off by a hard edge
-                                        instead of running out. */}
-                                    {assembling && slide.id === slides[0].id && (
-                                        <motion.div
-                                            aria-hidden="true"
-                                            className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-[#08180e]"
-                                            initial={{ opacity: 1 }}
-                                            animate={{ opacity: 0 }}
-                                            transition={revealTransition}
-                                        />
-                                    )}
                                 </div>
 
                                 <motion.div
