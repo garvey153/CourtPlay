@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { PRIMARY_CTA } from "@/components/base/buttons/cta";
 import {
     BANDS,
+    INTRO_EASE,
     INTRO_TIMING,
     WELCOME_EDGE,
     WELCOME_GAP,
@@ -48,7 +49,7 @@ export function TutorialWelcome({
     showCopy?: boolean;
     showGround?: boolean;
 }) {
-    const fadeOut = { duration: INTRO_TIMING.fade / 1000, ease: "linear" as const };
+    const fadeOut = { duration: INTRO_TIMING.fade / 1000, ease: INTRO_EASE.out };
 
     // One column, shared by the ground layer and the copy layer. Both must give
     // the card window the same height, so the copy layer keeps an invisible
@@ -75,7 +76,7 @@ export function TutorialWelcome({
             <motion.div
                 className="fixed inset-0 z-0 bg-[#08180e]"
                 animate={{ opacity: showGround ? 1 : 0 }}
-                transition={showGround ? { duration: 0 } : { duration: INTRO_TIMING.reveal / 1000, ease: "linear" }}
+                transition={showGround ? { duration: 0 } : { duration: INTRO_TIMING.reveal / 1000, ease: INTRO_EASE.in }}
             />
 
             {showBand && (
