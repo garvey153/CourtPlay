@@ -6,6 +6,7 @@ import { cx } from "@/utils/cx";
 import type { TutorialSlide } from "@/lib/tutorial-slides";
 import {
     BANDS,
+    CAROUSEL_CHROME_DELAY,
     CAROUSEL_REVEAL_DELAY,
     INTRO_EASE,
     INTRO_TIMING,
@@ -26,8 +27,8 @@ import { BandImage, CardsBand } from "./tutorial-bands";
  */
 function AssemblingSlide({ alt }: { alt: string }) {
     const arrive = {
-        duration: INTRO_TIMING.reveal / 1000,
-        delay: CAROUSEL_REVEAL_DELAY / 1000,
+        duration: INTRO_TIMING.chrome / 1000,
+        delay: CAROUSEL_CHROME_DELAY / 1000,
         ease: INTRO_EASE.in,
     };
 
@@ -114,14 +115,14 @@ export function TutorialCarousel({
 
     useEffect(() => {
         if (!intro) return;
-        const t = setTimeout(() => setFramed(true), CAROUSEL_REVEAL_DELAY);
+        const t = setTimeout(() => setFramed(true), CAROUSEL_CHROME_DELAY);
         return () => clearTimeout(t);
     }, [intro]);
 
     useEffect(() => {
         if (!intro) return;
         // From this component's own mount, which is the start of the slide.
-        const timer = setTimeout(() => setAssembling(false), CAROUSEL_REVEAL_DELAY + INTRO_TIMING.reveal + 50);
+        const timer = setTimeout(() => setAssembling(false), CAROUSEL_CHROME_DELAY + INTRO_TIMING.chrome + 50);
         return () => clearTimeout(timer);
     }, [intro]);
 
@@ -175,6 +176,13 @@ export function TutorialCarousel({
     // assembling. Without the intro they are simply there, so no delay applies.
     const revealTransition = intro
         ? { duration: INTRO_TIMING.reveal / 1000, delay: CAROUSEL_REVEAL_DELAY / 1000, ease: INTRO_EASE.in }
+        : { duration: 0 };
+
+    // The screenshot's own crop and bottom fade belong with the app around the
+    // posts, not with the copy — the posts have to stay whole for the whole
+    // slide, and a fade over an unclipped band lands across them.
+    const chromeTransition = intro
+        ? { duration: INTRO_TIMING.chrome / 1000, delay: CAROUSEL_CHROME_DELAY / 1000, ease: INTRO_EASE.in }
         : { duration: 0 };
 
     return (
@@ -233,7 +241,7 @@ export function TutorialCarousel({
                                         )}
                                         initial={intro ? { opacity: 0 } : false}
                                         animate={{ opacity: 1 }}
-                                        transition={revealTransition}
+                                        transition={chromeTransition}
                                     />
                                 </div>
 
