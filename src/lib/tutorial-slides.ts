@@ -8,6 +8,13 @@
  * need re-taking.
  *
  * Copy is the design's, verbatim.
+ *
+ * ORDER HERE IS THE DISPLAY ORDER. The numbers in the image filenames are the
+ * capture order, which is the order of DEMO_SCREENS, and the two no longer
+ * agree — posting comes before approving on screen while the files still read
+ * 03-approve and 04-post. Each slide names its own image, so nothing depends on
+ * the two matching; renaming the files would mean recapturing all six to keep
+ * the manifest honest, for a filename.
  */
 export interface TutorialSlide {
     /** Matches the demo screen id, so image and screen cannot drift apart. */
@@ -45,20 +52,20 @@ export const TUTORIAL_SLIDES: TutorialSlide[] = [
         focus: "bottom",
     },
     {
-        id: "approve",
-        image: "/tutorial/03-approve.jpg",
-        alt: "A claim on your own post, with Approve claim and Decline buttons.",
-        headline: "You decide who plays.",
-        body: "Claims on your posts come to you. Approve or Decline, your contact info and Venmo stay hidden until you approve.",
-        focus: "bottom",
-    },
-    {
         id: "post",
         image: "/tutorial/04-post.jpg",
         alt: "The new post form, choosing between Find a sub and Find a regular game.",
         headline: "Post in a few taps.",
         body: "Find a sub or share your availability to join a regular clinic or game play. Either can be private, so only chosen groups or players can claim.",
         focus: "top",
+    },
+    {
+        id: "approve",
+        image: "/tutorial/03-approve.jpg",
+        alt: "A claim on your own post, with Approve claim and Decline buttons.",
+        headline: "You decide who plays.",
+        body: "Claims on your posts come to you. Approve or Decline, your contact info and Venmo stay hidden until you approve.",
+        focus: "bottom",
     },
     {
         id: "activity",
