@@ -98,9 +98,15 @@ try {
 
         if (id === "feed") {
             const actual = await page.evaluate(() => {
-                const card = document.querySelector("article, [data-card], li");
-                const nav = document.querySelector("nav");
-                return { cardsTop: card?.getBoundingClientRect().top, cardsBottom: nav?.getBoundingClientRect().top };
+                const cards = [...document.querySelectorAll("article, [data-card], li")].filter(
+                    (el) => el.getBoundingClientRect().height > 60,
+                );
+                return {
+                    cardsTop: cards[0]?.getBoundingClientRect().top,
+                    // The last card's own bottom. The tab bar is hidden in this
+                    // capture, so nothing is covering it.
+                    cardsBottom: cards.at(-1)?.getBoundingClientRect().bottom,
+                };
             });
             for (const [key, want] of Object.entries(EXPECTED)) {
                 if (actual[key] !== want) {
