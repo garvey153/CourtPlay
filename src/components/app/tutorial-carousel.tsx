@@ -178,9 +178,11 @@ export function TutorialCarousel({
         ? { duration: INTRO_TIMING.reveal / 1000, delay: CAROUSEL_REVEAL_DELAY / 1000, ease: INTRO_EASE.in }
         : { duration: 0 };
 
-    // The screenshot's own crop and bottom fade belong with the app around the
-    // posts, not with the copy — the posts have to stay whole for the whole
-    // slide, and a fade over an unclipped band lands across them.
+    // What comes in with the app around the posts: the screenshot's own crop and
+    // bottom fade, and slide 1's copy, dots and Skip. The copy's GROUND is the
+    // exception — it arrives earlier, over the slide, because covering the third
+    // post is its job. The crop has to wait too: the posts stay whole for the
+    // whole slide, and a fade over an unclipped band lands across them.
     const chromeTransition = intro
         ? { duration: INTRO_TIMING.chrome / 1000, delay: CAROUSEL_CHROME_DELAY / 1000, ease: INTRO_EASE.in }
         : { duration: 0 };
@@ -274,7 +276,7 @@ export function TutorialCarousel({
                                     className="flex shrink-0 flex-col gap-3 px-9"
                                     initial={intro ? { opacity: 0 } : false}
                                     animate={{ opacity: 1 }}
-                                    transition={revealTransition}
+                                    transition={chromeTransition}
                                 >
                                     <h1 className="text-display-sm font-semibold text-primary">{slide.headline}</h1>
                                     <p className="text-sm text-secondary">{slide.body}</p>
@@ -293,7 +295,7 @@ export function TutorialCarousel({
                     className="flex shrink-0 items-center justify-between px-9 pb-[calc(2rem_+_var(--safe-bottom))]"
                     initial={intro ? { opacity: 0 } : false}
                     animate={{ opacity: 1 }}
-                    transition={revealTransition}
+                    transition={chromeTransition}
                 >
                     <Carousel.IndicatorGroup className="flex items-center gap-3">
                         {slides.map((slide, i) => (
