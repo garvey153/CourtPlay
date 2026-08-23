@@ -126,12 +126,16 @@ export const WELCOME_GAP = 10;
  * green edge cutting across the third post.
  */
 export const INTRO_TIMING = {
-    /** Welcome copy and buttons fade out. */
-    fade: 160,
+    /**
+     * Welcome copy and buttons fade out. Unhurried on purpose — this is the
+     * beat that reveals the third post, so it wants to be watched rather than
+     * got through.
+     */
+    fade: 320,
     /** The card stack slides down to where step 1 holds it. */
     slide: 300,
-    /** App chrome, slide-1 copy, dots and Skip tutorial. */
-    reveal: 260,
+    /** Ground to black, app chrome, slide-1 copy, dots and Skip tutorial. */
+    reveal: 480,
 } as const;
 
 /** Cumulative start times from the tap, so the phases are declared once. */
