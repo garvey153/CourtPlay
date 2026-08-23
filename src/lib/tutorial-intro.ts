@@ -115,8 +115,8 @@ export const WELCOME_GAP = 10;
 /**
  * The transition, in milliseconds, in the order it plays.
  *
- * The copy goes first, slowly enough that the three bare posts underneath are
- * read rather than glimpsed, and the stack slides as it finishes. Then
+ * The copy goes first, uncovering the three posts, and the stack slides as it
+ * finishes. Then
  * they slide down to where step 1 holds them, and the green ground turns black
  * as they go. Then the app around the posts and slide 1's own copy, dots and
  * Skip tutorial arrive together.
@@ -132,7 +132,7 @@ export const INTRO_TIMING = {
      * beat that reveals the third post, so it wants to be watched rather than
      * got through.
      */
-    fade: 640,
+    fade: 320,
     /** The card stack slides down to where step 1 holds it. */
     slide: 300,
     /**
