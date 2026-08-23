@@ -163,15 +163,17 @@ export const INTRO_START = {
 export const INTRO_EASE = {
     out: "easeIn" as const,
     /**
-     * A quintic ease-in-out, not the stock easeInOut.
+     * An exponential ease-OUT: away immediately, then a long settle.
      *
-     * The stock curve is roughly [0.42, 0, 0.58, 1], which over a long slide
-     * reads as a constant glide. This one barely moves for the first fifth,
-     * covers most of the distance in the middle, and settles for the last
-     * fifth — the pronounced version of the same shape, which is what a slow
-     * move needs to look deliberate rather than sluggish.
+     * No ease-in at all. The stack is already on screen and already the thing
+     * being watched, so it does not need winding up — it needs to look like it
+     * was let go of. Roughly two thirds of the travel happens in the first
+     * quarter of the duration and the rest is the landing.
+     *
+     * The third post's fade rides this same curve, so it empties out fast and
+     * then holds near zero while the stack settles.
      */
-    slide: [0.83, 0, 0.17, 1] as [number, number, number, number],
+    slide: [0.16, 1, 0.3, 1] as [number, number, number, number],
     in: "easeOut" as const,
 };
 
