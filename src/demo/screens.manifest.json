@@ -9,13 +9,13 @@
             "hash": "c752e3ffd35a3ec1",
             "image": "tutorial/02-claim.jpg"
         },
-        "approve": {
-            "hash": "7ace98f92edd2538",
-            "image": "tutorial/03-approve.jpg"
-        },
         "post": {
             "hash": "a253b980a0271dd7",
-            "image": "tutorial/04-post.jpg"
+            "image": "tutorial/03-post.jpg"
+        },
+        "approve": {
+            "hash": "7ace98f92edd2538",
+            "image": "tutorial/04-approve.jpg"
         },
         "activity": {
             "hash": "64b1814bd7a8a14b",
