@@ -105,7 +105,11 @@ export function TutorialWelcome({
                     posts slide BETWEEN the green fill and the copy — the fill is
                     below the carousel, the copy above it — and the headline ends
                     up printed straight over the cards mid-slide. */}
-                <div className="relative bg-[#08180e] px-9" style={{ paddingBottom: bottomPad }}>
+                {/* pt-4: 16px of solid ground above the headline before the fade
+                    begins, so the gradient ends clear of the type rather than
+                    running into it. It grows the panel upward — the copy stays
+                    where it was, and Skip for now keeps its 36px baseline. */}
+                <div className="relative bg-[#08180e] px-9 pt-4" style={{ paddingBottom: bottomPad }}>
                     {/* The same fade the tutorial slides use — h-16, transparent
                         into the page — so the posts run out the same way here as
                         they do behind every step. To the green ground rather than
