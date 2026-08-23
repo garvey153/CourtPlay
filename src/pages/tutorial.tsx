@@ -107,7 +107,7 @@ export function Tutorial() {
     const takeTour = () => {
         setStage("fading");
         setTimeout(() => setStage("sliding"), INTRO_START.slide);
-        setTimeout(() => setStage("revealing"), INTRO_START.reveal);
+        setTimeout(() => setStage("revealing"), INTRO_START.chrome);
         setTimeout(() => setStage("tour"), INTRO_TOTAL);
     };
 
@@ -127,7 +127,7 @@ export function Tutorial() {
                 <TutorialWelcome
                     showBand={stage === "welcome" || stage === "fading"}
                     showCopy={stage === "welcome"}
-                    showGround={stage === "welcome" || stage === "fading" || stage === "sliding"}
+                    showGround={stage === "welcome" || stage === "fading"}
                     onTakeTour={takeTour}
                     onSkip={finish}
                 />

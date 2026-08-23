@@ -115,11 +115,12 @@ export const WELCOME_GAP = 10;
 /**
  * The transition, in milliseconds, in the order it plays.
  *
- * The copy goes first, uncovering the three posts, and the stack slides as it
- * finishes. Then
+ * The copy goes first, uncovering the three posts. The stack then slides, and
+ * the page turns into the tutorial around it as it goes — black ground, slide
+ * 1's copy, dots and Skip, all while the posts are moving. Only once they have
+ * landed does
  * they slide down to where step 1 holds them, and the green ground turns black
- * as they go. Then the app around the posts and slide 1's own copy, dots and
- * Skip tutorial arrive together.
+ * as they go. Then the app around the posts arrive behind them.
  *
  * The ground has to be black BY THE TIME the posts land, not after. Slide 1
  * fades its screenshot out at the bottom with a gradient to black; over a green
@@ -136,20 +137,25 @@ export const INTRO_TIMING = {
     /** The card stack slides down to where step 1 holds it. */
     slide: 700,
     /**
-     * Ground to black, app chrome, slide-1 copy, dots and Skip tutorial.
-     *
-     * By far the longest of the three, and deliberately so: it is carrying the
-     * whole page from one screen to the other, and the posts underneath do not
-     * move while it runs.
+     * The page becoming the tutorial: black ground, and slide 1's copy, dots
+     * and Skip. Runs ALONGSIDE the slide rather than after it, so it is the
+     * slide's own length.
      */
-    reveal: 1920,
+    reveal: 700,
+    /**
+     * The app around the posts — header, banner, tab bar — last of all, once
+     * everything else has settled behind them.
+     */
+    chrome: 480,
 } as const;
 
 /** Cumulative start times from the tap, so the phases are declared once. */
 export const INTRO_START = {
     fade: 0,
+    /** The slide and the page turning into the tutorial start together. */
     slide: INTRO_TIMING.fade,
-    reveal: INTRO_TIMING.fade + INTRO_TIMING.slide,
+    reveal: INTRO_TIMING.fade,
+    chrome: INTRO_TIMING.fade + INTRO_TIMING.slide,
 } as const;
 
 /**
@@ -177,14 +183,13 @@ export const INTRO_EASE = {
     in: "easeOut" as const,
 };
 
-export const INTRO_TOTAL = INTRO_START.reveal + INTRO_TIMING.reveal;
+export const INTRO_TOTAL = INTRO_START.chrome + INTRO_TIMING.chrome;
 
 /**
- * The carousel's own delay before it reveals itself.
- *
- * Measured from when IT mounts, which is the start of the slide — not from the
- * tap. The copy has already gone by then, so INTRO_START.reveal would wait out
- * that fade a second time.
+ * The carousel's delays, measured from when IT mounts — which is the start of
+ * the slide, not the tap. Its copy comes in over the slide itself; the app
+ * chrome waits for the slide to finish.
  */
-export const CAROUSEL_REVEAL_DELAY = INTRO_TIMING.slide;
+export const CAROUSEL_REVEAL_DELAY = 0;
+export const CAROUSEL_CHROME_DELAY = INTRO_TIMING.slide;
 
