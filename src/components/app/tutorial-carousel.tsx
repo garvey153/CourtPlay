@@ -209,13 +209,13 @@ export function TutorialCarousel({
                                 key={slide.id}
                                 className={cx(
                                     "flex h-full min-h-0 flex-col",
-                                    // No gap where the screenshot fades into the
-                                    // copy: the fade already IS the space, and a
-                                    // gap under it reads as a second one. The
-                                    // bottom-focus slides fade at their TOP
-                                    // instead, so nothing softens the edge above
-                                    // the headline and they keep the 32px.
-                                    slide.focus === "bottom" ? "gap-8" : "gap-0",
+                                    // 8px where the screenshot fades into the
+                                    // copy — the fade is doing most of the work
+                                    // of the space, so it needs a hair rather
+                                    // than a gap. The bottom-focus slides fade at
+                                    // their TOP instead, so nothing softens the
+                                    // edge above the headline and they keep 32.
+                                    slide.focus === "bottom" ? "gap-8" : "gap-2",
                                 )}
                             >
                                 <div className={cx("relative min-h-0 flex-1", framed && "overflow-hidden")}>
