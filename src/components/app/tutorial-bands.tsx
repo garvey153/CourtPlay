@@ -107,10 +107,10 @@ export function CardsBand({
  * opacity to. Its top edge sits in the gap above the card, so nothing of the
  * card survives underneath it.
  *
- * One element, two beats, as keyframes: out on the slide's own curve so it
- * disappears exactly as the stack lands, then back on the reveal's, because
- * step 1 does show this post and it would otherwise be a hole in the
- * screenshot.
+ * One element, two beats, as keyframes: out on its own ease-in so it holds and
+ * then goes, timed to reach zero exactly as the stack lands, then back on the
+ * reveal's curve — step 1 does show this post, and leaving the cover up would
+ * put a hole in the screenshot.
  */
 function TailFade() {
     return (
@@ -123,7 +123,7 @@ function TailFade() {
             transition={{
                 duration: CAROUSEL_INTRO_TOTAL / 1000,
                 times: [0, INTRO_TIMING.slide / CAROUSEL_INTRO_TOTAL, 1],
-                ease: [INTRO_EASE.slide, INTRO_EASE.in],
+                ease: [INTRO_EASE.tail, INTRO_EASE.in],
             }}
         />
     );
