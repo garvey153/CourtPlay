@@ -175,15 +175,13 @@ export const INTRO_EASE = {
      */
     slide: [0.16, 1, 0.3, 1] as [number, number, number, number],
     /**
-     * The third post's fade: a quartic ease-IN, the opposite shape to the slide
-     * it runs alongside.
+     * The third post's fade: linear, no curve at all.
      *
-     * The post stays legible for most of the move and then goes in a hurry at
-     * the end. Sharing the slide's ease-out had it half gone before the stack
-     * had really travelled, which read as the post being taken away rather than
-     * bowing out.
+     * Both eased versions hung — the ease-in by design, and the slide's
+     * ease-out by leaving it near full for the settle. Straight is what makes
+     * it start the instant the stack does and simply be gone.
      */
-    tail: [0.7, 0, 0.84, 0] as [number, number, number, number],
+    tail: "linear" as const,
     in: "easeOut" as const,
 };
 
@@ -197,6 +195,14 @@ export const INTRO_TOTAL = INTRO_START.reveal + INTRO_TIMING.reveal;
  * that fade a second time.
  */
 export const CAROUSEL_REVEAL_DELAY = INTRO_TIMING.slide;
+
+/**
+ * How long the third post takes to go, once the stack starts moving.
+ *
+ * Half the slide, not all of it: it should be over well before the landing
+ * rather than still resolving into it.
+ */
+export const TAIL_FADE = 350;
 
 /** The carousel's whole intro, from its own mount. */
 export const CAROUSEL_INTRO_TOTAL = INTRO_TIMING.slide + INTRO_TIMING.reveal;

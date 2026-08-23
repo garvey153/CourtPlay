@@ -5,6 +5,7 @@ import {
     INTRO_EASE,
     INTRO_TIMING,
     STEP1,
+    TAIL_FADE,
     THIRD_POST_TOP,
     type Band,
 } from "@/lib/tutorial-intro";
@@ -107,10 +108,10 @@ export function CardsBand({
  * opacity to. Its top edge sits in the gap above the card, so nothing of the
  * card survives underneath it.
  *
- * One element, two beats, as keyframes: out on its own ease-in so it holds and
- * then goes, timed to reach zero exactly as the stack lands, then back on the
- * reveal's curve — step 1 does show this post, and leaving the cover up would
- * put a hole in the screenshot.
+ * One element, three beats, as keyframes: straight out over the first half of
+ * the slide, held while the stack settles, then back on the reveal's curve —
+ * step 1 does show this post, and leaving the cover up would put a hole in the
+ * screenshot.
  */
 function TailFade() {
     return (
@@ -119,11 +120,11 @@ function TailFade() {
             className="pointer-events-none absolute inset-x-0 bottom-0 bg-[#08180e]"
             style={{ top: `${THIRD_POST_TOP * 100}%` }}
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 1, 0] }}
+            animate={{ opacity: [0, 1, 1, 0] }}
             transition={{
                 duration: CAROUSEL_INTRO_TOTAL / 1000,
-                times: [0, INTRO_TIMING.slide / CAROUSEL_INTRO_TOTAL, 1],
-                ease: [INTRO_EASE.tail, INTRO_EASE.in],
+                times: [0, TAIL_FADE / CAROUSEL_INTRO_TOTAL, INTRO_TIMING.slide / CAROUSEL_INTRO_TOTAL, 1],
+                ease: [INTRO_EASE.tail, INTRO_EASE.tail, INTRO_EASE.in],
             }}
         />
     );
