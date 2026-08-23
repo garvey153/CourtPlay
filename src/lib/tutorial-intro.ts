@@ -185,3 +185,14 @@ export const INTRO_TOTAL = INTRO_START.reveal + INTRO_TIMING.reveal;
  * that fade a second time.
  */
 export const CAROUSEL_REVEAL_DELAY = INTRO_TIMING.slide;
+
+/** The carousel's whole intro, from its own mount. */
+export const CAROUSEL_INTRO_TOTAL = INTRO_TIMING.slide + INTRO_TIMING.reveal;
+
+/**
+ * Where the third post begins within the cards band, as a fraction of it.
+ *
+ * Taken from the middle of the gap above the card rather than its top edge, so
+ * covering it leaves no sliver of card behind.
+ */
+export const THIRD_POST_TOP = (612 - STEP1.cardsTop) / (STEP1.cardsBottom - STEP1.cardsTop);
