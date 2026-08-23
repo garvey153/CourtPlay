@@ -243,6 +243,31 @@ export function TutorialCarousel({
                                         animate={{ opacity: 1 }}
                                         transition={chromeTransition}
                                     />
+
+                                    {/* The ground behind slide 1's copy, coming in
+                                        WITH that copy rather than with the app
+                                        around the posts. It reaches below the
+                                        slide area, which is unclipped for the
+                                        duration, so as it arrives it covers the
+                                        third post's overhang — that is what takes
+                                        the post away, instead of a crop appearing.
+                                        Its own 64px of gradient at the top keeps
+                                        the edge soft. */}
+                                    {assembling && slide.id === slides[0].id && (
+                                        <motion.div
+                                            aria-hidden="true"
+                                            className="pointer-events-none absolute inset-x-0"
+                                            style={{
+                                                top: "calc(100% - 4rem)",
+                                                bottom: "-100vh",
+                                                backgroundImage:
+                                                    "linear-gradient(to bottom, transparent 0, #000 4rem)",
+                                            }}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={revealTransition}
+                                        />
+                                    )}
                                 </div>
 
                                 <motion.div
