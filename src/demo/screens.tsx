@@ -62,6 +62,8 @@ export const DEMO_SCREENS: Record<string, () => React.ReactElement> = {
         </>
     ),
 
+    post: () => <PostNew />,
+
     approve: () => (
         <>
             <FeedBehind />
@@ -79,8 +81,6 @@ export const DEMO_SCREENS: Record<string, () => React.ReactElement> = {
             />
         </>
     ),
-
-    post: () => <PostNew />,
 
     activity: () => <Activity />,
 
