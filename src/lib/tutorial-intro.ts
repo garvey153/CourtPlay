@@ -115,7 +115,7 @@ export const WELCOME_GAP = 10;
 /**
  * The transition, in milliseconds, in the order it plays.
  *
- * The copy goes first and quickly, so the posts move on a clear screen. Then
+ * The copy goes first, then a beat on the bare posts, then they slide. Then
  * they slide down to where step 1 holds them, and the green ground turns black
  * as they go. Then the app around the posts and slide 1's own copy, dots and
  * Skip tutorial arrive together.
@@ -132,6 +132,14 @@ export const INTRO_TIMING = {
      * got through.
      */
     fade: 320,
+    /**
+     * A beat with the copy gone and nothing yet moving.
+     *
+     * This is the only moment the three posts are on screen by themselves, and
+     * running the slide straight off the back of the fade meant it was never
+     * actually seen — the eye was still following the copy out.
+     */
+    pause: 180,
     /** The card stack slides down to where step 1 holds it. */
     slide: 300,
     /** Ground to black, app chrome, slide-1 copy, dots and Skip tutorial. */
@@ -141,8 +149,22 @@ export const INTRO_TIMING = {
 /** Cumulative start times from the tap, so the phases are declared once. */
 export const INTRO_START = {
     fade: 0,
-    slide: INTRO_TIMING.fade,
-    reveal: INTRO_TIMING.fade + INTRO_TIMING.slide,
+    slide: INTRO_TIMING.fade + INTRO_TIMING.pause,
+    reveal: INTRO_TIMING.fade + INTRO_TIMING.pause + INTRO_TIMING.slide,
+} as const;
+
+/**
+ * Easing, one curve per direction rather than linear throughout.
+ *
+ * Something leaving accelerates away, something arriving decelerates in, and
+ * the thing that both starts and stops does both. Linear opacity is defensible
+ * on its own, but here the three phases run back to back and matching curves
+ * are what makes them read as one movement instead of three cues.
+ */
+export const INTRO_EASE = {
+    out: "easeIn",
+    slide: "easeInOut",
+    in: "easeOut",
 } as const;
 
 export const INTRO_TOTAL = INTRO_START.reveal + INTRO_TIMING.reveal;

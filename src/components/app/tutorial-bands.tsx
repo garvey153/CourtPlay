@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { BANDS, INTRO_TIMING, STEP1, type Band } from "@/lib/tutorial-intro";
+import { BANDS, INTRO_EASE, INTRO_TIMING, STEP1, type Band } from "@/lib/tutorial-intro";
 import { cx } from "@/utils/cx";
 
 /** The step-1 screenshot, named once — the welcome screen and slide 1 share it. */
@@ -71,7 +71,7 @@ export function CardsBand({
             // Spelled out rather than left to Motion's default spring: this is
             // the first beat of a timed sequence, and the beats after it are
             // scheduled off INTRO_TIMING.
-            transition={{ duration: INTRO_TIMING.slide / 1000, ease: "easeInOut" }}
+            transition={{ duration: INTRO_TIMING.slide / 1000, ease: INTRO_EASE.slide }}
             // `relative` is load-bearing: the image inside is absolutely
             // positioned, so this has to be its containing block. Without it the
             // image sized itself against whatever ancestor happened to be
