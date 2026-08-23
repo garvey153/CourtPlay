@@ -174,6 +174,16 @@ export const INTRO_EASE = {
      * then holds near zero while the stack settles.
      */
     slide: [0.16, 1, 0.3, 1] as [number, number, number, number],
+    /**
+     * The third post's fade: a quartic ease-IN, the opposite shape to the slide
+     * it runs alongside.
+     *
+     * The post stays legible for most of the move and then goes in a hurry at
+     * the end. Sharing the slide's ease-out had it half gone before the stack
+     * had really travelled, which read as the post being taken away rather than
+     * bowing out.
+     */
+    tail: [0.7, 0, 0.84, 0] as [number, number, number, number],
     in: "easeOut" as const,
 };
 
