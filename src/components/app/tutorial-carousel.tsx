@@ -203,9 +203,13 @@ export function TutorialCarousel({
                 {/* Carousel.Content puts this className on its inner track; its outer
                     viewport is h-full, so it needs a parent with a definite height. */}
                 <div className="min-h-0 flex-1">
+                    {/* gap-4 on each item, matching the welcome screen: its fade
+                        also ends 16px above the headline. At gap-8 the steps left
+                        twice that, so the screenshot ran out further from the
+                        words here than it did there. */}
                     <Carousel.Content className="h-full" overflowHidden={framed}>
                         {slides.map((slide) => (
-                            <Carousel.Item key={slide.id} className="flex h-full min-h-0 flex-col gap-8">
+                            <Carousel.Item key={slide.id} className="flex h-full min-h-0 flex-col gap-4">
                                 <div className={cx("relative min-h-0 flex-1", framed && "overflow-hidden")}>
                                     {assembling && slide.id === slides[0].id ? (
                                         <AssemblingSlide alt={slide.alt} />
