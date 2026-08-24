@@ -96,7 +96,7 @@ export function AdminReportDetailSheet({ report, actioning, onDismiss, onRemoveC
             <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
 
             <motion.div
-                className="relative flex max-h-[85vh] w-full max-w-md flex-col gap-4 rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl"
+                className="relative flex max-h-[85vh] w-full max-w-md flex-col gap-4 sheet-fill rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl"
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 transition={{ type: "spring", damping: 38, stiffness: 420 }}

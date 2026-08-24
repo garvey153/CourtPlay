@@ -205,7 +205,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
 
                     <motion.div
                         className={cx(
-                            "relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary shadow-xl sm:rounded-2xl",
+                            "relative flex w-full max-w-md flex-col sheet-fill rounded-t-2xl bg-secondary shadow-xl sm:rounded-2xl",
                             // Every sheet sizes to its content (32px above the action button). Locations can
                             // be long: it grows with its content like the others until it would reach 60px
                             // below the screen top, then caps there and scrolls its list.
