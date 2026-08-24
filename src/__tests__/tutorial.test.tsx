@@ -37,6 +37,7 @@ const renderPage = (path = "/tutorial") =>
                 <Route path="/feed" element={<span>the feed</span>} />
                 <Route path="/post/:id" element={<span>the post</span>} />
                 <Route path="/profile/edit" element={<span>manage</span>} />
+                <Route path="/profile/me" element={<span>profile</span>} />
             </Routes>
             <Probe />
         </MemoryRouter>,
@@ -252,11 +253,11 @@ describe("tutorial", () => {
             expect(screen.getByRole("button", { name: "Skip tour" })).toBeInTheDocument();
         });
 
-        it("returns to Manage after a replay, not the feed", async () => {
+        it("returns to Profile after a replay, not the feed", async () => {
             profileMock.mockReturnValue({ profile: profile(), setProfile, loading: false });
             renderPage("/tutorial?replay=1");
             await userEvent.click(screen.getByRole("button", { name: "Skip tour" }));
-            await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/profile/edit"));
+            await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/profile/me"));
         });
     });
 });
