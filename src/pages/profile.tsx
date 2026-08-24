@@ -489,24 +489,35 @@ export function Profile() {
                     </div>
                 )}
 
-                {/* Footer (own profile only): the feedback entry point sits to the left of
-                    the build stamp, dot-separated in the post-detail style. The stamp makes
-                    "which build am I on?" readable from the device. */}
+                {/* Footer (own profile only): 48px above, matching the gap the groups
+                    empty state leaves between its Create group button and the Friends
+                    heading — 24px of its own padding plus the section's mt-6.
+
+                    The two entry points share a line, dot-separated in the post-detail
+                    style, with the build stamp on its own line below. */}
                 {profile.is_own_profile && (
-                    <div className="mt-8 flex flex-col items-center gap-3">
+                    <div className="mt-12 flex flex-col items-center gap-1.5">
                         <p className="flex items-center justify-center gap-1.5 text-xs text-quaternary">
+                            <Link
+                                to="/tutorial?replay=1"
+                                className="font-medium text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
+                            >
+                                Take the tour
+                            </Link>
+                            <span aria-hidden="true">·</span>
                             <button
                                 type="button"
                                 onClick={() => setShowFeedback(true)}
-                                className="font-medium text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                                className="font-medium text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
                             >
-                                Submit Feedback
+                                Submit feedback
                             </button>
-                            <span aria-hidden="true" data-build-id>·</span>
-                            {/* Kept deliberately: this is how you tell which bundle a
-                                given device is actually running. No longer a button —
-                                it used to reveal the PushDebug panel, now removed. */}
-                            <span data-build-id>Version {__BUILD_ID__}</span>
+                        </p>
+                        {/* Kept deliberately: this is how you tell which bundle a given
+                            device is actually running. No longer a button — it used to
+                            reveal the PushDebug panel, now removed. */}
+                        <p className="text-xs text-quaternary" data-build-id>
+                            Version {__BUILD_ID__}
                         </p>
                     </div>
                 )}
