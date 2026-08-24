@@ -32,29 +32,6 @@
    translucent status bar, so content extends under the notch/Dynamic Island
    (top) and home indicator (bottom). These reserve space for the header and
    any bottom bar so the hardware never covers them. */
-/* Bottom sheets: keep the ground below the sheet the sheet's own colour.
-   When the on-screen keyboard opens, the visual viewport shrinks and the sheet
-   is pushed up off the bottom of the layout viewport, so the page's bg-primary
-   green shows through underneath it. This paints that strip in the sheet's
-   colour instead. It sits BELOW the sheet only — top-full — so the backdrop
-   above the sheet is untouched.
-
-   Phone widths only: from sm the sheet is a centred modal with rounded corners
-   on all sides, and a fill hanging off its bottom edge would be visible. */
-@utility sheet-fill {
-    @media (width < 40rem) {
-        &::after {
-            content: "";
-            position: absolute;
-            inset-inline: 0;
-            top: 100%;
-            height: 100vh;
-            background-color: var(--color-bg-secondary);
-            pointer-events: none;
-        }
-    }
-}
-
 @utility pt-safe {
     padding-top: env(safe-area-inset-top);
 }

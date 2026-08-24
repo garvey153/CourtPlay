@@ -41,7 +41,7 @@ export function Privacy() {
                 </header>
 
                 {/* Content sheet */}
-                <div className="relative flex-1 sheet-fill rounded-t-2xl bg-secondary px-5 pt-4 pb-14 shadow-xl">
+                <div className="relative flex-1 rounded-t-2xl bg-secondary px-5 pt-4 pb-14 shadow-xl">
                     <button
                         type="button"
                         onClick={() => navigate(-1)}

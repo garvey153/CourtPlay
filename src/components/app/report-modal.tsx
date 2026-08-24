@@ -90,7 +90,7 @@ export function ReportModal({ targetType, targetId, onClose }: ReportModalProps)
             {/* Full-width on mobile, capped and centered on larger screens. pb-8 matches
                 the filter sheets' footer spacing. */}
             <motion.div
-                className="relative flex w-full max-w-md flex-col sheet-fill rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl"
+                className="relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl"
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 transition={{ type: "spring", damping: 38, stiffness: 420 }}
