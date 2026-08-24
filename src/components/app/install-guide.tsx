@@ -85,7 +85,7 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
             <motion.div
                 // pb: the design's 32px, plus the home-indicator inset. A `fixed`
                 // sheet sits outside the layout that would otherwise apply it.
-                className="relative flex w-full max-w-md flex-col sheet-fill rounded-t-2xl bg-secondary pt-[18px] pb-[calc(2rem_+_var(--safe-bottom))] shadow-xl sm:rounded-2xl"
+                className="relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary pt-[18px] pb-[calc(2rem_+_var(--safe-bottom))] shadow-xl sm:rounded-2xl"
                 initial={{ y: "100%" }}
                 animate={{ y: entered ? 0 : "100%" }}
                 transition={{ type: "spring", damping: 38, stiffness: 420 }}
