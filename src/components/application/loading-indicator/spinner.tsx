@@ -46,6 +46,9 @@ interface SpinnerProps {
 export const Spinner = ({ size = "md", tone = "brand", spin = true, className }: SpinnerProps) => (
     <span
         aria-hidden="true"
+        // Marks the button that contains it, so the button can stop dimming
+        // itself — see button-styles. Nothing else keys off it.
+        data-spinner
         className={cx("block rounded-full border-2", sizes[size], tones[tone], spin && "animate-spin", className)}
     />
 );
