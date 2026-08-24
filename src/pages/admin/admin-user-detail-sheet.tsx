@@ -45,7 +45,15 @@ interface AdminUserDetailSheetProps {
 /** Admin moderation sheet for a single user — suspend/unsuspend and grant/revoke admin. */
 export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetailSheetProps) {
     const [mode, setMode] = useState<Mode>("view");
-    const [loading, setLoading] = useState(false);
+    /**
+     * WHICH action is running, not merely that one is.
+     *
+     * A single boolean put a spinner in every button at once — reactivating a
+     * user span three of them. Every button still disables while any action
+     * runs, because firing a second is not something to allow; only the one
+     * that was pressed says it is working.
+     */
+    const [busy, setBusy] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [preview, setPreview] = useState<DeletePreview | null>(null);
 
@@ -61,11 +69,11 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
     const skill = skillLabel(user.skill_level);
     const statusLabel = user.is_suspended ? "Deactivated" : "Active";
 
-    const runUpdate = async (patch: Record<string, unknown>, failVerb: string) => {
-        setLoading(true);
+    const runUpdate = async (patch: Record<string, unknown>, failVerb: string, key: string) => {
+        setBusy(key);
         setError(null);
         const { error: updateError } = await supabase.from("users").update(patch).eq("id", user.id);
-        setLoading(false);
+        setBusy(null);
         if (updateError) {
             (console.error("admin user action failed:", updateError), setError(describeActionError(updateError, failVerb)));
         } else {
@@ -79,11 +87,11 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
      * this is the courtesy, not the control.
      */
     const openDelete = async () => {
-        setLoading(true);
+        setBusy("delete-preview");
         setError(null);
         setPreview(null);
         const { data, error: rpcError } = await supabase.rpc("admin_user_delete_preview", { p_user_id: user.id });
-        setLoading(false);
+        setBusy(null);
         if (rpcError || (data && typeof data === "object" && "error" in data)) {
             setError((data as { error?: string })?.error ?? describeActionError(rpcError, "check that user"));
             return;
@@ -93,10 +101,10 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
     };
 
     const runDelete = async () => {
-        setLoading(true);
+        setBusy("delete");
         setError(null);
         const { data, error: rpcError } = await supabase.rpc("admin_delete_user", { p_user_id: user.id });
-        setLoading(false);
+        setBusy(null);
         if (rpcError || !(data as { success?: boolean })?.success) {
             setError((data as { error?: string })?.error ?? describeActionError(rpcError, "delete that user"));
             return;
@@ -130,10 +138,10 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
                 </div>
                 {errorLine}
                 <div className="mt-2 flex flex-col gap-3">
-                    <button type="button" onClick={() => runUpdate({ is_suspended: true }, "deactivate that user")} disabled={loading} className={PRIMARY_BTN}>
-                        {loading ? <Spinner size="sm" tone="on-brand" /> : "Yes, deactivate"}
+                    <button type="button" onClick={() => runUpdate({ is_suspended: true }, "deactivate that user", "suspend")} disabled={!!busy} className={PRIMARY_BTN}>
+                        {busy === "suspend" ? <Spinner size="sm" tone="on-brand" /> : "Yes, deactivate"}
                     </button>
-                    <button type="button" onClick={() => setMode("view")} disabled={loading} className={SECONDARY_BTN}>
+                    <button type="button" onClick={() => setMode("view")} disabled={!!busy} className={SECONDARY_BTN}>
                         Cancel
                     </button>
                 </div>
@@ -197,13 +205,13 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
                         <button
                             type="button"
                             onClick={runDelete}
-                            disabled={loading}
+                            disabled={!!busy}
                             className="flex h-11 w-full items-center justify-center rounded-lg bg-red-600 text-sm font-semibold text-white transition duration-100 ease-linear hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            {loading ? <Spinner size="sm" tone="current" /> : "Yes, delete permanently"}
+                            {busy === "delete" ? <Spinner size="sm" tone="current" /> : "Yes, delete permanently"}
                         </button>
                     )}
-                    <button type="button" onClick={() => setMode("view")} disabled={loading} className={SECONDARY_BTN}>
+                    <button type="button" onClick={() => setMode("view")} disabled={!!busy} className={SECONDARY_BTN}>
                         Cancel
                     </button>
                 </div>
@@ -263,25 +271,25 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
                 <div className="mt-2 flex flex-col gap-3">
                     {user.is_suspended ? (
                         <>
-                            <button type="button" onClick={() => runUpdate({ is_suspended: false }, "reactivate that user")} disabled={loading} className={PRIMARY_BTN}>
-                                {loading ? <Spinner size="sm" tone="on-brand" /> : "Reactivate user"}
+                            <button type="button" onClick={() => runUpdate({ is_suspended: false }, "reactivate that user", "reactivate")} disabled={!!busy} className={PRIMARY_BTN}>
+                                {busy === "reactivate" ? <Spinner size="sm" tone="on-brand" /> : "Reactivate user"}
                             </button>
                             {/* Only once deactivated. Deactivation is the reversible
                                 step, and requiring it first means nobody is deleted
                                 straight from a working account by a misclick.
                                 Same secondary styling as Make admin — the weight
                                 sits on the confirm screen, not on getting there. */}
-                            <button type="button" onClick={openDelete} disabled={loading} className={SECONDARY_BTN}>
-                                {loading ? <Spinner size="sm" tone="current" /> : "Delete from the system"}
+                            <button type="button" onClick={openDelete} disabled={!!busy} className={SECONDARY_BTN}>
+                                {busy === "delete-preview" ? <Spinner size="sm" tone="current" /> : "Delete from the system"}
                             </button>
                         </>
                     ) : (
-                        <button type="button" onClick={() => setMode("confirmSuspend")} disabled={loading} className={PRIMARY_BTN}>
+                        <button type="button" onClick={() => setMode("confirmSuspend")} disabled={!!busy} className={PRIMARY_BTN}>
                             Deactivate user
                         </button>
                     )}
-                    <button type="button" onClick={() => runUpdate({ is_admin: !user.is_admin }, "change that user's admin access")} disabled={loading} className={SECONDARY_BTN}>
-                        {loading ? <Spinner size="sm" tone="on-brand" /> : user.is_admin ? "Remove admin" : "Make admin"}
+                    <button type="button" onClick={() => runUpdate({ is_admin: !user.is_admin }, "change that user's admin access", "admin")} disabled={!!busy} className={SECONDARY_BTN}>
+                        {busy === "admin" ? <Spinner size="sm" tone="on-brand" /> : user.is_admin ? "Remove admin" : "Make admin"}
                     </button>
                 </div>
             </>

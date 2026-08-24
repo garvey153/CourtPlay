@@ -48,6 +48,15 @@ export function AdminReportDetailSheet({ report, actioning, onDismiss, onRemoveC
     const [ctxLoading, setCtxLoading] = useState(isPost);
     const [ctxError, setCtxError] = useState<string | null>(null);
     // "confirm" swaps the sheet body for a remove/suspend confirmation (like the users sheet).
+    /**
+     * Which button was pressed. `actioning` comes from the parent and only says
+     * that work is happening, so on its own it spun every button at once —
+     * Dismiss and the remove button sit together in the pending state. Pairing
+     * it with the press keeps the spinner on the one that was actually chosen.
+     */
+    const [pressed, setPressed] = useState<string | null>(null);
+    const spinning = (key: string) => actioning && pressed === key;
+
     const [mode, setMode] = useState<"view" | "confirm">("view");
 
     useEffect(() => {
@@ -126,8 +135,16 @@ export function AdminReportDetailSheet({ report, actioning, onDismiss, onRemoveC
                             </p>
                         </div>
                         <div className="flex flex-col gap-3">
-                            <button type="button" onClick={onRemoveContent} disabled={actioning} className={PRIMARY_BTN}>
-                                {actioning ? <Spinner size="sm" tone="current" /> : isPost ? "Yes, remove" : "Yes, suspend"}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPressed("remove");
+                                    onRemoveContent();
+                                }}
+                                disabled={actioning}
+                                className={PRIMARY_BTN}
+                            >
+                                {spinning("remove") ? <Spinner size="sm" tone="current" /> : isPost ? "Yes, remove" : "Yes, suspend"}
                             </button>
                             <button type="button" onClick={() => setMode("view")} disabled={actioning} className={SECONDARY_BTN}>
                                 Cancel
@@ -184,16 +201,32 @@ export function AdminReportDetailSheet({ report, actioning, onDismiss, onRemoveC
                         {report.status === "pending" ? (
                             <div className="mt-1 flex shrink-0 flex-col gap-3">
                                 <button type="button" onClick={() => setMode("confirm")} disabled={actioning} className={PRIMARY_BTN}>
-                                    {actioning ? <Spinner size="sm" tone="current" /> : removeLabel}
+                                    {removeLabel}
                                 </button>
-                                <button type="button" onClick={onDismiss} disabled={actioning} className={SECONDARY_BTN}>
-                                    {actioning ? <Spinner size="sm" tone="current" /> : "Dismiss"}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPressed("dismiss");
+                                        onDismiss();
+                                    }}
+                                    disabled={actioning}
+                                    className={SECONDARY_BTN}
+                                >
+                                    {spinning("dismiss") ? <Spinner size="sm" tone="current" /> : "Dismiss"}
                                 </button>
                             </div>
                         ) : report.status === "actioned" && isPost ? (
                             <div className="mt-1 flex shrink-0 flex-col gap-3">
-                                <button type="button" onClick={onReactivate} disabled={actioning} className={PRIMARY_BTN}>
-                                    {actioning ? <Spinner size="sm" tone="current" /> : "Reactivate post"}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPressed("reactivate");
+                                        onReactivate();
+                                    }}
+                                    disabled={actioning}
+                                    className={PRIMARY_BTN}
+                                >
+                                    {spinning("reactivate") ? <Spinner size="sm" tone="current" /> : "Reactivate post"}
                                 </button>
                             </div>
                         ) : null}
