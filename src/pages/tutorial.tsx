@@ -24,9 +24,12 @@ import { INTRO_START, INTRO_TOTAL } from "@/lib/tutorial-intro";
  *
  * THE WELCOME SCREEN comes first (Figma 675:4527) and hands over to the tour in
  * one continuous move rather than a cut — see TutorialWelcome and the carousel's
- * `intro`. Replaying from Manage skips it: "Nice work, Kate. Setup done." is
- * true exactly once, and someone who went looking for the tutorial has already
- * decided to watch it.
+ * `intro`. Replaying skips it: "Nice work. Hello, CourtPlay." is true exactly
+ * once, and someone who went looking for the tutorial has already decided to
+ * watch it.
+ *
+ * A replay returns to the Profile screen, which is where Take the tour is
+ * offered. It used to return to Manage, from when the entry point lived there.
  */
 export function Tutorial() {
     const [searchParams] = useSearchParams();
@@ -57,7 +60,7 @@ export function Tutorial() {
 
     // Resolved once: the destination must not change under them mid-swipe.
     const next = useRef(
-        replay ? "/profile/edit" : (validateRedirect(sessionStorage.getItem("cs_auth_redirect")) ?? "/feed"),
+        replay ? "/profile/me" : (validateRedirect(sessionStorage.getItem("cs_auth_redirect")) ?? "/feed"),
     ).current;
 
     // Already seen it, and not deliberately replaying. This is what makes the
