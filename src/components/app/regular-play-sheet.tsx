@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowCircleRight, XClose } from "@untitledui/icons";
+import { Send01, XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { sendNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
@@ -307,7 +307,7 @@ export function RegularPlaySheet({ post, currentUserId, onClose, onChange, onCan
                             aria-label="Send message"
                             className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-secondary disabled:opacity-40"
                         >
-                            <ArrowCircleRight className="size-6" aria-hidden="true" />
+                            <Send01 className="size-6" aria-hidden="true" />
                         </button>
                     </div>
                 )}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowCircleRight, ArrowLeft, XClose } from "@untitledui/icons";
+import { ArrowLeft, Send01, XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import type { ClaimRow, MyPost } from "@/types/activity";
 import { ThreadMessage } from "./thread-message";
@@ -255,7 +255,7 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
                             aria-label="Send reply"
                             className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-secondary disabled:opacity-40"
                         >
-                            <ArrowCircleRight className="size-6" aria-hidden="true" />
+                            <Send01 className="size-6" aria-hidden="true" />
                         </button>
                     </div>
                     <p className="mt-4 text-xs text-tertiary">

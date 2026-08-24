@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowCircleRight, XClose } from "@untitledui/icons";
+import { Send01, XClose } from "@untitledui/icons";
 import { Avatar } from "@/components/base/avatar/avatar";
 import type { ClaimRow, MyPost } from "@/types/activity";
 import { formatWhen } from "./sub-card";
@@ -312,7 +312,7 @@ export function CreatedDetailSheet({ post, poster, onClose, onApprove, onDecline
                                         aria-label="Send reply"
                                         className="shrink-0 text-tertiary transition duration-100 ease-linear hover:text-secondary disabled:opacity-40"
                                     >
-                                        <ArrowCircleRight className="size-6" aria-hidden="true" />
+                                        <Send01 className="size-6" aria-hidden="true" />
                                     </button>
                                 </div>
                             )}
