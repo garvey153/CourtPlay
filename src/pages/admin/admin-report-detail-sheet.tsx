@@ -88,12 +88,12 @@ export function AdminReportDetailSheet({ report, actioning, onDismiss, onRemoveC
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
+            className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
             role="dialog"
             aria-modal="true"
             aria-labelledby="admin-report-sheet-title"
         >
-            <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[8px]" onClick={onClose} aria-hidden="true" />
 
             <motion.div
                 className="relative flex max-h-[85vh] w-full max-w-md flex-col gap-4 rounded-t-2xl bg-secondary px-5 pt-5 pb-8 shadow-xl sm:rounded-2xl"

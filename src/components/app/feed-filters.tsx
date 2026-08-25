@@ -192,7 +192,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
+                    className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -201,7 +201,7 @@ export function FeedFilters({ filters, onChange, courts, isOpen, onToggle }: Fee
                     aria-modal="true"
                     aria-label="Filter posts"
                 >
-                    <div className="absolute inset-0 bg-black/60" onClick={onToggle} aria-hidden="true" />
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[8px]" onClick={onToggle} aria-hidden="true" />
 
                     <motion.div
                         className={cx(

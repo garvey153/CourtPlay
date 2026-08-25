@@ -75,12 +75,12 @@ export function InstallGuide({ onClose }: { onClose: () => void }) {
         <div
             // Same dim and blur as the app's other bottom sheets, so an overlay
             // over the feed looks the same wherever it comes from.
-            className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
+            className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
             role="dialog"
             aria-modal="true"
             aria-label="Install CourtPlay"
         >
-            <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[8px]" onClick={onClose} aria-hidden="true" />
 
             <motion.div
                 // pb: the design's 32px, plus the home-indicator inset. A `fixed`
