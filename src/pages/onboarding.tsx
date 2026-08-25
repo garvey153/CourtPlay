@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Checkbox as AriaCheckbox, Switch as AriaSwitch, type Selection } from "react-aria-components";
+import { Checkbox as AriaCheckbox, type Selection } from "react-aria-components";
 import { useNavigate } from "react-router";
 import { ArrowLeft, Check } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
@@ -8,7 +8,7 @@ import { SearchField } from "@/components/base/input/search-field";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
 import { SelectItem } from "@/components/base/select/select-item";
-import { Toggle, ToggleBase } from "@/components/base/toggle/toggle";
+import { Toggle } from "@/components/base/toggle/toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { SEEDED_NOTIFICATION_TYPES } from "@/lib/notifications";
@@ -48,7 +48,6 @@ interface FormData {
     photo_url: string;
     court_preferences: Selection;
     pro_preference: string;
-    new_to_westport: boolean;
     phone: string;
     venmo_handle: string;
     push_enabled: boolean;
@@ -107,7 +106,6 @@ export function Onboarding() {
         photo_url: "",
         court_preferences: new Set<string>(),
         pro_preference: "",
-        new_to_westport: false,
         phone: "",
         venmo_handle: "",
         push_enabled: false,
@@ -309,7 +307,6 @@ export function Onboarding() {
                 photo_url: form.photo_url || null,
                 court_preferences: courtPrefs.length > 0 ? courtPrefs : null,
                 pro_preference: form.pro_preference.trim() || null,
-                new_to_westport: form.new_to_westport,
                 phone: encryptedPhone,
                 venmo_handle: encryptedVenmo,
             }).select();
@@ -473,30 +470,6 @@ export function Onboarding() {
                             size="sm"
                             wrapperClassName={FIELD_AUTOFILL}
                         />
-                        {/* Switch on the left; the combined label sits in a flex-1 column so it
-                            wraps within the same left/right margins as the fields above. */}
-                        <AriaSwitch
-                            isSelected={form.new_to_westport}
-                            onChange={(v) => set("new_to_westport", v)}
-                            className="flex w-full items-start gap-2"
-                        >
-                            {({ isSelected, isHovered, isDisabled, isFocusVisible }) => (
-                                <>
-                                    <ToggleBase
-                                        size="sm"
-                                        isSelected={isSelected}
-                                        isHovered={isHovered}
-                                        isDisabled={isDisabled}
-                                        isFocusVisible={isFocusVisible}
-                                        className="mt-0.5"
-                                    />
-                                    <span className="min-w-0 flex-1 text-sm text-secondary select-none">
-                                        <span className="font-medium">New to the area:</span>{" "}
-                                        <span className="text-tertiary">Let players know that you've recently joined the community</span>
-                                    </span>
-                                </>
-                            )}
-                        </AriaSwitch>
                         {/* Checkbox styled to match the feed filter sheet's CheckRow (see feed-filters.tsx). */}
                         <AriaCheckbox
                             isSelected={form.tos_accepted}
@@ -771,14 +744,23 @@ export function Onboarding() {
                 ) : (
                     <button
                         type="button"
-                        className={PRIMARY_BTN}
+                        className={`${PRIMARY_BTN} relative`}
                         disabled={saving}
                         onClick={handleFinish}
                     >
+                        {/* The label stays in the layout and goes invisible, with
+                            the spinner over it — every other button in the app
+                            replaces its text rather than sitting beside it, and
+                            this one is not full width, so removing the label
+                            outright would shrink the button as it worked. */}
+                        <span className={saving ? "invisible" : undefined}>Get started</span>
                         {saving && (
-                            <Spinner size="xs" tone="on-brand" />
+                            <Spinner
+                                size="sm"
+                                tone="on-brand"
+                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                            />
                         )}
-                        Get started
                     </button>
                 )}
             </div>

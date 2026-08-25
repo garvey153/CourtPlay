@@ -1119,14 +1119,20 @@ export function PostNew() {
                         type="button"
                         onClick={handleSubmit}
                         disabled={saving || (postType === "sub_need" ? !validateSubNeed() : !validateRegularGame()) || !dirty}
-                        className={PRIMARY_BTN}
+                        className={`${PRIMARY_BTN} relative`}
                     >
-                        {saving ? (
-                            <Spinner size="sm" tone="on-brand" />
-                        ) : isEditing ? (
-                            "Save changes"
-                        ) : (
-                            "Create post"
+                        {/* Label kept in the layout and hidden, spinner over it:
+                            this button is sized by its text, so dropping the text
+                            would shrink it mid-save. */}
+                        <span className={saving ? "invisible" : undefined}>
+                            {isEditing ? "Save changes" : "Create post"}
+                        </span>
+                        {saving && (
+                            <Spinner
+                                size="sm"
+                                tone="on-brand"
+                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                            />
                         )}
                     </button>
                     <button type="button" onClick={closeForm} className={SECONDARY_BTN}>

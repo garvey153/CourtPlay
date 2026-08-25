@@ -608,8 +608,21 @@ export function EditProfile() {
                         <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_ACTION}>
                             Cancel
                         </button>
-                        <button type="button" onClick={handleSave} disabled={!dirty || saving} className={PRIMARY_ACTION}>
-                            {saving ? <Spinner size="sm" tone="on-brand" /> : "Save changes"}
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={!dirty || saving}
+                            className={`${PRIMARY_ACTION} relative`}
+                        >
+                            {/* See post-new: the label holds the width. */}
+                            <span className={saving ? "invisible" : undefined}>Save changes</span>
+                            {saving && (
+                                <Spinner
+                                    size="sm"
+                                    tone="on-brand"
+                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                                />
+                            )}
                         </button>
                     </div>
                 </div>
