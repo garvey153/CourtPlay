@@ -300,10 +300,20 @@ export function EditProfile() {
         setPhotoError(null);
         setPhotoBusy(true);
         try {
-            // Always .jpg, because toJpeg always produces one. The path used to
-            // come from the uploaded file's name, which is how a HEIC ended up
-            // stored under a name nothing could render.
-            const path = `avatars/${user.id}.jpg`;
+            /**
+             * The user's id is the FOLDER, and that is not cosmetic — the
+             * bucket's policies are
+             *
+             *   auth.uid()::text = (storage.foldername(name))[1]
+             *
+             * and this used to upload to `avatars/<id>.jpg`, whose first folder
+             * is the literal "avatars". The check could never pass, so every
+             * upload the app has ever attempted was denied. It failed silently,
+             * which is why it read as "the photo just doesn't change".
+             *
+             * Always .jpg, because toJpeg always produces one.
+             */
+            const path = `${user.id}/avatar.jpg`;
             const { error: upErr } = await supabase.storage
                 .from("avatars")
                 .upload(path, await toJpeg(file), { upsert: true, contentType: "image/jpeg" });
