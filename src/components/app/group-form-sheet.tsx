@@ -316,7 +316,7 @@ export function GroupFormSheet({ groupId, onClose, onSaved, admin = false, onReq
                                                 type="button"
                                                 disabled={alreadyIn(r.id)}
                                                 onClick={() => add(r)}
-                                                className="flex w-full items-center gap-3 rounded-lg px-1 py-2 text-left transition duration-100 ease-linear enabled:hover:bg-secondary_hover disabled:opacity-50"
+                                                className="flex w-full items-center gap-3 rounded-lg px-1 py-2 text-left transition duration-100 ease-linear enabled:hover:bg-secondary_hover disabled:opacity-50 has-[[data-spinner]]:opacity-100"
                                             >
                                                 <MemberAvatar member={r} />
                                                 <span className="min-w-0 flex-1 truncate text-sm text-secondary">

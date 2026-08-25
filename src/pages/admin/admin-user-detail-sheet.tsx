@@ -206,7 +206,7 @@ export function AdminUserDetailSheet({ user, onClose, onSaved }: AdminUserDetail
                             type="button"
                             onClick={runDelete}
                             disabled={!!busy}
-                            className="flex h-11 w-full items-center justify-center rounded-lg bg-red-600 text-sm font-semibold text-white transition duration-100 ease-linear hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="flex h-11 w-full items-center justify-center rounded-lg bg-red-600 text-sm font-semibold text-white transition duration-100 ease-linear hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 has-[[data-spinner]]:opacity-100"
                         >
                             {busy === "delete" ? <Spinner size="sm" tone="current" /> : "Yes, delete permanently"}
                         </button>

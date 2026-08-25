@@ -97,7 +97,7 @@ export function PushEnableBanner({
                         type="button"
                         onClick={enable}
                         disabled={requesting}
-                        className="text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600 disabled:opacity-50"
+                        className="text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600 disabled:opacity-50 has-[[data-spinner]]:opacity-100"
                     >
                         {requesting ? "Enabling…" : "Enable"}
                     </button>

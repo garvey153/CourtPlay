@@ -173,21 +173,24 @@ export function AdminAnalytics() {
             {/* User funnel */}
             <div className="mt-2 flex flex-col gap-2">
                 <h3 className="text-sm font-semibold text-tertiary">User funnel</h3>
-                <div className="overflow-hidden rounded-lg border border-neutral-600 bg-secondary px-2">
+                {/* No stroke, and no horizontal padding here: the padding is on the
+                    cells instead, so a row's rule runs the full width of the
+                    table rather than stopping short of its ends. */}
+                <div className="overflow-hidden rounded-lg bg-secondary">
                     <table className="w-full text-sm">
                         <thead>
                             <tr>
-                                <th className="px-2 py-3 text-left font-normal text-tertiary">Step</th>
-                                <th className="px-2 py-3 text-right font-normal text-tertiary">Count</th>
-                                <th className="px-2 py-3 text-right font-normal text-tertiary">% of Previous</th>
+                                <th className="px-4 py-3 text-left font-normal text-tertiary">Step</th>
+                                <th className="px-4 py-3 text-right font-normal text-tertiary">Count</th>
+                                <th className="px-4 py-3 text-right font-normal text-tertiary">% of Previous</th>
                             </tr>
                         </thead>
                         <tbody>
                             {funnel.map((step) => (
-                                <tr key={step.label} className="border-t border-neutral-600">
-                                    <td className="px-2 py-3 text-secondary">{step.label}</td>
-                                    <td className="px-2 py-3 text-right text-secondary">{step.count.toLocaleString()}</td>
-                                    <td className="px-2 py-3 text-right text-secondary">
+                                <tr key={step.label} className="border-t border-t-[var(--color-bg-primary)]">
+                                    <td className="px-4 py-3 text-secondary">{step.label}</td>
+                                    <td className="px-4 py-3 text-right text-secondary">{step.count.toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-right text-secondary">
                                         {step.pctOfPrevious !== null ? `${step.pctOfPrevious}%` : "--"}
                                     </td>
                                 </tr>

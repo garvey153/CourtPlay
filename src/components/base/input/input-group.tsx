@@ -119,13 +119,13 @@ export const InputGroup = ({ size = "md", prefix, leadingAddon, trailingAddon, l
                         )}
                     >
                         {leadingAddon && (
-                            <section data-leading={hasLeading || undefined} className="group-disabled:opacity-50">
+                            <section data-leading={hasLeading || undefined} className="group-disabled:opacity-50 has-[[data-spinner]]:opacity-100">
                                 {leadingAddon}
                             </section>
                         )}
 
                         {prefix && (
-                            <span className={cx("my-auto grow group-disabled:opacity-50", paddings[size].leadingText)}>
+                            <span className={cx("my-auto grow group-disabled:opacity-50 has-[[data-spinner]]:opacity-100", paddings[size].leadingText)}>
                                 <p className={cx("text-md text-tertiary", size === "sm" && "text-sm")}>{prefix}</p>
                             </span>
                         )}
@@ -133,7 +133,7 @@ export const InputGroup = ({ size = "md", prefix, leadingAddon, trailingAddon, l
                         {children}
 
                         {trailingAddon && (
-                            <section data-trailing={hasTrailing || undefined} className="group-disabled:opacity-50">
+                            <section data-trailing={hasTrailing || undefined} className="group-disabled:opacity-50 has-[[data-spinner]]:opacity-100">
                                 {trailingAddon}
                             </section>
                         )}

@@ -36,7 +36,7 @@ export function TopNav({ onOpenFilters, filtersActive }: TopNavProps) {
                     type="button"
                     onClick={() => navigate("/post/new")}
                     disabled={postCtaDisabled}
-                    className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition duration-100 ease-linear enabled:hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 has-[[data-spinner]]:opacity-100"
                 >
                     Post
                 </button>

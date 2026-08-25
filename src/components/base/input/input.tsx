@@ -101,7 +101,7 @@ export const InputBase = ({
 
                     // Disabled state styles
                     isDisabled && "cursor-not-allowed opacity-50",
-                    "group-disabled:cursor-not-allowed group-disabled:opacity-50",
+                    "group-disabled:cursor-not-allowed group-disabled:opacity-50 has-[[data-spinner]]:opacity-100",
 
                     // Invalid state styles
                     isInvalid && "ring-error_subtle",
