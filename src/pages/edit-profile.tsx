@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabase";
 import { NOTIFICATION_TYPES } from "@/lib/notifications";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 import { describeActionError } from "@/utils/load-error";
+import { AvatarCropper } from "@/components/app/avatar-cropper";
 import { FIELD, FIELD_SELECT } from "@/components/base/input/field-styles";
 import {
     PRIMARY_MD as PRIMARY_BTN,
@@ -95,53 +96,6 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
             </div>
         </div>
     );
-}
-
-/** How large an avatar ever needs to be, in CSS px of its longest side. */
-const AVATAR_MAX = 512;
-
-/**
- * Whatever the picker handed over, re-encoded as a modest JPEG.
- *
- * iOS hands back HEIC from the photo library, which Supabase will store but no
- * browser will render — and the old code derived the storage path from
- * file.name, so a HEIC (or a file with no extension at all) was uploaded under
- * a path nothing could display. Drawing through a canvas normalises every
- * source to one format, and the decode is the OS's: Safari renders HEIC in an
- * <img>, so this works there without shipping a decoder.
- *
- * It also caps the size. A photo library image is several megabytes and is
- * about to be shown at 72px.
- */
-async function toJpeg(file: File): Promise<Blob> {
-    const url = URL.createObjectURL(file);
-    try {
-        const img = new Image();
-        img.decoding = "async";
-        await new Promise<void>((resolve, reject) => {
-            img.onload = () => resolve();
-            img.onerror = () => reject(new Error("That image could not be read."));
-            img.src = url;
-        });
-
-        const scale = Math.min(1, AVATAR_MAX / Math.max(img.naturalWidth, img.naturalHeight));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(img.naturalWidth * scale);
-        canvas.height = Math.round(img.naturalHeight * scale);
-        const ctx = canvas.getContext("2d");
-        if (!ctx) throw new Error("That image could not be read.");
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        return await new Promise<Blob>((resolve, reject) =>
-            canvas.toBlob(
-                (blob) => (blob ? resolve(blob) : reject(new Error("That image could not be read."))),
-                "image/jpeg",
-                0.9,
-            ),
-        );
-    } finally {
-        URL.revokeObjectURL(url);
-    }
 }
 
 export function EditProfile() {
@@ -287,14 +241,24 @@ export function EditProfile() {
     }, [dirty, navigate]);
 
     const [photoBusy, setPhotoBusy] = useState(false);
+    /** The picked file, while it is being positioned. */
+    const [cropping, setCropping] = useState<File | null>(null);
     const [photoError, setPhotoError] = useState<string | null>(null);
 
-    const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         // Clear the input so picking the SAME photo again still fires a change
         // event — otherwise a failure could not be retried without choosing
         // something else first.
         e.target.value = "";
+        if (!file) return;
+        setPhotoError(null);
+        setCropping(file);
+    };
+
+    /** The cropper hands back a square JPEG; this is what stores it. */
+    const uploadAvatar = async (blob: Blob) => {
+        const file = blob;
         if (!file || !user) return;
 
         setPhotoError(null);
@@ -311,18 +275,19 @@ export function EditProfile() {
              * upload the app has ever attempted was denied. It failed silently,
              * which is why it read as "the photo just doesn't change".
              *
-             * Always .jpg, because toJpeg always produces one.
+             * Always .jpg, because the cropper always exports one.
              */
             const path = `${user.id}/avatar.jpg`;
             const { error: upErr } = await supabase.storage
                 .from("avatars")
-                .upload(path, await toJpeg(file), { upsert: true, contentType: "image/jpeg" });
+                .upload(path, file, { upsert: true, contentType: "image/jpeg" });
             if (upErr) throw upErr;
 
             const { data } = supabase.storage.from("avatars").getPublicUrl(path);
             // Cache-bust on the clock, not the file size: two different photos
             // can share a size, and re-picking one would show the cached image.
             set("photo_url", `${data.publicUrl}?t=${Date.now()}`);
+            setCropping(null);
         } catch (err) {
             console.error("avatar upload failed:", err);
             setPhotoError(describeActionError(err, "update your photo"));
@@ -727,6 +692,16 @@ export function EditProfile() {
             )}
                 </div>
             </div>
+
+            {/* Positioning the photo, before anything is stored. */}
+            {cropping && (
+                <AvatarCropper
+                    file={cropping}
+                    busy={photoBusy}
+                    onCancel={() => setCropping(null)}
+                    onConfirm={uploadAvatar}
+                />
+            )}
 
             {/* Discard-changes confirmation — the bottom sheet the delete confirms
                 use (admin-group-delete-sheet.tsx, created-detail-sheet.tsx):
