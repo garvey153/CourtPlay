@@ -187,7 +187,7 @@ export function AdminAnalytics() {
                         </thead>
                         <tbody>
                             {funnel.map((step) => (
-                                <tr key={step.label} className="border-t border-t-[var(--color-bg-primary)]">
+                                <tr key={step.label} className="border-t-2 border-t-[var(--color-bg-primary)]">
                                     <td className="px-4 py-3 text-secondary">{step.label}</td>
                                     <td className="px-4 py-3 text-right text-secondary">{step.count.toLocaleString()}</td>
                                     <td className="px-4 py-3 text-right text-secondary">
