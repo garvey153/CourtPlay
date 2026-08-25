@@ -53,6 +53,23 @@ export function AuthScreen() {
     const [loading, setLoading] = useState(false);
     const [verificationSent, setVerificationSent] = useState(false);
 
+    /**
+     * No rubber-band on this screen.
+     *
+     * It is a centred column that fits, so there is nothing to scroll — but the
+     * document still bounces under a drag, which reads as a web page rather than
+     * an app. overscroll-behavior rather than overflow:hidden, so a short phone
+     * or an open keyboard can still scroll to reach the fields.
+     */
+    useEffect(() => {
+        const html = document.documentElement;
+        const previous = html.style.overscrollBehavior;
+        html.style.overscrollBehavior = "none";
+        return () => {
+            html.style.overscrollBehavior = previous;
+        };
+    }, []);
+
     // Persist a validated redirect target for after the auth flow completes.
     useEffect(() => {
         const redirect = validateRedirect(searchParams.get("redirect"));
