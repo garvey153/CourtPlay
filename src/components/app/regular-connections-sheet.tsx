@@ -375,12 +375,21 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[8px] sm:items-center"
+            className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
             role="dialog"
             aria-modal="true"
             aria-labelledby="regular-sheet-title"
         >
-            <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
+            {/* The blur lives on the backdrop, not on the container that holds the
+                sheet. iOS puts the caret in the wrong place when a text field has a
+                backdrop-filter ancestor — it drew below the disclaimer while the
+                field kept its placeholder. Same look: this layer is what sits over
+                the page. */}
+            <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-[8px]"
+                onClick={onClose}
+                aria-hidden="true"
+            />
 
             <motion.div
                 className="relative flex max-h-[calc(100dvh-61px)] w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-secondary shadow-xl sm:rounded-2xl"

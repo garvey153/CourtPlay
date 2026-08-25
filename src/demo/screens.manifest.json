@@ -6,7 +6,7 @@
             "image": "tutorial/01-feed.jpg"
         },
         "claim": {
-            "hash": "9dc33cbc4154ca65",
+            "hash": "de294b816cf70d3e",
             "image": "tutorial/02-claim.jpg"
         },
         "post": {
@@ -14,7 +14,7 @@
             "image": "tutorial/03-post.jpg"
         },
         "approve": {
-            "hash": "5aaa3bf856f3db14",
+            "hash": "5e3318776ffea9e1",
             "image": "tutorial/04-approve.jpg"
         },
         "activity": {
