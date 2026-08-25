@@ -33,11 +33,22 @@ describe("InstallGuide", () => {
         expect(document.body.contains(dialog)).toBe(true);
     });
 
-    it("dims and blurs like the bottom sheets", () => {
+    /**
+     * Dim and blur belong to the BACKDROP, not the dialog element.
+     *
+     * On the dialog they are an ancestor of everything inside it, and iOS puts
+     * the caret in the wrong place when a text field has a backdrop-filter
+     * ancestor. This guide has no field, but it shares the shape with the sheets
+     * that do, and pinning it here is what keeps the shape one thing.
+     */
+    it("dims and blurs on the backdrop, not the dialog", () => {
         inTransformedParent();
         const dialog = screen.getByRole("dialog", { name: "Install CourtPlay" });
-        expect(dialog.className).toContain("backdrop-blur-[8px]");
-        expect(dialog.querySelector(".bg-black\\/60")).not.toBeNull();
+        expect(dialog.className).not.toContain("backdrop-blur-[8px]");
+
+        const backdrop = dialog.querySelector(".bg-black\\/60");
+        expect(backdrop).not.toBeNull();
+        expect(backdrop!.className).toContain("backdrop-blur-[8px]");
     });
 
     it("names the overflow menu, not just the Share icon", () => {
