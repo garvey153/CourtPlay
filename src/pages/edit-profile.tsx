@@ -97,6 +97,53 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
     );
 }
 
+/** How large an avatar ever needs to be, in CSS px of its longest side. */
+const AVATAR_MAX = 512;
+
+/**
+ * Whatever the picker handed over, re-encoded as a modest JPEG.
+ *
+ * iOS hands back HEIC from the photo library, which Supabase will store but no
+ * browser will render — and the old code derived the storage path from
+ * file.name, so a HEIC (or a file with no extension at all) was uploaded under
+ * a path nothing could display. Drawing through a canvas normalises every
+ * source to one format, and the decode is the OS's: Safari renders HEIC in an
+ * <img>, so this works there without shipping a decoder.
+ *
+ * It also caps the size. A photo library image is several megabytes and is
+ * about to be shown at 72px.
+ */
+async function toJpeg(file: File): Promise<Blob> {
+    const url = URL.createObjectURL(file);
+    try {
+        const img = new Image();
+        img.decoding = "async";
+        await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error("That image could not be read."));
+            img.src = url;
+        });
+
+        const scale = Math.min(1, AVATAR_MAX / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.naturalWidth * scale);
+        canvas.height = Math.round(img.naturalHeight * scale);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("That image could not be read.");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        return await new Promise<Blob>((resolve, reject) =>
+            canvas.toBlob(
+                (blob) => (blob ? resolve(blob) : reject(new Error("That image could not be read."))),
+                "image/jpeg",
+                0.9,
+            ),
+        );
+    } finally {
+        URL.revokeObjectURL(url);
+    }
+}
+
 export function EditProfile() {
     const { user } = useAuth();
     const { profile, refreshProfile } = useProfile();
@@ -239,16 +286,38 @@ export function EditProfile() {
         else navigate(to);
     }, [dirty, navigate]);
 
+    const [photoBusy, setPhotoBusy] = useState(false);
+    const [photoError, setPhotoError] = useState<string | null>(null);
+
     const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+        // Clear the input so picking the SAME photo again still fires a change
+        // event — otherwise a failure could not be retried without choosing
+        // something else first.
+        e.target.value = "";
         if (!file || !user) return;
-        const ext = file.name.split(".").pop();
-        const path = `avatars/${user.id}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-        if (!upErr) {
+
+        setPhotoError(null);
+        setPhotoBusy(true);
+        try {
+            // Always .jpg, because toJpeg always produces one. The path used to
+            // come from the uploaded file's name, which is how a HEIC ended up
+            // stored under a name nothing could render.
+            const path = `avatars/${user.id}.jpg`;
+            const { error: upErr } = await supabase.storage
+                .from("avatars")
+                .upload(path, await toJpeg(file), { upsert: true, contentType: "image/jpeg" });
+            if (upErr) throw upErr;
+
             const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-            // Cache-bust so the new image shows immediately (same path, upsert).
-            set("photo_url", `${data.publicUrl}?t=${file.size}`);
+            // Cache-bust on the clock, not the file size: two different photos
+            // can share a size, and re-picking one would show the cached image.
+            set("photo_url", `${data.publicUrl}?t=${Date.now()}`);
+        } catch (err) {
+            console.error("avatar upload failed:", err);
+            setPhotoError(describeActionError(err, "update your photo"));
+        } finally {
+            setPhotoBusy(false);
         }
     };
 
@@ -426,10 +495,21 @@ export function EditProfile() {
                         </div>
                         <div className="min-w-0">
                             <p className="text-md font-semibold text-primary">Profile photo</p>
-                            <label className="mt-0.5 inline-block cursor-pointer text-sm font-medium text-brand-500 hover:text-brand-600">
-                                Change photo
-                                <input type="file" accept="image/*" className="sr-only" onChange={handlePhotoChange} />
+                            <label
+                                className={`mt-0.5 inline-block text-sm font-medium text-brand-500 hover:text-brand-600 ${
+                                    photoBusy ? "pointer-events-none opacity-50" : "cursor-pointer"
+                                }`}
+                            >
+                                {photoBusy ? "Uploading…" : "Change photo"}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="sr-only"
+                                    disabled={photoBusy}
+                                    onChange={handlePhotoChange}
+                                />
                             </label>
+                            {photoError && <p className="mt-1 text-sm text-error-primary">{photoError}</p>}
                         </div>
                     </div>
 
