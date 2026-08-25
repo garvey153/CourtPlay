@@ -181,7 +181,7 @@ export function TimeFieldSelect({ value, onChange, isDisabled, className, placeh
                 aria-expanded={open}
                 disabled={isDisabled}
                 onClick={() => !isDisabled && setOpen((o) => !o)}
-                className="flex h-9 w-full cursor-pointer items-center rounded-lg bg-tertiary px-3 text-sm text-primary shadow-xs outline-hidden ring-1 ring-neutral-600 transition duration-100 ease-linear ring-inset disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-9 w-full cursor-pointer items-center rounded-lg bg-tertiary px-3 text-sm text-primary shadow-xs outline-hidden ring-1 ring-neutral-600 transition duration-100 ease-linear ring-inset disabled:cursor-not-allowed disabled:opacity-50 has-[[data-spinner]]:opacity-100"
             >
                 <span className={cx("truncate", !value && "text-placeholder")}>{value ? label(value) : placeholder}</span>
             </button>

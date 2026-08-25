@@ -103,7 +103,7 @@ export const InputDateBase = ({
 
                     // Disabled state styles
                     isDisabled && "cursor-not-allowed opacity-50 in-data-input-wrapper:opacity-100",
-                    "group-disabled:cursor-not-allowed group-disabled:opacity-50 in-data-input-wrapper:group-disabled:opacity-100",
+                    "group-disabled:cursor-not-allowed group-disabled:opacity-50 has-[[data-spinner]]:opacity-100 in-data-input-wrapper:group-disabled:opacity-100",
 
                     // Invalid state styles
                     isInvalid && "ring-error_subtle",

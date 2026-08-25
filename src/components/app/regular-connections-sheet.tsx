@@ -246,7 +246,7 @@ export function RegularConnectionsSheet({ post, poster, onClose, onEdit, onDelet
                             }}
                             disabled={sending}
                             placeholder={`Reply to ${selected.first_name}…`}
-                            className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-placeholder disabled:opacity-50"
+                            className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-placeholder disabled:opacity-50 has-[[data-spinner]]:opacity-100"
                         />
                         <button
                             type="button"
