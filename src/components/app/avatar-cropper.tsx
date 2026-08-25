@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { XClose } from "@untitledui/icons";
 import { PRIMARY_SM_FULL as PRIMARY_BTN, SECONDARY_SM_FULL as SECONDARY_BTN } from "@/components/base/buttons/button-styles";
 import { Spinner } from "@/components/application/loading-indicator/spinner";
 import {
@@ -12,7 +13,7 @@ import {
 } from "@/lib/avatar-crop";
 
 /** The square the photo is framed in, in CSS px. */
-const VIEWPORT = 260;
+const VIEWPORT = 300;
 
 /**
  * Place a photo inside the avatar circle: drag to move, pinch or slide to zoom.
@@ -127,75 +128,120 @@ export function AvatarCropper({
 
     const shown = natural ? displayedSize(natural, VIEWPORT, zoom) : null;
 
-    return (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label="Position your photo">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-[8px]" onClick={busy ? undefined : onCancel} aria-hidden="true" />
+    // The filled part of the track, as the design draws it.
+    const progress = ((zoom - 1) / (MAX_ZOOM - 1)) * 100;
 
-            <div className="relative flex w-full max-w-md flex-col gap-4 rounded-t-2xl bg-secondary px-5 pt-5 pb-[calc(2rem_+_var(--safe-bottom))] shadow-xl sm:rounded-2xl">
-                <div className="flex flex-col gap-1">
-                    <h2 className="text-md font-semibold text-primary">Position your photo</h2>
-                    <p className="text-sm text-secondary">Drag to move, pinch or use the slider to zoom.</p>
+    return (
+        <div
+            className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="avatar-cropper-title"
+        >
+            <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-[8px]"
+                onClick={busy ? undefined : onCancel}
+                aria-hidden="true"
+            />
+
+            <div className="relative flex w-full max-w-md flex-col rounded-t-2xl bg-secondary shadow-xl sm:rounded-2xl">
+                <div className="flex flex-col gap-0.5 px-5 pt-[18px]">
+                    <h2 id="avatar-cropper-title" className="pr-9 text-md font-semibold text-primary">
+                        Position your photo
+                    </h2>
+                    <p className="text-xs text-secondary">Drag to move, pinch or use the slider to zoom.</p>
                 </div>
 
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    disabled={busy}
+                    aria-label="Close"
+                    className="absolute top-3 right-3 flex size-9 items-center justify-center rounded-lg p-2 text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                >
+                    <XClose className="size-5" strokeWidth={1} />
+                </button>
+
                 {error ? (
-                    <p className="text-sm text-error-primary">{error}</p>
+                    <p className="px-5 pt-[27px] text-sm text-error-primary">{error}</p>
                 ) : (
                     <>
-                        <div
-                            className="relative mx-auto touch-none overflow-hidden rounded-lg bg-primary select-none"
-                            style={{ width: VIEWPORT, height: VIEWPORT }}
-                            onPointerDown={onPointerDown}
-                            onPointerMove={onPointerMove}
-                            onPointerUp={endPointer}
-                            onPointerCancel={endPointer}
-                        >
-                            {image && shown ? (
-                                <img
-                                    src={image.src}
-                                    alt=""
-                                    draggable={false}
-                                    className="pointer-events-none absolute max-w-none"
-                                    style={{
-                                        width: shown.width,
-                                        height: shown.height,
-                                        left: VIEWPORT / 2 + offset.x - shown.width / 2,
-                                        top: VIEWPORT / 2 + offset.y - shown.height / 2,
-                                    }}
-                                />
-                            ) : (
-                                <div className="flex size-full items-center justify-center">
-                                    <Spinner size="md" />
-                                </div>
-                            )}
-
-                            {/* The circle, as a hole rather than a border: everything
-                                outside it is what gets cut, and you should be able to
-                                see it while deciding. */}
+                        <div className="flex justify-center pt-[27px]">
                             <div
-                                aria-hidden="true"
-                                className="pointer-events-none absolute inset-0 rounded-lg"
-                                style={{ boxShadow: `0 0 0 9999px rgba(0,0,0,0.55) inset`, clipPath: "circle(50%)" }}
-                            />
-                            <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/40 ring-inset" />
+                                className="relative touch-none overflow-hidden rounded-lg bg-primary select-none"
+                                style={{ width: VIEWPORT, height: VIEWPORT }}
+                                onPointerDown={onPointerDown}
+                                onPointerMove={onPointerMove}
+                                onPointerUp={endPointer}
+                                onPointerCancel={endPointer}
+                            >
+                                {image && shown ? (
+                                    <img
+                                        src={image.src}
+                                        alt=""
+                                        draggable={false}
+                                        className="pointer-events-none absolute max-w-none"
+                                        style={{
+                                            width: shown.width,
+                                            height: shown.height,
+                                            left: VIEWPORT / 2 + offset.x - shown.width / 2,
+                                            top: VIEWPORT / 2 + offset.y - shown.height / 2,
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="flex size-full items-center justify-center">
+                                        <Spinner size="md" />
+                                    </div>
+                                )}
+
+                                {/* The circle as a hole rather than a border: what falls
+                                    outside it is what gets cut, and you should be able to
+                                    see it while deciding where to put the photo. */}
+                                {/* The dim belongs OUTSIDE the circle. An outward
+                                    box-shadow spread from a transparent circle does
+                                    that; the parent's overflow-hidden trims it. An
+                                    inset shadow clipped TO the circle — which is what
+                                    this was — darkens the wrong half, hiding the part
+                                    you are trying to place. */}
+                                <div
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/40 ring-inset"
+                                    style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)" }}
+                                />
+                            </div>
                         </div>
 
-                        <label className="flex items-center gap-3">
-                            <span className="text-sm text-secondary">Zoom</span>
+                        {/* Track and handle drawn to the design (689:4805): an 8px
+                            rounded track that fills brand up to the handle, and a 24px
+                            white handle ringed in brand. The fill is a gradient on the
+                            input itself, which is the only way to colour one side of a
+                            native range and keep the input's own keyboard behaviour. */}
+                        <div className="flex w-full items-center px-5 pt-4">
                             <input
                                 type="range"
+                                aria-label="Zoom"
                                 min={1}
                                 max={MAX_ZOOM}
                                 step={0.01}
                                 value={zoom}
                                 disabled={!image}
                                 onChange={(e) => apply(Number(e.target.value), offset)}
-                                className="h-1 flex-1 accent-brand-500"
+                                style={{
+                                    // The design's own values, not the app tokens of the
+                                    // same names: bg/brand is #1AB363 (brand-500) where
+                                    // --color-bg-brand-solid is brand-600, and the track
+                                    // is drawn light where this theme's bg-quaternary is
+                                    // a dark grey. Matching the drawing, as with the
+                                    // claim error's red.
+                                    background: `linear-gradient(to right, #1ab363 ${progress}%, #e5e5e5 ${progress}%)`,
+                                }}
+                                className="h-2 w-full cursor-pointer appearance-none rounded-full disabled:cursor-not-allowed disabled:opacity-50 [&::-moz-range-thumb]:size-6 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-brand-500 [&::-moz-range-thumb]:bg-white [&::-webkit-slider-thumb]:size-6 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-brand-500 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md"
                             />
-                        </label>
+                        </div>
                     </>
                 )}
 
-                <div className="flex flex-col gap-3">
+                <div className="flex w-full flex-col gap-3 px-5 pt-4 pb-[calc(2rem_+_var(--safe-bottom))]">
                     <button
                         type="button"
                         onClick={handleConfirm}
