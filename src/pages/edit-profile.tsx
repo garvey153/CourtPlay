@@ -354,7 +354,7 @@ export function EditProfile() {
                 aria-modal="true"
                 aria-labelledby="edit-profile-title"
             >
-                <div className="flex w-full max-w-lg flex-col overflow-hidden bg-secondary pt-[env(safe-area-inset-top)] shadow-xl">
+                <div className="relative flex w-full max-w-lg flex-col overflow-hidden bg-secondary pt-[env(safe-area-inset-top)] shadow-xl">
                     <div className="relative shrink-0 px-5 pt-[18px] pb-6">
                         <h1 id="edit-profile-title" className="pr-9 text-lg font-semibold text-primary">
                             Manage
@@ -371,7 +371,14 @@ export function EditProfile() {
                     </div>
 
             {loading ? (
-                <LoadingState variant="fill" label="Loading your profile" />
+                /* Over the whole panel, not in the space under the header.
+                   `min-h-full` resolves against the panel's height but starts
+                   below the header, so the box overflowed and its centre came to
+                   rest low. Covering the panel centres it on the screen, which is
+                   what the header being there should not change. */
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <LoadingState variant="fill" label="Loading your profile" />
+                </div>
             ) : (
                 <>
                 <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pb-6">
