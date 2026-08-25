@@ -504,7 +504,7 @@ export function Activity() {
             <div className="flex h-full flex-col">
                 {/* Pill tabs — fixed above the scrolling posts region.
                     pt-0.5 puts 24px between the logo baseline and the pill top. */}
-                <div className="flex shrink-0 gap-2 bg-primary px-5 pt-0.5 pb-2">
+                <div className="flex shrink-0 gap-2 bg-primary px-5 pt-0.5 pb-3">
                     {(
                         [
                             { id: "claims", label: "Answered posts" },
