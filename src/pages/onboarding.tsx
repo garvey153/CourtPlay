@@ -9,6 +9,8 @@ import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
 import { SelectItem } from "@/components/base/select/select-item";
 import { Toggle } from "@/components/base/toggle/toggle";
+import { AvatarCropper } from "@/components/app/avatar-cropper";
+import { useAvatarUpload } from "@/hooks/use-avatar-upload";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { SEEDED_NOTIFICATION_TYPES } from "@/lib/notifications";
@@ -147,18 +149,18 @@ export function Onboarding() {
     }, []);
 
 
-    const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !user) return;
-        set("photo_file", file);
-        const ext = file.name.split(".").pop();
-        const path = `avatars/${user.id}.${ext}`;
-        const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-        if (!error) {
-            const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-            set("photo_url", data.publicUrl);
-        }
-    };
+    const {
+        cropping,
+        busy: photoBusy,
+        error: photoError,
+        pick: handlePhotoChange,
+        upload: uploadAvatar,
+        cancel: cancelCrop,
+    } = useAvatarUpload(user?.id, (url, blob) => {
+        set("photo_url", url);
+        // The cropped square, not what came out of the picker.
+        set("photo_file", new File([blob], "avatar.jpg", { type: "image/jpeg" }));
+    });
 
     // Close search dropdown on outside click
     useEffect(() => {
@@ -376,10 +378,21 @@ export function Onboarding() {
                             </div>
                             <div>
                                 <h1 className="text-xl font-semibold text-primary">Create your profile</h1>
-<label className="mt-1.5 inline-block cursor-pointer text-sm font-semibold text-brand-secondary hover:text-brand-secondary_hover">
-                                    {form.photo_url ? "Change photo" : "Upload photo"}
-                                    <input type="file" accept="image/*" className="sr-only" onChange={handlePhotoChange} />
+<label
+                                    className={`mt-1.5 inline-block text-sm font-semibold text-brand-secondary hover:text-brand-secondary_hover ${
+                                        photoBusy ? "pointer-events-none opacity-50" : "cursor-pointer"
+                                    }`}
+                                >
+                                    {photoBusy ? "Uploading…" : form.photo_url ? "Change photo" : "Upload photo"}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="sr-only"
+                                        disabled={photoBusy}
+                                        onChange={handlePhotoChange}
+                                    />
                                 </label>
+                                {photoError && <p className="mt-1 text-sm text-error-primary">{photoError}</p>}
                             </div>
                         </div>
                         <Input
@@ -764,6 +777,11 @@ export function Onboarding() {
                     </button>
                 )}
             </div>
+
+            {/* Positioning the photo, before anything is stored. */}
+            {cropping && (
+                <AvatarCropper file={cropping} busy={photoBusy} onCancel={cancelCrop} onConfirm={uploadAvatar} />
+            )}
         </div>
     );
 }

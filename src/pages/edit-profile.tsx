@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import type { Selection } from "react-aria-components";
 import { useNavigate } from "react-router";
 import { AvatarCropper } from "@/components/app/avatar-cropper";
+import { useAvatarUpload } from "@/hooks/use-avatar-upload";
 import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
 import {
     PRIMARY_SM as PRIMARY_ACTION,
@@ -225,59 +226,14 @@ export function EditProfile() {
         else navigate("/profile/me");
     }, [dirty, navigate]);
 
-    const [photoBusy, setPhotoBusy] = useState(false);
-    /** The picked file, while it is being positioned. */
-    const [cropping, setCropping] = useState<File | null>(null);
-    const [photoError, setPhotoError] = useState<string | null>(null);
-
-    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        // Clear the input so picking the SAME photo again still fires a change
-        // event — otherwise a failure could not be retried without choosing
-        // something else first.
-        e.target.value = "";
-        if (!file) return;
-        setPhotoError(null);
-        setCropping(file);
-    };
-
-    /** The cropper hands back a square JPEG; this is what stores it. */
-    const uploadAvatar = async (blob: Blob) => {
-        const file = blob;
-        if (!file || !user) return;
-
-        setPhotoError(null);
-        setPhotoBusy(true);
-        try {
-            /**
-             * The user's id is the FOLDER, and that is not cosmetic — the
-             * bucket's policies are
-             *
-             *   auth.uid()::text = (storage.foldername(name))[1]
-             *
-             * and this used to upload to `avatars/<id>.jpg`, whose first folder
-             * is the literal "avatars". The check could never pass, so every
-             * upload the app has ever attempted was denied. It failed silently,
-             * which is why it read as "the photo just doesn't change".
-             *
-             * Always .jpg, because the cropper always exports one.
-             */
-            const path = `${user.id}/avatar.jpg`;
-            const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: "image/jpeg" });
-            if (upErr) throw upErr;
-
-            const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-            // Cache-bust on the clock, not the file size: two different photos
-            // can share a size, and re-picking one would show the cached image.
-            set("photo_url", `${data.publicUrl}?t=${Date.now()}`);
-            setCropping(null);
-        } catch (err) {
-            console.error("avatar upload failed:", err);
-            setPhotoError(describeActionError(err, "update your photo"));
-        } finally {
-            setPhotoBusy(false);
-        }
-    };
+    const {
+        cropping,
+        busy: photoBusy,
+        error: photoError,
+        pick: handlePhotoChange,
+        upload: uploadAvatar,
+        cancel: cancelCrop,
+    } = useAvatarUpload(user?.id, (url) => set("photo_url", url));
 
     const toggleUseLocation = (v: boolean) => {
         setUseLocation(v);
@@ -642,7 +598,7 @@ export function EditProfile() {
             </div>
 
             {/* Positioning the photo, before anything is stored. */}
-            {cropping && <AvatarCropper file={cropping} busy={photoBusy} onCancel={() => setCropping(null)} onConfirm={uploadAvatar} />}
+            {cropping && <AvatarCropper file={cropping} busy={photoBusy} onCancel={cancelCrop} onConfirm={uploadAvatar} />}
 
             {/* Discard-changes confirmation — the bottom sheet the delete confirms
                 use (admin-group-delete-sheet.tsx, created-detail-sheet.tsx):
