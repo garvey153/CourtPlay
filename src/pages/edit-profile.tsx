@@ -411,8 +411,8 @@ export function EditProfile() {
                     uses (px-5 pt-0.5 pb-3). Held above the scroller rather than
                     inside it: they are how you move between panes, so scrolling a
                     long pane should not take them away. The pb-3 is the whole
-                    band's own clearance; the pane adds 4px of its own on top,
-                    which is why the gap to the avatar reads 16. */}
+                    band's own clearance; the pane adds 12px of its own on top,
+                    which is why the gap to the avatar reads 24. */}
                             <div className="flex shrink-0 gap-2 bg-secondary px-5 pt-0.5 pb-3">
                                 {(
                                     [
@@ -436,7 +436,7 @@ export function EditProfile() {
                                 ))}
                             </div>
 
-                            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pt-1 pb-6">
+                            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pt-3 pb-6">
                                 {tab === "profile" ? (
                                     <>
                                         {/* Avatar + change photo. Profile tab only — it is a field of
