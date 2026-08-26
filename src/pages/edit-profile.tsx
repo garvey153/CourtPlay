@@ -408,12 +408,12 @@ export function EditProfile() {
                     ) : (
                         <>
                             {/* Pill tabs, the same shape AND the same band spacing Activity
-                    uses, but pb-4 rather than pb-3. Held above the scroller rather than
+                    uses (px-5 pt-0.5 pb-3). Held above the scroller rather than
                     inside it: they are how you move between panes, so scrolling a
                     long pane should not take them away. The pb-3 is the whole
-                    clearance — the scroller below adds none of its own, so this
-                    padding IS the gap to the avatar. */}
-                            <div className="flex shrink-0 gap-2 bg-secondary px-5 pt-0.5 pb-4">
+                    band's own clearance; the pane adds 4px of its own on top,
+                    which is why the gap to the avatar reads 16. */}
+                            <div className="flex shrink-0 gap-2 bg-secondary px-5 pt-0.5 pb-3">
                                 {(
                                     [
                                         { id: "profile", label: "Profile" },
@@ -436,7 +436,7 @@ export function EditProfile() {
                                 ))}
                             </div>
 
-                            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pb-6">
+                            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pt-1 pb-6">
                                 {tab === "profile" ? (
                                     <>
                                         {/* Avatar + change photo. Profile tab only — it is a field of
