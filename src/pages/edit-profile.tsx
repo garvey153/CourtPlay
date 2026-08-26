@@ -214,21 +214,15 @@ export function EditProfile() {
     // Where "Yes, discard" goes. Cancel returns to the profile; the tutorial
     // link sets its own destination first. Without this, a link out of this
     // screen would bypass the guard and silently drop unsaved edits.
-    const [pendingNav, setPendingNav] = useState<string | null>(null);
-    const leave = useCallback(() => navigate(pendingNav ?? "/profile/me"), [navigate, pendingNav]);
+    // The discard guard always lands back on the profile now. It used to be
+    // able to land elsewhere, for Replay the tutorial, which has moved to the
+    // profile footer — so there is no longer a second destination to hold.
+    const leave = useCallback(() => navigate("/profile/me"), [navigate]);
     const backToProfile = leave;
 
     const handleCancel = useCallback(() => {
-        setPendingNav(null);
         if (dirty) setShowDiscard(true);
         else navigate("/profile/me");
-    }, [dirty, navigate]);
-
-    const handleReplayTutorial = useCallback(() => {
-        const to = "/tutorial?replay=1";
-        setPendingNav(to);
-        if (dirty) setShowDiscard(true);
-        else navigate(to);
     }, [dirty, navigate]);
 
     const [photoBusy, setPhotoBusy] = useState(false);
@@ -551,18 +545,6 @@ export function EditProfile() {
                                             />
                                         </section>
 
-                                        {/* A way back to the tutorial, since it otherwise shows once and
-                        is gone. Routed through the discard guard above. */}
-                                        <section className="flex flex-col gap-2">
-                                            <h2 className="text-md font-semibold text-primary">Help</h2>
-                                            <button
-                                                type="button"
-                                                onClick={handleReplayTutorial}
-                                                className="self-start text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
-                                            >
-                                                Replay the tutorial
-                                            </button>
-                                        </section>
                                     </>
                                 ) : tab === "feed" ? (
                                     <>
