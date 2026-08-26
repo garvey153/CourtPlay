@@ -189,20 +189,27 @@ describe("edit profile — notification preferences", () => {
         expect(cancel.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
-    it("the tabs and avatar scroll; only the header and action bar are fixed", async () => {
+    /**
+     * The tabs hold position; the pane under them scrolls.
+     *
+     * They used to scroll away with the content, which meant a long pane took
+     * away the only way to leave it. Pinned on containment rather than on
+     * classes, so it survives the band being restyled.
+     */
+    it("keeps the tabs above the scroller, with the pane inside it", async () => {
         renderPage();
         const tab = await screen.findByRole("button", { name: "Notifications" });
-        const scroller = tab.closest(".overflow-y-auto") as HTMLElement;
-
-        // Tabs live inside the scrolling body...
-        expect(scroller).not.toBeNull();
-        // ...above the Profile pane's Change photo control, which scrolls with them.
         const photo = screen.getByText("Change photo");
-        expect(scroller.contains(photo)).toBe(true);
-        expect(tab.compareDocumentPosition(photo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        const scroller = photo.closest(".overflow-y-auto") as HTMLElement;
 
-        // The header stays outside it.
+        expect(scroller).not.toBeNull();
+        // The pane scrolls...
+        expect(scroller.contains(photo)).toBe(true);
+        // ...the tabs and the header do not.
+        expect(scroller.contains(tab)).toBe(false);
         expect(scroller.contains(screen.getByRole("heading", { name: "Manage" }))).toBe(false);
+        // Still above the pane in reading order.
+        expect(tab.compareDocumentPosition(photo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     it("the tabs show on every pane; the avatar does not", async () => {

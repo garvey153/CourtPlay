@@ -1,30 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { XClose } from "@untitledui/icons";
+import { motion } from "motion/react";
 import type { Selection } from "react-aria-components";
 import { useNavigate } from "react-router";
-import { XClose } from "@untitledui/icons";
+import { AvatarCropper } from "@/components/app/avatar-cropper";
+import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
+import {
+    PRIMARY_SM as PRIMARY_ACTION,
+    PRIMARY_MD as PRIMARY_BTN,
+    SECONDARY_SM as SECONDARY_ACTION,
+    SECONDARY_MD as SECONDARY_BTN,
+} from "@/components/base/buttons/button-styles";
 import { CheckRow } from "@/components/base/checkbox/check-row";
+import { FIELD, FIELD_SELECT } from "@/components/base/input/field-styles";
 import { Input } from "@/components/base/input/input";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Select } from "@/components/base/select/select";
 import { SelectItem } from "@/components/base/select/select-item";
 import { Toggle } from "@/components/base/toggle/toggle";
-import { motion } from "motion/react";
 import { AppLayout } from "@/components/layout/app-layout";
-import { cx } from "@/utils/cx";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
-import { supabase } from "@/lib/supabase";
 import { NOTIFICATION_TYPES } from "@/lib/notifications";
-import { LoadingState, Spinner } from "@/components/application/loading-indicator/spinner";
+import { supabase } from "@/lib/supabase";
+import { cx } from "@/utils/cx";
 import { describeActionError } from "@/utils/load-error";
-import { AvatarCropper } from "@/components/app/avatar-cropper";
-import { FIELD, FIELD_SELECT } from "@/components/base/input/field-styles";
-import {
-    PRIMARY_MD as PRIMARY_BTN,
-    SECONDARY_MD as SECONDARY_BTN,
-    PRIMARY_SM as PRIMARY_ACTION,
-    SECONDARY_SM as SECONDARY_ACTION,
-} from "@/components/base/buttons/button-styles";
 
 // Descriptive NTRP labels — match the create-post form's contents exactly.
 const SKILL_LEVELS = [
@@ -35,9 +35,6 @@ const SKILL_LEVELS = [
     { id: "4.5", label: "NTRP 4.5 (Advanced)" },
     { id: "5.0", label: "NTRP 5.0 to 7.0 (Pro)" },
 ];
-
-
-
 
 interface Court {
     id: string;
@@ -100,9 +97,7 @@ export function EditProfile() {
     const { user } = useAuth();
     const { profile, refreshProfile } = useProfile();
     // Admin-only notification rows (e.g. feedback alerts) are hidden from players.
-    const visibleNotificationTypes = NOTIFICATION_TYPES.filter(
-        (t) => profile?.is_admin || !("adminOnly" in t && t.adminOnly),
-    );
+    const visibleNotificationTypes = NOTIFICATION_TYPES.filter((t) => profile?.is_admin || !("adminOnly" in t && t.adminOnly));
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(true);
@@ -274,9 +269,7 @@ export function EditProfile() {
              * Always .jpg, because the cropper always exports one.
              */
             const path = `${user.id}/avatar.jpg`;
-            const { error: upErr } = await supabase.storage
-                .from("avatars")
-                .upload(path, file, { upsert: true, contentType: "image/jpeg" });
+            const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: "image/jpeg" });
             if (upErr) throw upErr;
 
             const { data } = supabase.storage.from("avatars").getPublicUrl(path);
@@ -322,7 +315,6 @@ export function EditProfile() {
         setSaving(true);
         setError(null);
         try {
-
             // Re-encrypt sensitive fields before writing.
             let encryptedPhone: string | null = null;
             let encryptedVenmo: string | null = null;
@@ -387,12 +379,7 @@ export function EditProfile() {
                 absolutely positioned against the header's border box — padding the
                 header alone would push the title down and leave the button under
                 the status bar. */}
-            <div
-                className="fixed inset-0 z-50 flex justify-center"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="edit-profile-title"
-            >
+            <div className="fixed inset-0 z-50 flex justify-center" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title">
                 <div className="relative flex w-full max-w-lg flex-col overflow-hidden bg-secondary pt-[env(safe-area-inset-top)] shadow-xl">
                     <div className="relative shrink-0 px-5 pt-[18px] pb-6">
                         <h1 id="edit-profile-title" className="pr-9 text-lg font-semibold text-primary">
@@ -403,245 +390,243 @@ export function EditProfile() {
                             type="button"
                             onClick={handleCancel}
                             aria-label="Close"
-                            className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-lg text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                            className="absolute top-3 right-3 flex size-9 items-center justify-center rounded-lg text-tertiary transition duration-100 ease-linear hover:text-secondary"
                         >
                             <XClose className="size-5" />
                         </button>
                     </div>
 
-            {loading ? (
-                /* Over the whole panel, not in the space under the header.
+                    {loading ? (
+                        /* Over the whole panel, not in the space under the header.
                    `min-h-full` resolves against the panel's height but starts
                    below the header, so the box overflowed and its centre came to
                    rest low. Covering the panel centres it on the screen, which is
                    what the header being there should not change. */
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <LoadingState variant="fill" label="Loading your profile" />
-                </div>
-            ) : (
-                <>
-                <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pb-6">
-                    {/* Pill tabs, the same shape Activity uses. Above the avatar, per
-                        the design (Figma 628:9553), and inside the scrolling body so
-                        both scroll away together — only the header and the action bar
-                        hold position. */}
-                    <div className="flex gap-2">
-                        {(
-                            [
-                                { id: "profile", label: "Profile" },
-                                { id: "notifications", label: "Notifications" },
-                                { id: "feed", label: "Feed" },
-                            ] as const
-                        ).map((t) => (
-                            <button
-                                key={t.id}
-                                type="button"
-                                onClick={() => setTab(t.id)}
-                                aria-pressed={tab === t.id}
-                                className={cx(
-                                    "rounded-full px-3.5 py-1 text-xs font-semibold transition duration-100 ease-linear",
-                                    tab === t.id ? "bg-brand-500 text-neutral-950" : "bg-tertiary text-secondary hover:text-primary",
-                                )}
-                            >
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <LoadingState variant="fill" label="Loading your profile" />
+                        </div>
+                    ) : (
+                        <>
+                            {/* Pill tabs, the same shape AND the same band spacing Activity
+                    uses (px-5 pt-0.5 pb-3). Held above the scroller rather than
+                    inside it: they are how you move between panes, so scrolling a
+                    long pane should not take them away. The pb-3 is the whole
+                    clearance — the scroller below adds none of its own. */}
+                            <div className="flex shrink-0 gap-2 bg-secondary px-5 pt-0.5 pb-3">
+                                {(
+                                    [
+                                        { id: "profile", label: "Profile" },
+                                        { id: "notifications", label: "Notifications" },
+                                        { id: "feed", label: "Feed" },
+                                    ] as const
+                                ).map((t) => (
+                                    <button
+                                        key={t.id}
+                                        type="button"
+                                        onClick={() => setTab(t.id)}
+                                        aria-pressed={tab === t.id}
+                                        className={cx(
+                                            "rounded-full px-3.5 py-1 text-xs font-semibold transition duration-100 ease-linear",
+                                            tab === t.id ? "bg-brand-500 text-neutral-950" : "bg-tertiary text-secondary hover:text-primary",
+                                        )}
+                                    >
+                                        {t.label}
+                                    </button>
+                                ))}
+                            </div>
 
-                {tab === "profile" ? (
-                <>
-                    {/* Avatar + change photo. Profile tab only — it is a field of
+                            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pb-6">
+                                {tab === "profile" ? (
+                                    <>
+                                        {/* Avatar + change photo. Profile tab only — it is a field of
                         this pane, not chrome for the screen. The name moved to the
                         header, so this row is the photo control rather than a title. */}
-                    <div className="flex items-center gap-3">
-                        <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full border border-secondary_alt bg-white p-[3px] shadow-xs">
-                            {form.photo_url ? (
-                                <img src={form.photo_url} alt="" referrerPolicy="no-referrer" className="size-full rounded-full object-cover" />
-                            ) : (
-                                <div className="flex size-full items-center justify-center rounded-full bg-tertiary text-2xl font-semibold text-secondary">
-                                    {firstName.charAt(0).toUpperCase() || "?"}
-                                </div>
-                            )}
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-md font-semibold text-primary">Profile photo</p>
-                            <label
-                                className={`mt-0.5 inline-block text-sm font-medium text-brand-500 hover:text-brand-600 ${
-                                    photoBusy ? "pointer-events-none opacity-50" : "cursor-pointer"
-                                }`}
-                            >
-                                {photoBusy ? "Uploading…" : "Change photo"}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="sr-only"
-                                    disabled={photoBusy}
-                                    onChange={handlePhotoChange}
-                                />
-                            </label>
-                            {photoError && <p className="mt-1 text-sm text-error-primary">{photoError}</p>}
-                        </div>
-                    </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full border border-secondary_alt bg-white p-[3px] shadow-xs">
+                                                {form.photo_url ? (
+                                                    <img
+                                                        src={form.photo_url}
+                                                        alt=""
+                                                        referrerPolicy="no-referrer"
+                                                        className="size-full rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="flex size-full items-center justify-center rounded-full bg-tertiary text-2xl font-semibold text-secondary">
+                                                        {firstName.charAt(0).toUpperCase() || "?"}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-md font-semibold text-primary">Profile photo</p>
+                                                <label
+                                                    className={`mt-0.5 inline-block text-sm font-medium text-brand-500 hover:text-brand-600 ${
+                                                        photoBusy ? "pointer-events-none opacity-50" : "cursor-pointer"
+                                                    }`}
+                                                >
+                                                    {photoBusy ? "Uploading…" : "Change photo"}
+                                                    <input type="file" accept="image/*" className="sr-only" disabled={photoBusy} onChange={handlePhotoChange} />
+                                                </label>
+                                                {photoError && <p className="mt-1 text-sm text-error-primary">{photoError}</p>}
+                                            </div>
+                                        </div>
 
-
-                    {/* Personal info */}
-                    <section className="flex flex-col gap-6">
-                        <h2 className="text-md font-semibold text-primary">Personal info</h2>
-                        <ReadOnlyField label="First name" value={firstName} />
-                        <ReadOnlyField label="Last name" value={lastName} />
-                        <ReadOnlyField label="Email" value={email} />
-                        <Select
-                            label="Skill level"
-                            placeholder="Select your level"
-                            isNonModal
-                            size="sm"
-                            items={SKILL_LEVELS}
-                            selectedKey={form.skill_level || null}
-                            onSelectionChange={(k) => set("skill_level", (k as string) ?? "")}
-                            triggerClassName={FIELD_SELECT}
-                            isRequired
-                        >
-                            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
-                        </Select>
-                        <MultiSelect
-                            label="Preferred locations"
-                            placeholder="Select courts"
-                            size="sm"
-                            isNonModal
-                            showSearch={false}
-                            showFooter={false}
-                            items={courtItems}
-                            emptyStateTitle="No courts on the books"
-                            emptyStateDescription="They'll show up here once someone adds them."
-                            emptyStateHideIcon
-                            emptyStateAlign="left"
-                            selectedKeys={form.court_preferences}
-                            onSelectionChange={(keys) => set("court_preferences", keys)}
-                            triggerClassName={FIELD_SELECT}
-                        >
-                            {(item) => (
-                                <SelectItem
-                                    id={item.id}
-                                    supportingText={item.supportingText}
-                                    selectionIndicator="checkbox"
-                                    selectionIndicatorAlign="left"
-                                >
-                                    {item.label}
-                                </SelectItem>
-                            )}
-                        </MultiSelect>
-                        {/* The filter sheet's checkbox, without its row band: here each
+                                        {/* Personal info */}
+                                        <section className="flex flex-col gap-6">
+                                            <h2 className="text-md font-semibold text-primary">Personal info</h2>
+                                            <ReadOnlyField label="First name" value={firstName} />
+                                            <ReadOnlyField label="Last name" value={lastName} />
+                                            <ReadOnlyField label="Email" value={email} />
+                                            <Select
+                                                label="Skill level"
+                                                placeholder="Select your level"
+                                                isNonModal
+                                                size="sm"
+                                                items={SKILL_LEVELS}
+                                                selectedKey={form.skill_level || null}
+                                                onSelectionChange={(k) => set("skill_level", (k as string) ?? "")}
+                                                triggerClassName={FIELD_SELECT}
+                                                isRequired
+                                            >
+                                                {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
+                                            </Select>
+                                            <MultiSelect
+                                                label="Preferred locations"
+                                                placeholder="Select courts"
+                                                size="sm"
+                                                isNonModal
+                                                showSearch={false}
+                                                showFooter={false}
+                                                items={courtItems}
+                                                emptyStateTitle="No courts on the books"
+                                                emptyStateDescription="They'll show up here once someone adds them."
+                                                emptyStateHideIcon
+                                                emptyStateAlign="left"
+                                                selectedKeys={form.court_preferences}
+                                                onSelectionChange={(keys) => set("court_preferences", keys)}
+                                                triggerClassName={FIELD_SELECT}
+                                            >
+                                                {(item) => (
+                                                    <SelectItem
+                                                        id={item.id}
+                                                        supportingText={item.supportingText}
+                                                        selectionIndicator="checkbox"
+                                                        selectionIndicatorAlign="left"
+                                                    >
+                                                        {item.label}
+                                                    </SelectItem>
+                                                )}
+                                            </MultiSelect>
+                                            {/* The filter sheet's checkbox, without its row band: here each
                             one is a field of the form, not a row in a list. */}
-                        <CheckRow
-                            variant="bare"
-                            label="Use my location"
-                            checked={useLocation}
-                            onClick={() => toggleUseLocation(!useLocation)}
-                        />
-                    </section>
+                                            <CheckRow
+                                                variant="bare"
+                                                label="Use my location"
+                                                checked={useLocation}
+                                                onClick={() => toggleUseLocation(!useLocation)}
+                                            />
+                                        </section>
 
-                    {/* Contact & Payment */}
-                    <section className="flex flex-col gap-6">
-                        <h2 className="text-md font-semibold text-primary">Contact &amp; Payment</h2>
-                        <Input
-                            label="Phone number"
-                            type="tel"
-                            size="sm"
-                            wrapperClassName={FIELD}
-                            placeholder="+1 (203) 555-0100"
-                            value={form.phone}
-                            onChange={(v) => set("phone", v)}
-                            hint="Encrypted and only visible after a claim is approved."
-                        />
-                        <Input
-                            label="Venmo handle"
-                            size="sm"
-                            wrapperClassName={FIELD}
-                            placeholder="@yourhandle"
-                            value={form.venmo_handle}
-                            onChange={(v) => set("venmo_handle", v)}
-                            hint="Used to generate payment requests. Encrypted and only visible after approval."
-                        />
-                    </section>
+                                        {/* Contact & Payment */}
+                                        <section className="flex flex-col gap-6">
+                                            <h2 className="text-md font-semibold text-primary">Contact &amp; Payment</h2>
+                                            <Input
+                                                label="Phone number"
+                                                type="tel"
+                                                size="sm"
+                                                wrapperClassName={FIELD}
+                                                placeholder="+1 (203) 555-0100"
+                                                value={form.phone}
+                                                onChange={(v) => set("phone", v)}
+                                                hint="Encrypted and only visible after a claim is approved."
+                                            />
+                                            <Input
+                                                label="Venmo handle"
+                                                size="sm"
+                                                wrapperClassName={FIELD}
+                                                placeholder="@yourhandle"
+                                                value={form.venmo_handle}
+                                                onChange={(v) => set("venmo_handle", v)}
+                                                hint="Used to generate payment requests. Encrypted and only visible after approval."
+                                            />
+                                        </section>
 
-                    {/* A way back to the tutorial, since it otherwise shows once and
+                                        {/* A way back to the tutorial, since it otherwise shows once and
                         is gone. Routed through the discard guard above. */}
-                    <section className="flex flex-col gap-2">
-                        <h2 className="text-md font-semibold text-primary">Help</h2>
-                        <button
-                            type="button"
-                            onClick={handleReplayTutorial}
-                            className="self-start text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
-                        >
-                            Replay the tutorial
-                        </button>
-                    </section>
-
-                </>
-                ) : tab === "feed" ? (
-                <>
-                    {/* Feed */}
-                    <section className="flex flex-col gap-4">
-                        <h2 className="text-md font-semibold text-primary">Feed</h2>
-                        <CheckRow
-                            variant="bare"
-                            multiline
-                            label="Only show posts from my groups and players I'm following."
-                            checked={form.feed_connected_only}
-                            onClick={() => set("feed_connected_only", !form.feed_connected_only)}
-                        />
-                    </section>
-                </>
-                ) : (
-                <>
-                    {/* Notifications */}
-                    <section className="flex flex-col gap-4">
-                        <div>
-                            <h2 className="text-md font-semibold text-primary">Notifications</h2>
-                            <p className="mt-1 text-sm text-tertiary">
-                                Choose how you want to hear about claims, matches, and price drops.
-                            </p>
-                        </div>
-
-                        <div className="flex items-center gap-2 border-b border-secondary pb-2">
-                            <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-tertiary">Notification</span>
-                            <span className="w-12 text-center text-xs font-semibold uppercase tracking-wider text-tertiary">Email</span>
-                            <span className="w-12 text-center text-xs font-semibold uppercase tracking-wider text-tertiary">Push</span>
-                        </div>
-
-                        <ul className="-mt-2 divide-y divide-secondary">
-                            {visibleNotificationTypes.map((t) => {
-                                const p = prefs.get(t.key);
-                                return (
-                                    <li key={t.key} className="flex items-center gap-2 py-3">
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-medium text-primary">{t.label}</p>
-                                            <p className="text-xs text-tertiary">{t.hint}</p>
-                                        </div>
-                                        <div className="flex w-12 justify-center">
-                                            <Toggle
-                                                isSelected={p?.email ?? t.defaultEmail}
-                                                onChange={(v) => setNotif(t.key, "email", v)}
-                                                aria-label={`${t.label} email`}
+                                        <section className="flex flex-col gap-2">
+                                            <h2 className="text-md font-semibold text-primary">Help</h2>
+                                            <button
+                                                type="button"
+                                                onClick={handleReplayTutorial}
+                                                className="self-start text-sm font-semibold text-brand-500 transition duration-100 ease-linear hover:text-brand-600"
+                                            >
+                                                Replay the tutorial
+                                            </button>
+                                        </section>
+                                    </>
+                                ) : tab === "feed" ? (
+                                    <>
+                                        {/* Feed */}
+                                        <section className="flex flex-col gap-4">
+                                            <h2 className="text-md font-semibold text-primary">Feed</h2>
+                                            <CheckRow
+                                                variant="bare"
+                                                multiline
+                                                label="Only show posts from my groups and players I'm following."
+                                                checked={form.feed_connected_only}
+                                                onClick={() => set("feed_connected_only", !form.feed_connected_only)}
                                             />
-                                        </div>
-                                        <div className="flex w-12 justify-center">
-                                            <Toggle
-                                                isSelected={p?.push ?? t.defaultPush}
-                                                onChange={(v) => setNotif(t.key, "push", v)}
-                                                aria-label={`${t.label} push`}
-                                            />
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    </section>
-                </>
-                )}
-                </div>
+                                        </section>
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* Notifications */}
+                                        <section className="flex flex-col gap-4">
+                                            <div>
+                                                <h2 className="text-md font-semibold text-primary">Notifications</h2>
+                                                <p className="mt-1 text-sm text-tertiary">
+                                                    Choose how you want to hear about claims, matches, and price drops.
+                                                </p>
+                                            </div>
 
-                {/* Pinned to the bottom of the screen: a shrink-0 sibling of the
+                                            <div className="flex items-center gap-2 border-b border-secondary pb-2">
+                                                <span className="flex-1 text-xs font-semibold tracking-wider text-tertiary uppercase">Notification</span>
+                                                <span className="w-12 text-center text-xs font-semibold tracking-wider text-tertiary uppercase">Email</span>
+                                                <span className="w-12 text-center text-xs font-semibold tracking-wider text-tertiary uppercase">Push</span>
+                                            </div>
+
+                                            <ul className="-mt-2 divide-y divide-secondary">
+                                                {visibleNotificationTypes.map((t) => {
+                                                    const p = prefs.get(t.key);
+                                                    return (
+                                                        <li key={t.key} className="flex items-center gap-2 py-3">
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="text-sm font-medium text-primary">{t.label}</p>
+                                                                <p className="text-xs text-tertiary">{t.hint}</p>
+                                                            </div>
+                                                            <div className="flex w-12 justify-center">
+                                                                <Toggle
+                                                                    isSelected={p?.email ?? t.defaultEmail}
+                                                                    onChange={(v) => setNotif(t.key, "email", v)}
+                                                                    aria-label={`${t.label} email`}
+                                                                />
+                                                            </div>
+                                                            <div className="flex w-12 justify-center">
+                                                                <Toggle
+                                                                    isSelected={p?.push ?? t.defaultPush}
+                                                                    onChange={(v) => setNotif(t.key, "push", v)}
+                                                                    aria-label={`${t.label} push`}
+                                                                />
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        </section>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Pinned to the bottom of the screen: a shrink-0 sibling of the
                     scrolling body, so it stays put however far the form scrolls and
                     on whichever tab. Its padding carries the home-indicator inset,
                     since it is the last thing on screen — which is also why the
@@ -649,48 +634,32 @@ export function EditProfile() {
 
                     Cancel left, Save right, the arrangement this screen had before,
                     rather than the stacked pair the group form uses. */}
-                {/* 16px above the buttons and 32px below, per the design (Figma
+                            {/* 16px above the buttons and 32px below, per the design (Figma
                     627:9347) — plus the clamped home-indicator inset, so the 32px is
                     clear space on an iPhone rather than 32px with the indicator
                     sitting in it. Resolves to 32px anywhere without an inset. */}
-                <div className="shrink-0 px-5 pt-4 pb-[calc(2rem_+_var(--safe-bottom))]">
-                    {error && <p className="mb-3 text-sm text-error-primary">{error}</p>}
-                    <div className="flex items-center justify-between gap-3">
-                        <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_ACTION}>
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleSave}
-                            disabled={!dirty || saving}
-                            className={`${PRIMARY_ACTION} relative`}
-                        >
-                            {/* See post-new: the label holds the width. */}
-                            <span className={saving ? "invisible" : undefined}>Save changes</span>
-                            {saving && (
-                                <Spinner
-                                    size="sm"
-                                    tone="on-brand"
-                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                                />
-                            )}
-                        </button>
-                    </div>
-                </div>
-                </>
-            )}
+                            <div className="shrink-0 px-5 pt-4 pb-[calc(2rem_+_var(--safe-bottom))]">
+                                {error && <p className="mb-3 text-sm text-error-primary">{error}</p>}
+                                <div className="flex items-center justify-between gap-3">
+                                    <button type="button" onClick={handleCancel} disabled={saving} className={SECONDARY_ACTION}>
+                                        Cancel
+                                    </button>
+                                    <button type="button" onClick={handleSave} disabled={!dirty || saving} className={`${PRIMARY_ACTION} relative`}>
+                                        {/* See post-new: the label holds the width. */}
+                                        <span className={saving ? "invisible" : undefined}>Save changes</span>
+                                        {saving && (
+                                            <Spinner size="sm" tone="on-brand" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
             {/* Positioning the photo, before anything is stored. */}
-            {cropping && (
-                <AvatarCropper
-                    file={cropping}
-                    busy={photoBusy}
-                    onCancel={() => setCropping(null)}
-                    onConfirm={uploadAvatar}
-                />
-            )}
+            {cropping && <AvatarCropper file={cropping} busy={photoBusy} onCancel={() => setCropping(null)} onConfirm={uploadAvatar} />}
 
             {/* Discard-changes confirmation — the bottom sheet the delete confirms
                 use (admin-group-delete-sheet.tsx, created-detail-sheet.tsx):
@@ -723,15 +692,13 @@ export function EditProfile() {
                                 type="button"
                                 onClick={() => setShowDiscard(false)}
                                 aria-label="Close"
-                                className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
+                                className="-mt-1 -mr-1 shrink-0 rounded-lg p-1.5 text-tertiary transition duration-100 ease-linear hover:text-secondary"
                             >
                                 <XClose className="size-5" strokeWidth={1} />
                             </button>
                         </div>
 
-                        <p className="text-sm text-secondary">
-                            You have unsaved changes. Leaving now will discard them.
-                        </p>
+                        <p className="text-sm text-secondary">You have unsaved changes. Leaving now will discard them.</p>
 
                         <div className="mt-2 flex flex-col gap-3">
                             <button type="button" onClick={leave} className={PRIMARY_BTN}>
