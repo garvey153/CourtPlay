@@ -54,7 +54,6 @@ interface NotifPref {
 interface FormState {
     skill_level: string;
     court_preferences: Selection;
-    new_to_westport: boolean;
     feed_connected_only: boolean;
     phone: string;
     venmo_handle: string;
@@ -75,7 +74,6 @@ function serialize(form: FormState, prefs: Map<string, NotifPref>): string {
     return JSON.stringify({
         skill: form.skill_level,
         courts,
-        moved: form.new_to_westport,
         feedConnected: form.feed_connected_only,
         phone: form.phone.trim(),
         venmo: form.venmo_handle.trim(),
@@ -122,7 +120,6 @@ export function EditProfile() {
     const [form, setForm] = useState<FormState>({
         skill_level: "",
         court_preferences: new Set<string>(),
-        new_to_westport: false,
         feed_connected_only: false,
         phone: "",
         venmo_handle: "",
@@ -155,7 +152,7 @@ export function EditProfile() {
         (async () => {
             const { data: row } = await supabase
                 .from("users")
-                .select("first_name, last_name, email, skill_level, court_preferences, new_to_westport, phone, venmo_handle, photo_url, feed_connected_only")
+                .select("first_name, last_name, email, skill_level, court_preferences, phone, venmo_handle, photo_url, feed_connected_only")
                 .eq("id", user.id)
                 .single();
 
@@ -185,7 +182,6 @@ export function EditProfile() {
             const nextForm: FormState = {
                 skill_level: row?.skill_level ?? "",
                 court_preferences: new Set<string>(row?.court_preferences ?? []),
-                new_to_westport: row?.new_to_westport ?? false,
                 feed_connected_only: row?.feed_connected_only ?? false,
                 phone,
                 venmo_handle: venmo,
@@ -346,7 +342,6 @@ export function EditProfile() {
                 .update({
                     skill_level: form.skill_level || null,
                     court_preferences: courtPrefs.length > 0 ? courtPrefs : null,
-                    new_to_westport: form.new_to_westport,
                     feed_connected_only: form.feed_connected_only,
                     phone: encryptedPhone,
                     venmo_handle: encryptedVenmo,
@@ -542,12 +537,6 @@ export function EditProfile() {
                             label="Use my location"
                             checked={useLocation}
                             onClick={() => toggleUseLocation(!useLocation)}
-                        />
-                        <CheckRow
-                            variant="bare"
-                            label="I've recently moved to this location"
-                            checked={form.new_to_westport}
-                            onClick={() => set("new_to_westport", !form.new_to_westport)}
                         />
                     </section>
 
