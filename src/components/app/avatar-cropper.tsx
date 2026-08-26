@@ -216,7 +216,7 @@ export function AvatarCropper({
                             white handle ringed in brand. The fill is a gradient on the
                             input itself, which is the only way to colour one side of a
                             native range and keep the input's own keyboard behaviour. */}
-                        <div className="flex w-full items-center px-5 pt-4">
+                        <div className="flex w-full items-center px-5 pt-8">
                             <input
                                 type="range"
                                 aria-label="Zoom"
@@ -241,7 +241,7 @@ export function AvatarCropper({
                     </>
                 )}
 
-                <div className="flex w-full flex-col gap-3 px-5 pt-4 pb-[calc(2rem_+_var(--safe-bottom))]">
+                <div className="flex w-full flex-col gap-3 px-5 pt-10 pb-[calc(2rem_+_var(--safe-bottom))]">
                     <button
                         type="button"
                         onClick={handleConfirm}
