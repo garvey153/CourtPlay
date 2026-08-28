@@ -11,6 +11,7 @@ import { SelectItem } from "@/components/base/select/select-item";
 import { Toggle } from "@/components/base/toggle/toggle";
 import { AvatarCropper } from "@/components/app/avatar-cropper";
 import { useAvatarUpload } from "@/hooks/use-avatar-upload";
+import { FIRST_RUN_KEYS } from "@/lib/first-run";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { SEEDED_NOTIFICATION_TYPES } from "@/lib/notifications";
@@ -280,6 +281,12 @@ export function Onboarding() {
 
     const handleFinish = async () => {
         if (!user) return;
+        // Finishing onboarding is the one moment we know for certain the player
+        // is new, so it is where the device's leftover prompt dismissals go.
+        for (const key of FIRST_RUN_KEYS) {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+        }
         setSaving(true);
         setError(null);
         try {
