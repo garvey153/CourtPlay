@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { Mail01 } from "@untitledui/icons";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
@@ -32,11 +32,23 @@ export function AuthScreen() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    // The invite email links to /signup?email=<address>. During the closed beta
+    // The invite email links to /signup?invite=<token>. During the closed beta
     // that parameter is what separates an invited player from someone who typed
     // the URL, and it decides whether sign-up is offered at all.
-    const inviteParam = searchParams.get("email");
-    const cameFromInvite = Boolean(inviteParam) || Boolean(rememberedInviteEmail());
+    //
+    // `?email=<address>` is the older shape and still works: invites sent before
+    // the token existed are sitting in inboxes and must not break. Both are
+    // visibility markers only — the trigger on public.users is the gate.
+    const inviteToken = searchParams.get("invite");
+    const emailParam = searchParams.get("email");
+
+    // Resolved from the token, once the round trip finishes. Null while in
+    // flight, which is why the token itself — not this — decides whether sign-up
+    // is offered: waiting would flash a sign-in-only screen at an invited player.
+    const [resolvedEmail, setResolvedEmail] = useState<string | null>(null);
+    const inviteParam = emailParam ?? resolvedEmail;
+
+    const cameFromInvite = Boolean(inviteParam) || Boolean(inviteToken) || Boolean(rememberedInviteEmail());
     const signupOffered = !INVITE_ONLY || cameFromInvite;
 
     const [mode, setMode] = useState<Mode>(pathname.includes("signin") ? "signin" : "signup");
@@ -46,6 +58,10 @@ export function AuthScreen() {
     const isSignup = mode === "signup" && signupOffered;
 
     const [email, setEmail] = useState(inviteParam ?? "");
+    // Whether the field is still the invite's address or something they typed.
+    // Without this, a late token resolution overwrites what someone has already
+    // started typing — on a slow connection that is a field that edits itself.
+    const emailUntouched = useRef(true);
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [remember, setRemember] = useState(false);
@@ -75,6 +91,26 @@ export function AuthScreen() {
         const redirect = validateRedirect(searchParams.get("redirect"));
         if (redirect) sessionStorage.setItem("cs_auth_redirect", redirect);
     }, [searchParams]);
+
+    // Trade the token for the address it was issued for.
+    //
+    // Anonymous by necessity — there is no session yet, which is the entire
+    // point of being here. A failure is not fatal: sign-up is already on screen
+    // (the token alone decided that) and they can type the address themselves,
+    // which the copy in the email tells them to use.
+    useEffect(() => {
+        if (!inviteToken) return;
+        let cancelled = false;
+        (async () => {
+            const { data } = await supabase.rpc("invite_email_for_token", { p_token: inviteToken });
+            if (cancelled || typeof data !== "string" || !data) return;
+            setResolvedEmail(data);
+            if (emailUntouched.current) setEmail(data);
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [inviteToken]);
 
     // Remember the invite marker before anything can navigate away from it.
     useEffect(() => {
@@ -267,7 +303,10 @@ export function AuthScreen() {
                         type="email"
                         placeholder="Enter your email"
                         value={email}
-                        onChange={setEmail}
+                        onChange={(value) => {
+                            emailUntouched.current = false;
+                            setEmail(value);
+                        }}
                         size="sm"
                         wrapperClassName={FIELD}
                     />
