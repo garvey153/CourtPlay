@@ -27,7 +27,7 @@ serve(async (req) => {
         return corsJson({ error: "Unauthorized" }, 401);
     }
 
-    const { to, subject, html } = await req.json();
+    const { to, subject, html, text, replyTo, headers } = await req.json();
 
     if (!to || !subject || !html) {
         return corsJson({ error: "Missing to, subject, or html" }, 400);
@@ -40,7 +40,26 @@ serve(async (req) => {
                 Authorization: `Bearer ${RESEND_API_KEY}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
+            // Optional parts are omitted rather than sent empty: Resend treats a
+            // present-but-blank `text` as a real empty body, which is worse than
+            // no plain-text part at all.
+            body: JSON.stringify({
+                from: FROM_EMAIL,
+                to,
+                subject,
+                html,
+                // A text/plain alternative alongside the HTML. Its absence is a
+                // long-standing spam-score item (SpamAssassin's MIME_HTML_ONLY),
+                // and it is what a watch, a screen reader or a plain-text client
+                // actually renders. Callers that pass nothing keep today's
+                // HTML-only behaviour rather than getting an empty part.
+                ...(typeof text === "string" && text.trim() ? { text } : {}),
+                // Somewhere for a reply to land. FROM_EMAIL has been a `noreply@`
+                // address, which filters read as mildly negative and which
+                // strands anyone who answers the mail.
+                ...(typeof replyTo === "string" && replyTo.trim() ? { reply_to: replyTo } : {}),
+                ...(headers && typeof headers === "object" ? { headers } : {}),
+            }),
         });
 
         const data = await res.json();

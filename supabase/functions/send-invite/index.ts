@@ -6,11 +6,22 @@ import { invokeFunction } from "../_shared/invoke.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const APP_URL = Deno.env.get("APP_URL") ?? "https://www.courtplay.app";
+/** Where a reply goes. Unset falls back to the address the site already publishes. */
+const REPLY_TO = Deno.env.get("REPLY_TO_EMAIL") ?? "hello@courtplay.app";
+/**
+ * The sender's postal address, for the footer.
+ *
+ * CAN-SPAM requires one on commercial mail and filters score its absence. It is
+ * configuration rather than a literal because it is a real-world fact that can
+ * change without a deploy — and because inventing a plausible-looking one would
+ * be worse than omitting it. Unset simply drops the line.
+ */
+const POSTAL_ADDRESS = Deno.env.get("POSTAL_ADDRESS") ?? "";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 /** Bump on every deploy — see the same constant in send-notification for why. */
-const FN_BUILD = "2026-08-15b";
+const FN_BUILD = "2026-09-09a";
 
 /** Per-inviter daily cap. */
 const DAILY_LIMIT = 20;
@@ -129,12 +140,43 @@ serve(async (req) => {
         return corsJson({ error: "Could not record that invite.", fnBuild: FN_BUILD }, 500);
     }
 
-    const link = `${APP_URL}/signup?email=${encodeURIComponent(address)}`;
-    const html = buildInviteHtml(inviterName, link, address);
+    // The token, not the address.
+    //
+    // This link used to be `/signup?email=<their address>`. A clickable link to
+    // an account-creation page carrying the recipient's own email is the shape
+    // of a credential-harvest message, and it was costing us the inbox. The
+    // token resolves to the same address through invite_email_for_token, so the
+    // sign-up form still prefills; nothing about the gate changes, because the
+    // parameter never was the gate.
+    const { data: tokenRow } = await supabase
+        .from("invites")
+        .select("token")
+        .ilike("email", address)
+        .limit(1)
+        .maybeSingle();
+
+    // Fall back to the old shape rather than failing the send. An invite that
+    // arrives looking slightly spammy still beats one that never arrives.
+    const link = tokenRow?.token
+        ? `${APP_URL}/signup?invite=${encodeURIComponent(tokenRow.token)}`
+        : `${APP_URL}/signup?email=${encodeURIComponent(address)}`;
+
+    const subject = inviterName ? `${inviterName} invited you to CourtPlay` : "You're invited to CourtPlay";
     const sent = await invokeFunction("send-email", {
         to: address,
-        subject: inviterName ? `${inviterName} invited you to CourtPlay` : "You're invited to CourtPlay",
-        html,
+        subject,
+        html: buildInviteHtml(inviterName, link, address),
+        // Sent alongside the HTML, not instead of it. See send-email.
+        text: buildInviteText(inviterName, link, address),
+        replyTo: REPLY_TO,
+        headers: {
+            // One-click unsubscribe. Not required below Google's 5,000/day bulk
+            // threshold, but its presence is a positive signal at any volume and
+            // it gives someone a way out that is not the spam button — which is
+            // the click that actually costs us the domain's reputation.
+            "List-Unsubscribe": `<mailto:${REPLY_TO}?subject=Unsubscribe>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
     });
 
     if (!sent.ok) {
@@ -175,9 +217,43 @@ function buildInviteHtml(inviterName: string, link: string, address: string): st
   <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0 12px;" />
   <p style="color: #9CA3AF; font-size: 12px; margin: 0;">
     CourtPlay — fill an open spot in a tennis game<br />
-    You received this because someone invited you. No account is created until you sign up.
+    You received this because someone invited you. No account is created until you sign up.<br />
+    Not interested? Reply with "unsubscribe" and we won't email you again.${
+        POSTAL_ADDRESS ? `<br />${escapeHtml(POSTAL_ADDRESS)}` : ""
+    }
   </p>
 </div>`.trim();
+}
+
+/**
+ * The same invite as text/plain.
+ *
+ * Written out rather than derived by stripping tags from the HTML: a regex
+ * de-tagger silently drops the link (it lives in an href, not in the text) and
+ * produces something that reads like a broken forward. Two short templates that
+ * say the same thing are cheaper to keep honest than one clever converter.
+ */
+function buildInviteText(inviterName: string, link: string, address: string): string {
+    const who = inviterName ? `${inviterName} invited you` : "You've been invited";
+    return [
+        `${who} to CourtPlay.`,
+        "",
+        "CourtPlay helps tennis players fill an open spot in a game. Post a spot",
+        "when someone drops out, or claim one when you want to play.",
+        "",
+        `We're in a closed beta, so this invite is tied to ${address} — sign up`,
+        "with that address.",
+        "",
+        "Create your account:",
+        link,
+        "",
+        "—",
+        "CourtPlay — fill an open spot in a tennis game",
+        "You received this because someone invited you. No account is created",
+        "until you sign up.",
+        `Not interested? Reply with "unsubscribe" and we won't email you again.`,
+        ...(POSTAL_ADDRESS ? [POSTAL_ADDRESS] : []),
+    ].join("\n");
 }
 
 function escapeHtml(value: string): string {

@@ -1,17 +1,23 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
+
+/** A token shaped like the real thing — gen_random_uuid() in the invites table. */
+const TOKEN = "9f2c4a1b-7d3e-4c58-b0a1-41ae08bb96d1";
 
 /** Surfaces the current path so a redirect can be asserted, not just inferred. */
 function PathProbe() {
     return <span data-testid="path">{useLocation().pathname}</span>;
 }
 
+const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
+
 vi.mock("@/lib/supabase", () => ({
     supabase: {
         auth: { signInWithPassword: vi.fn(), signUp: vi.fn(), signInWithOAuth: vi.fn() },
         from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }) }),
-        rpc: vi.fn(),
+        rpc,
     },
 }));
 
@@ -21,9 +27,11 @@ vi.mock("@/lib/supabase", () => ({
  * exists — no toggle, no "don't have an account?", and /signup in the address bar
  * becomes /signin.
  *
- * The marker is `?email=` on the invite link. It is deliberately guessable: the
- * trigger on public.users is the real gate, and these tests pin VISIBILITY, not
- * access. Nothing here should ever be read as proof that sign-up is unreachable.
+ * The marker is `?invite=<token>` on the invite link, with `?email=<address>`
+ * still honoured for invites sent before the token existed. Neither is a
+ * secret: the trigger on public.users is the real gate, and these tests pin
+ * VISIBILITY, not access. Nothing here should ever be read as proof that
+ * sign-up is unreachable.
  */
 const renderAuth = async (opts: { inviteOnly: boolean; path: string }) => {
     vi.resetModules();
@@ -77,6 +85,9 @@ describe("auth screen — closed beta", () => {
     beforeEach(() => {
         vi.resetModules();
         localStorage.clear();
+        // Unset by default: a test that cares about the round trip says so.
+        rpc.mockReset();
+        rpc.mockResolvedValue({ data: null, error: null });
     });
     afterEach(() => {
         vi.unstubAllEnvs();
@@ -121,6 +132,65 @@ describe("auth screen — closed beta", () => {
             expect(screen.getByText("Create your account")).toBeInTheDocument();
             expect(screen.getByTestId("path")).toHaveTextContent("/signup");
             expect(screen.getByLabelText(/Email/)).toHaveValue("jane@example.com");
+        });
+
+        /**
+         * The link the invite email actually carries now. The address is not in
+         * it — that is the whole point, since a clickable account-creation link
+         * containing the recipient's own email reads as phishing to a spam
+         * filter — so it has to be fetched before the field can be filled.
+         */
+        it("offers sign up and prefills from an invite token", async () => {
+            rpc.mockResolvedValue({ data: "jane@example.com", error: null });
+            await renderAuth({ inviteOnly: true, path: `/signup?invite=${TOKEN}` });
+
+            expect(screen.getByText("Create your account")).toBeInTheDocument();
+            expect(rpc).toHaveBeenCalledWith("invite_email_for_token", { p_token: TOKEN });
+            await waitFor(() => expect(screen.getByLabelText(/Email/)).toHaveValue("jane@example.com"));
+        });
+
+        /**
+         * Sign-up is on screen from the first paint, before the round trip
+         * finishes. Waiting for it would flash a sign-in-only screen at an
+         * invited player — on a slow connection, for long enough to read.
+         */
+        it("offers sign up immediately, without waiting for the address", async () => {
+            let release: (value: { data: string | null; error: null }) => void = () => {};
+            rpc.mockReturnValue(new Promise((resolve) => (release = resolve)));
+
+            await renderAuth({ inviteOnly: true, path: `/signup?invite=${TOKEN}` });
+            expect(screen.getByText("Create your account")).toBeInTheDocument();
+            expect(screen.getByTestId("path")).toHaveTextContent("/signup");
+
+            release({ data: "jane@example.com", error: null });
+        });
+
+        /**
+         * A stale, accepted or mistyped token resolves to nothing. Sign-up stays
+         * available and they type the address themselves — which is what the
+         * email tells them to use anyway. Turning them away here would strand
+         * someone genuinely invited.
+         */
+        it("still offers sign up when the token resolves to nothing", async () => {
+            rpc.mockResolvedValue({ data: null, error: null });
+            await renderAuth({ inviteOnly: true, path: `/signup?invite=${TOKEN}` });
+
+            expect(screen.getByText("Create your account")).toBeInTheDocument();
+            expect(screen.getByLabelText(/Email/)).toHaveValue("");
+        });
+
+        /** A late answer must not overwrite something they have started typing. */
+        it("does not clobber an address typed before the token resolved", async () => {
+            let release: (value: { data: string | null; error: null }) => void = () => {};
+            rpc.mockReturnValue(new Promise((resolve) => (release = resolve)));
+            await renderAuth({ inviteOnly: true, path: `/signup?invite=${TOKEN}` });
+
+            const field = screen.getByLabelText(/Email/);
+            await userEvent.type(field, "typed@example.com");
+
+            release({ data: "jane@example.com", error: null });
+            await waitFor(() => expect(rpc).toHaveBeenCalled());
+            expect(field).toHaveValue("typed@example.com");
         });
 
         /**
